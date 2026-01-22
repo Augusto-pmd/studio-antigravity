@@ -215,6 +215,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /payrollWeeks/{payrollWeekId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // This block gives admins full read/write, which allows broad list queries.
     match /taskRequests/{taskRequestId} {
       allow read, write: if isSignedIn() && isAdmin();
@@ -222,9 +227,9 @@ service cloud.firestore {
 
     // This block gives non-admins access to their own tasks.
     match /taskRequests/{taskRequestId} {
-      allow read: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
+      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
+      allow list: if isSignedIn() && (request.query.where.requesterId == request.auth.uid || request.query.where.assigneeId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      // Admins get update/delete from the block above, so we only need to define it for owners/assignees here.
       allow update: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
     }
 

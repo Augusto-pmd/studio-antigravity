@@ -137,3 +137,11 @@ export type FundRequest = {
   exchangeRate: number;
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
 };
+
+export type PayrollWeek = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: 'Abierta' | 'Cerrada';
+  generatedAt: string;
+};

@@ -563,6 +563,42 @@
         "status": { "type": "string", "enum": ["Pendiente", "Aprobado", "Pagado", "Rechazado"] }
       },
       "required": [ "id", "requesterId", "requesterName", "date", "category", "amount", "currency", "exchangeRate", "status" ]
+    },
+    "PayrollWeek": {
+      "title": "Payroll Week",
+      "type": "object",
+      "description": "Represents a weekly payroll period for attendance and payments.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Abierta",
+            "Cerrada"
+          ]
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "startDate",
+        "endDate",
+        "status",
+        "generatedAt"
+      ]
     }
   },
   "auth": {
@@ -776,6 +812,22 @@
             {
               "name": "fundRequestId",
               "description": "The unique identifier for the fund request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/payrollWeeks/{payrollWeekId}",
+        "definition": {
+          "entityName": "PayrollWeek",
+          "schema": {
+            "$ref": "#/backend/entities/PayrollWeek"
+          },
+          "description": "Stores weekly payroll periods. Only admins can create or modify these.",
+          "params": [
+            {
+              "name": "payrollWeekId",
+              "description": "The unique identifier for the payroll week."
             }
           ]
         }
