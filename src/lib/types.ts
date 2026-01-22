@@ -157,3 +157,28 @@ export type CashAdvance = {
   reason?: string;
   payrollWeekId: string; // To associate with a payment week
 };
+
+export type CashAccount = {
+  id: string;
+  userId: string;
+  name: string; // e.g., 'Caja Principal ARS', 'Caja USD'
+  currency: 'ARS' | 'USD';
+  balance: number;
+};
+
+export type CashTransaction = {
+  id: string;
+  userId: string;
+  date: string;
+  type: 'Ingreso' | 'Egreso' | 'Refuerzo' | 'Transferencia';
+  amount: number;
+  currency: 'ARS' | 'USD';
+  description: string;
+  relatedExpenseId?: string;
+  relatedProjectId?: string;
+  relatedProjectName?: string; // Denormalized
+  operatorId?: string; // User who performed the action, if not the account owner (e.g. admin)
+  operatorName?: string; // Denormalized
+};
+
+    

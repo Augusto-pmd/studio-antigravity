@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AssetDialog } from "@/components/activos/asset-dialog";
 import { AssetsTable } from "@/components/activos/assets-table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Landmark, Archive, BotMessageSquare } from "lucide-react";
+import { PlusCircle, BookText, Archive, BotMessageSquare } from "lucide-react";
 import { BankStatementAnalyzer } from '@/components/contabilidad/bank-statement-analyzer';
 
 
@@ -19,7 +19,7 @@ export default function ContabilidadPage() {
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">
-            <Landmark className="mr-2 h-4 w-4" />
+            <BookText className="mr-2 h-4 w-4" />
             Dashboard Contable
           </TabsTrigger>
           <TabsTrigger value="activos">
@@ -62,3 +62,5 @@ export default function ContabilidadPage() {
     </div>
   );
 }
+
+    

@@ -220,10 +220,9 @@
       ]
     },
     "CashAccount": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "CashAccount",
       "type": "object",
-      "description": "Represents a user's cash account for managing funds.",
+      "description": "Represents a user's cash account for managing funds. A user typically has one for ARS and one for USD.",
       "properties": {
         "id": {
           "type": "string",
@@ -231,27 +230,91 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:1 CashAccount)"
+          "description": "Reference to User. (Relationship: User 1:N CashAccount)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the account (e.g., 'Caja Principal ARS')."
         },
         "currency": {
           "type": "string",
-          "description": "The currency of the cash account (e.g., ARS, USD)."
+          "enum": [
+            "ARS",
+            "USD"
+          ],
+          "description": "The currency of the cash account."
         },
         "balance": {
           "type": "number",
           "description": "The current balance of the cash account."
-        },
-        "lastClosureDate": {
-          "type": "string",
-          "description": "The date of the last weekly closure.",
-          "format": "date-time"
         }
       },
       "required": [
         "id",
         "userId",
+        "name",
         "currency",
         "balance"
+      ]
+    },
+    "CashTransaction": {
+      "title": "Cash Transaction",
+      "type": "object",
+      "description": "Represents a single transaction (income, expense, or transfer) within a user's cash account.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Ingreso",
+            "Egreso",
+            "Refuerzo",
+            "Transferencia"
+          ]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "relatedExpenseId": {
+          "type": "string"
+        },
+        "relatedProjectId": {
+          "type": "string"
+        },
+        "operatorId": {
+          "type": "string"
+        },
+        "operatorName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "type",
+        "amount",
+        "currency",
+        "description"
       ]
     },
     "Supplier": {
@@ -530,20 +593,55 @@
       "type": "object",
       "description": "Represents a task or request assigned by one user to another.",
       "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "requesterId": { "type": "string" },
-        "requesterName": { "type": "string" },
-        "assigneeId": { "type": "string" },
-        "assigneeName": { "type": "string" },
-        "status": { "type": "string", "enum": ["Pendiente", "Finalizado"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "completedAt": { "type": "string", "format": "date-time" },
-        "projectId": { "type": "string" }
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "requesterId": {
+          "type": "string"
+        },
+        "requesterName": {
+          "type": "string"
+        },
+        "assigneeId": {
+          "type": "string"
+        },
+        "assigneeName": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Finalizado"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "projectId": {
+          "type": "string"
+        }
       },
       "required": [
-        "id", "title", "requesterId", "requesterName", "assigneeId", "assigneeName", "status", "createdAt"
+        "id",
+        "title",
+        "requesterId",
+        "requesterName",
+        "assigneeId",
+        "assigneeName",
+        "status",
+        "createdAt"
       ]
     },
     "FundRequest": {
@@ -551,18 +649,66 @@
       "type": "object",
       "description": "Represents a request for funds for the weekly payment sheet.",
       "properties": {
-        "id": { "type": "string" },
-        "requesterId": { "type": "string" },
-        "requesterName": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "category": { "type": "string", "enum": ["Logística y PMD", "Materiales", "Viáticos", "Caja Chica", "Otros"] },
-        "projectId": { "type": "string" },
-        "amount": { "type": "number" },
-        "currency": { "type": "string", "enum": ["ARS", "USD"] },
-        "exchangeRate": { "type": "number" },
-        "status": { "type": "string", "enum": ["Pendiente", "Aprobado", "Pagado", "Rechazado"] }
+        "id": {
+          "type": "string"
+        },
+        "requesterId": {
+          "type": "string"
+        },
+        "requesterName": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Logística y PMD",
+            "Materiales",
+            "Viáticos",
+            "Caja Chica",
+            "Otros"
+          ]
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "exchangeRate": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Aprobado",
+            "Pagado",
+            "Rechazado"
+          ]
+        }
       },
-      "required": [ "id", "requesterId", "requesterName", "date", "category", "amount", "currency", "exchangeRate", "status" ]
+      "required": [
+        "id",
+        "requesterId",
+        "requesterName",
+        "date",
+        "category",
+        "amount",
+        "currency",
+        "exchangeRate",
+        "status"
+      ]
     },
     "PayrollWeek": {
       "title": "Payroll Week",
@@ -668,6 +814,50 @@
         }
       },
       {
+        "path": "/users/{userId}/cashAccounts/{cashAccountId}",
+        "definition": {
+          "entityName": "CashAccount",
+          "schema": {
+            "$ref": "#/backend/entities/CashAccount"
+          },
+          "description": "Stores a user's cash account details. Path-based ownership ensures only the user can access their own cash account.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "cashAccountId",
+              "description": "The unique identifier for the cash account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cashAccounts/{cashAccountId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "CashTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/CashTransaction"
+          },
+          "description": "Stores transaction history for a specific cash account. Inherits ownership from the parent user document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "cashAccountId",
+              "description": "The unique identifier for the cash account."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the transaction."
+            }
+          ]
+        }
+      },
+      {
         "path": "/projects/{projectId}",
         "definition": {
           "entityName": "Project",
@@ -699,26 +889,6 @@
             {
               "name": "expenseId",
               "description": "The unique identifier for the expense."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/cashAccount/{cashAccountId}",
-        "definition": {
-          "entityName": "CashAccount",
-          "schema": {
-            "$ref": "#/backend/entities/CashAccount"
-          },
-          "description": "Stores a user's cash account details. Path-based ownership ensures only the user can access their own cash account.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "cashAccountId",
-              "description": "The unique identifier for the cash account."
             }
           ]
         }
@@ -895,3 +1065,4 @@
     "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, contracts) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
   }
 }
+    

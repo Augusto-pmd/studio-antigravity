@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useUser } from '@/firebase/provider';
 import { GoogleAuthProvider, signInWithPopup, User, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +17,7 @@ import {
 import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, CashAccount } from '@/lib/types';
 
 
 export default function LoginPage() {
@@ -69,6 +69,7 @@ export default function LoginPage() {
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
+        // Create User Profile
         const newUserProfile: UserProfile = {
           id: loggedInUser.uid,
           email: loggedInUser.email || '',
@@ -77,9 +78,21 @@ export default function LoginPage() {
           photoURL: loggedInUser.photoURL || '',
         };
         await setDoc(userRef, newUserProfile);
+
+        // Create default cash accounts
+        const cashAccountsCollection = collection(firestore, 'users', loggedInUser.uid, 'cashAccounts');
+    
+        const arsAccountRef = doc(cashAccountsCollection);
+        const arsAccountData: CashAccount = { id: arsAccountRef.id, userId: loggedInUser.uid, name: "Caja Principal ARS", currency: "ARS", balance: 0 };
+        await setDoc(arsAccountRef, arsAccountData);
+
+        const usdAccountRef = doc(cashAccountsCollection);
+        const usdAccountData: CashAccount = { id: usdAccountRef.id, userId: loggedInUser.uid, name: "Caja Principal USD", currency: "USD", balance: 0 };
+        await setDoc(usdAccountRef, usdAccountData);
+
         toast({
           title: '¡Bienvenido!',
-          description: 'Se ha creado tu perfil de usuario.',
+          description: 'Se ha creado tu perfil de usuario y tus cajas iniciales.',
         });
       }
       // La redirección ahora es manejada por el useEffect
@@ -153,3 +166,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
