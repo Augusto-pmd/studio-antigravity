@@ -12,6 +12,7 @@ export type Project = {
   budget: number;
   balance: number;
   progress: number;
+  description?: string;
 };
 
 export type Supplier = {

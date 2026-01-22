@@ -10,18 +10,29 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { Button } from "../ui/button";
 import { AddProjectDialog } from "./add-project-dialog";
+import { useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore } from "@/firebase/provider";
+import { collection } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(amount);
 };
 
 export function ProjectsTable() {
+  const firestore = useFirestore();
+
+  const projectsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'projects') : null),
+    [firestore]
+  );
+  const { data: projects, isLoading } = useCollection<Project>(projectsQuery);
+
   return (
     <div className="rounded-lg border">
       <Table>
@@ -36,7 +47,34 @@ export function ProjectsTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {projects.map((project: Project) => (
+          {isLoading && (
+            <>
+              <TableRow>
+                <TableCell><div className="space-y-1"><Skeleton className="h-5 w-4/5" /><Skeleton className="h-4 w-2/5" /></div></TableCell>
+                <TableCell><Skeleton className="h-5 w-3/5" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                <TableCell><div className="flex justify-end"><Skeleton className="h-5 w-32" /></div></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
+              </TableRow>
+               <TableRow>
+                <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/5" /><Skeleton className="h-4 w-1/5" /></div></TableCell>
+                <TableCell><Skeleton className="h-5 w-4/5" /></TableCell>
+                <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                <TableCell><div className="flex justify-end"><Skeleton className="h-5 w-28" /></div></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
+              </TableRow>
+            </>
+          )}
+          {!isLoading && projects?.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="h-24 text-center">
+                No hay obras registradas. Comience creando una nueva.
+              </TableCell>
+            </TableRow>
+          )}
+          {projects?.map((project: Project) => (
             <TableRow key={project.id}>
               <TableCell>
                 <div className="font-medium">{project.name}</div>
