@@ -25,4 +25,7 @@ export type Employee = {
   projectId: string;
   status: 'Activo' | 'Inactivo';
   paymentType: 'Diario' | 'Semanal';
+  category: string;
+  dailyWage: number;
+  artExpiryDate?: string;
 };
