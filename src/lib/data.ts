@@ -10,12 +10,13 @@ export const projects: Project[] = [
 ];
 
 export const suppliers: Supplier[] = [
-  { id: 'SUP-01', name: 'Materiales Construcción S.A.' },
-  { id: 'SUP-02', name: 'Ferretería El Tornillo Feliz' },
-  { id: 'SUP-03', name: 'Proveedor Vencido ART' },
-  { id: 'SUP-04', name: 'Servicios Eléctricos Lux' },
-  { id: 'SUP-05', name: 'Hormigones del Sur' },
+  { id: 'SUP-01', name: 'Materiales Construcción S.A.', cuit: '30-12345678-9', email: 'ventas@matco.com', phone: '11-4555-1234', contactPerson: 'Ricardo Mollo', address: 'Av. Libertador 5500, CABA', status: 'Aprobado', type: 'Materiales', fiscalCondition: 'Responsable Inscripto', artExpiryDate: '2025-05-20', insuranceExpiryDate: '2025-05-20' },
+  { id: 'SUP-02', name: 'Ferretería El Tornillo Feliz', cuit: '30-87654321-0', email: 'info@tornillofeliz.com.ar', phone: '11-4888-5678', contactPerson: 'Ana Frank', address: 'Calle 13 456, La Plata', status: 'Aprobado', type: 'Materiales', fiscalCondition: 'Monotributista' },
+  { id: 'SUP-03', name: 'Servicios Eléctricos Lux', cuit: '20-23456789-3', email: 'contacto@luxservicios.com', phone: '11-4222-9876', contactPerson: 'Carlos Corriente', address: 'Av. Rivadavia 20000, CABA', status: 'Aprobado', type: 'Servicios', fiscalCondition: 'Responsable Inscripto', artExpiryDate: '2024-07-01' },
+  { id: 'SUP-04', name: 'Hormigones del Sur', cuit: '30-98765432-1', email: 'hds@hds.com.ar', phone: '11-4111-2345', contactPerson: 'Pedro Pica', address: 'Ruta 2 km 45, Hudson', status: 'Pendiente', type: 'Materiales', fiscalCondition: 'Responsable Inscripto' },
+  { id: 'SUP-05', name: 'Contratista General Omar', cuit: '20-11223344-5', contactPerson: 'Omar S.', status: 'Rechazado', type: 'Servicios', fiscalCondition: 'Monotributista', notes: 'Rechazado por falta de documentación en regla.' },
 ];
+
 
 export const expenseCategories: ExpenseCategory[] = [
   { id: 'CAT-01', name: 'Materiales' },
@@ -57,5 +58,3 @@ export const userProfiles: UserProfile[] = [
     { id: 'uid-ana', fullName: 'Ana Martinez', email: 'ana.martinez@example.com', role: 'Dirección' },
     { id: 'uid-pedro', fullName: 'Pedro Ramirez', email: 'pedro.ramirez@example.com', role: 'Operador' },
 ];
-
-    

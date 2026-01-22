@@ -17,6 +17,17 @@ export type Project = {
 export type Supplier = {
   id: string;
   name: string;
+  cuit: string;
+  email?: string;
+  phone?: string;
+  contactPerson?: string;
+  address?: string;
+  status: 'Aprobado' | 'Pendiente' | 'Rechazado';
+  type: 'Servicios' | 'Materiales' | 'Mixto';
+  fiscalCondition?: string;
+  notes?: string;
+  insuranceExpiryDate?: string;
+  artExpiryDate?: string;
 };
 
 export type ExpenseCategory = {
