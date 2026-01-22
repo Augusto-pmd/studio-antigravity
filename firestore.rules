@@ -4,23 +4,16 @@
  * The primary goal is strong authorization during prototyping, with flexibility in data schemas.
  *
  * Data Structure:
- * - /users/{userId}/*: All data directly related to a specific user (profile, cash accounts) is nested under their unique user ID. This provides a clear, path-based ownership structure.
- * - /projects/{projectId}/*: Project-specific data (details, expenses, contracts) is organized under a unique project ID. Access to this data tree is currently restricted pending schema updates.
- * - /suppliers, /categories: Top-level collections for master data, intended to be read by authenticated users but not modified by them.
+ * - /user-profiles/{userProfileId}/*: All data directly related to a specific application user (profile, cash accounts) is nested under their unique user ID.
+ * - /projects/{projectId}/*: Project-specific data (details, expenses, contracts) is organized under a unique project ID.
+ * - /employees, /suppliers, /categories: Top-level collections for master data.
+ * - /attendances, /cash-advances: Top-level collections for transactional data.
  *
  * Key Security Decisions:
- * - User Data Segregation: All documents and subcollections under /users/{userId} are strictly private and can only be accessed by the authenticated owner. Listing all users is explicitly disallowed to protect privacy.
- * - Project Data Lockdown: The `Project` entity and its subcollections currently lack an `ownerId` or `members` field. To maintain security, all write operations (`create`, `update`, `delete`) on projects and their sub-data are disabled. Reads are permitted for any signed-in user. This is a temporary, secure default until the application schema is updated to include clear ownership or membership data for projects.
- * - Master Data is Read-Only: Collections like `suppliers` and `categories` are treated as read-only for application users. This prevents unauthorized modification of shared application data. An admin role or cloud function would be required for writes.
+ * - User Data Segregation: All documents and subcollections under /user-profiles/{userProfileId} are strictly private and can only be accessed by the authenticated owner.
+ * - Project Data Lockdown: The `Project` entity and its subcollections currently lack an `ownerId` or `members` field. To maintain security, all write operations on projects and their sub-data are disabled. Reads are permitted for any signed-in user.
+ * - Master & Transactional Data is Read-Only: Collections like `suppliers`, `categories`, `employees`, `attendances`, and `cash-advances` are treated as read-only for application users. This prevents unauthorized modification of shared application data until role-based security is implemented.
  * - Default Deny: Any access not explicitly granted is denied.
- *
- * Denormalization for Authorization:
- * These rules are architected with the principle of denormalization in mind. Authorization checks rely on data present directly in the document being accessed or in its path.
- * - Path-based ownership (`/users/{userId}`) is heavily used for fast, secure checks without needing extra database reads.
- * - The rules for project data are designed to eventually check for a denormalized `members` map or an `ownerId` field on the project document itself. This avoids slow and costly `get()` calls in subcollection rules.
- *
- * Structural Segregation:
- * The separation between private user data (`/users`) and shared project data (`/projects`) is a key structural decision. This simplifies security rules and makes it impossible for queries to accidentally leak data from one context to another.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -38,11 +31,11 @@ service cloud.firestore {
     }
 
     /**
-     * Returns true if the authenticated user's UID matches the provided userId.
-     * This is the primary function for enforcing document ownership.
+     * Returns true if the authenticated user's UID matches the provided userProfileId.
+     * This is the primary function for enforcing document ownership for app users.
      */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function isOwner(userProfileId) {
+      return isSignedIn() && request.auth.uid == userProfileId;
     }
 
     /**
@@ -54,18 +47,18 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
-    // User Data Rules
+    // Application User Data Rules
     // ----------------------------------------------------------------------
 
-    match /users/{userId} {
-      allow get: if isOwner(userId);
+    match /user-profiles/{userProfileId} {
+      allow get: if isOwner(userProfileId);
       allow list: if false; // Prevent listing all users for privacy
-      allow create: if isOwner(userId);
-      allow update, delete: if isOwner(userId);
+      allow create: if isOwner(userProfileId);
+      allow update, delete: if isOwner(userProfileId);
 
       // --- Subcollections ---
       match /cash/{cashId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userProfileId);
       }
     }
 
@@ -94,7 +87,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
-    // Master Data Rules
+    // Master & Transactional Data Rules
     // ----------------------------------------------------------------------
 
     match /suppliers/{supplierId} {
@@ -106,6 +99,24 @@ service cloud.firestore {
     match /categories/{categoryId} {
       allow get, list: if isSignedIn();
        // Master data should not be modifiable by clients.
+      allow write: if false;
+    }
+
+    match /employees/{employeeId} {
+      allow get, list: if isSignedIn();
+      // CRITICAL: Master data should not be modifiable by clients without role checks.
+      allow write: if false;
+    }
+
+    match /attendances/{attendanceId} {
+      allow get, list: if isSignedIn();
+      // CRITICAL: Transactional data should only be written by authorized roles.
+      allow write: if false;
+    }
+
+    match /cash-advances/{cashAdvanceId} {
+      allow get, list: if isSignedIn();
+      // CRITICAL: Transactional data should only be written by authorized roles.
       allow write: if false;
     }
   }

@@ -1,13 +1,13 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
+    "UserProfile": {
+      "title": "User Profile",
       "type": "object",
-      "description": "Represents a user in the PMD Manager system.",
+      "description": "Represents a user of the PMD Manager application.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the User entity."
+          "description": "Unique identifier for the UserProfile entity, matches Firebase Auth UID."
         },
         "role": {
           "type": "string",
@@ -24,6 +24,107 @@
         }
       },
       "required": ["id", "role", "email", "fullName"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "type": "object",
+      "description": "Represents a worker in a project. Can be a direct employee or a contractor.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Employee."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the employee."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the employee.",
+          "enum": ["Activo", "Inactivo"]
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The ID of the project the employee is currently assigned to."
+        },
+        "paymentType": {
+          "type": "string",
+          "description": "The payment frequency for the employee.",
+          "enum": ["Diario", "Semanal"]
+        }
+      },
+      "required": ["id", "name", "status", "projectId", "paymentType"]
+    },
+    "AttendanceRecord": {
+      "title": "Attendance Record",
+      "type": "object",
+      "description": "A single daily attendance record for an employee.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the attendance record."
+        },
+        "employeeId": {
+          "type": "string",
+          "description": "Reference to the Employee."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the Project."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the attendance record.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The attendance status.",
+          "enum": ["presente", "ausente"]
+        },
+        "lateHours": {
+          "type": "number",
+          "description": "Number of hours the employee was late."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes or observations."
+        }
+      },
+      "required": ["id", "employeeId", "projectId", "date", "status"]
+    },
+    "CashAdvance": {
+      "title": "Cash Advance",
+      "type": "object",
+      "description": "A cash advance given to an employee.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the cash advance."
+        },
+        "employeeId": {
+          "type": "string",
+          "description": "Reference to the Employee receiving the advance."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the Project related to the advance."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the advance was given.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the cash advance."
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason for the advance."
+        }
+      },
+      "required": ["id", "employeeId", "projectId", "date", "amount"]
     },
     "Project": {
       "title": "Project",
@@ -64,9 +165,9 @@
           "type": "string",
           "description": "Unique identifier for the UserCash entity."
         },
-        "userId": {
+        "userProfileId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:1 UserCash)"
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 UserCash)"
         },
         "currency": {
           "type": "string",
@@ -82,7 +183,7 @@
           "format": "date-time"
         }
       },
-      "required": ["id", "userId", "currency", "balance", "lastClosureDate"]
+      "required": ["id", "userProfileId", "currency", "balance", "lastClosureDate"]
     },
     "Expense": {
       "title": "Expense",
@@ -125,7 +226,7 @@
     "Supplier": {
       "title": "Supplier",
       "type": "object",
-      "description": "Represents a supplier or vendor.",
+      "description": "Represents a supplier or vendor (contratista).",
       "properties": {
         "id": {
           "type": "string",
@@ -197,15 +298,15 @@
     "providers": ["password", "anonymous"]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/entities/User" },
+    "/user-profiles/{userProfileId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Stores user profile data. Access is restricted to the user themselves."
     },
     "/projects/{projectId}": {
       "schema": { "$ref": "#/entities/Project" },
       "description": "Stores project details. Writable only by authorized users (e.g., admins or project managers)."
     },
-    "/users/{userId}/cash/{cashId}": {
+    "/user-profiles/{userProfileId}/cash/{cashId}": {
       "schema": { "$ref": "#/entities/UserCash" },
       "description": "Stores a user's cash balance. Only accessible by the user."
     },
@@ -215,7 +316,7 @@
     },
     "/suppliers/{supplierId}": {
       "schema": { "$ref": "#/entities/Supplier" },
-      "description": "Master list of suppliers."
+      "description": "Master list of suppliers/contractors."
     },
     "/categories/{categoryId}": {
       "schema": { "$ref": "#/entities/Category" },
@@ -224,6 +325,18 @@
     "/projects/{projectId}/contracts/{contractId}": {
       "schema": { "$ref": "#/entities/Contract" },
       "description": "Stores contracts related to a specific project."
+    },
+    "/employees/{employeeId}": {
+      "schema": { "$ref": "#/entities/Employee" },
+      "description": "Master list of all employees and individual contractors."
+    },
+    "/attendances/{attendanceId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Stores individual daily attendance records."
+    },
+    "/cash-advances/{cashAdvanceId}": {
+      "schema": { "$ref": "#/entities/CashAdvance" },
+      "description": "Stores individual cash advance records."
     }
   }
 }
