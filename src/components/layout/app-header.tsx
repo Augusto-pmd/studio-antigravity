@@ -15,14 +15,13 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/user-context";
 import type { Role } from "@/lib/types";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronsUpDown, Moon, Sun } from "lucide-react";
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
 
 export function AppHeader() {
-  const { role, setRole } = useUser();
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
+  const { user, role, setRole } = useUser();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
@@ -82,16 +81,10 @@ export function AppHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:bg-muted">
-              {userAvatar && (
-                 <Image
-                    src={userAvatar.imageUrl}
-                    alt={userAvatar.description}
-                    data-ai-hint={userAvatar.imageHint}
-                    width={28}
-                    height={28}
-                    className="rounded-full"
-                 />
-              )}
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'Avatar'} />
+                <AvatarFallback>{user?.displayName?.charAt(0)}</AvatarFallback>
+              </Avatar>
               <span className="hidden md:inline">{role}</span>
               <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </Button>

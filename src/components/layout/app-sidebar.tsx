@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
@@ -19,12 +19,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { useUser } from "@/context/user-context";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Building2,
   LayoutDashboard,
@@ -42,6 +43,8 @@ import {
   HardHat,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getAuth, signOut } from 'firebase/auth';
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -68,8 +71,14 @@ const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { role, setRole } = useUser();
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
+  const router = useRouter();
+  const { user, role, setRole } = useUser();
+  
+  const handleLogout = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <Sidebar variant="floating" collapsible="icon">
@@ -105,18 +114,12 @@ export function AppSidebar() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-auto w-full justify-start p-2 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center">
                     <div className="flex items-center gap-3">
-                         {userAvatar && (
-                            <Image
-                                src={userAvatar.imageUrl}
-                                alt={userAvatar.description}
-                                data-ai-hint={userAvatar.imageHint}
-                                width={32}
-                                height={32}
-                                className="rounded-full"
-                            />
-                        )}
+                         <Avatar className="h-8 w-8">
+                            <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'Avatar'} />
+                            <AvatarFallback>{user?.displayName?.charAt(0)}</AvatarFallback>
+                        </Avatar>
                         <div className="text-left group-data-[collapsible=icon]:hidden">
-                            <p className="font-semibold text-sm text-sidebar-foreground">Usuario</p>
+                            <p className="font-semibold text-sm text-sidebar-foreground truncate">{user?.displayName}</p>
                             <p className="text-xs text-sidebar-foreground/70">{role}</p>
                         </div>
                     </div>
@@ -125,14 +128,15 @@ export function AppSidebar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
                 <DropdownMenuLabel>Cambiar Rol (Simulación)</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {roles.map((r) => (
-                  <DropdownMenuItem key={r} onSelect={() => setRole(r as Role)}>
-                    {r}
-                  </DropdownMenuItem>
-                ))}
+                 <DropdownMenuRadioGroup value={role} onValueChange={(value) => setRole(value as Role)}>
+                    {roles.map((r) => (
+                      <DropdownMenuRadioItem key={r} value={r}>
+                        {r}
+                      </DropdownMenuRadioItem>
+                    ))}
+                 </DropdownMenuRadioGroup>
                  <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4"/>
                     Cerrar Sesión
                 </DropdownMenuItem>

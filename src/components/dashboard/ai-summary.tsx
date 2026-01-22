@@ -19,11 +19,11 @@ export function AiSummary() {
   useEffect(() => {
     const fetchSummary = async () => {
       setIsLoading(true);
-      const result = await generateDashboardSummaryAction();
-      if (result.data) {
-        setSummary(result.data.summary);
-      } else {
-        console.error(result.error);
+      try {
+        const result = await generateDashboardSummaryAction();
+        setSummary(result.summary);
+      } catch (error) {
+        console.error("Error fetching AI summary:", error);
         setSummary('No se pudo generar el resumen en este momento.');
       }
       setIsLoading(false);
