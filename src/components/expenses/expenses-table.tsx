@@ -88,7 +88,12 @@ export function ExpensesTable() {
               {expenses?.map((expense: Expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>{formatDate(expense.date)}</TableCell>
-                  <TableCell className="font-medium">{getProjectName(expense.projectId)}</TableCell>
+                  <TableCell className="font-medium">
+                    {getProjectName(expense.projectId)}
+                    <div className="text-sm text-muted-foreground md:hidden">
+                        {getSupplierName(expense.supplierId)}
+                    </div>
+                  </TableCell>
                   <TableCell className="hidden md:table-cell">{getSupplierName(expense.supplierId)}</TableCell>
                   <TableCell className="hidden md:table-cell">{getCategoryName(expense.categoryId)}</TableCell>
                   <TableCell>

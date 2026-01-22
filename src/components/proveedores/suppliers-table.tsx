@@ -65,6 +65,9 @@ export function SuppliersTable() {
                   <TableCell>
                     <div className="font-medium">{supplier.name}</div>
                     <div className="text-sm text-muted-foreground">{supplier.cuit}</div>
+                     <div className="text-sm text-muted-foreground md:hidden mt-1">
+                        {supplier.contactPerson || supplier.email}
+                    </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                      <div className="font-medium">{supplier.contactPerson}</div>
