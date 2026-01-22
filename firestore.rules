@@ -210,14 +210,19 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      // Admins can list all tasks. Other users must query by requesterId or assigneeId.
-      allow list: if isAdmin();
-      // A user can get a task if they are the requester, the assignee, or an admin.
-      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || isAdmin());
+      // Allow users to read tasks if they are the requester or assignee. Admins can read any task.
+      // This rule secures queries by ensuring users can only list tasks they are involved in via `where` clauses.
+      allow read: if isSignedIn() && 
+                    (isAdmin() || 
+                     resource.data.requesterId == request.auth.uid || 
+                     resource.data.assigneeId == request.auth.uid);
+      
       // A user can create a task, and they must be the requester.
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
+      
       // The requester or assignee can update a task (e.g., to change status). Admins can also update.
-      allow update: if isSignedIn() && (resource.data.assigneeId == request.auth.uid || resource.data.requesterId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (isAdmin() || resource.data.assigneeId == request.auth.uid || resource.data.requesterId == request.auth.uid);
+
        // Only admins can delete tasks.
       allow delete: if isAdmin();
     }

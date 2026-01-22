@@ -37,9 +37,8 @@ export async function generateDashboardSummaryAction(): Promise<DashboardSummary
   const activeProjects = projectsSnap.docs.map(doc => doc.data() as Project);
   
   // Fetch pending tasks
-  const tasksQuery = query(collection(firestore, 'taskRequests'), where('status', '==', 'Pendiente'), limit(5));
-  const tasksSnap = await getDocs(tasksQuery);
-  const pendingTasks = tasksSnap.docs.map(doc => doc.data() as TaskRequest);
+  // This query is removed because server-side actions are not authenticated and cannot satisfy security rules.
+  const pendingTasks: TaskRequest[] = [];
   
   // Using hardcoded stats from the stats-card component for now
   // We can derive obrasEnCurso from the fetched data.
@@ -51,7 +50,7 @@ export async function generateDashboardSummaryAction(): Promise<DashboardSummary
 
   const result = await generateDashboardSummary({ 
       activeProjects: activeProjects.map(p => ({ name: p.name, status: p.status, progress: p.progress, supervisor: p.supervisor })), 
-      pendingTasks: pendingTasks.map(t => ({ title: t.title, assigneeName: t.assigneeName})), 
+      pendingTasks: [], 
       stats 
     });
   return result;
