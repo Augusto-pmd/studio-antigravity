@@ -73,6 +73,7 @@ service cloud.firestore {
      * This performs a single `get` to the user's own profile document.
      * Administrative roles are defined as 'Dirección' or 'Administración'.
      * The main user `info@pmdarquitectura.com` is also granted admin rights.
+     * IMPORTANT: This function uses get() and is NOT safe for list queries.
      */
     function isAdmin() {
       return isSignedIn() && 
@@ -221,19 +222,25 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      // READ permissions
+      // READ permissions:
+      // A user can get a specific task if they are admin OR they are a participant.
       allow get: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
 
-      // Admins can list all tasks.
-      allow list: if isAdmin();
-      // Users can list tasks filtered by their own ID.
-      // These are split into separate rules to avoid ambiguity for the rules engine.
+      // LIST permissions:
+      // IMPORTANT: `list` rules cannot contain `get` or `exists` calls. This is why `isAdmin()` cannot be used here.
+      // An admin can list all tasks. The app does not do this on the client, but it is a safe rule.
+      allow list: if request.auth.token.email == 'info@pmdarquitectura.com';
+      // A user can list tasks they requested.
       allow list: if isSignedIn() && request.query.where.requesterId == request.auth.uid;
+      // A user can list tasks assigned to them.
       allow list: if isSignedIn() && request.query.where.assigneeId == request.auth.uid;
 
-      // WRITE permissions
+      // WRITE permissions:
+      // A user can create a task if they are the requester.
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
+      // A user can update a task if they are an admin or a participant.
       allow update: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
+      // Only admins can delete tasks.
       allow delete: if isAdmin();
     }
     
@@ -245,7 +252,6 @@ service cloud.firestore {
      * @description Enables collection group queries on 'expenses'. This is necessary
      * for administrative views that aggregate all expenses across all projects.
      * Only admins are allowed to perform this broad query.
-     * @path /{path=**}/expenses/{expenseId}
      */
     match /{path=**}/expenses/{expenseId} {
       allow get, list: if isAdmin();
