@@ -20,13 +20,20 @@ import {
   Wallet,
   Users,
   LogOut,
+  Receipt,
+  FileText,
+  Landmark,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/obras", label: "Obras", icon: Building2 },
-  { href: "/caja", label: "Caja", icon: Wallet, role: ["Operador", "Administración", "Dirección"]},
+  { href: "/cajas", label: "Cajas", icon: Wallet, role: ["Operador", "Administración", "Dirección"] },
+  { href: "/gastos", label: "Gastos", icon: Receipt },
+  { href: "/proveedores", label: "Proveedores", icon: Users },
+  { href: "/contratos", label: "Contratos", icon: FileText },
+  { href: "/contabilidad", label: "Contabilidad", icon: Landmark },
 ];
 
 export function AppSidebar() {

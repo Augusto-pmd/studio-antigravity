@@ -25,17 +25,17 @@ export function AppHeader() {
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-[#004A8E] px-4 md:px-6">
-      <SidebarTrigger className="text-primary-foreground hover:text-white" />
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-secondary px-4 md:px-6">
+      <SidebarTrigger className="text-secondary-foreground hover:text-white/90" />
       <div className="flex-1">
-        <h1 className="font-headline text-xl text-primary-foreground">
+        <h1 className="font-headline text-xl text-secondary-foreground">
           PMD Manager
         </h1>
       </div>
       <div className="flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 text-primary-foreground hover:bg-white/10 hover:text-white">
+            <Button variant="ghost" className="flex items-center gap-2 text-secondary-foreground hover:bg-black/10 hover:text-secondary-foreground/90">
               {userAvatar && (
                  <Image
                     src={userAvatar.imageUrl}
