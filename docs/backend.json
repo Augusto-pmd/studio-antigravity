@@ -394,6 +394,18 @@
       },
       "required": ["id", "name", "cuit", "status"]
     },
+    "ContractorEmployee": {
+      "title": "Contractor Employee",
+      "description": "Represents an employee of a contractor, used for documentation and safety compliance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the employee record." },
+        "name": { "type": "string", "description": "Full name of the contractor's employee." },
+        "contractorId": { "type": "string", "description": "Reference to the parent Contractor." },
+        "artExpiryDate": { "type": "string", "description": "The expiration date of the employee's ART (Aseguradora de Riesgos del Trabajo).", "format": "date-time" }
+      },
+      "required": ["id", "name", "contractorId"]
+    },
     "Category": {
       "title": "Category",
       "type": "object",
@@ -602,6 +614,10 @@
      "/contractors/{contractorId}": {
       "schema": { "$ref": "#/entities/Contractor" },
       "description": "Master list of all contractors, with documentation control."
+    },
+    "/contractors/{contractorId}/employees/{employeeId}": {
+      "schema": { "$ref": "#/entities/ContractorEmployee" },
+      "description": "Stores the list of employees for a specific contractor, for compliance tracking."
     },
     "/categories/{categoryId}": {
       "schema": { "$ref": "#/entities/Category" },

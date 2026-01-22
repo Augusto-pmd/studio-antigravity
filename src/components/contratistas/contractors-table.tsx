@@ -13,8 +13,11 @@ import { contractors } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Contractor } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore } from 'date-fns';
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, Pencil, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../ui/button";
+import { ContractorDialog } from "./contractor-dialog";
+import { PersonnelDialog } from "./personnel-dialog";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -50,6 +53,7 @@ export function ContractorsTable() {
                 <TableHead>Contacto</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Vencimiento Docs.</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -99,6 +103,22 @@ export function ContractorsTable() {
                           </Tooltip>
                       )}
                       <span>{docStatus ? (artStatus ? formatDate(contractor.artExpiryDate) : formatDate(contractor.insuranceExpiryDate)) : 'Al día'}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <PersonnelDialog contractor={contractor}>
+                        <Button variant="ghost" size="icon">
+                          <Users className="h-4 w-4" />
+                          <span className="sr-only">Ver Personal</span>
+                        </Button>
+                      </PersonnelDialog>
+                      <ContractorDialog contractor={contractor}>
+                        <Button variant="ghost" size="icon">
+                          <Pencil className="h-4 w-4" />
+                           <span className="sr-only">Editar</span>
+                        </Button>
+                      </ContractorDialog>
                     </div>
                   </TableCell>
                 </TableRow>

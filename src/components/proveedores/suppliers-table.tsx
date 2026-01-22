@@ -9,9 +9,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { suppliers } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Supplier } from "@/lib/types";
+import { Pencil } from "lucide-react";
+import { SupplierDialog } from "./supplier-dialog";
 
 export function SuppliersTable() {
 
@@ -24,6 +27,7 @@ export function SuppliersTable() {
                 <TableHead>Contacto</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Tipo</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -53,6 +57,14 @@ export function SuppliersTable() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{supplier.type}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <SupplierDialog supplier={supplier}>
+                        <Button variant="ghost" size="icon">
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                        </Button>
+                    </SupplierDialog>
                   </TableCell>
                 </TableRow>
               )})}

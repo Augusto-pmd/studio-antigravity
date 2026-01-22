@@ -9,12 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { employees } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore } from 'date-fns';
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { EmployeeDialog } from "./employee-dialog";
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
@@ -56,6 +58,7 @@ export function EmployeesTable() {
                 <TableHead>Salario Diario</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Vencimiento ART</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -100,6 +103,14 @@ export function EmployeesTable() {
                       )}
                     </div>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <EmployeeDialog employee={employee}>
+                        <Button variant="ghost" size="icon">
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                        </Button>
+                    </EmployeeDialog>
+                  </TableCell>
                 </TableRow>
               )})}
             </TableBody>
@@ -108,5 +119,3 @@ export function EmployeesTable() {
     </TooltipProvider>
   );
 }
-
-    

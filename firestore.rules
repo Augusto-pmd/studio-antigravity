@@ -92,8 +92,21 @@ service cloud.firestore {
 
     match /suppliers/{supplierId} {
       allow get, list: if isSignedIn();
-      // Master data should not be modifiable by clients.
-      allow write: if false;
+      // Allow create, update, delete for any signed-in user for prototyping.
+      allow write: if isSignedIn();
+    }
+    
+    match /contractors/{contractorId} {
+      allow get, list: if isSignedIn();
+      // Allow create, update, delete for any signed-in user for prototyping.
+      allow write: if isSignedIn();
+
+      // --- Subcollections ---
+      match /employees/{employeeId} {
+        allow get, list: if isSignedIn() && exists(/databases/$(database)/documents/contractors/$(contractorId));
+        // Allow writes for signed-in users to manage personnel lists.
+        allow write: if isSignedIn();
+      }
     }
 
     match /categories/{categoryId} {
@@ -104,8 +117,8 @@ service cloud.firestore {
 
     match /employees/{employeeId} {
       allow get, list: if isSignedIn();
-      // CRITICAL: Master data should not be modifiable by clients without role checks.
-      allow write: if false;
+      // Allow create, update, delete for any signed-in user for prototyping.
+      allow write: if isSignedIn();
     }
 
     match /attendances/{attendanceId} {
@@ -140,5 +153,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

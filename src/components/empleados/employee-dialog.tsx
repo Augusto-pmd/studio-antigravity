@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,27 +21,40 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import type { Employee } from "@/lib/types";
 
-export function AddEmployeeDialog() {
+export function EmployeeDialog({
+  employee,
+  children,
+}: {
+  employee?: Employee;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
-  const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
+  const isEditMode = !!employee;
   const isPending = false; // Mock state
+
+  const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
+
+  useEffect(() => {
+    if(open) {
+      setArtExpiryDate(employee?.artExpiryDate ? parseISO(employee.artExpiryDate) : undefined);
+    }
+  }, [open, employee]);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nuevo Empleado
-        </Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Alta de Nuevo Empleado</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Empleado' : 'Alta de Nuevo Empleado'}</DialogTitle>
           <DialogDescription>
-            Complete el formulario para registrar un nuevo empleado en el sistema.
+            {isEditMode ? 'Modifique la información del empleado.' : 'Complete el formulario para registrar un nuevo empleado en el sistema.'}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -49,26 +62,26 @@ export function AddEmployeeDialog() {
             <Label htmlFor="name" className="text-right">
               Nombre
             </Label>
-            <Input id="name" placeholder="Nombre completo del empleado" className="col-span-3" />
+            <Input id="name" defaultValue={employee?.name} placeholder="Nombre completo del empleado" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="category" className="text-right">
               Rubro
             </Label>
-            <Input id="category" placeholder="Ej. Albañil, Electricista" className="col-span-3" />
+            <Input id="category" defaultValue={employee?.category} placeholder="Ej. Albañil, Electricista" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="dailyWage" className="text-right">
               Salario Diario
             </Label>
-            <Input id="dailyWage" type="number" placeholder="ARS" className="col-span-3" />
+            <Input id="dailyWage" type="number" defaultValue={employee?.dailyWage} placeholder="ARS" className="col-span-3" />
           </div>
           
            <div className="grid grid-cols-4 items-start gap-4 pt-2">
             <Label className="text-right leading-tight pt-2">Forma de Pago</Label>
-             <RadioGroup defaultValue="semanal" className="col-span-3 flex items-center gap-6">
+             <RadioGroup defaultValue={employee?.paymentType || "semanal"} className="col-span-3 flex items-center gap-6">
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="semanal" id="semanal" />
                     <Label htmlFor="semanal">Semanal</Label>
@@ -102,7 +115,6 @@ export function AddEmployeeDialog() {
                   mode="single"
                   selected={artExpiryDate}
                   onSelect={setArtExpiryDate}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -112,12 +124,10 @@ export function AddEmployeeDialog() {
         <DialogFooter>
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar Empleado
+            {isEditMode ? 'Guardar Cambios' : 'Guardar Empleado'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-    

@@ -1,4 +1,4 @@
-import type { Project, Supplier, ExpenseCategory, Employee, UserProfile, Contractor } from '@/lib/types';
+import type { Project, Supplier, ExpenseCategory, Employee, UserProfile, Contractor, ContractorEmployee } from '@/lib/types';
 
 export const projects: Project[] = [
   { id: 'PROJ-001', name: 'Edificio Corporativo Central', client: 'Tech Solutions S.A.', address: 'Av. Corrientes 1234, CABA', currency: 'ARS', projectType: 'Comercial', status: 'En Curso', startDate: '2024-02-01', endDate: '2025-01-31', supervisor: 'Juan Pérez', budget: 2500000, balance: 500000, progress: 75 },
@@ -19,6 +19,14 @@ export const contractors: Contractor[] = [
     { id: 'CON-01', name: 'Servicios Eléctricos Lux', cuit: '20-23456789-3', email: 'contacto@luxservicios.com', phone: '11-4222-9876', contactPerson: 'Carlos Corriente', address: 'Av. Rivadavia 20000, CABA', status: 'Aprobado', fiscalCondition: 'Responsable Inscripto', artExpiryDate: '2024-07-01' },
     { id: 'CON-02', name: 'Contratista General Omar', cuit: '20-11223344-5', contactPerson: 'Omar S.', status: 'Rechazado', fiscalCondition: 'Monotributista', notes: 'Rechazado por falta de documentación en regla.' },
     { id: 'CON-03', name: 'Pinturas y Revestimientos SRL', cuit: '30-44556677-8', contactPerson: 'Sergio brocha', status: 'Aprobado', fiscalCondition: 'Responsable Inscripto', notes: 'Especialistas en pintura de altura.', artExpiryDate: '2025-02-10', insuranceExpiryDate: '2025-03-15' },
+];
+
+export const contractorEmployees: ContractorEmployee[] = [
+    { id: 'CE-01', name: 'Miguel Servet', contractorId: 'CON-01', artExpiryDate: '2024-12-31' },
+    { id: 'CE-02', name: 'Juana de Arco', contractorId: 'CON-01', artExpiryDate: '2024-08-15' },
+    { id: 'CE-03', name: 'Leonardo da Vinci', contractorId: 'CON-03' },
+    { id: 'CE-04', name: 'Marie Curie', contractorId: 'CON-03', artExpiryDate: '2025-05-20' },
+    { id: 'CE-05', name: 'Nikola Tesla', contractorId: 'CON-03', artExpiryDate: '2024-07-25' }, // This one is about to expire
 ];
 
 

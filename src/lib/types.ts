@@ -43,6 +43,13 @@ export type Contractor = {
   artExpiryDate?: string;
 };
 
+export type ContractorEmployee = {
+  id: string;
+  name: string;
+  contractorId: string;
+  artExpiryDate?: string;
+};
+
 
 export type ExpenseCategory = {
   id: string;
@@ -67,4 +74,3 @@ export type UserProfile = {
   email: string;
   fullName: string;
 };
-    

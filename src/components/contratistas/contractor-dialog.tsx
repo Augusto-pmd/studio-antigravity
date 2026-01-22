@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,86 +28,95 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { Separator } from "../ui/separator";
+import type { Contractor } from "@/lib/types";
 
-export function AddContractorDialog() {
+export function ContractorDialog({
+  contractor,
+  children,
+}: {
+  contractor?: Contractor;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
+  const isEditMode = !!contractor;
+  const isPending = false; // Mock state
+
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
   const [insuranceExpiryDate, setInsuranceExpiryDate] = useState<Date | undefined>();
-  const isPending = false; // Mock state
+
+  useEffect(() => {
+    if (open) {
+      setArtExpiryDate(contractor?.artExpiryDate ? parseISO(contractor.artExpiryDate) : undefined);
+      setInsuranceExpiryDate(contractor?.insuranceExpiryDate ? parseISO(contractor.insuranceExpiryDate) : undefined);
+    }
+  }, [open, contractor]);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nuevo Contratista
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Alta de Nuevo Contratista</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Contratista' : 'Alta de Nuevo Contratista'}</DialogTitle>
           <DialogDescription>
-            Complete el formulario para registrar un nuevo contratista. Los campos marcados con * son obligatorios.
+            {isEditMode ? 'Modifique la información del contratista.' : 'Complete el formulario para registrar un nuevo contratista. Los campos marcados con * son obligatorios.'}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[70vh] overflow-y-auto pr-6 pl-1 py-4 grid gap-6">
           
-          {/* Identificación */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Identificación y Ubicación</h4>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Razón Social *</Label>
-                <Input id="name" placeholder="Nombre o Razón Social" />
+                <Input id="name" defaultValue={contractor?.name} placeholder="Nombre o Razón Social" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cuit">CUIT *</Label>
-                <Input id="cuit" placeholder="00-00000000-0" />
+                <Input id="cuit" defaultValue={contractor?.cuit} placeholder="00-00000000-0" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="address">Dirección</Label>
-                <Input id="address" placeholder="Dirección completa del contratista" />
+                <Input id="address" defaultValue={contractor?.address} placeholder="Dirección completa del contratista" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="fiscalCondition">Condición Fiscal</Label>
-                <Input id="fiscalCondition" placeholder="Ej. Responsable Inscripto" />
+                <Input id="fiscalCondition" defaultValue={contractor?.fiscalCondition} placeholder="Ej. Responsable Inscripto" />
               </div>
             </div>
           </div>
 
           <Separator />
 
-          {/* Contacto */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Contacto</h4>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="contactPerson">Persona de Contacto</Label>
-                <Input id="contactPerson" placeholder="Nombre" />
+                <Input id="contactPerson" defaultValue={contractor?.contactPerson} placeholder="Nombre" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="email@contratista.com" />
+                <Input id="email" type="email" defaultValue={contractor?.email} placeholder="email@contratista.com" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono</Label>
-                <Input id="phone" placeholder="Código de área y número" />
+                <Input id="phone" defaultValue={contractor?.phone} placeholder="Código de área y número" />
               </div>
             </div>
           </div>
           
           <Separator />
           
-          {/* Clasificación */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Estado</h4>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Estado del Contratista *</Label>
-                <Select defaultValue="Pendiente">
+                <Select defaultValue={contractor?.status || "Pendiente"}>
                   <SelectTrigger id="status">
                     <SelectValue placeholder="Seleccione un estado" />
                   </SelectTrigger>
@@ -123,7 +132,6 @@ export function AddContractorDialog() {
 
           <Separator />
           
-          {/* Documentación */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Documentación</h4>
             <div className="grid md:grid-cols-2 gap-4">
@@ -139,7 +147,7 @@ export function AddContractorDialog() {
                       {artExpiryDate ? format(artExpiryDate, "PPP") : <span>Opcional</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={artExpiryDate} onSelect={setArtExpiryDate} initialFocus /></PopoverContent>
+                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={artExpiryDate} onSelect={setArtExpiryDate} /></PopoverContent>
                 </Popover>
               </div>
               <div className="space-y-2">
@@ -154,7 +162,7 @@ export function AddContractorDialog() {
                       {insuranceExpiryDate ? format(insuranceExpiryDate, "PPP") : <span>Opcional</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={insuranceExpiryDate} onSelect={setInsuranceExpiryDate} initialFocus /></PopoverContent>
+                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={insuranceExpiryDate} onSelect={setInsuranceExpiryDate} /></PopoverContent>
                 </Popover>
               </div>
             </div>
@@ -162,17 +170,16 @@ export function AddContractorDialog() {
           
           <Separator />
           
-          {/* Notas */}
           <div className="space-y-2">
              <Label htmlFor="notes">Notas y Observaciones</Label>
-             <Textarea id="notes" placeholder="Cualquier información adicional sobre el contratista..." />
+             <Textarea id="notes" defaultValue={contractor?.notes} placeholder="Cualquier información adicional sobre el contratista..." />
           </div>
 
         </div>
         <DialogFooter className="pt-4 border-t">
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar Contratista
+            {isEditMode ? 'Guardar Cambios' : 'Guardar Contratista'}
           </Button>
         </DialogFooter>
       </DialogContent>
