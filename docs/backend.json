@@ -255,6 +255,22 @@
           "type": "string",
           "description": "The official number of the invoice, if applicable."
         },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method of payment for the expense. Required if documentType is 'Factura'.",
+          "enum": [
+            "Transferencia",
+            "Efectivo",
+            "Tarjeta",
+            "Cheque",
+            "Mercado Pago",
+            "Otros"
+          ]
+        },
+        "paymentMethodOther": {
+          "type": "string",
+          "description": "Specifies the payment method if 'Otros' is selected."
+        },
         "amount": {
           "type": "number",
           "description": "The total amount of the expense, including taxes."
@@ -554,3 +570,5 @@
     }
   }
 }
+
+    

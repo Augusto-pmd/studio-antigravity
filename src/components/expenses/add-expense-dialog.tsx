@@ -56,9 +56,14 @@ export function AddExpenseDialog() {
   const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
   const [isExtracting, setIsExtracting] = useState(false);
 
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [paymentMethodOther, setPaymentMethodOther] = useState('');
+
   const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
   const isContractBlocked = project?.balance === 0;
   const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Proveedor Vencido ART
+  
+  const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
 
   useEffect(() => {
     if (isClient) {
@@ -75,6 +80,8 @@ export function AddExpenseDialog() {
     setAmount('');
     setInvoiceNumber('');
     setIibb('');
+    setPaymentMethod(null);
+    setPaymentMethodOther('');
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -119,7 +126,7 @@ export function AddExpenseDialog() {
     };
   };
 
-  const isSubmitDisabled = isPending || isExtracting || isContractBlocked || isSupplierBlocked || (documentType === 'Factura' && (!file || !invoiceNumber));
+  const isSubmitDisabled = isPending || isExtracting || isContractBlocked || isSupplierBlocked || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));
   
   if (!permissions.canLoadExpenses) return null;
 
@@ -272,6 +279,34 @@ export function AddExpenseDialog() {
                     {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
                 </div>
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="paymentMethod" className="text-right">Medio de Pago</Label>
+                <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod ?? ''}>
+                    <SelectTrigger id="paymentMethod" className="col-span-3">
+                        <SelectValue placeholder="Seleccione un medio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {paymentMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                                {method}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
+
+              {paymentMethod === 'Otros' && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="paymentMethodOther" className="text-right">Especificar</Label>
+                      <Input
+                          id="paymentMethodOther"
+                          className="col-span-3"
+                          value={paymentMethodOther}
+                          onChange={(e) => setPaymentMethodOther(e.target.value)}
+                          placeholder="Especifique el medio de pago"
+                      />
+                  </div>
+              )}
             </>
           )}
 
@@ -364,3 +399,5 @@ export function AddExpenseDialog() {
     </Dialog>
   );
 }
+
+    
