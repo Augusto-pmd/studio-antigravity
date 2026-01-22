@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  "projectId": "studio-8541008846-bde52",
-  "appId": "1:529763095747:web:20d2ec6a98490e78387e76",
-  "apiKey": "AIzaSyCFokWxQ-c6IOzqnA0-M11F_NVOxVPwhNw",
-  "authDomain": "studio-8541008846-bde52.firebaseapp.com",
+  "projectId": "pmd-arquitectura-2-27039-d59c2",
+  "appId": "1:993486565523:web:a68e3fa01b71c6cc939d66",
+  "apiKey": "AIzaSyC7kUjCbK4aRy_8bcz_UYxx_zR1uRU3k8Q",
+  "authDomain": "pmd-arquitectura-2-27039-d59c2.firebaseapp.com",
   "measurementId": "",
-  "messagingSenderId": "529763095747"
+  "messagingSenderId": "993486565523"
 };

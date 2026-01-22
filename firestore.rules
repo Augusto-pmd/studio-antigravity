@@ -1,19 +1,34 @@
 /**
- * Core Philosophy: This ruleset implements a hybrid security model designed for a project management application.
- * It enforces strict user ownership for personal data while providing a secure foundation for project-related and master data.
- * The primary goal is strong authorization during prototyping, with flexibility in data schemas.
+ * This Firestore Security Ruleset is designed for the PMD Manager application.
  *
- * Data Structure:
- * - /user-profiles/{userProfileId}/*: All data directly related to a specific application user (profile, cash accounts) is nested under their unique user ID.
- * - /projects/{projectId}/*: Project-specific data (details, expenses, contracts) is organized under a unique project ID.
- * - /employees, /suppliers, /categories: Top-level collections for master data.
- * - /attendances, /cash-advances: Top-level collections for transactional data.
+ * Core Philosophy: This ruleset employs a hybrid security model. It combines a
+ * strict user-ownership model for personal data with a collaborative, role-based
+ * model for shared project data. The default security posture is to deny all
+ * access, granting permissions explicitly. All operations require user authentication.
+ *
+ * Data Structure: The data is organized into logical, top-level collections.
+ * - /users/{userId}: Contains user-specific profiles and private subcollections
+ *   like 'cashAccount'. Access is strictly limited to the document owner.
+ * - /projects/{projectId}: Contains shared project data. Access is managed by
+ *   a denormalized 'members' map within each project document. Subcollections
+ *   like 'expenses' and 'contracts' inherit access from their parent project.
+ * - /suppliers/{supplierId}: A globally readable collection of supplier information.
+ *   Writes are restricted to administrative users.
  *
  * Key Security Decisions:
- * - User Data Segregation: All documents and subcollections under /user-profiles/{userProfileId} are strictly private and can only be accessed by the authenticated owner.
- * - Project Data Lockdown: The `Project` entity and its subcollections currently lack an `ownerId` or `members` field. To maintain security, all write operations on projects and their sub-data are disabled. Reads are permitted for any signed-in user.
- * - Master & Transactional Data is Read-Only: Collections like `suppliers`, `categories`, `employees`, `attendances`, and `cash-advances` are treated as read-only for application users. This prevents unauthorized modification of shared application data until role-based security is implemented.
- * - Default Deny: Any access not explicitly granted is denied.
+ * - Admin Roles: A global admin role is derived from the 'role' field in a user's
+ *   profile (`/users/{userId}`). Users with roles like 'Direction' or 'Administration'
+ *   are granted elevated privileges for managing shared resources.
+ * - No User Listing: To protect user privacy, listing all documents in the '/users'
+ *   collection is forbidden for non-administrative users.
+ * - Denormalization for Authorization: Project documents are expected to contain
+ *   a `members` map (e.g., `{ members: { 'user_uid_1': 'admin', 'user_uid_2': 'viewer' } }`).
+ *   This avoids slow and costly `get()` calls in most list queries and allows for
+ *   performant, secure access control for all project-related data.
+ * - Relational Integrity: On document creation, rules validate that key identifiers
+ *   (e.g., `userId`, `projectId`) are correctly set in the document body to match
+ *   the document's path, ensuring data consistency. These identifiers are then
+ *   enforced as immutable on updates.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -31,124 +46,189 @@ service cloud.firestore {
     }
 
     /**
-     * Returns true if the authenticated user's UID matches the provided userProfileId.
-     * This is the primary function for enforcing document ownership for app users.
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the foundation of the user-ownership model.
      */
-    function isOwner(userProfileId) {
-      return isSignedIn() && request.auth.uid == userProfileId;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * Returns true if a parent project document exists. Used to secure access
-     * to project subcollections.
+     * Returns true if the document being accessed already exists.
+     * Used to protect against updates or deletes on non-existent documents.
      */
-    function projectExists(projectId) {
-      return exists(/databases/$(database)/documents/projects/$(projectId));
+    function isExistingDoc() {
+      return resource != null;
     }
 
-    // ----------------------------------------------------------------------
-    // Application User Data Rules
-    // ----------------------------------------------------------------------
-
-    match /user-profiles/{userProfileId} {
-      allow get: if isOwner(userProfileId);
-      allow list: if false; // Prevent listing all users for privacy
-      allow create: if isOwner(userProfileId);
-      allow update, delete: if isOwner(userProfileId);
-
-      // --- Subcollections ---
-      match /cash/{cashId} {
-        allow read, write: if isOwner(userProfileId);
-      }
-    }
-
-    // ----------------------------------------------------------------------
-    // Project Data Rules
-    // ----------------------------------------------------------------------
-
-    match /projects/{projectId} {
-      allow get, list: if isSignedIn();
-      // Allow writes for prototyping purposes.
-      allow write: if isSignedIn();
-
-      // --- Subcollections ---
-      match /expenses/{expenseId} {
-        allow get, list: if isSignedIn() && projectExists(projectId);
-        // Allow writes for any signed-in user to enable expense tracking during prototyping.
-        allow write: if isSignedIn();
-      }
-
-      match /contracts/{contractId} {
-        allow get, list: if isSignedIn() && projectExists(projectId);
-         // CRITICAL: Write access depends on parent project ownership, which isn't defined.
-        allow write: if false;
-      }
-    }
-
-    // ----------------------------------------------------------------------
-    // Master & Transactional Data Rules
-    // ----------------------------------------------------------------------
-
-    match /suppliers/{supplierId} {
-      allow get, list: if isSignedIn();
-      // Allow create, update, delete for any signed-in user for prototyping.
-      allow write: if isSignedIn();
+    /**
+     * A convenient combination of isOwner and isExistingDoc for update/delete rules.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
     }
     
-    match /contractors/{contractorId} {
-      allow get, list: if isSignedIn();
-      // Allow create, update, delete for any signed-in user for prototyping.
-      allow write: if isSignedIn();
+    /**
+     * Checks if the currently authenticated user has an administrative role.
+     * This performs a single `get` to the user's own profile document.
+     * Administrative roles are defined as 'Direction' or 'Administration'.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Direction', 'Administration'];
+    }
 
-      // --- Subcollections ---
-      match /employees/{employeeId} {
-        allow get, list: if isSignedIn() && exists(/databases/$(database)/documents/contractors/$(contractorId));
-        // Allow writes for signed-in users to manage personnel lists.
-        allow write: if isSignedIn();
+    /**
+     * Checks if the user is a member of a given project by looking for their UID
+     * in the `members` map on the project document.
+     */
+    function isProjectMember(projectId) {
+      let projectData = get(/databases/$(database)/documents/projects/$(projectId)).data;
+      return isSignedIn() && request.auth.uid in projectData.members;
+    }
+    
+    /**
+     * Validates that the `id` field in a new user document matches the document's ID (which is the user's UID).
+     * This enforces relational integrity from the start.
+     */
+    function hasConsistentOwnId(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Enforces the immutability of the `id` field on a user document during an update.
+     */
+    function isOwnIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * Validates that the `userId` field in a new document within a user's subcollection
+     * correctly references the parent user.
+     */
+    function hasConsistentUserId(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Enforces the immutability of the `userId` field during an update to prevent re-assigning ownership.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+    
+    /**
+     * Validates that the `projectId` field in a new document within a project's subcollection
+     * correctly references the parent project.
+     */
+    function hasConsistentProjectId(projectId) {
+      return request.resource.data.projectId == projectId;
+    }
+
+    /**
+     * Enforces the immutability of the `projectId` field during an update.
+     */
+    function isProjectIdImmutable() {
+      return request.resource.data.projectId == resource.data.projectId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages user profiles. Only the user themselves can create, update, or
+     * delete their own profile. Admins are granted read-only access.
+     * @path /users/{userId}
+     * @allow (get) A user with uid 'user123' reads their own document at /users/user123.
+     * @deny (update) A user with uid 'user456' tries to update /users/user123.
+     * @principle Restricts access to a user's own data tree and allows self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && hasConsistentOwnId(userId);
+      allow update: if isExistingOwner(userId) && isOwnIdImmutable();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages a user's private cash account. Access is strictly limited
+       * to the user who owns the account.
+       * @path /users/{userId}/cashAccount/{cashAccountId}
+       * @allow (create) A user with uid 'user123' creates a document in /users/user123/cashAccount/.
+       * @deny (get) An admin tries to read a document in /users/user123/cashAccount/.
+       * @principle Enforces strict document ownership within a private subcollection.
+       */
+      match /cashAccount/{cashAccountId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasConsistentUserId(userId);
+        allow update: if isExistingOwner(userId) && isUserIdImmutable();
+        allow delete: if isExistingOwner(userId);
       }
     }
 
-    match /categories/{categoryId} {
-      allow get, list: if isSignedIn();
-       // Master data should not be modifiable by clients.
-      allow write: if false;
+    /**
+     * @description Manages shared project information. Admins can create and delete projects.
+     * Users listed in a project's `members` map can read it.
+     * @path /projects/{projectId}
+     * @allow (get) A user whose UID is in the `members` map of project 'projAbc' reads /projects/projAbc.
+     * @deny (create) A regular, non-admin user tries to create a new project document.
+     * @principle Implements collaborative access via a denormalized members list.
+     */
+    match /projects/{projectId} {
+      allow get: if isProjectMember(projectId) || isAdmin();
+      allow list: if isSignedIn(); // Allows clients to query for projects they are members of. Client-side query must enforce this.
+      allow create: if isAdmin();
+      allow update: if (isProjectMember(projectId) || isAdmin()) && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+
+      /**
+       * @description Manages expenses for a project. Access is inherited from the parent
+       * project; only project members or admins can manage expenses.
+       * @path /projects/{projectId}/expenses/{expenseId}
+       * @allow (list) A member of project 'projAbc' lists expenses at /projects/projAbc/expenses.
+       * @deny (update) A user not in the `members` map of 'projAbc' tries to update an expense.
+       * @principle Inherits authorization context from a parent document.
+       */
+      match /expenses/{expenseId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        allow list: if isProjectMember(projectId) || isAdmin();
+        allow create: if (isProjectMember(projectId) || isAdmin()) && hasConsistentProjectId(projectId);
+        allow update: if (isProjectMember(projectId) || isAdmin()) && isExistingDoc() && isProjectIdImmutable();
+        allow delete: if (isProjectMember(projectId) || isAdmin()) && isExistingDoc();
+      }
+
+      /**
+       * @description Manages contracts for a project. Access is inherited from the parent
+       * project; only project members or admins can manage contracts.
+       * @path /projects/{projectId}/contracts/{contractId}
+       * @allow (create) An admin creates a new contract under /projects/projAbc/contracts.
+       * @deny (delete) A user not in the `members` map of 'projAbc' tries to delete a contract.
+       * @principle Inherits authorization context from a parent document.
+       */
+      match /contracts/{contractId} {
+        allow get: if isProjectMember(projectId) || isAdmin();
+        allow list: if isProjectMember(projectId) || isAdmin();
+        allow create: if (isProjectMember(projectId) || isAdmin()) && hasConsistentProjectId(projectId);
+        allow update: if (isProjectMember(projectId) || isAdmin()) && isExistingDoc() && isProjectIdImmutable();
+        allow delete: if (isProjectMember(projectId) || isAdmin()) && isExistingDoc();
+      }
     }
 
-    match /employees/{employeeId} {
-      allow get, list: if isSignedIn();
-      // Allow create, update, delete for any signed-in user for prototyping.
-      allow write: if isSignedIn();
-    }
-
-    match /attendances/{attendanceId} {
-      allow get, list: if isSignedIn();
-      // CRITICAL: Transactional data should only be written by authorized roles.
-      allow write: if false;
-    }
-
-    match /cash-advances/{cashAdvanceId} {
-      allow get, list: if isSignedIn();
-      // CRITICAL: Transactional data should only be written by authorized roles.
-      allow write: if false;
-    }
-
-    match /task-requests/{taskRequestId} {
-      allow create: if isSignedIn();
-
-      // Allow reading a single task if you created it or are assigned to it.
-      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
-
-      // Allow list for any signed-in user. The UI must filter.
+    /**
+     * @description Stores global supplier information. This data is considered public
+     * to all authenticated users, but can only be modified by administrators.
+     * @path /suppliers/{supplierId}
+     * @allow (list) Any authenticated user lists all suppliers.
+     * @deny (create) A regular user without an admin role tries to add a new supplier.
+     * @principle Provides public read access for shared data while restricting writes to privileged roles.
+     */
+    match /suppliers/{supplierId} {
+      allow get: if isSignedIn();
       allow list: if isSignedIn();
-
-      // The assignee can mark the task as "Finalizado"
-      allow update: if isSignedIn() &&
-                 request.auth.uid == resource.data.assigneeId &&
-                 request.resource.data.status == 'Finalizado' &&
-                 resource.data.status == 'Pendiente' &&
-                 request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt']);
-
-      allow delete: if false; // To preserve history, don't allow deletes.
+      allow create: if isAdmin();
+      allow update: if isAdmin() && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
     }
   }
 }

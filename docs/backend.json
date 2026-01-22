@@ -1,175 +1,58 @@
-
 {
   "entities": {
-    "UserProfile": {
-      "title": "User Profile",
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
       "type": "object",
-      "description": "Represents a user of the PMD Manager application.",
+      "description": "Represents a user within the PMD Manager system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the UserProfile entity, matches Firebase Auth UID."
+          "description": "Unique identifier for the user entity."
         },
         "role": {
           "type": "string",
-          "description": "The role of the user (Direction, Supervisor, Administration, Operator)."
+          "description": "The role of the user within the system (e.g., Direction, Supervisor, Administration, Operator)."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
         },
         "email": {
           "type": "string",
           "description": "The email address of the user.",
           "format": "email"
-        },
-        "fullName": {
-          "type": "string",
-          "description": "The full name of the user."
         }
       },
-      "required": ["id", "role", "email", "fullName"]
-    },
-    "Employee": {
-      "title": "Employee",
-      "type": "object",
-      "description": "Represents a worker in a project. Can be a direct employee or a contractor.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Employee."
-        },
-        "name": {
-          "type": "string",
-          "description": "Full name of the employee."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the employee.",
-          "enum": ["Activo", "Inactivo"]
-        },
-        "paymentType": {
-          "type": "string",
-          "description": "The payment frequency for the employee.",
-          "enum": ["Diario", "Semanal"]
-        },
-        "category": {
-          "type": "string",
-          "description": "The employee's trade or category (e.g., 'Albañil', 'Electricista')."
-        },
-        "dailyWage": {
-          "type": "number",
-          "description": "The daily wage for the employee."
-        },
-        "artExpiryDate": {
-          "type": "string",
-          "description": "The expiration date of the employee's ART (Aseguradora de Riesgos del Trabajo).",
-          "format": "date-time"
-        }
-      },
-      "required": ["id", "name", "status", "paymentType", "category", "dailyWage"]
-    },
-    "AttendanceRecord": {
-      "title": "Attendance Record",
-      "type": "object",
-      "description": "A single daily attendance record for an employee.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the attendance record."
-        },
-        "employeeId": {
-          "type": "string",
-          "description": "Reference to the Employee."
-        },
-        "projectId": {
-          "type": "string",
-          "description": "Reference to the Project."
-        },
-        "date": {
-          "type": "string",
-          "description": "The date of the attendance record.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "The attendance status.",
-          "enum": ["presente", "ausente"]
-        },
-        "lateHours": {
-          "type": "number",
-          "description": "Number of hours the employee was late."
-        },
-        "notes": {
-          "type": "string",
-          "description": "Additional notes or observations."
-        }
-      },
-      "required": ["id", "employeeId", "projectId", "date", "status"]
-    },
-    "CashAdvance": {
-      "title": "Cash Advance",
-      "type": "object",
-      "description": "A cash advance given to an employee.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the cash advance."
-        },
-        "employeeId": {
-          "type": "string",
-          "description": "Reference to the Employee receiving the advance."
-        },
-        "projectId": {
-          "type": "string",
-          "description": "Reference to the Project related to the advance."
-        },
-        "date": {
-          "type": "string",
-          "description": "The date the advance was given.",
-          "format": "date-time"
-        },
-        "amount": {
-          "type": "number",
-          "description": "The amount of the cash advance."
-        },
-        "reason": {
-          "type": "string",
-          "description": "The reason for the advance."
-        }
-      },
-      "required": ["id", "employeeId", "projectId", "date", "amount"]
+      "required": [
+        "id",
+        "role",
+        "firstName",
+        "lastName",
+        "email"
+      ]
     },
     "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Project",
       "type": "object",
       "description": "Represents a construction project managed within the system.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Project entity."
+          "description": "Unique identifier for the project entity."
         },
         "name": {
           "type": "string",
           "description": "The name of the project."
         },
-        "client": {
+        "description": {
           "type": "string",
-          "description": "The client for whom the project is being built."
-        },
-        "address": {
-          "type": "string",
-          "description": "The full address of the project location."
-        },
-        "currency": {
-          "type": "string",
-          "description": "The currency for the project budget.",
-          "enum": ["ARS", "USD"]
-        },
-        "projectType": {
-          "type": "string",
-          "description": "The type of construction project (e.g., Residential, Commercial)."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the project.",
-          "enum": ["En Curso", "Pausado", "Completado", "Cancelado"]
+          "description": "A brief description of the project."
         },
         "startDate": {
           "type": "string",
@@ -178,35 +61,80 @@
         },
         "endDate": {
           "type": "string",
-          "description": "The planned end date of the project."
-        },
-        "supervisor": {
-          "type": "string",
-          "description": "The person responsible for supervising the project."
-        },
-        "budget": {
-          "type": "number",
-          "description": "The total budget allocated for the project."
+          "description": "The planned end date of the project.",
+          "format": "date-time"
         }
       },
-      "required": ["id", "name", "client", "address", "status", "startDate", "supervisor", "budget"]
+      "required": [
+        "id",
+        "name",
+        "description",
+        "startDate",
+        "endDate"
+      ]
     },
-    "UserCash": {
-      "title": "UserCash",
+    "Expense": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Expense",
       "type": "object",
-      "description": "Represents a user's cash account for managing expenses.",
+      "description": "Represents an expense incurred for a specific project.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the UserCash entity."
+          "description": "Unique identifier for the expense entity."
         },
-        "userProfileId": {
+        "projectId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:1 UserCash)"
+          "description": "Reference to Project. (Relationship: Project 1:N Expense)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the expense was incurred.",
+          "format": "date-time"
+        },
+        "supplier": {
+          "type": "string",
+          "description": "The name of the supplier."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the expense (e.g., materials, labor)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the expense."
+        },
+        "receiptUrl": {
+          "type": "string",
+          "description": "URL of the receipt image."
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "date",
+        "supplier",
+        "category",
+        "amount"
+      ]
+    },
+    "CashAccount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CashAccount",
+      "type": "object",
+      "description": "Represents a user's cash account for managing funds.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the cash account entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 CashAccount)"
         },
         "currency": {
           "type": "string",
-          "description": "The currency of the cash account (ARS or USD)."
+          "description": "The currency of the cash account (e.g., ARS, USD)."
         },
         "balance": {
           "type": "number",
@@ -218,438 +146,196 @@
           "format": "date-time"
         }
       },
-      "required": ["id", "userProfileId", "currency", "balance", "lastClosureDate"]
-    },
-    "Expense": {
-      "title": "Expense",
-      "type": "object",
-      "description": "Represents an expense record.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Expense entity."
-        },
-        "projectId": {
-          "type": "string",
-          "description": "Reference to Project. (Relationship: Project 1:N Expense)"
-        },
-        "date": {
-          "type": "string",
-          "description": "The date the expense was incurred.",
-          "format": "date-time"
-        },
-        "supplierId": {
-          "type": "string",
-          "description": "Reference to Supplier. (Relationship: Supplier 1:N Expense)"
-        },
-        "categoryId": {
-          "type": "string",
-          "description": "Reference to Category. (Relationship: Category 1:N Expense)"
-        },
-        "documentType": {
-          "type": "string",
-          "description": "The type of document backing the expense.",
-          "enum": ["Factura", "Recibo Común"]
-        },
-        "invoiceNumber": {
-          "type": "string",
-          "description": "The official number of the invoice, if applicable."
-        },
-        "paymentMethod": {
-          "type": "string",
-          "description": "The method of payment for the expense. Required if documentType is 'Factura'.",
-          "enum": [
-            "Transferencia",
-            "Efectivo",
-            "Tarjeta",
-            "Cheque",
-            "Mercado Pago",
-            "Otros"
-          ]
-        },
-        "paymentMethodOther": {
-          "type": "string",
-          "description": "Specifies the payment method if 'Otros' is selected."
-        },
-        "amount": {
-          "type": "number",
-          "description": "The total amount of the expense, including taxes."
-        },
-        "iva": {
-          "type": "number",
-          "description": "The VAT (IVA) amount included in the total expense amount."
-        },
-        "iibb": {
-            "type": "number",
-            "description": "The Gross Income tax perception (Percepción de IIBB)."
-        },
-        "iibbJurisdiction": {
-          "type": "string",
-          "description": "The jurisdiction for the Gross Income tax perception (IIBB).",
-          "enum": ["No Aplica", "CABA", "Provincia"]
-        },
-        "currency": {
-          "type": "string",
-          "description": "The currency for the expense.",
-          "enum": ["ARS", "USD"]
-        },
-        "exchangeRate": {
-          "type": "number",
-          "description": "The reference daily exchange rate (e.g., Dólar BNA compra) at the time of the transaction, for bimonetary control."
-        },
-        "receiptUrl": {
-          "type": "string",
-          "description": "URL of the receipt image or document, if applicable.",
-          "format": "uri"
-        }
-      },
-      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount", "currency", "exchangeRate", "documentType"]
+      "required": [
+        "id",
+        "userId",
+        "currency",
+        "balance"
+      ]
     },
     "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Supplier",
       "type": "object",
-      "description": "Represents a supplier of materials.",
+      "description": "Represents a supplier providing goods or services to the company.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Supplier entity."
+          "description": "Unique identifier for the supplier entity."
         },
         "name": {
           "type": "string",
-          "description": "The name or business name of the supplier."
+          "description": "The name of the supplier."
         },
-        "cuit": {
+        "insuranceExpiryDate": {
           "type": "string",
-          "description": "The CUIT (Clave Única de Identificación Tributaria) of the supplier."
+          "description": "The expiration date of the supplier's insurance.",
+          "format": "date-time"
         },
-        "email": {
+        "artExpiryDate": {
           "type": "string",
-          "description": "Contact email for the supplier.",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string",
-          "description": "Contact phone number for the supplier."
-        },
-        "contactPerson": {
-          "type": "string",
-          "description": "The name of the primary contact person."
-        },
-        "address": {
-          "type": "string",
-          "description": "The full address of the supplier."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the supplier.",
-          "enum": [
-            "Aprobado",
-            "Pendiente",
-            "Rechazado"
-          ]
-        },
-        "type": {
-          "type": "string",
-          "description": "The type of supplier.",
-          "enum": [
-            "Servicios",
-            "Materiales",
-            "Mixto"
-          ]
-        },
-        "fiscalCondition": {
-          "type": "string",
-          "description": "The fiscal condition of the supplier (e.g., 'Responsable Inscripto')."
-        },
-        "notes": {
-          "type": "string",
-          "description": "Additional notes or observations about the supplier."
+          "description": "The expiration date of the supplier's ART (Aseguradora de Riesgos del Trabajo).",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
-        "name",
-        "cuit",
-        "status",
-        "type"
+        "name"
       ]
     },
-    "Contractor": {
-      "title": "Contractor",
-      "description": "Represents a contractor or subcontractor providing services, with documentation control.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the Contractor entity." },
-        "name": { "type": "string", "description": "The name or business name of the contractor." },
-        "cuit": { "type": "string", "description": "The CUIT (Clave Única de Identificación Tributaria) of the contractor." },
-        "email": { "type": "string", "description": "Contact email for the contractor.", "format": "email" },
-        "phone": { "type": "string", "description": "Contact phone number for the contractor." },
-        "contactPerson": { "type": "string", "description": "The name of the primary contact person." },
-        "address": { "type": "string", "description": "The full address of the contractor." },
-        "status": { "type": "string", "description": "The current status of the contractor.", "enum": ["Aprobado", "Pendiente", "Rechazado"] },
-        "fiscalCondition": { "type": "string", "description": "The fiscal condition of the contractor (e.g., 'Responsable Inscripto')." },
-        "notes": { "type": "string", "description": "Additional notes or observations about the contractor." },
-        "insuranceExpiryDate": { "type": "string", "description": "The expiration date of the contractor's insurance.", "format": "date-time" },
-        "artExpiryDate": { "type": "string", "description": "The expiration date of the contractor's ART (Aseguradora de Riesgos del Trabajo).", "format": "date-time" }
-      },
-      "required": ["id", "name", "cuit", "status"]
-    },
-    "ContractorEmployee": {
-      "title": "Contractor Employee",
-      "description": "Represents an employee of a contractor, used for documentation and safety compliance.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the employee record." },
-        "name": { "type": "string", "description": "Full name of the contractor's employee." },
-        "contractorId": { "type": "string", "description": "Reference to the parent Contractor." },
-        "artExpiryDate": { "type": "string", "description": "The expiration date of the employee's ART (Aseguradora de Riesgos del Trabajo).", "format": "date-time" }
-      },
-      "required": ["id", "name", "contractorId"]
-    },
-    "Category": {
-      "title": "Category",
-      "type": "object",
-      "description": "Represents a category for classifying expenses.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Category entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the expense category."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the expense category."
-        }
-      },
-      "required": ["id", "name"]
-    },
     "Contract": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Contract",
       "type": "object",
       "description": "Represents a contract associated with a project.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Contract entity."
+          "description": "Unique identifier for the contract entity."
         },
         "projectId": {
           "type": "string",
           "description": "Reference to Project. (Relationship: Project 1:N Contract)"
         },
-        "amount": {
+        "description": {
+          "type": "string",
+          "description": "A description of the contract."
+        },
+        "totalAmount": {
           "type": "number",
           "description": "The total amount of the contract."
         },
-        "balance": {
+        "remainingAmount": {
           "type": "number",
-          "description": "The remaining balance of the contract."
-        }
-      },
-      "required": ["id", "projectId", "amount", "balance"]
-    },
-    "FundRequest": {
-      "title": "Fund Request",
-      "type": "object",
-      "description": "A request for funds to be included in the weekly payment sheet (e.g., for materials, logistics, cash).",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique ID for the fund request."
-        },
-        "requesterId": {
-          "type": "string",
-          "description": "ID of the user making the request."
-        },
-        "requesterName": {
-          "type": "string",
-          "description": "Name of the user making the request."
-        },
-        "amount": {
-          "type": "number",
-          "description": "Amount requested."
-        },
-        "currency": {
-          "type": "string",
-          "description": "Currency of the request.",
-          "enum": [
-            "ARS",
-            "USD"
-          ]
-        },
-        "exchangeRate": {
-          "type": "number",
-          "description": "The reference daily exchange rate (e.g., Dólar BNA compra) at the time of the request, for bimonetary control."
-        },
-        "category": {
-          "type": "string",
-          "description": "Category of the request (e.g., Logística, Materiales, Viáticos)."
-        },
-        "projectId": {
-          "type": "string",
-          "description": "Optional project to associate the request with."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the request.",
-          "enum": [
-            "Pendiente",
-            "Aprobado",
-            "Rechazado",
-            "Pagado"
-          ]
-        },
-        "date": {
-          "type": "string",
-          "description": "Date of the request.",
-          "format": "date-time"
+          "description": "The remaining amount on the contract."
         }
       },
       "required": [
         "id",
-        "requesterId",
-        "requesterName",
-        "amount",
-        "currency",
-        "category",
-        "status",
-        "date",
-        "exchangeRate"
-      ]
-    },
-    "TaskRequest": {
-      "title": "Task Request",
-      "type": "object",
-      "description": "Represents a task or request from one user to another.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the TaskRequest."
-        },
-        "title": {
-          "type": "string",
-          "description": "A short, descriptive title for the task."
-        },
-        "description": {
-          "type": "string",
-          "description": "Detailed description of the task or request."
-        },
-        "requesterId": {
-          "type": "string",
-          "description": "The ID of the user who created the task."
-        },
-        "requesterName": {
-          "type": "string",
-          "description": "The name of the user who created the task."
-        },
-        "assigneeId": {
-          "type": "string",
-          "description": "The ID of the user assigned to the task."
-        },
-        "assigneeName": {
-          "type": "string",
-          "description": "The name of the user assigned to the task."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the task.",
-          "enum": [
-            "Pendiente",
-            "Finalizado"
-          ]
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The date and time the task was created.",
-          "format": "date-time"
-        },
-        "completedAt": {
-          "type": "string",
-          "description": "The date and time the task was completed.",
-          "format": "date-time"
-        },
-        "projectId": {
-          "type": "string",
-          "description": "Optional ID of a project related to the task."
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "requesterId",
-        "requesterName",
-        "assigneeId",
-        "assigneeName",
-        "status",
-        "createdAt"
+        "projectId",
+        "description",
+        "totalAmount",
+        "remainingAmount"
       ]
     }
   },
   "auth": {
-    "providers": ["password", "anonymous", "google.com"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/user-profiles/{userProfileId}": {
-      "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "Stores user profile data. Access is restricted to the user themselves."
-    },
-    "/projects/{projectId}": {
-      "schema": { "$ref": "#/entities/Project" },
-      "description": "Stores project details. Writable only by authorized users (e.g., admins or project managers)."
-    },
-    "/user-profiles/{userProfileId}/cash/{cashId}": {
-      "schema": { "$ref": "#/entities/UserCash" },
-      "description": "Stores a user's cash balance. Only accessible by the user."
-    },
-    "/projects/{projectId}/expenses/{expenseId}": {
-      "schema": { "$ref": "#/entities/Expense" },
-      "description": "Stores expenses related to a specific project."
-    },
-    "/suppliers/{supplierId}": {
-      "schema": { "$ref": "#/entities/Supplier" },
-      "description": "Master list of suppliers/contractors."
-    },
-     "/contractors/{contractorId}": {
-      "schema": { "$ref": "#/entities/Contractor" },
-      "description": "Master list of all contractors, with documentation control."
-    },
-    "/contractors/{contractorId}/employees/{employeeId}": {
-      "schema": { "$ref": "#/entities/ContractorEmployee" },
-      "description": "Stores the list of employees for a specific contractor, for compliance tracking."
-    },
-    "/categories/{categoryId}": {
-      "schema": { "$ref": "#/entities/Category" },
-      "description": "Master list of expense categories."
-    },
-    "/projects/{projectId}/contracts/{contractId}": {
-      "schema": { "$ref": "#/entities/Contract" },
-      "description": "Stores contracts related to a specific project."
-    },
-    "/employees/{employeeId}": {
-      "schema": { "$ref": "#/entities/Employee" },
-      "description": "Master list of all employees and individual contractors."
-    },
-    "/attendances/{attendanceId}": {
-      "schema": { "$ref": "#/entities/AttendanceRecord" },
-      "description": "Stores individual daily attendance records."
-    },
-    "/cash-advances/{cashAdvanceId}": {
-      "schema": { "$ref": "#/entities/CashAdvance" },
-      "description": "Stores individual cash advance records."
-    },
-    "/fund-requests/{fundRequestId}": {
-      "schema": {
-        "$ref": "#/entities/FundRequest"
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures only the user (or admin) can access their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
       },
-      "description": "Stores all fund requests for weekly payment sheets."
-    },
-    "/task-requests/{taskRequestId}": {
-      "schema": {
-        "$ref": "#/entities/TaskRequest"
+      {
+        "path": "/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project details. Includes denormalized 'members' map for authorization independence.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            }
+          ]
+        }
       },
-      "description": "Stores all user-to-user tasks and requests."
-    }
+      {
+        "path": "/projects/{projectId}/expenses/{expenseId}",
+        "definition": {
+          "entityName": "Expense",
+          "schema": {
+            "$ref": "#/backend/entities/Expense"
+          },
+          "description": "Stores expenses associated with a project. Inherits authorization context (members) from the parent Project document for Authorization Independence.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            },
+            {
+              "name": "expenseId",
+              "description": "The unique identifier for the expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cashAccount/{cashAccountId}",
+        "definition": {
+          "entityName": "CashAccount",
+          "schema": {
+            "$ref": "#/backend/entities/CashAccount"
+          },
+          "description": "Stores a user's cash account details. Path-based ownership ensures only the user can access their own cash account.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "cashAccountId",
+              "description": "The unique identifier for the cash account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier information.",
+          "params": [
+            {
+              "name": "supplierId",
+              "description": "The unique identifier for the supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}/contracts/{contractId}",
+        "definition": {
+          "entityName": "Contract",
+          "schema": {
+            "$ref": "#/backend/entities/Contract"
+          },
+          "description": "Stores contracts associated with a project. Inherits authorization context (members) from the parent Project document for Authorization Independence.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            },
+            {
+              "name": "contractId",
+              "description": "The unique identifier for the contract."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, contracts) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
   }
 }
