@@ -36,4 +36,10 @@ export type Employee = {
   artExpiryDate?: string;
 };
 
+export type UserProfile = {
+  id: string;
+  role: Role;
+  email: string;
+  fullName: string;
+};
     

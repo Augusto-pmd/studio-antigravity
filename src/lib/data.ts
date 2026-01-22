@@ -1,4 +1,4 @@
-import type { Project, Supplier, ExpenseCategory, Employee } from '@/lib/types';
+import type { Project, Supplier, ExpenseCategory, Employee, UserProfile } from '@/lib/types';
 
 export const projects: Project[] = [
   { id: 'PROJ-001', name: 'Edificio Corporativo Central', client: 'Tech Solutions S.A.', address: 'Av. Corrientes 1234, CABA', currency: 'ARS', projectType: 'Comercial', status: 'En Curso', startDate: '2024-02-01', endDate: '2025-01-31', supervisor: 'Juan Pérez', budget: 2500000, balance: 500000, progress: 75 },
@@ -48,6 +48,14 @@ export const employees: Employee[] = [
   { id: 'EMP-005', name: 'Javier Gomez', status: 'Activo', paymentType: 'Diario', category: 'Ayudante', dailyWage: 1800 },
   { id: 'EMP-006', name: 'Sofia Diaz', status: 'Activo', paymentType: 'Semanal', category: 'Jefe de Obra', dailyWage: 4500, artExpiryDate: '2025-03-01' },
   { id: 'EMP-007', name: 'Diego Fernandez', status: 'Activo', paymentType: 'Semanal', category: 'Albañil', dailyWage: 2500, artExpiryDate: '2024-07-31' },
+];
+
+export const userProfiles: UserProfile[] = [
+    { id: 'uid-juan', fullName: 'Juan Pérez', email: 'juan.perez@example.com', role: 'Supervisor' },
+    { id: 'uid-maria', fullName: 'Maria González', email: 'maria.gonzalez@example.com', role: 'Supervisor' },
+    { id: 'uid-carlos', fullName: 'Carlos Lopez', email: 'carlos.lopez@example.com', role: 'Administración' },
+    { id: 'uid-ana', fullName: 'Ana Martinez', email: 'ana.martinez@example.com', role: 'Dirección' },
+    { id: 'uid-pedro', fullName: 'Pedro Ramirez', email: 'pedro.ramirez@example.com', role: 'Operador' },
 ];
 
     

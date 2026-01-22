@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -14,17 +13,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { PlusCircle } from "lucide-react";
+import { NewRequestDialog } from "@/components/pedidos/new-request-dialog";
 
 export default function PedidosYAlertasPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-headline">Pedidos y Alertas</h1>
-        <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nuevo Pedido
-        </Button>
+        <NewRequestDialog />
       </div>
       <p className="text-muted-foreground">
         Un espacio centralizado para gestionar pedidos y tareas entre los miembros del equipo.
@@ -70,5 +66,3 @@ export default function PedidosYAlertasPage() {
     </div>
   );
 }
-
-    
