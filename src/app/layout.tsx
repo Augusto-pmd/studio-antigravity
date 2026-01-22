@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'PMD Manager',
-  description: 'Sistema Integral de Gestión PMD',
+  title: 'PMD Arquitectura',
+  description: 'Sistema Integral de Gestión de Obras',
 };
 
 export default function RootLayout({
