@@ -8,12 +8,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FileDown, TriangleAlert } from "lucide-react";
+import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
 
 export default function CajaPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-headline">Mi Caja</h1>
+        <AddExpenseDialog />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
