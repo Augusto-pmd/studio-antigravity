@@ -1,6 +1,7 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
+import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
+import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import {
   Card,
   CardContent,
@@ -8,17 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PlusCircle, Users, HardHat, Truck, ShoppingCart } from "lucide-react";
+import { Users, HardHat, Truck, ShoppingCart } from "lucide-react";
 
 export default function PagoSemanalPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-headline">Planilla de Pago Semanal</h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Solicitar Dinero
-        </Button>
+        <RequestFundDialog />
       </div>
 
       <p className="text-muted-foreground">
@@ -76,9 +74,7 @@ export default function PagoSemanalPage() {
             </CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="flex h-48 items-center justify-center rounded-md border border-dashed">
-                <p className="text-muted-foreground">Aquí se mostrará la tabla con todas las solicitudes.</p>
-            </div>
+            <FundRequestsTable />
         </CardContent>
       </Card>
 
