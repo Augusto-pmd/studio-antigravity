@@ -26,16 +26,16 @@ export const expenseCategories: ExpenseCategory[] = [
 ];
 
 export const monthlyExpenses = [
-    { month: 'Ene', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Feb', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Mar', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Abr', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'May', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Jun', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Jul', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Ago', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Sep', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Oct', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Nov', total: Math.floor(Math.random() * 5000) + 1000 },
-    { month: 'Dic', total: Math.floor(Math.random() * 5000) + 1000 },
+    { month: 'Ene', total: 1850 },
+    { month: 'Feb', total: 2200 },
+    { month: 'Mar', total: 1900 },
+    { month: 'Abr', total: 2780 },
+    { month: 'May', total: 1890 },
+    { month: 'Jun', total: 2390 },
+    { month: 'Jul', total: 3490 },
+    { month: 'Ago', total: 2100 },
+    { month: 'Sep', total: 2900 },
+    { month: 'Oct', total: 3100 },
+    { month: 'Nov', total: 2500 },
+    { month: 'Dic', total: 2800 },
 ];
