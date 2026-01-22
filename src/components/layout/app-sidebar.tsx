@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -39,6 +39,7 @@ import {
   MoreHorizontal,
   CircleDollarSign,
   Bell,
+  HardHat,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 
@@ -47,6 +48,7 @@ const menuItems = [
   { href: "/obras", label: "Obras", icon: Building2 },
   { href: "/proveedores", label: "Proveedores", icon: Users },
   { href: "/empleados", label: "Empleados", icon: Contact },
+  { href: "/contratistas", label: "Contratistas", icon: HardHat },
   { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
   { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign },
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
@@ -140,5 +142,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
-    

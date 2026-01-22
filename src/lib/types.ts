@@ -26,9 +26,23 @@ export type Supplier = {
   type: 'Servicios' | 'Materiales' | 'Mixto';
   fiscalCondition?: string;
   notes?: string;
+};
+
+export type Contractor = {
+  id: string;
+  name: string;
+  cuit: string;
+  email?: string;
+  phone?: string;
+  contactPerson?: string;
+  address?: string;
+  status: 'Aprobado' | 'Pendiente' | 'Rechazado';
+  fiscalCondition?: string;
+  notes?: string;
   insuranceExpiryDate?: string;
   artExpiryDate?: string;
 };
+
 
 export type ExpenseCategory = {
   id: string;

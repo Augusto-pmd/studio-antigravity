@@ -1,4 +1,4 @@
-import type { Project, Supplier, ExpenseCategory, Employee, UserProfile } from '@/lib/types';
+import type { Project, Supplier, ExpenseCategory, Employee, UserProfile, Contractor } from '@/lib/types';
 
 export const projects: Project[] = [
   { id: 'PROJ-001', name: 'Edificio Corporativo Central', client: 'Tech Solutions S.A.', address: 'Av. Corrientes 1234, CABA', currency: 'ARS', projectType: 'Comercial', status: 'En Curso', startDate: '2024-02-01', endDate: '2025-01-31', supervisor: 'Juan Pérez', budget: 2500000, balance: 500000, progress: 75 },
@@ -10,11 +10,15 @@ export const projects: Project[] = [
 ];
 
 export const suppliers: Supplier[] = [
-  { id: 'SUP-01', name: 'Materiales Construcción S.A.', cuit: '30-12345678-9', email: 'ventas@matco.com', phone: '11-4555-1234', contactPerson: 'Ricardo Mollo', address: 'Av. Libertador 5500, CABA', status: 'Aprobado', type: 'Materiales', fiscalCondition: 'Responsable Inscripto', artExpiryDate: '2025-05-20', insuranceExpiryDate: '2025-05-20' },
+  { id: 'SUP-01', name: 'Materiales Construcción S.A.', cuit: '30-12345678-9', email: 'ventas@matco.com', phone: '11-4555-1234', contactPerson: 'Ricardo Mollo', address: 'Av. Libertador 5500, CABA', status: 'Aprobado', type: 'Materiales', fiscalCondition: 'Responsable Inscripto' },
   { id: 'SUP-02', name: 'Ferretería El Tornillo Feliz', cuit: '30-87654321-0', email: 'info@tornillofeliz.com.ar', phone: '11-4888-5678', contactPerson: 'Ana Frank', address: 'Calle 13 456, La Plata', status: 'Aprobado', type: 'Materiales', fiscalCondition: 'Monotributista' },
-  { id: 'SUP-03', name: 'Servicios Eléctricos Lux', cuit: '20-23456789-3', email: 'contacto@luxservicios.com', phone: '11-4222-9876', contactPerson: 'Carlos Corriente', address: 'Av. Rivadavia 20000, CABA', status: 'Aprobado', type: 'Servicios', fiscalCondition: 'Responsable Inscripto', artExpiryDate: '2024-07-01' },
   { id: 'SUP-04', name: 'Hormigones del Sur', cuit: '30-98765432-1', email: 'hds@hds.com.ar', phone: '11-4111-2345', contactPerson: 'Pedro Pica', address: 'Ruta 2 km 45, Hudson', status: 'Pendiente', type: 'Materiales', fiscalCondition: 'Responsable Inscripto' },
-  { id: 'SUP-05', name: 'Contratista General Omar', cuit: '20-11223344-5', contactPerson: 'Omar S.', status: 'Rechazado', type: 'Servicios', fiscalCondition: 'Monotributista', notes: 'Rechazado por falta de documentación en regla.' },
+];
+
+export const contractors: Contractor[] = [
+    { id: 'CON-01', name: 'Servicios Eléctricos Lux', cuit: '20-23456789-3', email: 'contacto@luxservicios.com', phone: '11-4222-9876', contactPerson: 'Carlos Corriente', address: 'Av. Rivadavia 20000, CABA', status: 'Aprobado', fiscalCondition: 'Responsable Inscripto', artExpiryDate: '2024-07-01' },
+    { id: 'CON-02', name: 'Contratista General Omar', cuit: '20-11223344-5', contactPerson: 'Omar S.', status: 'Rechazado', fiscalCondition: 'Monotributista', notes: 'Rechazado por falta de documentación en regla.' },
+    { id: 'CON-03', name: 'Pinturas y Revestimientos SRL', cuit: '30-44556677-8', contactPerson: 'Sergio brocha', status: 'Aprobado', fiscalCondition: 'Responsable Inscripto', notes: 'Especialistas en pintura de altura.', artExpiryDate: '2025-02-10', insuranceExpiryDate: '2025-03-15' },
 ];
 
 

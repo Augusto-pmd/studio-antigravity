@@ -308,7 +308,7 @@
     "Supplier": {
       "title": "Supplier",
       "type": "object",
-      "description": "Represents a supplier, vendor, or contractor.",
+      "description": "Represents a supplier of materials.",
       "properties": {
         "id": {
           "type": "string",
@@ -364,16 +364,6 @@
         "notes": {
           "type": "string",
           "description": "Additional notes or observations about the supplier."
-        },
-        "insuranceExpiryDate": {
-          "type": "string",
-          "description": "The expiration date of the supplier's insurance.",
-          "format": "date-time"
-        },
-        "artExpiryDate": {
-          "type": "string",
-          "description": "The expiration date of the supplier's ART (Aseguradora de Riesgos del Trabajo).",
-          "format": "date-time"
         }
       },
       "required": [
@@ -383,6 +373,26 @@
         "status",
         "type"
       ]
+    },
+    "Contractor": {
+      "title": "Contractor",
+      "description": "Represents a contractor or subcontractor providing services, with documentation control.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the Contractor entity." },
+        "name": { "type": "string", "description": "The name or business name of the contractor." },
+        "cuit": { "type": "string", "description": "The CUIT (Clave Única de Identificación Tributaria) of the contractor." },
+        "email": { "type": "string", "description": "Contact email for the contractor.", "format": "email" },
+        "phone": { "type": "string", "description": "Contact phone number for the contractor." },
+        "contactPerson": { "type": "string", "description": "The name of the primary contact person." },
+        "address": { "type": "string", "description": "The full address of the contractor." },
+        "status": { "type": "string", "description": "The current status of the contractor.", "enum": ["Aprobado", "Pendiente", "Rechazado"] },
+        "fiscalCondition": { "type": "string", "description": "The fiscal condition of the contractor (e.g., 'Responsable Inscripto')." },
+        "notes": { "type": "string", "description": "Additional notes or observations about the contractor." },
+        "insuranceExpiryDate": { "type": "string", "description": "The expiration date of the contractor's insurance.", "format": "date-time" },
+        "artExpiryDate": { "type": "string", "description": "The expiration date of the contractor's ART (Aseguradora de Riesgos del Trabajo).", "format": "date-time" }
+      },
+      "required": ["id", "name", "cuit", "status"]
     },
     "Category": {
       "title": "Category",
@@ -588,6 +598,10 @@
     "/suppliers/{supplierId}": {
       "schema": { "$ref": "#/entities/Supplier" },
       "description": "Master list of suppliers/contractors."
+    },
+     "/contractors/{contractorId}": {
+      "schema": { "$ref": "#/entities/Contractor" },
+      "description": "Master list of all contractors, with documentation control."
     },
     "/categories/{categoryId}": {
       "schema": { "$ref": "#/entities/Category" },
