@@ -12,8 +12,19 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { useUser } from "@/context/user-context";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Building2,
   LayoutDashboard,
@@ -25,8 +36,9 @@ import {
   Landmark,
   Contact,
   CalendarCheck,
+  MoreHorizontal,
 } from "lucide-react";
-import { Badge } from "../ui/badge";
+import type { Role } from "@/lib/types";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -45,12 +57,16 @@ const menuItems = [
   { href: "/contabilidad", label: "Contabilidad", icon: Landmark },
 ];
 
+const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
+
+
 export function AppSidebar() {
   const pathname = usePathname();
-  const { role } = useUser();
+  const { role, setRole } = useUser();
+  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
 
   return (
-    <Sidebar>
+    <Sidebar variant="floating" collapsible="icon">
       <SidebarHeader>
         <Logo />
       </SidebarHeader>
@@ -65,7 +81,7 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === item.href}
-                  tooltip={{ children: item.label }}
+                  tooltip={{ children: item.label, side: "right", align: "center" }}
                 >
                   <Link href={item.href}>
                     <item.icon />
@@ -77,17 +93,45 @@ export function AppSidebar() {
           })}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="flex flex-col gap-4">
-        <Separator />
-        <div className="flex flex-col gap-2 items-center text-center group-data-[collapsible=icon]:hidden">
-          <Users className="w-8 h-8 text-muted-foreground" />
-          <p className="text-sm font-medium">Usuario Actual</p>
-          <Badge variant="outline">{role}</Badge>
-        </div>
-        <SidebarMenuButton tooltip={{ children: "Cerrar Sesión" }}>
-          <LogOut />
-          <span>Cerrar Sesión</span>
-        </SidebarMenuButton>
+      <SidebarFooter className="flex flex-col gap-2">
+        <Separator className="bg-sidebar-border" />
+         <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-auto w-full justify-start p-2 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center">
+                    <div className="flex items-center gap-3">
+                         {userAvatar && (
+                            <Image
+                                src={userAvatar.imageUrl}
+                                alt={userAvatar.description}
+                                data-ai-hint={userAvatar.imageHint}
+                                width={32}
+                                height={32}
+                                className="rounded-full"
+                            />
+                        )}
+                        <div className="text-left group-data-[collapsible=icon]:hidden">
+                            <p className="font-semibold text-sm text-sidebar-foreground">Usuario</p>
+                            <p className="text-xs text-sidebar-foreground/70">{role}</p>
+                        </div>
+                    </div>
+                     <MoreHorizontal className="ml-auto h-5 w-5 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
+                <DropdownMenuLabel>Cambiar Rol (Simulación)</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {roles.map((r) => (
+                  <DropdownMenuItem key={r} onSelect={() => setRole(r as Role)}>
+                    {r}
+                  </DropdownMenuItem>
+                ))}
+                 <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4"/>
+                    Cerrar Sesión
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
   );

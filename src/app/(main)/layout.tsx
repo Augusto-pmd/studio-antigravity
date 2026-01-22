@@ -1,3 +1,5 @@
+'use client';
+
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
@@ -10,7 +12,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <FirebaseClientProvider>
       <UserProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-muted/40">
+          <div className="flex min-h-screen w-full bg-background">
               <AppSidebar />
               <div className="flex flex-col w-full">
                   <AppHeader />
