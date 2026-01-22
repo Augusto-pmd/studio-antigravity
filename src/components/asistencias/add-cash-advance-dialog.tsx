@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,9 +34,15 @@ import { format } from "date-fns";
 
 export function AddCashAdvanceDialog() {
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date>();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const isPending = false; // Mock state
+
+  useEffect(() => {
+    setDate(new Date());
+    setIsClient(true);
+  }, []);
 
   const selectedEmployee = useMemo(() => {
     return employees.find(e => e.id === selectedEmployeeId);
@@ -90,7 +96,7 @@ export function AddCashAdvanceDialog() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Seleccione una fecha</span>}
+                  {date && isClient ? format(date, "PPP") : <span>Seleccione una fecha</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">

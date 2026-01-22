@@ -47,12 +47,14 @@ interface AttendanceRecord {
 }
 
 export function DailyAttendance() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedProject, setSelectedProject] = useState<string>(projects.find(p => p.status === 'En Curso')?.id || projects[0].id);
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setSelectedDate(new Date());
+    setIsClient(true);
   }, []);
 
   const filteredEmployees = useMemo(() => {
@@ -122,7 +124,7 @@ export function DailyAttendance() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, 'PPP') : <span>Seleccione una fecha</span>}
+                  {selectedDate && isClient ? format(selectedDate, 'PPP') : <span>Seleccione una fecha</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">

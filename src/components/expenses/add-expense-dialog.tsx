@@ -42,7 +42,8 @@ export function AddExpenseDialog() {
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
-  const [date, setDate] = useState<Date | undefined>();
+  const [date, setDate] = useState<Date>();
+  const [isClient, setIsClient] = useState(false);
   
   const [file, setFile] = useState<File | null>(null);
   const [fileValidation, setFileValidation] = useState<{ isValid: boolean; errors: string[] } | null>(null);
@@ -54,6 +55,7 @@ export function AddExpenseDialog() {
 
   useEffect(() => {
     setDate(new Date());
+    setIsClient(true);
   }, []);
 
   useEffect(() => {
@@ -171,7 +173,7 @@ export function AddExpenseDialog() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Seleccione una fecha</span>}
+                  {date && isClient ? format(date, "PPP") : <span>Seleccione una fecha</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
