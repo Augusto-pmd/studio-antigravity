@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useUser } from '@/firebase/provider';
-import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 
 export default function LoginPage() {
@@ -52,6 +51,19 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const loggedInUser = result.user;
+      const userEmail = loggedInUser.email;
+      
+      const corporateDomain = 'pmdarquitectura.com';
+      if (!userEmail || !userEmail.endsWith(`@${corporateDomain}`)) {
+        await signOut(auth);
+        toast({
+          variant: 'destructive',
+          title: 'Acceso Denegado',
+          description: `El inicio de sesión solo está permitido para usuarios del dominio @${corporateDomain}.`,
+        });
+        setIsSigningIn(false);
+        return;
+      }
 
       const userRef = doc(firestore, 'users', loggedInUser.uid);
       const userSnap = await getDoc(userRef);
@@ -78,6 +90,7 @@ export default function LoginPage() {
           ? 'El inicio de sesión fue cancelado.'
           : error.message || 'No se pudo completar el inicio de sesión con Google.',
       });
+    } finally {
       setIsSigningIn(false);
     }
   };
