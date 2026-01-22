@@ -1,0 +1,373 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the PMD Manager system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user (Direction, Supervisor, Administration, Operator)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The full name of the user."
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "email",
+        "fullName"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a construction project managed within the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Project entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the project."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date of the project.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The planned end date of the project.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "UserCash": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserCash",
+      "type": "object",
+      "description": "Represents a user's cash account for managing expenses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserCash entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 UserCash)"
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the cash account (ARS or USD)."
+        },
+        "balance": {
+          "type": "number",
+          "description": "The current balance of the cash account."
+        },
+        "lastClosureDate": {
+          "type": "string",
+          "description": "The date of the last weekly closure.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "currency",
+        "balance",
+        "lastClosureDate"
+      ]
+    },
+    "Expense": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Expense",
+      "type": "object",
+      "description": "Represents an expense record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Expense entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N Expense)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the expense was incurred.",
+          "format": "date-time"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to Supplier. (Relationship: Supplier 1:N Expense)"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Expense)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the expense."
+        },
+        "receiptUrl": {
+          "type": "string",
+          "description": "URL of the receipt image or document.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "date",
+        "supplierId",
+        "categoryId",
+        "amount"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier or vendor.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Supplier entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the supplier."
+        },
+        "insuranceExpiryDate": {
+          "type": "string",
+          "description": "The expiration date of the supplier's insurance.",
+          "format": "date-time"
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "description": "The expiration date of the supplier's ART (Aseguradora de Riesgos del Trabajo).",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for classifying expenses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the expense category."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the expense category."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Contract": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Contract",
+      "type": "object",
+      "description": "Represents a contract associated with a project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Contract entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N Contract)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount of the contract."
+        },
+        "balance": {
+          "type": "number",
+          "description": "The remaining balance of the contract."
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "amount",
+        "balance"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data. Path-based ownership: only the user can access their own data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project data.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cash/{cashId}",
+        "definition": {
+          "entityName": "UserCash",
+          "schema": {
+            "$ref": "#/backend/entities/UserCash"
+          },
+          "description": "Stores user cash account data. Path-based ownership: only the user can access their own cash account data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "cashId",
+              "description": "The unique identifier of the user's cash account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}/expenses/{expenseId}",
+        "definition": {
+          "entityName": "Expense",
+          "schema": {
+            "$ref": "#/backend/entities/Expense"
+          },
+          "description": "Stores expense data for a project.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            },
+            {
+              "name": "expenseId",
+              "description": "The unique identifier of the expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier data.",
+          "params": [
+            {
+              "name": "supplierId",
+              "description": "The unique identifier of the supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores category data.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier of the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}/contracts/{contractId}",
+        "definition": {
+          "entityName": "Contract",
+          "schema": {
+            "$ref": "#/backend/entities/Contract"
+          },
+          "description": "Stores contract data for a project.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            },
+            {
+              "name": "contractId",
+              "description": "The unique identifier of the contract."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure data integrity and security while minimizing redundancy, as requested. It leverages path-based ownership and denormalization to achieve Authorization Independence, enabling robust security rules and atomic operations. Each collection is designed to have a homogeneous security posture, simplifying rules and improving maintainability.\n\n*   **Users:** User data is stored under the `/users/{userId}` path, providing clear ownership.\n*   **Projects:** Project data is stored in the `/projects/{projectId}` collection.\n*   **UserCash:** UserCash documents are stored under `/users/{userId}/cash/{cashId}` for clear ownership.\n*   **Expenses:** Expenses are stored in the `/projects/{projectId}/expenses/{expenseId}` subcollection, linking them directly to the projects.\n*   **Suppliers and Categories:** Suppliers and Categories are stored as root collections (`/suppliers`, `/categories`) since they are master data and not directly owned by users or projects.\n*   **Contracts:** Contracts are stored under `/projects/{projectId}/contracts/{contractId}`, linking them to the respective projects.\n\n**Authorization Independence:**\nAuthorization Independence is achieved by storing ownership and authorization data directly within the documents or in the path itself, eliminating the need for `get()` calls in security rules. For example:\n\n*   `UserCash` documents are stored as a subcollection of the `users` collection, making it easy to verify ownership in rules using `request.auth.uid` and the path.\n*   `Expenses` are stored as subcollections of `projects`, enabling efficient querying of expenses associated with a specific project.\n\n**QAPs (Rules are not Filters):**\nThe structure supports secure `list` operations by ensuring that each collection or subcollection has a clear and consistent security posture. For example, listing expenses is always done within the context of a specific project, allowing rules to efficiently verify that the user has access to the project.\n\n*   Private Data: `/users/{userId}/cash/{cashId}` ensures that only the authenticated user can access their cash documents.\n*   Collaborative Data: While not explicitly present, if collaborative data (e.g., project teams) were needed, a `members` map would be added to the `Project` document and denormalized to related subcollections, such as `expenses` or `contracts`."
+  }
+}

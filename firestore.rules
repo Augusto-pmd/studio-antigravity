@@ -1,0 +1,176 @@
+/**
+ * Core Philosophy: This ruleset implements a hybrid security model designed for a project management application.
+ * It enforces strict user ownership for personal data while providing a secure foundation for project-related and master data.
+ * The primary goal is strong authorization during prototyping, with flexibility in data schemas.
+ *
+ * Data Structure:
+ * - /users/{userId}/*: All data directly related to a specific user (profile, cash accounts) is nested under their unique user ID. This provides a clear, path-based ownership structure.
+ * - /projects/{projectId}/*: Project-specific data (details, expenses, contracts) is organized under a unique project ID. Access to this data tree is currently restricted pending schema updates.
+ * - /suppliers, /categories: Top-level collections for master data, intended to be read by authenticated users but not modified by them.
+ *
+ * Key Security Decisions:
+ * - User Data Segregation: All documents and subcollections under /users/{userId} are strictly private and can only be accessed by the authenticated owner. Listing all users is explicitly disallowed to protect privacy.
+ * - Project Data Lockdown: The `Project` entity and its subcollections currently lack an `ownerId` or `members` field. To maintain security, all write operations (`create`, `update`, `delete`) on projects and their sub-data are disabled. Reads are permitted for any signed-in user. This is a temporary, secure default until the application schema is updated to include clear ownership or membership data for projects.
+ * - Master Data is Read-Only: Collections like `suppliers` and `categories` are treated as read-only for application users. This prevents unauthorized modification of shared application data. An admin role or cloud function would be required for writes.
+ * - Default Deny: Any access not explicitly granted is denied.
+ *
+ * Denormalization for Authorization:
+ * These rules are architected with the principle of denormalization in mind. Authorization checks rely on data present directly in the document being accessed or in its path.
+ * - Path-based ownership (`/users/{userId}`) is heavily used for fast, secure checks without needing extra database reads.
+ * - The rules for project data are designed to eventually check for a denormalized `members` map or an `ownerId` field on the project document itself. This avoids slow and costly `get()` calls in subcollection rules.
+ *
+ * Structural Segregation:
+ * The separation between private user data (`/users`) and shared project data (`/projects`) is a key structural decision. This simplifies security rules and makes it impossible for queries to accidentally leak data from one context to another.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if a parent project document exists. Used to secure access
+     * to project subcollections.
+     */
+    function projectExists(projectId) {
+      return exists(/databases/$(database)/documents/projects/$(projectId));
+    }
+
+    // ----------------------------------------------------------------------
+    // User Data Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Controls access to a user's own profile document.
+     * @path /users/{userId}
+     * @allow (create) A new user can create their own profile document. `auth.uid` must match `{userId}`.
+     * @deny (list) Another user cannot list all user profiles.
+     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Controls access to a user's cash accounts.
+     * @path /users/{userId}/cash/{cashId}
+     * @allow (get, list) The owner can read their own cash account documents.
+     * @deny (get, list) An authenticated user cannot read another user's cash accounts.
+     * @principle Enforces path-based ownership for subcollections.
+     */
+    match /users/{userId}/cash/{cashId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    // ----------------------------------------------------------------------
+    // Project Data Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Controls access to project documents.
+     * @path /projects/{projectId}
+     * @allow (get, list) Any authenticated user can read project information.
+     * @deny (create, update) Any user attempting to write to a project.
+     * @principle Secure default. Writes are disabled until an ownership model (e.g., an `ownerId` or `members` field) is added to the Project schema.
+     */
+    match /projects/{projectId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      // CRITICAL: Cannot implement owner-only writes. The 'Project' entity is missing an 'ownerId' or 'members' field.
+      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description Controls access to project expenses.
+     * @path /projects/{projectId}/expenses/{expenseId}
+     * @allow (get, list) An authenticated user can read expenses for an existing project.
+     * @deny (create, update) Any user attempting to write an expense.
+     * @principle Secure default. Write access depends on the parent project's ownership model, which is not yet defined.
+     */
+    match /projects/{projectId}/expenses/{expenseId} {
+      allow get: if isSignedIn() && projectExists(projectId);
+      allow list: if isSignedIn() && projectExists(projectId);
+      // CRITICAL: Writes are disabled because the parent Project document lacks an ownership field.
+      allow create: if false; // TODO: Add validation based on parent project ownership.
+      allow update: if false; // TODO: Add validation based on parent project ownership.
+      allow delete: if false; // TODO: Add validation based on parent project ownership.
+    }
+
+    /**
+     * @description Controls access to project contracts.
+     * @path /projects/{projectId}/contracts/{contractId}
+     * @allow (get, list) An authenticated user can read contracts for an existing project.
+     * @deny (create, update) Any user attempting to write a contract.
+     * @principle Secure default. Write access depends on the parent project's ownership model, which is not yet defined.
+     */
+    match /projects/{projectId}/contracts/{contractId} {
+      allow get: if isSignedIn() && projectExists(projectId);
+      allow list: if isSignedIn() && projectExists(projectId);
+      // CRITICAL: Writes are disabled because the parent Project document lacks an ownership field.
+      allow create: if false; // TODO: Add validation based on parent project ownership.
+      allow update: if false; // TODO: Add validation based on parent project ownership.
+      allow delete: if false; // TODO: Add validation based on parent project ownership.
+    }
+
+    // ----------------------------------------------------------------------
+    // Master Data Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Controls access to master data for suppliers.
+     * @path /suppliers/{supplierId}
+     * @allow (get, list) Any authenticated user can read supplier data.
+     * @deny (create, update, delete) Non-admin users cannot modify the master supplier list.
+     * @principle Protects shared master data by making it read-only for standard users.
+     */
+    match /suppliers/{supplierId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Controls access to master data for expense categories.
+     * @path /categories/{categoryId}
+     * @allow (get, list) Any authenticated user can read category data.
+     * @deny (create, update, delete) Non-admin users cannot modify the master category list.
+     * @principle Protects shared master data by making it read-only for standard users.
+     */
+    match /categories/{categoryId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
