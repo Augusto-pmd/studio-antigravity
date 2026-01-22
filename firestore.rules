@@ -208,6 +208,12 @@ service cloud.firestore {
     match /assets/{assetId} {
       allow read, write: if isSignedIn();
     }
+    
+    match /fundRequests/{fundRequestId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.requesterId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
 
     match /taskRequests/{taskRequestId} {
       allow read: if isSignedIn() && (isAdmin() || resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);

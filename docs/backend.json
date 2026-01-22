@@ -545,6 +545,24 @@
       "required": [
         "id", "title", "requesterId", "requesterName", "assigneeId", "assigneeName", "status", "createdAt"
       ]
+    },
+    "FundRequest": {
+      "title": "Fund Request",
+      "type": "object",
+      "description": "Represents a request for funds for the weekly payment sheet.",
+      "properties": {
+        "id": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "category": { "type": "string", "enum": ["Logística y PMD", "Materiales", "Viáticos", "Caja Chica", "Otros"] },
+        "projectId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["ARS", "USD"] },
+        "exchangeRate": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pendiente", "Aprobado", "Pagado", "Rechazado"] }
+      },
+      "required": [ "id", "requesterId", "requesterName", "date", "category", "amount", "currency", "exchangeRate", "status" ]
     }
   },
   "auth": {
@@ -742,6 +760,22 @@
             {
               "name": "taskRequestId",
               "description": "The unique identifier for the task request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/fundRequests/{fundRequestId}",
+        "definition": {
+          "entityName": "FundRequest",
+          "schema": {
+            "$ref": "#/backend/entities/FundRequest"
+          },
+          "description": "Stores fund requests for the weekly payment sheet. Users can read their own requests, admins can manage all.",
+          "params": [
+            {
+              "name": "fundRequestId",
+              "description": "The unique identifier for the fund request."
             }
           ]
         }

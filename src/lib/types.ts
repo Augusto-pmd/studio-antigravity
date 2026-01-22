@@ -123,3 +123,17 @@ export type Asset = {
   category: string;
   status: 'Activo' | 'Mantenimiento' | 'Vendido' | 'De Baja';
 };
+
+export type FundRequest = {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  date: string;
+  category: 'Logística y PMD' | 'Materiales' | 'Viáticos' | 'Caja Chica' | 'Otros';
+  projectId?: string;
+  projectName?: string; // Denormalized for display
+  amount: number;
+  currency: 'ARS' | 'USD';
+  exchangeRate: number;
+  status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
+};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,36 +27,92 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
+import { useUser } from "@/context/user-context";
+import { useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import type { Project, FundRequest } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const fundRequestCategories = [
-    { id: 'logistica', name: 'Logística y PMD' },
-    { id: 'materiales', name: 'Materiales' },
-    { id: 'viaticos', name: 'Viáticos' },
-    { id: 'caja-chica', name: 'Caja Chica' },
-    { id: 'otros', name: 'Otros' },
+    'Logística y PMD',
+    'Materiales',
+    'Viáticos',
+    'Caja Chica',
+    'Otros',
 ];
 
 
 export function RequestFundDialog() {
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState<Date>();
+  const [isPending, startTransition] = useTransition();
+  const { user, firestore } = useUser();
+  const { toast } = useToast();
+
+  // Form State
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [category, setCategory] = useState<string | undefined>();
+  const [projectId, setProjectId] = useState<string | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
-  const [isClient, setIsClient] = useState(false);
-  const isPending = false; // Mock state
+  const [amount, setAmount] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
 
-  useEffect(() => {
-    if (isClient) {
-      setDate(new Date());
+  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+  const resetForm = () => {
+    setDate(new Date());
+    setCategory(undefined);
+    setProjectId(undefined);
+    setCurrency('ARS');
+    setAmount('');
+    setExchangeRate('');
+  };
+
+  const handleSave = () => {
+    if (!firestore || !user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
+        return;
     }
-  }, [isClient]);
+    if (!category || !amount || !exchangeRate || !date) {
+        toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Categoría, Monto, Tipo de Cambio y Fecha son obligatorios.' });
+        return;
+    }
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+    startTransition(() => {
+        const selectedProject = projects?.find(p => p.id === projectId);
+
+        const fundRequestsCollection = collection(firestore, 'fundRequests');
+        const requestRef = doc(fundRequestsCollection);
+        const requestId = requestRef.id;
+
+        const requestData: FundRequest = {
+            id: requestId,
+            requesterId: user.uid,
+            requesterName: user.displayName || 'Usuario Anónimo',
+            date: date.toISOString(),
+            category: category as FundRequest['category'],
+            projectId: projectId,
+            projectName: selectedProject?.name,
+            amount: parseFloat(amount),
+            currency,
+            exchangeRate: parseFloat(exchangeRate),
+            status: 'Pendiente',
+        };
+
+        setDocumentNonBlocking(requestRef, requestData, { merge: false });
+
+        toast({
+            title: 'Solicitud Enviada',
+            description: 'Tu solicitud de fondos ha sido registrada y está pendiente de aprobación.',
+        });
+        resetForm();
+        setOpen(false);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -66,43 +122,39 @@ export function RequestFundDialog() {
           Solicitar Dinero
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Solicitar Fondos</DialogTitle>
           <DialogDescription>
-            Complete el formulario para crear una nueva solicitud de fondos para la planilla semanal.
+            Complete el formulario para crear una nueva solicitud de fondos.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
 
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">
-                Categoría
-                </Label>
-                <Select>
-                <SelectTrigger id="category" className="col-span-3">
+            <div className="space-y-2">
+                <Label htmlFor="category">Categoría</Label>
+                <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger id="category">
                     <SelectValue placeholder="Seleccione una categoría" />
                 </SelectTrigger>
                 <SelectContent>
                     {fundRequestCategories.map((c) => (
-                    <SelectItem key={c.id} value={c.name}>
-                        {c.name}
+                    <SelectItem key={c} value={c}>
+                        {c}
                     </SelectItem>
                     ))}
                 </SelectContent>
                 </Select>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project" className="text-right">
-                Obra
-                </Label>
-                <Select>
-                <SelectTrigger id="project" className="col-span-3">
-                    <SelectValue placeholder="Imputar a una obra (opcional)" />
+            <div className="space-y-2">
+                <Label htmlFor="project">Obra (Opcional)</Label>
+                <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger id="project">
+                    <SelectValue placeholder="Imputar a una obra" />
                 </SelectTrigger>
                 <SelectContent>
-                    {projects.filter(p => p.status === 'En Curso').map((p) => (
+                    {projects?.filter(p => p.status === 'En Curso').map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                         {p.name}
                     </SelectItem>
@@ -111,40 +163,30 @@ export function RequestFundDialog() {
                 </Select>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">
-                Fecha
-                </Label>
+            <div className="space-y-2">
+                <Label htmlFor="date">Fecha</Label>
                 <Popover>
                 <PopoverTrigger asChild>
                     <Button
                     variant={"outline"}
-                    className={cn(
-                        "col-span-3 justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                    )}
+                    className={cn( "w-full justify-start text-left font-normal", !date && "text-muted-foreground" )}
                     >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date && isClient ? format(date, "PPP") : <span>Seleccione una fecha</span>}
+                    {date ? format(date, "PPP") : <span>Seleccione una fecha</span>}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                    <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    />
+                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
                 </PopoverContent>
                 </Popover>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Moneda</Label>
+            <div className="space-y-2">
+                <Label>Moneda</Label>
                 <RadioGroup 
                     value={currency}
                     onValueChange={(value) => setCurrency(value as 'ARS' | 'USD')}
-                    className="col-span-3 flex items-center gap-6"
+                    className="flex items-center gap-6 pt-1"
                 >
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="ARS" id="ars" />
@@ -157,27 +199,18 @@ export function RequestFundDialog() {
                 </RadioGroup>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                Monto
-                </Label>
-                <Input id="amount" type="number" placeholder="0.00" className="col-span-3" />
+            <div className="space-y-2">
+                <Label htmlFor="amount">Monto</Label>
+                <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)}/>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="exchangeRate" className="text-right">
-                Tipo de Cambio
-                </Label>
-                <Input
-                id="exchangeRate"
-                type="number"
-                placeholder="Dólar BNA compra"
-                className="col-span-3"
-                />
+            <div className="space-y-2">
+                <Label htmlFor="exchangeRate">Tipo de Cambio</Label>
+                <Input id="exchangeRate" type="number" placeholder="Dólar BNA compra" value={exchangeRate} onChange={e => setExchangeRate(e.target.value)} />
             </div>
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enviar Solicitud
           </Button>
