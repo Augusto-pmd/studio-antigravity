@@ -77,7 +77,8 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && 
         (request.auth.token.email == 'info@pmdarquitectura.com' ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración']);
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración']));
     }
 
     /**
