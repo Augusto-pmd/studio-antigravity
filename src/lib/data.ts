@@ -1,4 +1,4 @@
-import type { Project, Supplier, ExpenseCategory, Employee, UserProfile, Contractor, ContractorEmployee } from '@/lib/types';
+import type { Project, Supplier, ExpenseCategory, Employee, UserProfile, Contractor, ContractorEmployee, TaskRequest } from '@/lib/types';
 
 export const projects: Project[] = [
   { id: 'PROJ-001', name: 'Edificio Corporativo Central', client: 'Tech Solutions S.A.', address: 'Av. Corrientes 1234, CABA', currency: 'ARS', projectType: 'Comercial', status: 'En Curso', startDate: '2024-02-01', endDate: '2025-01-31', supervisor: 'Juan Pérez', budget: 2500000, balance: 500000, progress: 75 },
@@ -69,4 +69,10 @@ export const userProfiles: UserProfile[] = [
     { id: 'uid-carlos', fullName: 'Carlos Lopez', email: 'carlos.lopez@example.com', role: 'Administración' },
     { id: 'uid-ana', fullName: 'Ana Martinez', email: 'ana.martinez@example.com', role: 'Dirección' },
     { id: 'uid-pedro', fullName: 'Pedro Ramirez', email: 'pedro.ramirez@example.com', role: 'Operador' },
+];
+
+export const taskRequests: TaskRequest[] = [
+    { id: 'TR-001', title: 'Comprar casco de seguridad', description: 'Comprar un casco de seguridad para el nuevo empleado Javier Gomez.', requesterId: 'uid-juan', requesterName: 'Juan Pérez', assigneeId: 'uid-carlos', assigneeName: 'Carlos Lopez', status: 'Pendiente', createdAt: '2024-07-18T10:00:00Z', projectId: 'PROJ-004' },
+    { id: 'TR-002', title: 'Revisar presupuesto PROJ-005', description: 'El cliente solicitó una revisión del presupuesto para el Parque Industrial Norte.', requesterId: 'uid-ana', requesterName: 'Ana Martinez', assigneeId: 'uid-juan', assigneeName: 'Juan Pérez', status: 'Pendiente', createdAt: '2024-07-17T15:30:00Z', projectId: 'PROJ-005' },
+    { id: 'TR-003', title: 'Llamar al proveedor de hormigón', description: 'Confirmar entrega para el lunes a primera hora en la obra de Los Robles.', requesterId: 'uid-maria', requesterName: 'Maria González', assigneeId: 'uid-pedro', assigneeName: 'Pedro Ramirez', status: 'Finalizado', createdAt: '2024-07-16T09:00:00Z', completedAt: '2024-07-16T14:00:00Z', projectId: 'PROJ-002' },
 ];

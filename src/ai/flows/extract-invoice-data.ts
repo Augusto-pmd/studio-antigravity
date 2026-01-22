@@ -3,30 +3,15 @@
  * @fileOverview Extracts fiscal data from an invoice document using an LLM.
  *
  * - extractInvoiceData - A function that analyzes an invoice and returns structured data.
- * - ExtractInvoiceDataInput - The input type for the extractInvoiceData function.
- * - ExtractInvoiceDataOutput - The return type for the extractInvoiceData function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const ExtractInvoiceDataInputSchema = z.object({
-  invoiceDataUri: z
-    .string()
-    .describe(
-      "An invoice document, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type ExtractInvoiceDataInput = z.infer<typeof ExtractInvoiceDataInputSchema>;
-
-const ExtractInvoiceDataOutputSchema = z.object({
-  invoiceNumber: z.string().describe('The invoice number (Número de Factura). Return an empty string if not found.'),
-  iva: z.number().describe('The VAT (IVA) amount found in the invoice. Return 0 if not found.'),
-  iibb: z.number().describe('The Gross Income tax perception (Percepción de IIBB). Return 0 if not found.'),
-  iibbJurisdiction: z.enum(["No Aplica", "CABA", "Provincia"]).describe("The jurisdiction for the IIBB. If it's from Buenos Aires or any other province, classify as 'Provincia'. If it's from Ciudad Autónoma de Buenos Aires, classify as 'CABA'. If no IIBB is found, classify as 'No Aplica'."),
-  total: z.number().describe('The total amount of the invoice. Return 0 if not found.'),
-});
-export type ExtractInvoiceDataOutput = z.infer<typeof ExtractInvoiceDataOutputSchema>;
+import {
+  ExtractInvoiceDataInput,
+  ExtractInvoiceDataInputSchema,
+  ExtractInvoiceDataOutput,
+  ExtractInvoiceDataOutputSchema,
+} from '@/ai/schemas';
 
 export async function extractInvoiceData(input: ExtractInvoiceDataInput): Promise<ExtractInvoiceDataOutput> {
   return extractInvoiceDataFlow(input);

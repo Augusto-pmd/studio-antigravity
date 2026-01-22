@@ -74,3 +74,17 @@ export type UserProfile = {
   email: string;
   fullName: string;
 };
+
+export type TaskRequest = {
+  id: string;
+  title: string;
+  description: string;
+  requesterId: string;
+  requesterName: string;
+  assigneeId: string;
+  assigneeName: string;
+  status: 'Pendiente' | 'Finalizado';
+  createdAt: string;
+  completedAt?: string;
+  projectId?: string;
+};
