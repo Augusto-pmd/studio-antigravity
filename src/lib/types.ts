@@ -107,6 +107,8 @@ export type Expense = {
   currency: 'ARS' | 'USD';
   exchangeRate: number;
   receiptUrl?: string;
+  retencionGanancias?: number;
+  retencionIVA?: number;
+  retencionIIBB?: number;
+  retencionSUSS?: number;
 };
-
-    

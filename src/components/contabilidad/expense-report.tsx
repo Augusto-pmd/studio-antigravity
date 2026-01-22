@@ -18,7 +18,7 @@ import { useFirestore } from '@/firebase/provider';
 import { collection } from 'firebase/firestore';
 import type { Project, Supplier } from '@/lib/types';
 
-const formatCurrency = (amount: number, currency: string) => {
+const formatCurrency = (amount: number | undefined, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
@@ -56,6 +56,8 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
         <TableCell><Skeleton className="h-5 w-28" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
       </TableRow>
     ))
@@ -77,6 +79,8 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
                 <TableHead>Proveedor</TableHead>
                 <TableHead className="text-right">IVA</TableHead>
                 <TableHead className="text-right">IIBB</TableHead>
+                <TableHead className="text-right">Ret. Gan.</TableHead>
+                <TableHead className="text-right">Otras Ret.</TableHead>
                 <TableHead className="text-right">Monto Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -84,7 +88,7 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
               {(isLoading || isLoadingProjects || isLoadingSuppliers) && renderSkeleton()}
               {!isLoading && expenses.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     No hay gastos registrados para mostrar.
                   </TableCell>
                 </TableRow>
@@ -94,8 +98,10 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
                   <TableCell>{formatDate(expense.date)}</TableCell>
                   <TableCell className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</TableCell>
                   <TableCell>{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(expense.iva || 0, 'ARS')}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(expense.iibb || 0, 'ARS')}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(expense.iva)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(expense.iibb)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(expense.retencionGanancias)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency((expense.retencionIIBB || 0) + (expense.retencionIVA || 0) + (expense.retencionSUSS || 0))}</TableCell>
                   <TableCell className="text-right font-mono font-bold">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                 </TableRow>
               ))}

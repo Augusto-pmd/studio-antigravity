@@ -35,11 +35,12 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/context/user-context";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { Project, Supplier, Expense } from "@/lib/types";
+import { Separator } from "../ui/separator";
 
 export function AddExpenseDialog() {
   const { user, permissions, firestore } = useUser();
@@ -67,6 +68,13 @@ export function AddExpenseDialog() {
   const [exchangeRate, setExchangeRate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentMethodOther, setPaymentMethodOther] = useState('');
+
+  // Retenciones
+  const [retencionGanancias, setRetencionGanancias] = useState('');
+  const [retencionIVA, setRetencionIVA] = useState('');
+  const [retencionIIBB, setRetencionIIBB] = useState('');
+  const [retencionSUSS, setRetencionSUSS] = useState('');
+
 
   // Data fetching
   const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
@@ -180,6 +188,10 @@ export function AddExpenseDialog() {
         currency,
         exchangeRate: parseFloat(exchangeRate),
         receiptUrl,
+        retencionGanancias: retencionGanancias ? parseFloat(retencionGanancias) : 0,
+        retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
+        retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
+        retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
       };
 
       setDocumentNonBlocking(newExpenseRef, newExpense, {});
@@ -207,7 +219,7 @@ export function AddExpenseDialog() {
           Cargar Gasto
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Cargar Nuevo Gasto</DialogTitle>
           <DialogDescription>
@@ -234,12 +246,10 @@ export function AddExpenseDialog() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="project" className="text-right">
-              Obra
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="project">Obra</Label>
             <Select onValueChange={setSelectedProject} value={selectedProject ?? ''}>
-              <SelectTrigger id="project" className="col-span-3">
+              <SelectTrigger id="project">
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
               <SelectContent>
@@ -251,16 +261,15 @@ export function AddExpenseDialog() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
-              Fecha
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="date">Fecha</Label>
              <Popover>
               <PopoverTrigger asChild>
                 <Button
+                  id="date"
                   variant={"outline"}
                   className={cn(
-                    "col-span-3 justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -278,12 +287,10 @@ export function AddExpenseDialog() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="supplier" className="text-right">
-              Proveedor
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="supplier">Proveedor</Label>
             <Select onValueChange={setSelectedSupplier} value={selectedSupplier ?? ''}>
-              <SelectTrigger id="supplier" className="col-span-3">
+              <SelectTrigger id="supplier">
                 <SelectValue placeholder="Seleccione un proveedor" />
               </SelectTrigger>
               <SelectContent>
@@ -295,12 +302,10 @@ export function AddExpenseDialog() {
               </SelectContent>
             </Select>
           </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">
-              Rubro
-            </Label>
+           <div className="space-y-2">
+            <Label htmlFor="category">Rubro</Label>
             <Select onValueChange={setSelectedCategory} value={selectedCategory ?? ''}>
-              <SelectTrigger id="category" className="col-span-3">
+              <SelectTrigger id="category">
                 <SelectValue placeholder="Seleccione un rubro" />
               </SelectTrigger>
               <SelectContent>
@@ -312,12 +317,12 @@ export function AddExpenseDialog() {
               </SelectContent>
             </Select>
           </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Tipo Comprob.</Label>
+           <div className="space-y-2">
+            <Label>Tipo Comprobante</Label>
              <RadioGroup
               value={documentType}
               onValueChange={(value: 'Factura' | 'Recibo Común') => setDocumentType(value)}
-              className="col-span-3 flex items-center gap-6"
+              className="flex items-center gap-6"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="Factura" id="factura" />
@@ -332,26 +337,24 @@ export function AddExpenseDialog() {
 
           {documentType === 'Factura' && (
             <>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="receipt" className="text-right">
-                  Comprobante
-                </Label>
-                <div className="col-span-3 flex items-center gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="receipt">Comprobante</Label>
+                <div className="flex items-center gap-2">
                   <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
                   <Wand2 className="h-5 w-5 text-primary" title="Asistido por IA para extraer datos" />
                 </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="invoiceNumber" className="text-right">Nº Factura</Label>
-                <div className="col-span-3 relative">
+              <div className="space-y-2">
+                <Label htmlFor="invoiceNumber">Nº Factura</Label>
+                <div className="relative">
                     <Input id="invoiceNumber" type="text" placeholder="Nº de la factura" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
                     {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
                 </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="paymentMethod" className="text-right">Medio de Pago</Label>
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">Medio de Pago</Label>
                 <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod ?? ''}>
-                    <SelectTrigger id="paymentMethod" className="col-span-3">
+                    <SelectTrigger id="paymentMethod">
                         <SelectValue placeholder="Seleccione un medio" />
                     </SelectTrigger>
                     <SelectContent>
@@ -365,11 +368,10 @@ export function AddExpenseDialog() {
               </div>
 
               {paymentMethod === 'Otros' && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="paymentMethodOther" className="text-right">Especificar</Label>
+                  <div className="space-y-2">
+                      <Label htmlFor="paymentMethodOther">Especificar Medio de Pago</Label>
                       <Input
                           id="paymentMethodOther"
-                          className="col-span-3"
                           value={paymentMethodOther}
                           onChange={(e) => setPaymentMethodOther(e.target.value)}
                           placeholder="Especifique el medio de pago"
@@ -379,12 +381,12 @@ export function AddExpenseDialog() {
             </>
           )}
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Moneda</Label>
+          <div className="space-y-2">
+            <Label>Moneda</Label>
             <RadioGroup
               value={currency}
               onValueChange={(value: 'ARS' | 'USD') => setCurrency(value)}
-              className="col-span-3 flex items-center gap-6"
+              className="flex items-center gap-6"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="ARS" id="ars" />
@@ -396,15 +398,12 @@ export function AddExpenseDialog() {
               </div>
             </RadioGroup>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="exchangeRate" className="text-right">
-              Tipo de Cambio
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="exchangeRate">Tipo de Cambio</Label>
             <Input
               id="exchangeRate"
               type="number"
               placeholder="Dólar BNA compra"
-              className="col-span-3"
               value={exchangeRate}
               onChange={(e) => setExchangeRate(e.target.value)}
             />
@@ -412,50 +411,77 @@ export function AddExpenseDialog() {
           
           {documentType === 'Factura' && (
             <>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="iva" className="text-right">IVA</Label>
-                <div className="col-span-3 relative">
-                    <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
-                    {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+              <Separator />
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Impuestos y Percepciones</h4>
+                <div className="space-y-2">
+                  <Label htmlFor="iva">IVA</Label>
+                  <div className="relative">
+                      <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
+                      {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="iibb" className="text-right">IIBB</Label>
-                <div className="col-span-3 relative">
-                    <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
-                    {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                <div className="space-y-2">
+                  <Label htmlFor="iibb">Percepción IIBB</Label>
+                  <div className="relative">
+                      <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
+                      {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label className="text-right pt-2">Jurisdicción IIBB</Label>
-                 <RadioGroup 
-                    value={iibbJurisdiction} 
-                    onValueChange={(v) => setIibbJurisdiction(v as any)} 
-                    className="col-span-3 flex items-center gap-6 pt-2"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="No Aplica" id="iibb-na" />
-                        <Label htmlFor="iibb-na">No Aplica</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="CABA" id="iibb-caba" />
-                        <Label htmlFor="iibb-caba">CABA</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Provincia" id="iibb-pba" />
-                        <Label htmlFor="iibb-pba">Provincia</Label>
-                    </div>
-                </RadioGroup>
+                <div className="space-y-2">
+                  <Label>Jurisdicción IIBB</Label>
+                  <RadioGroup 
+                      value={iibbJurisdiction} 
+                      onValueChange={(v) => setIibbJurisdiction(v as any)} 
+                      className="flex items-center gap-6 pt-2"
+                  >
+                      <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="No Aplica" id="iibb-na" />
+                          <Label htmlFor="iibb-na">No Aplica</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="CABA" id="iibb-caba" />
+                          <Label htmlFor="iibb-caba">CABA</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="Provincia" id="iibb-pba" />
+                          <Label htmlFor="iibb-pba">Provincia</Label>
+                      </div>
+                  </RadioGroup>
+                </div>
               </div>
             </>
           )}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="amount" className="text-right">
-              Monto Total
-            </Label>
-             <div className="col-span-3 relative">
-                <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                {isExtracting && documentType === 'Factura' && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+
+          <Separator />
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground">Retenciones Aplicadas al Pago</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="retencionGanancias">Ret. Ganancias</Label>
+                <Input id="retencionGanancias" type="number" placeholder="0.00" value={retencionGanancias} onChange={e => setRetencionGanancias(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="retencionIVA">Ret. IVA</Label>
+                <Input id="retencionIVA" type="number" placeholder="0.00" value={retencionIVA} onChange={e => setRetencionIVA(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="retencionIIBB">Ret. IIBB</Label>
+                <Input id="retencionIIBB" type="number" placeholder="0.00" value={retencionIIBB} onChange={e => setRetencionIIBB(e.target.value)} />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="retencionSUSS">Ret. SUSS</Label>
+                <Input id="retencionSUSS" type="number" placeholder="0.00" value={retencionSUSS} onChange={e => setRetencionSUSS(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <Separator />
+
+          <div className="space-y-2">
+            <Label htmlFor="amount" className="text-lg">Monto Total</Label>
+             <div className="relative">
+                <Input id="amount" type="number" placeholder="0.00" className="text-lg h-12" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                {isExtracting && documentType === 'Factura' && <Loader2 className="absolute right-3 top-3.5 h-5 w-5 animate-spin" />}
             </div>
           </div>
 
@@ -470,5 +496,3 @@ export function AddExpenseDialog() {
     </Dialog>
   );
 }
-
-    
