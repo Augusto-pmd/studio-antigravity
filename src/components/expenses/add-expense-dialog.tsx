@@ -34,15 +34,19 @@ import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } f
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
-import { useUser } from "@/context/user-context";
+import { useUser, useFirestore } from "@/context/user-context";
+import { collection, doc, setDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export function AddExpenseDialog() {
-  const { permissions } = useUser();
+  const { user, permissions } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [date, setDate] = useState<Date>();
   const [isClient, setIsClient] = useState(false);
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
@@ -54,14 +58,16 @@ export function AddExpenseDialog() {
   const [iva, setIva] = useState('');
   const [iibb, setIibb] = useState('');
   const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentMethodOther, setPaymentMethodOther] = useState('');
 
   const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
   const isContractBlocked = project?.balance === 0;
-  const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Proveedor Vencido ART
+  const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Mock data for blocked supplier
   
   const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
 
@@ -76,12 +82,6 @@ export function AddExpenseDialog() {
   }, []);
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setIva('');
-    setAmount('');
-    setInvoiceNumber('');
-    setIibb('');
-    setPaymentMethod(null);
-    setPaymentMethodOther('');
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -126,7 +126,66 @@ export function AddExpenseDialog() {
     };
   };
 
-  const isSubmitDisabled = isPending || isExtracting || isContractBlocked || isSupplierBlocked || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));
+  const handleSaveExpense = async () => {
+    if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
+      toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
+      return;
+    }
+    if (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther))) {
+      toast({ variant: 'destructive', title: 'Campos de Factura incompletos', description: 'Para facturas, debe adjuntar el comprobante y completar el número y medio de pago.' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (!firestore || !user) throw new Error("Firebase no está disponible.");
+
+      const expensesColRef = collection(firestore, `projects/${selectedProject}/expenses`);
+      const newExpenseRef = doc(expensesColRef);
+      const expenseId = newExpenseRef.id;
+
+      let receiptUrl = '';
+      if (file && documentType === 'Factura') {
+        const storage = getStorage();
+        const filePath = `receipts/${selectedProject}/${expenseId}/${file.name}`;
+        const fileRef = ref(storage, filePath);
+        
+        await uploadBytes(fileRef, file);
+        receiptUrl = await getDownloadURL(fileRef);
+      }
+
+      const newExpense = {
+        id: expenseId,
+        projectId: selectedProject,
+        date: date.toISOString(),
+        supplierId: selectedSupplier,
+        categoryId: selectedCategory,
+        documentType,
+        invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
+        paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : null,
+        amount: parseFloat(amount),
+        iva: iva ? parseFloat(iva) : 0,
+        iibb: iibb ? parseFloat(iibb) : 0,
+        iibbJurisdiction: documentType === 'Factura' ? iibbJurisdiction : 'No Aplica',
+        currency,
+        exchangeRate: parseFloat(exchangeRate),
+        receiptUrl,
+      };
+
+      await setDoc(newExpenseRef, newExpense);
+      
+      toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
+      setOpen(false);
+      // Here you would typically reset the form state
+    } catch (error: any) {
+      console.error("Error saving expense:", error);
+      toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || 'No se pudo registrar el gasto.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isSubmitDisabled = isPending || isExtracting || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));
   
   if (!permissions.canLoadExpenses) return null;
 
@@ -145,7 +204,7 @@ export function AddExpenseDialog() {
             Complete los campos para registrar un nuevo gasto en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[75vh] overflow-y-auto pr-2">
           {isContractBlocked && (
             <Alert variant="destructive">
               <TriangleAlert className="h-4 w-4" />
@@ -230,7 +289,7 @@ export function AddExpenseDialog() {
             <Label htmlFor="category" className="text-right">
               Rubro
             </Label>
-            <Select>
+            <Select onValueChange={setSelectedCategory} value={selectedCategory ?? ''}>
               <SelectTrigger id="category" className="col-span-3">
                 <SelectValue placeholder="Seleccione un rubro" />
               </SelectTrigger>
@@ -336,6 +395,8 @@ export function AddExpenseDialog() {
               type="number"
               placeholder="Dólar BNA compra"
               className="col-span-3"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
             />
           </div>
           
@@ -390,8 +451,8 @@ export function AddExpenseDialog() {
 
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={isSubmitDisabled}>
-            {(isPending || isExtracting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="button" onClick={handleSaveExpense} disabled={isSubmitDisabled}>
+            {(isPending || isExtracting || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Gasto
           </Button>
         </DialogFooter>

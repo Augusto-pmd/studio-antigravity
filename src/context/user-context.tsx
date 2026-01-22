@@ -2,8 +2,13 @@
 
 import type { Role } from '@/lib/types';
 import { createContext, useContext, useState, type ReactNode, useMemo } from 'react';
+import { useUser as useFirebaseUser } from '@/firebase/provider';
+import type { User } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 
 interface UserContextType {
+  user: User | null;
+  firestore: Firestore | null;
   role: Role;
   setRole: (role: Role) => void;
   permissions: {
@@ -40,11 +45,20 @@ const getPermissions = (role: Role) => {
 
 
 export function UserProvider({ children }: { children: ReactNode }) {
+  const { user, firestore } = useFirebaseUser();
   const [role, setRole] = useState<Role>('Dirección');
   
   const permissions = useMemo(() => getPermissions(role), [role]);
 
-  return <UserContext.Provider value={{ role, setRole, permissions }}>{children}</UserContext.Provider>;
+  const value = {
+    user,
+    firestore,
+    role,
+    setRole,
+    permissions
+  }
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
@@ -54,3 +68,8 @@ export function useUser() {
   }
   return context;
 }
+
+// Re-export useFirestore for convenience in components that also use useUser
+export { useFirestore } from '@/firebase/provider';
+
+    

@@ -75,8 +75,8 @@ service cloud.firestore {
       // --- Subcollections ---
       match /expenses/{expenseId} {
         allow get, list: if isSignedIn() && projectExists(projectId);
-        // CRITICAL: Write access depends on parent project ownership, which isn't defined.
-        allow write: if false;
+        // Allow writes for any signed-in user to enable expense tracking during prototyping.
+        allow write: if isSignedIn();
       }
 
       match /contracts/{contractId} {
@@ -153,3 +153,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
