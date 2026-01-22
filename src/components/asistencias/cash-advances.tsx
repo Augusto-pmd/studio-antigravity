@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -16,53 +17,100 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AddCashAdvanceDialog } from "./add-cash-advance-dialog";
+import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import type { CashAdvance, PayrollWeek } from '@/lib/types';
+import { Skeleton } from '../ui/skeleton';
+import { parseISO, format } from 'date-fns';
 
-// Mock data, will be replaced with Firestore data
-const advances: any[] = [];
+const formatCurrency = (amount: number, currency: string = 'ARS') => {
+  if (typeof amount !== 'number') return '';
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+};
+const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    return format(parseISO(dateString), 'dd/MM/yyyy');
+};
 
 export function CashAdvances() {
+  const { firestore } = useUser();
+
+  const payrollWeeksQuery = useMemoFirebase(
+    () => firestore ? query(collection(firestore, 'payrollWeeks'), where('status', '==', 'Abierta'), limit(1)) : null,
+    [firestore]
+  );
+  const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
+  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
+
+  const cashAdvancesQuery = useMemoFirebase(
+    () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances'), where('payrollWeekId', '==', currentWeek.id), orderBy('date', 'desc')) : null,
+    [firestore, currentWeek]
+  );
+  const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(cashAdvancesQuery);
+  
+  const isLoading = isLoadingWeeks || isLoadingAdvances;
+
+  const renderSkeleton = () => (
+    Array.from({ length: 2 }).map((_, i) => (
+      <TableRow key={`skel-adv-${i}`}>
+        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+      </TableRow>
+    ))
+  );
+
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Gestión de Adelantos</CardTitle>
             <CardDescription>
-            Registre y consulte los adelantos de sueldo otorgados a los empleados.
+            Registre y consulte los adelantos de sueldo otorgados a los empleados para la semana actual.
             </CardDescription>
         </div>
-        <AddCashAdvanceDialog />
+        <AddCashAdvanceDialog currentWeek={currentWeek} />
       </CardHeader>
       <CardContent>
-         <div className="rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Empleado</TableHead>
-                        <TableHead>Obra</TableHead>
-                        <TableHead className="text-right">Monto</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {advances.length > 0 ? (
-                        advances.map(advance => (
-                            <TableRow key={advance.id}>
-                                <TableCell>{advance.date}</TableCell>
-                                <TableCell>{advance.employeeName}</TableCell>
-                                <TableCell>{advance.projectName}</TableCell>
-                                <TableCell className="text-right">{advance.amount}</TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
+        {!currentWeek && !isLoadingWeeks && (
+            <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">No hay una semana de pagos abierta. Genere una en "Planillas Semanales".</p>
+            </div>
+        )}
+        {currentWeek && (
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                No hay adelantos registrados para esta semana.
-                            </TableCell>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Empleado</TableHead>
+                            <TableHead>Obra</TableHead>
+                            <TableHead className="text-right">Monto</TableHead>
                         </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-         </div>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading && renderSkeleton()}
+                        {!isLoading && advances?.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    No hay adelantos registrados para esta semana.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {!isLoading && advances?.map(advance => (
+                                <TableRow key={advance.id}>
+                                    <TableCell>{formatDate(advance.date)}</TableCell>
+                                    <TableCell>{advance.employeeName}</TableCell>
+                                    <TableCell>{advance.projectName || 'N/A'}</TableCell>
+                                    <TableCell className="text-right font-mono">{formatCurrency(advance.amount)}</TableCell>
+                                </TableRow>
+                            ))
+                        }
+                    </TableBody>
+                </Table>
+            </div>
+        )}
       </CardContent>
     </Card>
   );

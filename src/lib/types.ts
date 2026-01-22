@@ -145,3 +145,15 @@ export type PayrollWeek = {
   status: 'Abierta' | 'Cerrada';
   generatedAt: string;
 };
+
+export type CashAdvance = {
+  id: string;
+  employeeId: string;
+  employeeName: string; // denormalized for display
+  projectId?: string;
+  projectName?: string; // denormalized for display
+  date: string;
+  amount: number;
+  reason?: string;
+  payrollWeekId: string; // To associate with a payment week
+};

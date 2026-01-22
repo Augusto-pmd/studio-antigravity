@@ -34,7 +34,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { projects, employees } from '@/lib/data';
+import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Project, Employee } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
@@ -54,6 +56,14 @@ export function DailyAttendance() {
   const [lastProjectByEmployee, setLastProjectByEmployee] = useState<Record<string, string>>({});
   const [isClient, setIsClient] = useState(false);
 
+  const { firestore } = useUser();
+
+  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
+
+  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
   useEffect(() => {
     setIsClient(true);
     setSelectedDate(new Date());
@@ -66,10 +76,11 @@ export function DailyAttendance() {
   }, [selectedDate]);
 
   const activeEmployees = useMemo(() => {
+    if (!employees) return [];
     return employees.filter(
       (emp) => emp.status === 'Activo'
     );
-  }, []);
+  }, [employees]);
 
   const weekDays = useMemo(() => {
     if (!selectedDate) return [];
@@ -197,7 +208,13 @@ export function DailyAttendance() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeEmployees.length > 0 ? (
+                {isLoadingEmployees ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      Cargando empleados...
+                    </TableCell>
+                  </TableRow>
+                ) : activeEmployees.length > 0 ? (
                   activeEmployees.map((employee) => {
                     const employeeAttendance = getEmployeeAttendance(employee.id);
                     const isPresent = employeeAttendance.status === 'presente';
@@ -227,14 +244,14 @@ export function DailyAttendance() {
                           <Select
                             value={employeeAttendance.projectId ?? ''}
                             onValueChange={(value) => handleAttendanceChange(employee.id, 'projectId', value)}
-                            disabled={!isPresent}
+                            disabled={!isPresent || isLoadingProjects}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Asignar Obra" />
                             </SelectTrigger>
                             <SelectContent>
                               {projects
-                                .filter((p) => p.status === 'En Curso')
+                                ?.filter((p) => p.status === 'En Curso')
                                 .map((p) => (
                                   <SelectItem key={p.id} value={p.id}>
                                     {p.name}
@@ -280,7 +297,7 @@ export function DailyAttendance() {
           </div>
         </CardContent>
         <CardFooter className="justify-end">
-            <Button>
+            <Button disabled>
                 <Save className="mr-2 h-4 w-4" />
                 Guardar Asistencias
             </Button>

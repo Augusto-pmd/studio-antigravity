@@ -232,6 +232,10 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
       allow update: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
     }
+    
+    match /cashAdvances/{cashAdvanceId} {
+      allow read, write: if isSignedIn();
+    }
 
     /**
      * @description Enables collection group queries on 'expenses'. This is necessary

@@ -27,28 +27,100 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-import { employees, projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
 
-export function AddCashAdvanceDialog() {
+export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState<Date>();
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
-  const isPending = false; // Mock state
+  const { firestore } = useUser();
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
+  // FORM STATE
+  const [date, setDate] = useState<Date>();
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+
+  const [isClient, setIsClient] = useState(false);
+
+  // DATA FETCHING
+  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
+  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+  const resetForm = () => {
+    setDate(new Date());
+    setSelectedEmployeeId(undefined);
+    setSelectedProjectId(undefined);
+    setAmount('');
+    setReason('');
+  };
+  
   useEffect(() => {
     setIsClient(true);
-    setDate(new Date());
-  }, []);
+    if (open) {
+        resetForm();
+    }
+  }, [open]);
+
+  const handleSave = () => {
+    if (!firestore || !currentWeek) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
+        return;
+    }
+    if (!selectedEmployeeId || !date || !amount) {
+        toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Fecha y Monto son obligatorios.' });
+        return;
+    }
+
+    startTransition(() => {
+        const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
+        const selectedProject = projects?.find(p => p.id === selectedProjectId);
+
+        if (!selectedEmployee) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
+            return;
+        }
+
+        const advancesCollection = collection(firestore, 'cashAdvances');
+        const advanceRef = doc(advancesCollection);
+        const advanceId = advanceRef.id;
+
+        const newAdvance: CashAdvance = {
+            id: advanceId,
+            payrollWeekId: currentWeek.id,
+            employeeId: selectedEmployee.id,
+            employeeName: selectedEmployee.name,
+            projectId: selectedProject?.id,
+            projectName: selectedProject?.name,
+            date: date.toISOString(),
+            amount: parseFloat(amount) || 0,
+            reason: reason || undefined,
+        };
+
+        setDocumentNonBlocking(advanceRef, newAdvance, { merge: false });
+
+        toast({
+            title: 'Adelanto Registrado',
+            description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
+        });
+        setOpen(false);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button disabled={!currentWeek}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Registrar Adelanto
         </Button>
@@ -65,12 +137,12 @@ export function AddCashAdvanceDialog() {
             <Label htmlFor="employee" className="text-right">
               Empleado
             </Label>
-            <Select onValueChange={setSelectedEmployeeId}>
+            <Select onValueChange={setSelectedEmployeeId} value={selectedEmployeeId} disabled={isLoadingEmployees}>
               <SelectTrigger id="employee" className="col-span-3">
                 <SelectValue placeholder="Seleccione un empleado" />
               </SelectTrigger>
               <SelectContent>
-                {employees.filter(e => e.status === 'Activo').map((e) => (
+                {employees?.filter(e => e.status === 'Activo').map((e) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.name}
                   </SelectItem>
@@ -83,12 +155,12 @@ export function AddCashAdvanceDialog() {
             <Label htmlFor="project" className="text-right">
               Obra
             </Label>
-            <Select onValueChange={setSelectedProjectId}>
+            <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
               <SelectTrigger id="project" className="col-span-3">
-                <SelectValue placeholder="Imputar a una obra" />
+                <SelectValue placeholder="Imputar a una obra (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                {projects.filter(p => p.status === 'En Curso').map((p) => (
+                {projects?.filter(p => p.status === 'En Curso').map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -120,6 +192,7 @@ export function AddCashAdvanceDialog() {
                   selected={date}
                   onSelect={setDate}
                   initialFocus
+                  disabled={(d) => currentWeek ? (d < parseISO(currentWeek.startDate) || d > parseISO(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
             </Popover>
@@ -129,18 +202,18 @@ export function AddCashAdvanceDialog() {
             <Label htmlFor="amount" className="text-right">
               Monto
             </Label>
-            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" />
+            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" value={amount} onChange={e => setAmount(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="reason" className="text-right pt-2">
               Motivo
             </Label>
-            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" />
+            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" value={reason} onChange={e => setReason(e.target.value)}/>
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Adelanto
           </Button>
@@ -149,5 +222,3 @@ export function AddCashAdvanceDialog() {
     </Dialog>
   );
 }
-
-    

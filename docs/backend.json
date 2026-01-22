@@ -599,6 +599,49 @@
         "status",
         "generatedAt"
       ]
+    },
+    "CashAdvance": {
+      "title": "Cash Advance",
+      "type": "object",
+      "description": "Represents a cash advance given to an employee during a payroll week.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "employeeId": {
+          "type": "string"
+        },
+        "employeeName": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "projectName": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "payrollWeekId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "employeeId",
+        "employeeName",
+        "date",
+        "amount",
+        "payrollWeekId"
+      ]
     }
   },
   "auth": {
@@ -828,6 +871,22 @@
             {
               "name": "payrollWeekId",
               "description": "The unique identifier for the payroll week."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/cashAdvances/{cashAdvanceId}",
+        "definition": {
+          "entityName": "CashAdvance",
+          "schema": {
+            "$ref": "#/backend/entities/CashAdvance"
+          },
+          "description": "Stores employee cash advances. Admins can manage all.",
+          "params": [
+            {
+              "name": "cashAdvanceId",
+              "description": "The unique identifier for the cash advance."
             }
           ]
         }
