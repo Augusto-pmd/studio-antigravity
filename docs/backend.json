@@ -246,6 +246,15 @@
           "type": "string",
           "description": "Reference to Category. (Relationship: Category 1:N Expense)"
         },
+        "documentType": {
+          "type": "string",
+          "description": "The type of document backing the expense.",
+          "enum": ["Factura", "Recibo Común"]
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "The official number of the invoice, if applicable."
+        },
         "amount": {
           "type": "number",
           "description": "The total amount of the expense, including taxes."
@@ -253,6 +262,10 @@
         "iva": {
           "type": "number",
           "description": "The VAT (IVA) amount included in the total expense amount."
+        },
+        "iibb": {
+            "type": "number",
+            "description": "The Gross Income tax perception (Percepción de IIBB)."
         },
         "currency": {
           "type": "string",
@@ -265,11 +278,11 @@
         },
         "receiptUrl": {
           "type": "string",
-          "description": "URL of the receipt image or document.",
+          "description": "URL of the receipt image or document, if applicable.",
           "format": "uri"
         }
       },
-      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount", "currency", "exchangeRate"]
+      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount", "currency", "exchangeRate", "documentType"]
     },
     "Supplier": {
       "title": "Supplier",

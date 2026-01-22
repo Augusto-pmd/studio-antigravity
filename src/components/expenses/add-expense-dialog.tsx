@@ -47,9 +47,12 @@ export function AddExpenseDialog() {
   const [isClient, setIsClient] = useState(false);
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   
+  const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común'>('Factura');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [amount, setAmount] = useState('');
   const [iva, setIva] = useState('');
+  const [iibb, setIibb] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
 
   const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
@@ -69,6 +72,8 @@ export function AddExpenseDialog() {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     setIva('');
     setAmount('');
+    setInvoiceNumber('');
+    setIibb('');
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -88,9 +93,11 @@ export function AddExpenseDialog() {
         if (result.data) {
           setAmount(result.data.total > 0 ? result.data.total.toString() : '');
           setIva(result.data.iva > 0 ? result.data.iva.toString() : '');
+          setIibb(result.data.iibb > 0 ? result.data.iibb.toString() : '');
+          setInvoiceNumber(result.data.invoiceNumber || '');
           toast({
             title: "Factura analizada con IA",
-            description: "Se completaron los campos de IVA y Monto Total. Por favor, verifíquelos.",
+            description: "Se completaron los campos fiscales. Por favor, verifíquelos.",
           });
         } else {
           toast({
@@ -108,7 +115,7 @@ export function AddExpenseDialog() {
     };
   };
 
-  const isSubmitDisabled = isPending || isExtracting || isContractBlocked || isSupplierBlocked || !file;
+  const isSubmitDisabled = isPending || isExtracting || isContractBlocked || isSupplierBlocked || (documentType === 'Factura' && (!file || !invoiceNumber));
   
   if (!permissions.canLoadExpenses) return null;
 
@@ -225,6 +232,45 @@ export function AddExpenseDialog() {
               </SelectContent>
             </Select>
           </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Tipo Comprob.</Label>
+             <RadioGroup
+              value={documentType}
+              onValueChange={(value: 'Factura' | 'Recibo Común') => setDocumentType(value)}
+              className="col-span-3 flex items-center gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Factura" id="factura" />
+                <Label htmlFor="factura">Factura</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Recibo Común" id="recibo" />
+                <Label htmlFor="recibo">Recibo Común</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {documentType === 'Factura' && (
+            <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="receipt" className="text-right">
+                  Comprobante
+                </Label>
+                <div className="col-span-3 flex items-center gap-2">
+                  <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
+                  <Wand2 className="h-5 w-5 text-primary" title="Asistido por IA para extraer datos" />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="invoiceNumber" className="text-right">Nº Factura</Label>
+                <div className="col-span-3 relative">
+                    <Input id="invoiceNumber" type="text" placeholder="Nº de la factura" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+                    {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Moneda</Label>
             <RadioGroup
@@ -253,29 +299,32 @@ export function AddExpenseDialog() {
               className="col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="receipt" className="text-right">
-              Comprobante
-            </Label>
-            <div className="col-span-3 flex items-center gap-2">
-              <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
-              <Wand2 className="h-5 w-5 text-primary" title="Asistido por IA para extraer datos" />
-            </div>
-          </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="iva" className="text-right">IVA</Label>
-            <div className="col-span-3 relative">
-                <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
-                {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
-            </div>
-          </div>
+          
+          {documentType === 'Factura' && (
+            <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="iva" className="text-right">IVA</Label>
+                <div className="col-span-3 relative">
+                    <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
+                    {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="iibb" className="text-right">IIBB</Label>
+                <div className="col-span-3 relative">
+                    <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
+                    {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                </div>
+              </div>
+            </>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="amount" className="text-right">
               Monto Total
             </Label>
              <div className="col-span-3 relative">
                 <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+                {isExtracting && documentType === 'Factura' && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
             </div>
           </div>
 

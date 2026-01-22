@@ -20,7 +20,9 @@ const ExtractInvoiceDataInputSchema = z.object({
 export type ExtractInvoiceDataInput = z.infer<typeof ExtractInvoiceDataInputSchema>;
 
 const ExtractInvoiceDataOutputSchema = z.object({
+  invoiceNumber: z.string().describe('The invoice number (Número de Factura). Return an empty string if not found.'),
   iva: z.number().describe('The VAT (IVA) amount found in the invoice. Return 0 if not found.'),
+  iibb: z.number().describe('The Gross Income tax perception (Percepción de IIBB). Return 0 if not found.'),
   total: z.number().describe('The total amount of the invoice. Return 0 if not found.'),
 });
 export type ExtractInvoiceDataOutput = z.infer<typeof ExtractInvoiceDataOutputSchema>;
@@ -35,7 +37,9 @@ const extractInvoicePrompt = ai.definePrompt({
   output: {schema: ExtractInvoiceDataOutputSchema},
   prompt: `You are an expert accountant in Argentina, specialized in reading invoices (facturas).
 Analyze the following invoice document and extract the following values:
+- The invoice number (Número de Factura).
 - The total VAT (IVA) amount. If there are multiple VAT rates, sum them up. If no IVA is specified, return 0.
+- The Gross Income tax perception (Percepción de IIBB). If not specified, return 0.
 - The final total amount (Total). If no total is specified, return 0.
 
 Document: {{media url=invoiceDataUri}}
