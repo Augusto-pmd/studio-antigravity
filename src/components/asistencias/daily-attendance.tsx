@@ -37,7 +37,8 @@ import { Label } from '@/components/ui/label';
 import { projects, employees } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
@@ -62,6 +63,13 @@ export function DailyAttendance() {
       (emp) => emp.status === 'Activo'
     );
   }, []);
+
+  const weekDays = useMemo(() => {
+    if (!selectedDate) return [];
+    const start = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  }, [selectedDate]);
+
 
   const handleAttendanceChange = (
     employeeId: string,
@@ -98,34 +106,50 @@ export function DailyAttendance() {
         <CardHeader>
           <CardTitle>Filtro por Fecha</CardTitle>
           <CardDescription>
-            Seleccione la fecha para registrar la asistencia del personal.
+            Seleccione la fecha para registrar la asistencia. Puede usar el calendario o la barra de navegación semanal.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid max-w-sm gap-2">
-          <Label htmlFor="date">Fecha</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="date"
-                variant={'outline'}
-                className={cn(
-                  'justify-start text-left font-normal',
-                  !selectedDate && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate && isClient ? format(selectedDate, 'PPP') : <span>Seleccione una fecha</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+        <CardContent className="grid gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+             <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={'outline'}
+                  className={cn(
+                    'w-[240px] justify-start text-left font-normal',
+                    !selectedDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Seleccione una fecha</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={es}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1">
+              {isClient && weekDays.map(day => (
+                <Button
+                  key={day.toISOString()}
+                  variant={selectedDate && isSameDay(day, selectedDate) ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedDate(day)}
+                  className="flex flex-col h-auto px-3 py-1 text-center"
+                >
+                  <span className="text-xs capitalize">{format(day, 'E', { locale: es })}</span>
+                  <span className="font-bold">{format(day, 'd')}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -241,5 +265,3 @@ export function DailyAttendance() {
     </div>
   );
 }
-
-    
