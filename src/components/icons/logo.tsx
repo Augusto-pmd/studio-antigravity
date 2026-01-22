@@ -1,12 +1,12 @@
 import type { SVGProps } from "react";
 
 export function Logo(props: SVGProps<SVGSVGElement>) {
-  // Adjusted viewBox and dimensions for the new logo's aspect ratio
+  // The viewBox is adjusted to match the width/height aspect ratio to prevent distortion.
   return (
     <svg
-      width="120" // Proportional width
-      height="53"  // Increased height for the new design
-      viewBox="0 0 250 110"
+      width="120"
+      height="53"
+      viewBox="0 0 249 110"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="PMD Arquitectura Logo"
