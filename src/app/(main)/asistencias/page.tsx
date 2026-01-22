@@ -16,15 +16,15 @@ export default function AsistenciasPage() {
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-headline">Gestión de Asistencias y Pagos</h1>
 
-      <Tabs defaultValue="registro" className="w-full">
+      <Tabs defaultValue="resumen" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="resumen">
+            <FileText className="mr-2 h-4 w-4" />
+            Planillas Semanales
+          </TabsTrigger>
           <TabsTrigger value="registro">
             <CalendarCheck className="mr-2 h-4 w-4" />
             Registro Diario
-          </TabsTrigger>
-          <TabsTrigger value="resumen">
-            <FileText className="mr-2 h-4 w-4" />
-            Planilla de Pagos Semanal
           </TabsTrigger>
           <TabsTrigger value="adelantos">
             <DollarSign className="mr-2 h-4 w-4" />
@@ -32,11 +32,11 @@ export default function AsistenciasPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="registro">
-          <DailyAttendance />
-        </TabsContent>
         <TabsContent value="resumen">
           <WeeklySummary />
+        </TabsContent>
+        <TabsContent value="registro">
+          <DailyAttendance />
         </TabsContent>
         <TabsContent value="adelantos">
           <CashAdvances />
