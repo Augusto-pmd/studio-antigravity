@@ -30,6 +30,7 @@ import { PlusCircle, TriangleAlert } from "lucide-react";
 import type { Contractor, ContractorEmployee } from "@/lib/types";
 import { contractorEmployees as allContractorEmployees } from "@/lib/data"; // mock data
 import { differenceInDays, isBefore, parseISO } from "date-fns";
+import { AddPersonnelDialog } from "./add-personnel-dialog";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -133,10 +134,12 @@ export function PersonnelDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cerrar
           </Button>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Agregar Personal
-          </Button>
+          <AddPersonnelDialog contractorId={contractor.id}>
+            <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Agregar Personal
+            </Button>
+          </AddPersonnelDialog>
         </DialogFooter>
       </DialogContent>
     </Dialog>
