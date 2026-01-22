@@ -24,7 +24,7 @@ export default function AsistenciasPage() {
           </TabsTrigger>
           <TabsTrigger value="resumen">
             <FileText className="mr-2 h-4 w-4" />
-            Planilla Semanal
+            Planilla de Pagos Semanal
           </TabsTrigger>
           <TabsTrigger value="adelantos">
             <DollarSign className="mr-2 h-4 w-4" />

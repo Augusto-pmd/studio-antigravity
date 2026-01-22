@@ -13,9 +13,9 @@ export function WeeklySummary() {
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle>Planilla Resumen Semanal</CardTitle>
+        <CardTitle>Planilla de Pagos Semanal</CardTitle>
         <CardDescription>
-          Aquí se mostrará el resumen semanal de asistencias, adelantos y el total a pagar por empleado.
+          Aquí se mostrará el resumen semanal de asistencias, adelantos y el total a pagar por cada empleado y proveedor.
         </CardDescription>
       </CardHeader>
       <CardContent>
