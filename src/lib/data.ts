@@ -1,4 +1,4 @@
-import type { Project, Supplier, ExpenseCategory } from '@/lib/types';
+import type { Project, Supplier, ExpenseCategory, Employee } from '@/lib/types';
 
 export const projects: Project[] = [
   { id: 'PROJ-001', name: 'Edificio Corporativo Central', status: 'En Curso', balance: 500000, progress: 75, supervisor: 'Juan Pérez' },
@@ -38,4 +38,14 @@ export const monthlyExpenses = [
     { month: 'Oct', total: 3100 },
     { month: 'Nov', total: 2500 },
     { month: 'Dic', total: 2800 },
+];
+
+export const employees: Employee[] = [
+  { id: 'EMP-001', name: 'Carlos Rodríguez', projectId: 'PROJ-001', status: 'Activo', paymentType: 'Semanal' },
+  { id: 'EMP-002', name: 'Ana Lopez', projectId: 'PROJ-001', status: 'Activo', paymentType: 'Diario' },
+  { id: 'EMP-003', name: 'Luis Martinez', projectId: 'PROJ-001', status: 'Inactivo', paymentType: 'Semanal' },
+  { id: 'EMP-004', name: 'Laura Sanchez', projectId: 'PROJ-004', status: 'Activo', paymentType: 'Semanal' },
+  { id: 'EMP-005', name: 'Javier Gomez', projectId: 'PROJ-004', status: 'Activo', paymentType: 'Diario' },
+  { id: 'EMP-006', name: 'Sofia Diaz', projectId: 'PROJ-005', status: 'Activo', paymentType: 'Semanal' },
+  { id: 'EMP-007', name: 'Diego Fernandez', projectId: 'PROJ-005', status: 'Activo', paymentType: 'Semanal' },
 ];

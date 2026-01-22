@@ -18,3 +18,11 @@ export type ExpenseCategory = {
 };
 
 export type Role = 'Dirección' | 'Supervisor' | 'Administración' | 'Operador';
+
+export type Employee = {
+  id: string;
+  name: string;
+  projectId: string;
+  status: 'Activo' | 'Inactivo';
+  paymentType: 'Diario' | 'Semanal';
+};
