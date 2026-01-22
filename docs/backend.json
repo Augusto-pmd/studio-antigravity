@@ -51,9 +51,22 @@
           "type": "string",
           "description": "The payment frequency for the employee.",
           "enum": ["Diario", "Semanal"]
+        },
+        "category": {
+          "type": "string",
+          "description": "The employee's trade or category (e.g., 'Albañil', 'Electricista')."
+        },
+        "dailyWage": {
+          "type": "number",
+          "description": "The daily wage for the employee."
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "description": "The expiration date of the employee's ART (Aseguradora de Riesgos del Trabajo).",
+          "format": "date-time"
         }
       },
-      "required": ["id", "name", "status", "projectId", "paymentType"]
+      "required": ["id", "name", "status", "projectId", "paymentType", "category", "dailyWage"]
     },
     "AttendanceRecord": {
       "title": "Attendance Record",
