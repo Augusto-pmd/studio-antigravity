@@ -1,12 +1,12 @@
 import type { Project, Supplier, ExpenseCategory, Employee } from '@/lib/types';
 
 export const projects: Project[] = [
-  { id: 'PROJ-001', name: 'Edificio Corporativo Central', status: 'En Curso', balance: 500000, progress: 75, supervisor: 'Juan Pérez' },
-  { id: 'PROJ-002', name: 'Residencial Los Robles', status: 'Completado', balance: 0, progress: 100, supervisor: 'Maria González' },
-  { id: 'PROJ-003', name: 'Centro Comercial del Sol', status: 'Pausado', balance: 120000, progress: 40, supervisor: 'Juan Pérez' },
-  { id: 'PROJ-004', name: 'Remodelación Oficinas PMD', status: 'En Curso', balance: 25000, progress: 90, supervisor: 'Carlos Lopez' },
-  { id: 'PROJ-005', name: 'Parque Industrial Norte', status: 'En Curso', balance: 850000, progress: 20, supervisor: 'Maria González' },
-  { id: 'PROJ-006', name: 'Viviendas Sociales "El Futuro"', status: 'Cancelado', balance: 10000, progress: 10, supervisor: 'Carlos Lopez' },
+  { id: 'PROJ-001', name: 'Edificio Corporativo Central', client: 'Tech Solutions S.A.', address: 'Av. Corrientes 1234, CABA', currency: 'ARS', projectType: 'Comercial', status: 'En Curso', startDate: '2024-02-01', endDate: '2025-01-31', supervisor: 'Juan Pérez', budget: 2500000, balance: 500000, progress: 75 },
+  { id: 'PROJ-002', name: 'Residencial Los Robles', client: 'Inmobiliaria Segura', address: 'Calle Falsa 123, Rosario', currency: 'USD', projectType: 'Residencial', status: 'Completado', startDate: '2023-01-10', endDate: '2024-06-30', supervisor: 'Maria González', budget: 1200000, balance: 0, progress: 100 },
+  { id: 'PROJ-003', name: 'Centro Comercial del Sol', client: 'Retail Group LATAM', address: 'Ruta 9 km 210, Córdoba', currency: 'ARS', projectType: 'Comercial', status: 'Pausado', startDate: '2023-09-15', supervisor: 'Juan Pérez', budget: 5000000, balance: 120000, progress: 40 },
+  { id: 'PROJ-004', name: 'Remodelación Oficinas PMD', client: 'PMD Consulting', address: 'Suipacha 567, CABA', currency: 'ARS', projectType: 'Oficinas', status: 'En Curso', startDate: '2024-05-20', endDate: '2024-09-30', supervisor: 'Carlos Lopez', budget: 300000, balance: 25000, progress: 90 },
+  { id: 'PROJ-005', name: 'Parque Industrial Norte', client: 'Logística Global', address: 'Autopista BsAs - La Plata km 35', currency: 'USD', projectType: 'Industrial', status: 'En Curso', startDate: '2024-01-05', supervisor: 'Maria González', budget: 10000000, balance: 850000, progress: 20 },
+  { id: 'PROJ-006', name: 'Viviendas Sociales "El Futuro"', client: 'Gobierno de la Provincia', address: 'Barrio El Progreso, Lote 14', currency: 'ARS', projectType: 'Vivienda Social', status: 'Cancelado', startDate: '2023-11-01', supervisor: 'Carlos Lopez', budget: 8000000, balance: 10000, progress: 10 },
 ];
 
 export const suppliers: Supplier[] = [

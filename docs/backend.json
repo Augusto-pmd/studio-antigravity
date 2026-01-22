@@ -148,9 +148,27 @@
           "type": "string",
           "description": "The name of the project."
         },
-        "description": {
+        "client": {
           "type": "string",
-          "description": "A brief description of the project."
+          "description": "The client for whom the project is being built."
+        },
+        "address": {
+          "type": "string",
+          "description": "The full address of the project location."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency for the project budget.",
+          "enum": ["ARS", "USD"]
+        },
+        "projectType": {
+          "type": "string",
+          "description": "The type of construction project (e.g., Residential, Commercial)."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the project.",
+          "enum": ["En Curso", "Pausado", "Completado", "Cancelado"]
         },
         "startDate": {
           "type": "string",
@@ -159,11 +177,18 @@
         },
         "endDate": {
           "type": "string",
-          "description": "The planned end date of the project.",
-          "format": "date-time"
+          "description": "The planned end date of the project."
+        },
+        "supervisor": {
+          "type": "string",
+          "description": "The person responsible for supervising the project."
+        },
+        "budget": {
+          "type": "number",
+          "description": "The total budget allocated for the project."
         }
       },
-      "required": ["id", "name", "description", "startDate", "endDate"]
+      "required": ["id", "name", "client", "address", "status", "startDate", "supervisor", "budget"]
     },
     "UserCash": {
       "title": "UserCash",
@@ -349,5 +374,3 @@
     }
   }
 }
-
-    
