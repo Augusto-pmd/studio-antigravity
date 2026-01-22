@@ -524,6 +524,27 @@
         "category",
         "status"
       ]
+    },
+    "TaskRequest": {
+      "title": "Task Request",
+      "type": "object",
+      "description": "Represents a task or request assigned by one user to another.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "assigneeId": { "type": "string" },
+        "assigneeName": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pendiente", "Finalizado"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "projectId": { "type": "string" }
+      },
+      "required": [
+        "id", "title", "requesterId", "requesterName", "assigneeId", "assigneeName", "status", "createdAt"
+      ]
     }
   },
   "auth": {
@@ -705,6 +726,22 @@
             {
               "name": "assetId",
               "description": "The unique identifier for the asset."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/taskRequests/{taskRequestId}",
+        "definition": {
+          "entityName": "TaskRequest",
+          "schema": {
+            "$ref": "#/backend/entities/TaskRequest"
+          },
+          "description": "Stores tasks and requests between users. Users can read tasks assigned to or created by them.",
+          "params": [
+            {
+              "name": "taskRequestId",
+              "description": "The unique identifier for the task request."
             }
           ]
         }

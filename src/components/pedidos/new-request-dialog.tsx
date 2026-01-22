@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,11 +22,78 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, PlusCircle } from "lucide-react";
-import { projects, userProfiles } from "@/lib/data";
+import { useUser } from "@/context/user-context";
+import { useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import type { UserProfile, Project, TaskRequest } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+
 
 export function NewRequestDialog() {
   const [open, setOpen] = useState(false);
-  const isPending = false; // Mock state
+  const [isPending, startTransition] = useTransition();
+  const { user, firestore } = useUser();
+  const { toast } = useToast();
+
+  // Form State
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
+  const [projectId, setProjectId] = useState<string | undefined>(undefined);
+
+  // Data Fetching
+  const usersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
+  const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
+
+  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  
+  const handleSave = () => {
+    if (!firestore || !user || !title || !assigneeId) {
+        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'El título y el usuario asignado son obligatorios.' });
+        return;
+    }
+    
+    startTransition(() => {
+        const tasksCollection = collection(firestore, 'taskRequests');
+        const taskRef = doc(tasksCollection);
+        const taskId = taskRef.id;
+
+        const selectedAssignee = users?.find(u => u.id === assigneeId);
+
+        if (!selectedAssignee) {
+            toast({ variant: 'destructive', title: 'Error', description: 'El usuario asignado no es válido.' });
+            return;
+        }
+
+        const taskData: TaskRequest = {
+            id: taskId,
+            title,
+            description,
+            requesterId: user.uid,
+            requesterName: user.displayName || 'Usuario Anónimo',
+            assigneeId: selectedAssignee.id,
+            assigneeName: selectedAssignee.fullName,
+            status: 'Pendiente',
+            createdAt: new Date().toISOString(),
+            projectId: projectId || undefined,
+        };
+
+        setDocumentNonBlocking(taskRef, taskData, { merge: true });
+
+        toast({
+            title: 'Pedido Creado',
+            description: `Se ha asignado la tarea a ${selectedAssignee.fullName}.`,
+        });
+        setOpen(false);
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setAssigneeId('');
+        setProjectId(undefined);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -46,17 +113,17 @@ export function NewRequestDialog() {
         <div className="grid gap-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Título del Pedido</Label>
-            <Input id="title" placeholder="Ej. Solicitar seguro de accidentes personales" />
+            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ej. Solicitar seguro de accidentes personales" />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="assignee">Asignar a</Label>
-            <Select>
-              <SelectTrigger id="assignee">
-                <SelectValue placeholder="Seleccione un usuario" />
+            <Select onValueChange={setAssigneeId} value={assigneeId}>
+              <SelectTrigger id="assignee" disabled={isLoadingUsers}>
+                <SelectValue placeholder={isLoadingUsers ? "Cargando usuarios..." : "Seleccione un usuario"} />
               </SelectTrigger>
               <SelectContent>
-                {userProfiles.map((profile) => (
+                {users?.filter(u => u.id !== user?.uid).map((profile) => (
                   <SelectItem key={profile.id} value={profile.id}>
                     {profile.fullName} ({profile.role})
                   </SelectItem>
@@ -69,6 +136,8 @@ export function NewRequestDialog() {
             <Label htmlFor="description">Descripción</Label>
             <Textarea
               id="description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
               placeholder="Detalle aquí la tarea a realizar. Incluya toda la información necesaria para que el asignado pueda completarla."
               className="min-h-[120px]"
             />
@@ -76,12 +145,13 @@ export function NewRequestDialog() {
           
           <div className="space-y-2">
             <Label htmlFor="project">Relacionar con Obra (Opcional)</Label>
-             <Select>
-              <SelectTrigger id="project">
-                <SelectValue placeholder="Seleccione una obra si corresponde" />
+             <Select onValueChange={(v) => setProjectId(v === 'none' ? undefined : v)} value={projectId}>
+              <SelectTrigger id="project" disabled={isLoadingProjects}>
+                <SelectValue placeholder={isLoadingProjects ? "Cargando obras..." : "Seleccione una obra si corresponde"} />
               </SelectTrigger>
               <SelectContent>
-                {projects.filter(p => p.status === 'En Curso').map((p) => (
+                <SelectItem value="none">Ninguna</SelectItem>
+                {projects?.filter(p => p.status === 'En Curso').map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -92,7 +162,7 @@ export function NewRequestDialog() {
 
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending || !title || !assigneeId}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enviar Pedido
           </Button>

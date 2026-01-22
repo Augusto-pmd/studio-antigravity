@@ -1,9 +1,11 @@
 'use server';
 import { extractInvoiceData } from '@/ai/flows/extract-invoice-data';
 import { generateDashboardSummary } from '@/ai/flows/generate-dashboard-summary';
-import { projects, taskRequests } from '@/lib/data';
 import { DashboardSummaryOutput } from '@/ai/schemas';
 import { extractBankStatement } from '@/ai/flows/extract-bank-statement';
+import { getFirestore, collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
+import type { Project, TaskRequest } from './types';
 
 
 export async function extractInvoiceDataAction(dataUri: string, fileSize: number) {
@@ -27,30 +29,31 @@ export async function extractInvoiceDataAction(dataUri: string, fileSize: number
 }
 
 export async function generateDashboardSummaryAction(): Promise<DashboardSummaryOutput> {
-  const activeProjects = projects
-    .filter(p => p.status === 'En Curso')
-    .map(p => ({
-      name: p.name,
-      status: p.status,
-      progress: p.progress,
-      supervisor: p.supervisor,
-    }));
+  const { firestore } = initializeFirebase();
 
-  const pendingTasks = taskRequests
-      .filter(t => t.status === 'Pendiente')
-      .map(t => ({
-          title: t.title,
-          assigneeName: t.assigneeName,
-      }));
+  // Fetch active projects
+  const projectsQuery = query(collection(firestore, 'projects'), where('status', '==', 'En Curso'), limit(5));
+  const projectsSnap = await getDocs(projectsQuery);
+  const activeProjects = projectsSnap.docs.map(doc => doc.data() as Project);
+  
+  // Fetch pending tasks
+  const tasksQuery = query(collection(firestore, 'taskRequests'), where('status', '==', 'Pendiente'), limit(5));
+  const tasksSnap = await getDocs(tasksQuery);
+  const pendingTasks = tasksSnap.docs.map(doc => doc.data() as TaskRequest);
   
   // Using hardcoded stats from the stats-card component for now
+  // We can derive obrasEnCurso from the fetched data.
   const stats = {
-      obrasEnCurso: "5",
+      obrasEnCurso: activeProjects.length.toString(),
       saldoContratos: "$1,500,000",
       gastosMes: "$125,300",
   };
 
-  const result = await generateDashboardSummary({ activeProjects, pendingTasks, stats });
+  const result = await generateDashboardSummary({ 
+      activeProjects: activeProjects.map(p => ({ name: p.name, status: p.status, progress: p.progress, supervisor: p.supervisor })), 
+      pendingTasks: pendingTasks.map(t => ({ title: t.title, assigneeName: t.assigneeName})), 
+      stats 
+    });
   return result;
 }
 

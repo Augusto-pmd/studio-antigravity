@@ -209,6 +209,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    match /taskRequests/{taskRequestId} {
+      allow read, write: if isSignedIn();
+    }
+
     /**
      * @description Enables collection group queries on 'expenses'. This is necessary
      * for administrative views that aggregate all expenses across all projects.

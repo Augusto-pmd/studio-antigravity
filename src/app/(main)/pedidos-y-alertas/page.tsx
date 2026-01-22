@@ -14,6 +14,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { NewRequestDialog } from "@/components/pedidos/new-request-dialog";
+import { PendingTasksList } from "@/components/pedidos/pending-tasks-list";
+import { CreatedTasksList } from "@/components/pedidos/created-tasks-list";
 
 export default function PedidosYAlertasPage() {
   return (
@@ -40,9 +42,7 @@ export default function PedidosYAlertasPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                Aquí se mostrará la lista de tareas asignadas a ti.
-              </div>
+              <PendingTasksList />
             </CardContent>
           </Card>
         </TabsContent>
@@ -55,9 +55,7 @@ export default function PedidosYAlertasPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                Aquí se mostrará la lista de tareas que has creado.
-              </div>
+              <CreatedTasksList />
             </CardContent>
           </Card>
         </TabsContent>

@@ -62,17 +62,3 @@ export const employees: Employee[] = [
   { id: 'EMP-006', name: 'Sofia Diaz', status: 'Activo', paymentType: 'Semanal', category: 'Jefe de Obra', dailyWage: 4500, artExpiryDate: '2025-03-01' },
   { id: 'EMP-007', name: 'Diego Fernandez', status: 'Activo', paymentType: 'Semanal', category: 'Albañil', dailyWage: 2500, artExpiryDate: '2024-07-31' },
 ];
-
-export const userProfiles: UserProfile[] = [
-    { id: 'uid-juan', fullName: 'Juan Pérez', email: 'juan.perez@example.com', role: 'Supervisor' },
-    { id: 'uid-maria', fullName: 'Maria González', email: 'maria.gonzalez@example.com', role: 'Supervisor' },
-    { id: 'uid-carlos', fullName: 'Carlos Lopez', email: 'carlos.lopez@example.com', role: 'Administración' },
-    { id: 'uid-ana', fullName: 'Ana Martinez', email: 'ana.martinez@example.com', role: 'Dirección' },
-    { id: 'uid-pedro', fullName: 'Pedro Ramirez', email: 'pedro.ramirez@example.com', role: 'Operador' },
-];
-
-export const taskRequests: TaskRequest[] = [
-    { id: 'TR-001', title: 'Comprar casco de seguridad', description: 'Comprar un casco de seguridad para el nuevo empleado Javier Gomez.', requesterId: 'uid-juan', requesterName: 'Juan Pérez', assigneeId: 'uid-carlos', assigneeName: 'Carlos Lopez', status: 'Pendiente', createdAt: '2024-07-18T10:00:00Z', projectId: 'PROJ-004' },
-    { id: 'TR-002', title: 'Revisar presupuesto PROJ-005', description: 'El cliente solicitó una revisión del presupuesto para el Parque Industrial Norte.', requesterId: 'uid-ana', requesterName: 'Ana Martinez', assigneeId: 'uid-juan', assigneeName: 'Juan Pérez', status: 'Pendiente', createdAt: '2024-07-17T15:30:00Z', projectId: 'PROJ-005' },
-    { id: 'TR-003', title: 'Llamar al proveedor de hormigón', description: 'Confirmar entrega para el lunes a primera hora en la obra de Los Robles.', requesterId: 'uid-maria', requesterName: 'Maria González', assigneeId: 'uid-pedro', assigneeName: 'Pedro Ramirez', status: 'Finalizado', createdAt: '2024-07-16T09:00:00Z', completedAt: '2024-07-16T14:00:00Z', projectId: 'PROJ-002' },
-];
