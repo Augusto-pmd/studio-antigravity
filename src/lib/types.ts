@@ -74,6 +74,7 @@ export type UserProfile = {
   role: Role;
   email: string;
   fullName: string;
+  photoURL?: string;
 };
 
 export type TaskRequest = {

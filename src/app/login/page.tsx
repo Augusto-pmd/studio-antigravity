@@ -73,7 +73,8 @@ export default function LoginPage() {
           id: loggedInUser.uid,
           email: loggedInUser.email || '',
           fullName: loggedInUser.displayName || 'Usuario Anónimo',
-          role: 'Operador', 
+          role: 'Operador',
+          photoURL: loggedInUser.photoURL || '',
         };
         await setDoc(userRef, newUserProfile);
         toast({

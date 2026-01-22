@@ -21,6 +21,10 @@
           "type": "string",
           "description": "The email address of the user.",
           "format": "email"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
         }
       },
       "required": [
