@@ -422,6 +422,73 @@
         "date",
         "exchangeRate"
       ]
+    },
+    "TaskRequest": {
+      "title": "Task Request",
+      "type": "object",
+      "description": "Represents a task or request from one user to another.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TaskRequest."
+        },
+        "title": {
+          "type": "string",
+          "description": "A short, descriptive title for the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the task or request."
+        },
+        "requesterId": {
+          "type": "string",
+          "description": "The ID of the user who created the task."
+        },
+        "requesterName": {
+          "type": "string",
+          "description": "The name of the user who created the task."
+        },
+        "assigneeId": {
+          "type": "string",
+          "description": "The ID of the user assigned to the task."
+        },
+        "assigneeName": {
+          "type": "string",
+          "description": "The name of the user assigned to the task."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the task.",
+          "enum": [
+            "Pendiente",
+            "Finalizado"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time the task was created.",
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "The date and time the task was completed.",
+          "format": "date-time"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Optional ID of a project related to the task."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "requesterId",
+        "requesterName",
+        "assigneeId",
+        "assigneeName",
+        "status",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -473,6 +540,14 @@
         "$ref": "#/entities/FundRequest"
       },
       "description": "Stores all fund requests for weekly payment sheets."
+    },
+    "/task-requests/{taskRequestId}": {
+      "schema": {
+        "$ref": "#/entities/TaskRequest"
+      },
+      "description": "Stores all user-to-user tasks and requests."
     }
   }
 }
+
+    

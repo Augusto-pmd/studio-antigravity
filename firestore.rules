@@ -119,5 +119,26 @@ service cloud.firestore {
       // CRITICAL: Transactional data should only be written by authorized roles.
       allow write: if false;
     }
+
+    match /task-requests/{taskRequestId} {
+      allow create: if isSignedIn();
+
+      // Allow reading a single task if you created it or are assigned to it.
+      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
+
+      // Allow list for any signed-in user. The UI must filter.
+      allow list: if isSignedIn();
+
+      // The assignee can mark the task as "Finalizado"
+      allow update: if isSignedIn() &&
+                 request.auth.uid == resource.data.assigneeId &&
+                 request.resource.data.status == 'Finalizado' &&
+                 resource.data.status == 'Pendiente' &&
+                 request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt']);
+
+      allow delete: if false; // To preserve history, don't allow deletes.
+    }
   }
 }
+
+    

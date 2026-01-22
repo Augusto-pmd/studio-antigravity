@@ -38,6 +38,7 @@ import {
   CalendarCheck,
   MoreHorizontal,
   CircleDollarSign,
+  Bell,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 
@@ -48,6 +49,7 @@ const menuItems = [
   { href: "/empleados", label: "Empleados", icon: Contact },
   { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
   { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign },
+  { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
   {
     href: "/cajas",
     label: "Cajas",
@@ -138,3 +140,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
