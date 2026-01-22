@@ -112,3 +112,14 @@ export type Expense = {
   retencionIIBB?: number;
   retencionSUSS?: number;
 };
+
+export type Asset = {
+  id: string;
+  name: string;
+  description?: string;
+  purchaseDate: string;
+  purchaseValue: number;
+  currency: 'ARS' | 'USD';
+  category: string;
+  status: 'Activo' | 'Mantenimiento' | 'Vendido' | 'De Baja';
+};

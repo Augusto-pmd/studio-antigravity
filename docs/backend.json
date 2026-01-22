@@ -473,6 +473,57 @@
         "totalAmount",
         "remainingAmount"
       ]
+    },
+    "Asset": {
+      "title": "Asset",
+      "type": "object",
+      "description": "Represents a company asset.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "purchaseDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "purchaseValue": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Mantenimiento",
+            "Vendido",
+            "De Baja"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "purchaseDate",
+        "purchaseValue",
+        "currency",
+        "category",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -638,6 +689,22 @@
             {
               "name": "personnelId",
               "description": "The unique identifier for the personnel."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/assets/{assetId}",
+        "definition": {
+          "entityName": "Asset",
+          "schema": {
+            "$ref": "#/backend/entities/Asset"
+          },
+          "description": "Stores company assets information.",
+          "params": [
+            {
+              "name": "assetId",
+              "description": "The unique identifier for the asset."
             }
           ]
         }

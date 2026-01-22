@@ -17,7 +17,7 @@
  *
  * Key Security Decisions:
  * - Admin Roles: A global admin role is derived from the 'role' field in a user's
- *   profile (`/users/{userId}`). Users with roles like 'Direction' or 'Administration'
+ *   profile (`/users/{userId}`). Users with roles like 'Dirección' or 'Administración'
  *   are granted elevated privileges for managing shared resources.
  * - No User Listing: To protect user privacy, listing all documents in the '/users'
  *   collection is forbidden for non-administrative users.
@@ -205,6 +205,10 @@ service cloud.firestore {
       }
     }
     
+    match /assets/{assetId} {
+      allow read, write: if isSignedIn();
+    }
+
     /**
      * @description Enables collection group queries on 'expenses'. This is necessary
      * for administrative views that aggregate all expenses across all projects.
