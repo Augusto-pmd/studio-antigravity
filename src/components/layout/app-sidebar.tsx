@@ -23,15 +23,22 @@ import {
   Receipt,
   FileText,
   Landmark,
+  Contact,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/obras", label: "Obras", icon: Building2 },
-  { href: "/cajas", label: "Cajas", icon: Wallet, role: ["Operador", "Administración", "Dirección"] },
-  { href: "/gastos", label: "Gastos", icon: Receipt },
   { href: "/proveedores", label: "Proveedores", icon: Users },
+  { href: "/empleados", label: "Empleados", icon: Contact },
+  {
+    href: "/cajas",
+    label: "Cajas",
+    icon: Wallet,
+    role: ["Operador", "Administración", "Dirección"],
+  },
+  { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/contratos", label: "Contratos", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: Landmark },
 ];
@@ -49,7 +56,7 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => {
             if (item.role && !item.role.includes(role)) {
-                return null;
+              return null;
             }
             return (
               <SidebarMenuItem key={item.href}>
@@ -71,14 +78,14 @@ export function AppSidebar() {
       <SidebarFooter className="flex flex-col gap-4">
         <Separator />
         <div className="flex flex-col gap-2 items-center text-center group-data-[collapsible=icon]:hidden">
-           <Users className="w-8 h-8 text-muted-foreground" />
-           <p className="text-sm font-medium">Usuario Actual</p>
-           <Badge variant="outline">{role}</Badge>
+          <Users className="w-8 h-8 text-muted-foreground" />
+          <p className="text-sm font-medium">Usuario Actual</p>
+          <Badge variant="outline">{role}</Badge>
         </div>
-         <SidebarMenuButton tooltip={{children: 'Cerrar Sesión'}}>
-            <LogOut />
-            <span>Cerrar Sesión</span>
-         </SidebarMenuButton>
+        <SidebarMenuButton tooltip={{ children: "Cerrar Sesión" }}>
+          <LogOut />
+          <span>Cerrar Sesión</span>
+        </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>
   );
