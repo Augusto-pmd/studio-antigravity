@@ -17,6 +17,9 @@ import { useCollection, useMemoFirebase } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection } from 'firebase/firestore';
 import type { Project, Supplier } from '@/lib/types';
+import { Button } from '../ui/button';
+import { Download } from 'lucide-react';
+import { expenseCategories } from '@/lib/data';
 
 const formatCurrency = (amount: number | undefined, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -47,6 +50,61 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
   const suppliersMap = useMemo(() => {
     return suppliers?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {}) || {};
   }, [suppliers]);
+  
+  const handleExportCSV = () => {
+    if (!expenses || expenses.length === 0) {
+      return;
+    }
+
+    const escapeCSV = (value: any): string => {
+      if (value === null || value === undefined) return '""';
+      const str = String(value);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = [
+      "ID Gasto", "Fecha", "ID Obra", "Obra", "ID Proveedor", "Proveedor",
+      "Rubro", "Comprobante", "Nro Factura", "Monto", "Moneda", "Tipo Cambio",
+      "IVA", "IIBB", "Jurisdicción IIBB", "Ret. Ganancias", "Ret. IVA", "Ret. IIBB", "Ret. SUSS"
+    ];
+
+    const rows = expenses.map(expense => [
+      expense.id,
+      formatDate(expense.date),
+      expense.projectId,
+      projectsMap[expense.projectId] || '',
+      expense.supplierId,
+      suppliersMap[expense.supplierId] || '',
+      expenseCategories.find(c => c.id === expense.categoryId)?.name || expense.categoryId,
+      expense.documentType,
+      expense.invoiceNumber || '',
+      expense.amount,
+      expense.currency,
+      expense.exchangeRate,
+      expense.iva || 0,
+      expense.iibb || 0,
+      expense.iibbJurisdiction || 'No Aplica',
+      expense.retencionGanancias || 0,
+      expense.retencionIVA || 0,
+      expense.retencionIIBB || 0,
+      expense.retencionSUSS || 0
+    ].map(escapeCSV).join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `reporte_gastos_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   const renderSkeleton = () => (
     Array.from({ length: 3 }).map((_, i) => (
@@ -65,9 +123,15 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Reporte de Gastos</CardTitle>
-        <CardDescription>Detalle de todos los gastos registrados con información fiscal.</CardDescription>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+          <CardTitle>Reporte de Gastos</CardTitle>
+          <CardDescription>Detalle de todos los gastos registrados con información fiscal.</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !expenses || expenses.length === 0}>
+          <Download className="mr-2 h-4 w-4" />
+          Exportar a CSV
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="rounded-lg border">
