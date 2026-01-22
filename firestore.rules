@@ -69,17 +69,27 @@ service cloud.firestore {
     }
     
     /**
-     * Checks if the currently authenticated user has an administrative role.
-     * This performs a single `get` to the user's own profile document.
-     * Administrative roles are defined as 'Dirección' or 'Administración'.
-     * The main user `info@pmdarquitectura.com` is also granted admin rights.
-     * IMPORTANT: This function uses get() and is NOT safe for list queries.
+     * Checks for the hardcoded super admin email. Safe for list queries.
+     */
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email == 'info@pmdarquitectura.com';
+    }
+
+    /**
+     * Checks for role-based admin. USES GET() - NOT safe for list queries.
+     */
+    function isRoleAdmin() {
+      return isSignedIn() &&
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración']);
+    }
+    
+    /**
+     * Combined admin check. NOT safe for list queries.
+     * Use isSuperAdmin() or isRoleAdmin() appropriately based on context (list vs single-doc).
      */
     function isAdmin() {
-      return isSignedIn() && 
-        (request.auth.token.email == 'info@pmdarquitectura.com' ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración']));
+      return isSuperAdmin() || isRoleAdmin();
     }
 
     /**
@@ -223,22 +233,16 @@ service cloud.firestore {
 
     match /taskRequests/{taskRequestId} {
       // READ permissions:
-      // A user can get a specific task if they are admin OR they are a participant.
       allow get: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
-
+      
       // LIST permissions:
-      // IMPORTANT: `list` rules cannot contain `get` or `exists` calls.
-      // The rules below allow a user to list tasks where they are either the requester or the assignee,
-      // which matches the two queries performed by the client application.
+      allow list: if isSuperAdmin(); // Allow Super Admin to list all tasks
       allow list: if isSignedIn() && request.query.where.requesterId == request.auth.uid;
       allow list: if isSignedIn() && request.query.where.assigneeId == request.auth.uid;
 
       // WRITE permissions:
-      // A user can create a task if they are the requester.
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      // A user can update a task if they are an admin or a participant.
       allow update: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
-      // Only admins can delete tasks.
       allow delete: if isAdmin();
     }
     
