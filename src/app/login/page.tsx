@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore, useUser } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth, useFirestore, useUser } from '@/firebase/provider';
+import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -18,14 +18,23 @@ import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 
 export default function LoginPage() {
+  const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  useEffect(() => {
+    // Si el usuario ya está logueado y la carga ha terminado, redirigir
+    if (!isUserLoading && user) {
+      router.replace('/');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
     if (!auth || !firestore) {
@@ -37,23 +46,22 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
 
     try {
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      const loggedInUser = result.user;
 
-      // Check if user profile exists, if not, create it
-      const userRef = doc(firestore, 'user-profiles', user.uid);
+      const userRef = doc(firestore, 'users', loggedInUser.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
         const newUserProfile: UserProfile = {
-          id: user.uid,
-          email: user.email || '',
-          fullName: user.displayName || 'Usuario Anónimo',
-          role: 'Operador', // Safest default role
+          id: loggedInUser.uid,
+          email: loggedInUser.email || '',
+          fullName: loggedInUser.displayName || 'Usuario Anónimo',
+          role: 'Operador', 
         };
         await setDoc(userRef, newUserProfile);
         toast({
@@ -61,18 +69,28 @@ export default function LoginPage() {
           description: 'Se ha creado tu perfil de usuario.',
         });
       }
-
-      router.push('/'); // Redirect to dashboard after successful login
-
+      // La redirección ahora es manejada por el useEffect
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error al iniciar sesión',
-        description: error.message || 'No se pudo completar el inicio de sesión con Google.',
+        description: error.code === 'auth/popup-closed-by-user' 
+          ? 'El inicio de sesión fue cancelado.'
+          : error.message || 'No se pudo completar el inicio de sesión con Google.',
       });
-      setIsLoading(false);
+      setIsSigningIn(false);
     }
   };
+  
+  // Muestra un loader mientras se determina el estado de autenticación inicial
+  if (isUserLoading || user) {
+    return (
+       <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground">Verificando sesión...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -88,9 +106,9 @@ export default function LoginPage() {
           <Button
             className="w-full"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isSigningIn}
           >
-            {isLoading ? (
+            {isSigningIn ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <svg
