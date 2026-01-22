@@ -42,7 +42,7 @@ export function AddExpenseDialog() {
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>();
   
   const [file, setFile] = useState<File | null>(null);
   const [fileValidation, setFileValidation] = useState<{ isValid: boolean; errors: string[] } | null>(null);
@@ -51,6 +51,10 @@ export function AddExpenseDialog() {
   const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
   const isContractBlocked = project?.balance === 0;
   const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Proveedor Vencido ART
+
+  useEffect(() => {
+    setDate(new Date());
+  }, []);
 
   useEffect(() => {
     if (file) {

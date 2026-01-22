@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -47,9 +47,13 @@ interface AttendanceRecord {
 }
 
 export function DailyAttendance() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedProject, setSelectedProject] = useState<string>(projects.find(p => p.status === 'En Curso')?.id || projects[0].id);
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
+
+  useEffect(() => {
+    setSelectedDate(new Date());
+  }, []);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter(
