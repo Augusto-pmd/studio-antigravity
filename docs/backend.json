@@ -43,10 +43,6 @@
           "description": "The current status of the employee.",
           "enum": ["Activo", "Inactivo"]
         },
-        "projectId": {
-          "type": "string",
-          "description": "The ID of the project the employee is currently assigned to."
-        },
         "paymentType": {
           "type": "string",
           "description": "The payment frequency for the employee.",
@@ -66,7 +62,7 @@
           "format": "date-time"
         }
       },
-      "required": ["id", "name", "status", "projectId", "paymentType", "category", "dailyWage"]
+      "required": ["id", "name", "status", "paymentType", "category", "dailyWage"]
     },
     "AttendanceRecord": {
       "title": "Attendance Record",
@@ -353,3 +349,5 @@
     }
   }
 }
+
+    

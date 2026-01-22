@@ -44,99 +44,88 @@ interface AttendanceRecord {
   status: AttendanceStatus;
   lateHours: number;
   notes: string;
+  projectId: string | null;
 }
 
 export function DailyAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedProject, setSelectedProject] = useState<string>(projects.find(p => p.status === 'En Curso')?.id || projects[0].id);
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setSelectedDate(new Date());
     setIsClient(true);
+    setSelectedDate(new Date());
   }, []);
 
-  const filteredEmployees = useMemo(() => {
+  const activeEmployees = useMemo(() => {
     return employees.filter(
-      (emp) => emp.projectId === selectedProject && emp.status === 'Activo'
+      (emp) => emp.status === 'Activo'
     );
-  }, [selectedProject]);
+  }, []);
 
   const handleAttendanceChange = (
     employeeId: string,
     field: keyof AttendanceRecord,
-    value: string | number
+    value: string | number | null
   ) => {
     setAttendance((prev) => {
-      const currentRecord = prev[employeeId] || { status: 'presente', lateHours: 0, notes: '' };
+      const currentRecord = prev[employeeId] || { status: 'presente', lateHours: 0, notes: '', projectId: null };
+      
+      const newRecord = {
+        ...currentRecord,
+        [field]: value,
+      };
+
+      // If employee is marked as absent, nullify the project
+      if (field === 'status' && value === 'ausente') {
+        newRecord.projectId = null;
+      }
+
       return {
         ...prev,
-        [employeeId]: {
-          ...currentRecord,
-          [field]: value,
-        },
+        [employeeId]: newRecord,
       };
     });
   };
 
   const getEmployeeAttendance = (employeeId: string): AttendanceRecord => {
-    return attendance[employeeId] || { status: 'presente', lateHours: 0, notes: '' };
+    return attendance[employeeId] || { status: 'presente', lateHours: 0, notes: '', projectId: null };
   };
 
   return (
     <div className="flex flex-col gap-4 pt-4">
       <Card>
         <CardHeader>
-          <CardTitle>Filtros de Asistencia</CardTitle>
+          <CardTitle>Filtro por Fecha</CardTitle>
           <CardDescription>
-            Seleccione la obra y la fecha para registrar la asistencia del personal.
+            Seleccione la fecha para registrar la asistencia del personal.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="project">Obra</Label>
-            <Select onValueChange={setSelectedProject} value={selectedProject}>
-              <SelectTrigger id="project">
-                <SelectValue placeholder="Seleccione una obra" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects
-                  .filter((p) => p.status === 'En Curso')
-                  .map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="date">Fecha</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date"
-                  variant={'outline'}
-                  className={cn(
-                    'justify-start text-left font-normal',
-                    !selectedDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate && isClient ? format(selectedDate, 'PPP') : <span>Seleccione una fecha</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+        <CardContent className="grid max-w-sm gap-2">
+          <Label htmlFor="date">Fecha</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="date"
+                variant={'outline'}
+                className={cn(
+                  'justify-start text-left font-normal',
+                  !selectedDate && 'text-muted-foreground'
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate && isClient ? format(selectedDate, 'PPP') : <span>Seleccione una fecha</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </CardContent>
       </Card>
 
@@ -144,7 +133,7 @@ export function DailyAttendance() {
         <CardHeader>
           <CardTitle>Planilla de Asistencia Diaria</CardTitle>
           <CardDescription>
-            Marque el estado de cada empleado para la fecha seleccionada.
+            Marque el estado de cada empleado y asigne la obra correspondiente para la fecha seleccionada.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -152,63 +141,89 @@ export function DailyAttendance() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[250px]">Empleado</TableHead>
+                  <TableHead className="w-[200px]">Empleado</TableHead>
                   <TableHead className="w-[200px]">Estado</TableHead>
+                  <TableHead className="w-[250px]">Obra</TableHead>
                   <TableHead className="w-[150px]">Horas Tarde</TableHead>
                   <TableHead>Observaciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.length > 0 ? (
-                  filteredEmployees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="font-medium">{employee.name}</TableCell>
-                      <TableCell>
-                        <RadioGroup
-                          value={getEmployeeAttendance(employee.id).status}
-                          onValueChange={(value) =>
-                            handleAttendanceChange(employee.id, 'status', value as AttendanceStatus)
-                          }
-                          className="flex gap-4"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="presente" id={`${employee.id}-presente`} />
-                            <Label htmlFor={`${employee.id}-presente`}>Presente</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="ausente" id={`${employee.id}-ausente`} />
-                            <Label htmlFor={`${employee.id}-ausente`}>Ausente</Label>
-                          </div>
-                        </RadioGroup>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          className="w-24"
-                          value={getEmployeeAttendance(employee.id).lateHours}
-                          onChange={(e) =>
-                            handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)
-                          }
-                          disabled={getEmployeeAttendance(employee.id).status === 'ausente'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="text"
-                          placeholder="Añadir nota..."
-                          value={getEmployeeAttendance(employee.id).notes}
-                          onChange={(e) =>
-                            handleAttendanceChange(employee.id, 'notes', e.target.value)
-                          }
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
+                {activeEmployees.length > 0 ? (
+                  activeEmployees.map((employee) => {
+                    const employeeAttendance = getEmployeeAttendance(employee.id);
+                    const isPresent = employeeAttendance.status === 'presente';
+
+                    return (
+                      <TableRow key={employee.id}>
+                        <TableCell className="font-medium">{employee.name}</TableCell>
+                        <TableCell>
+                          <RadioGroup
+                            value={employeeAttendance.status}
+                            onValueChange={(value) =>
+                              handleAttendanceChange(employee.id, 'status', value as AttendanceStatus)
+                            }
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="presente" id={`${employee.id}-presente`} />
+                              <Label htmlFor={`${employee.id}-presente`}>Presente</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="ausente" id={`${employee.id}-ausente`} />
+                              <Label htmlFor={`${employee.id}-ausente`}>Ausente</Label>
+                            </div>
+                          </RadioGroup>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={employeeAttendance.projectId ?? ''}
+                            onValueChange={(value) => handleAttendanceChange(employee.id, 'projectId', value)}
+                            disabled={!isPresent}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Asignar Obra" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {projects
+                                .filter((p) => p.status === 'En Curso')
+                                .map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min="0"
+                            className="w-24"
+                            value={employeeAttendance.lateHours}
+                            onChange={(e) =>
+                              handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)
+                            }
+                            disabled={!isPresent}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="text"
+                            placeholder="Añadir nota..."
+                            value={employeeAttendance.notes}
+                            onChange={(e) =>
+                              handleAttendanceChange(employee.id, 'notes', e.target.value)
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                      No hay empleados activos en esta obra.
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No hay empleados activos en el sistema.
                     </TableCell>
                   </TableRow>
                 )}
@@ -226,3 +241,5 @@ export function DailyAttendance() {
     </div>
   );
 }
+
+    

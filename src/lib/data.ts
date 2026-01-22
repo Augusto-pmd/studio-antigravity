@@ -41,11 +41,13 @@ export const monthlyExpenses = [
 ];
 
 export const employees: Employee[] = [
-  { id: 'EMP-001', name: 'Carlos Rodríguez', projectId: 'PROJ-001', status: 'Activo', paymentType: 'Semanal', category: 'Albañil', dailyWage: 2500, artExpiryDate: '2025-01-15' },
-  { id: 'EMP-002', name: 'Ana Lopez', projectId: 'PROJ-001', status: 'Activo', paymentType: 'Diario', category: 'Pintor', dailyWage: 2200, artExpiryDate: '2024-09-30' },
-  { id: 'EMP-003', name: 'Luis Martinez', projectId: 'PROJ-001', status: 'Inactivo', paymentType: 'Semanal', category: 'Electricista', dailyWage: 3000 },
-  { id: 'EMP-004', name: 'Laura Sanchez', projectId: 'PROJ-004', status: 'Activo', paymentType: 'Semanal', category: 'Plomero', dailyWage: 2800, artExpiryDate: '2024-08-20' },
-  { id: 'EMP-005', name: 'Javier Gomez', projectId: 'PROJ-004', status: 'Activo', paymentType: 'Diario', category: 'Ayudante', dailyWage: 1800 },
-  { id: 'EMP-006', name: 'Sofia Diaz', projectId: 'PROJ-005', status: 'Activo', paymentType: 'Semanal', category: 'Jefe de Obra', dailyWage: 4500, artExpiryDate: '2025-03-01' },
-  { id: 'EMP-007', name: 'Diego Fernandez', projectId: 'PROJ-005', status: 'Activo', paymentType: 'Semanal', category: 'Albañil', dailyWage: 2500, artExpiryDate: '2024-07-31' },
+  { id: 'EMP-001', name: 'Carlos Rodríguez', status: 'Activo', paymentType: 'Semanal', category: 'Albañil', dailyWage: 2500, artExpiryDate: '2025-01-15' },
+  { id: 'EMP-002', name: 'Ana Lopez', status: 'Activo', paymentType: 'Diario', category: 'Pintor', dailyWage: 2200, artExpiryDate: '2024-09-30' },
+  { id: 'EMP-003', name: 'Luis Martinez', status: 'Inactivo', paymentType: 'Semanal', category: 'Electricista', dailyWage: 3000 },
+  { id: 'EMP-004', name: 'Laura Sanchez', status: 'Activo', paymentType: 'Semanal', category: 'Plomero', dailyWage: 2800, artExpiryDate: '2024-08-20' },
+  { id: 'EMP-005', name: 'Javier Gomez', status: 'Activo', paymentType: 'Diario', category: 'Ayudante', dailyWage: 1800 },
+  { id: 'EMP-006', name: 'Sofia Diaz', status: 'Activo', paymentType: 'Semanal', category: 'Jefe de Obra', dailyWage: 4500, artExpiryDate: '2025-03-01' },
+  { id: 'EMP-007', name: 'Diego Fernandez', status: 'Activo', paymentType: 'Semanal', category: 'Albañil', dailyWage: 2500, artExpiryDate: '2024-07-31' },
 ];
+
+    

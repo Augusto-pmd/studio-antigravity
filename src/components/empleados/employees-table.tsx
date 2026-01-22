@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { employees, projects } from "@/lib/data";
+import { employees } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore } from 'date-fns';
@@ -24,10 +24,6 @@ const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     // Add timezone to prevent off-by-one day errors
     return new Date(dateString + 'T00:00:00').toLocaleDateString('es-AR');
-}
-
-const getProjectName = (projectId: string) => {
-    return projects.find(p => p.id === projectId)?.name || 'N/A';
 }
 
 export function EmployeesTable() {
@@ -56,7 +52,6 @@ export function EmployeesTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Empleado</TableHead>
-                <TableHead>Obra</TableHead>
                 <TableHead>Rubro</TableHead>
                 <TableHead>Salario Diario</TableHead>
                 <TableHead>Estado</TableHead>
@@ -72,7 +67,6 @@ export function EmployeesTable() {
                     <div className="font-medium">{employee.name}</div>
                     <div className="text-sm text-muted-foreground">{employee.id}</div>
                   </TableCell>
-                  <TableCell>{getProjectName(employee.projectId)}</TableCell>
                   <TableCell>{employee.category}</TableCell>
                   <TableCell className="font-mono">{formatCurrency(employee.dailyWage)}</TableCell>
                   <TableCell>
@@ -114,3 +108,5 @@ export function EmployeesTable() {
     </TooltipProvider>
   );
 }
+
+    

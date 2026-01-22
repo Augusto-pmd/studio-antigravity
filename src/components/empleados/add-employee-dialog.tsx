@@ -14,20 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
@@ -58,24 +50,6 @@ export function AddEmployeeDialog() {
               Nombre
             </Label>
             <Input id="name" placeholder="Nombre completo del empleado" className="col-span-3" />
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="project" className="text-right">
-              Obra
-            </Label>
-            <Select>
-              <SelectTrigger id="project" className="col-span-3">
-                <SelectValue placeholder="Asignar a una obra" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.filter(p => p.status === 'En Curso').map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -145,3 +119,5 @@ export function AddEmployeeDialog() {
     </Dialog>
   );
 }
+
+    

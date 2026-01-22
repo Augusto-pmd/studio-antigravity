@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-import { employees } from "@/lib/data";
+import { employees, projects } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
@@ -36,17 +36,14 @@ export function AddCashAdvanceDialog() {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const isPending = false; // Mock state
 
   useEffect(() => {
-    setDate(new Date());
     setIsClient(true);
+    setDate(new Date());
   }, []);
-
-  const selectedEmployee = useMemo(() => {
-    return employees.find(e => e.id === selectedEmployeeId);
-  }, [selectedEmployeeId]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -76,6 +73,24 @@ export function AddCashAdvanceDialog() {
                 {employees.filter(e => e.status === 'Activo').map((e) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="project" className="text-right">
+              Obra
+            </Label>
+            <Select onValueChange={setSelectedProjectId}>
+              <SelectTrigger id="project" className="col-span-3">
+                <SelectValue placeholder="Imputar a una obra" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.filter(p => p.status === 'En Curso').map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -123,15 +138,6 @@ export function AddCashAdvanceDialog() {
             </Label>
             <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" />
           </div>
-
-          {selectedEmployee && (
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project" className="text-right">
-                Obra
-                </Label>
-                <Input id="project" value={selectedEmployee.projectId} disabled className="col-span-3" />
-            </div>
-          )}
         </div>
         <DialogFooter>
           <Button type="submit" disabled={isPending}>
@@ -143,3 +149,5 @@ export function AddCashAdvanceDialog() {
     </Dialog>
   );
 }
+
+    
