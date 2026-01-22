@@ -26,6 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { projects, suppliers, expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export function AddExpenseDialog() {
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
   const [date, setDate] = useState<Date>();
   const [isClient, setIsClient] = useState(false);
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   
   const [file, setFile] = useState<File | null>(null);
   const [fileValidation, setFileValidation] = useState<{ isValid: boolean; errors: string[] } | null>(null);
@@ -224,8 +226,38 @@ export function AddExpenseDialog() {
             <Label htmlFor="amount" className="text-right">
               Monto
             </Label>
-            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" />
+            <Input id="amount" type="number" placeholder="0.00" className="col-span-3" />
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Moneda</Label>
+            <RadioGroup
+              value={currency}
+              onValueChange={(value: 'ARS' | 'USD') => setCurrency(value)}
+              className="col-span-3 flex items-center gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="ARS" id="ars" />
+                <Label htmlFor="ars">ARS</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="USD" id="usd" />
+                <Label htmlFor="usd">USD</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          {currency === 'USD' && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="exchangeRate" className="text-right">
+                Tipo de Cambio
+              </Label>
+              <Input
+                id="exchangeRate"
+                type="number"
+                placeholder="Dólar BNA compra"
+                className="col-span-3"
+              />
+            </div>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="receipt" className="text-right">
               Comprobante

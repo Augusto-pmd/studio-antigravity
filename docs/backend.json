@@ -249,13 +249,22 @@
           "type": "number",
           "description": "The amount of the expense."
         },
+        "currency": {
+          "type": "string",
+          "description": "The currency for the expense.",
+          "enum": ["ARS", "USD"]
+        },
+        "exchangeRate": {
+          "type": "number",
+          "description": "The exchange rate to ARS if the currency is USD."
+        },
         "receiptUrl": {
           "type": "string",
           "description": "URL of the receipt image or document.",
           "format": "uri"
         }
       },
-      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount"]
+      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount", "currency"]
     },
     "Supplier": {
       "title": "Supplier",
@@ -355,6 +364,10 @@
             "ARS",
             "USD"
           ]
+        },
+        "exchangeRate": {
+          "type": "number",
+          "description": "The exchange rate to ARS if currency is USD."
         },
         "category": {
           "type": "string",

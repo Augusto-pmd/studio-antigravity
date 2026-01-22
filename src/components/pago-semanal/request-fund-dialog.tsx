@@ -44,6 +44,7 @@ const fundRequestCategories = [
 export function RequestFundDialog() {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [isClient, setIsClient] = useState(false);
   const isPending = false; // Mock state
 
@@ -135,7 +136,11 @@ export function RequestFundDialog() {
 
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Moneda</Label>
-                <RadioGroup defaultValue="ARS" className="col-span-3 flex items-center gap-6">
+                <RadioGroup 
+                    value={currency}
+                    onValueChange={(value) => setCurrency(value as 'ARS' | 'USD')}
+                    className="col-span-3 flex items-center gap-6"
+                >
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="ARS" id="ars" />
                         <Label htmlFor="ars">ARS</Label>
@@ -154,6 +159,19 @@ export function RequestFundDialog() {
                 <Input id="amount" type="number" placeholder="0.00" className="col-span-3" />
             </div>
 
+            {currency === 'USD' && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="exchangeRate" className="text-right">
+                    Tipo de Cambio
+                    </Label>
+                    <Input
+                    id="exchangeRate"
+                    type="number"
+                    placeholder="Dólar BNA compra"
+                    className="col-span-3"
+                    />
+                </div>
+            )}
         </div>
         <DialogFooter>
           <Button type="submit" disabled={isPending}>
