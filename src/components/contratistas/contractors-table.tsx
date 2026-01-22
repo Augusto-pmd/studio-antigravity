@@ -51,9 +51,9 @@ export function ContractorsTable() {
   const renderSkeleton = () => (
     <TableRow>
       <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
-      <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
+      <TableCell className="hidden md:table-cell"><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
       <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <Skeleton className="h-10 w-10 rounded-md" />
@@ -70,9 +70,9 @@ export function ContractorsTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Razón Social</TableHead>
-                <TableHead>Contacto</TableHead>
+                <TableHead className="hidden md:table-cell">Contacto</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Vencimiento Docs.</TableHead>
+                <TableHead className="hidden md:table-cell">Vencimiento Docs.</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -101,7 +101,7 @@ export function ContractorsTable() {
                     <div className="font-medium">{contractor.name}</div>
                     <div className="text-sm text-muted-foreground">{contractor.cuit}</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                      <div className="font-medium">{contractor.contactPerson}</div>
                     <div className="text-sm text-muted-foreground">{contractor.email}</div>
                   </TableCell>
@@ -118,7 +118,7 @@ export function ContractorsTable() {
                       {contractor.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-2">
                       {docStatus && (
                           <Tooltip>
@@ -162,5 +162,3 @@ export function ContractorsTable() {
     </TooltipProvider>
   );
 }
-
-    

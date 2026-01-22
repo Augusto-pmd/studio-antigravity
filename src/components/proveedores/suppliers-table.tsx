@@ -26,9 +26,9 @@ export function SuppliersTable() {
   const renderSkeleton = () => (
     <TableRow>
       <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
-      <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
+      <TableCell className="hidden md:table-cell"><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
       <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-      <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
     </TableRow>
   );
@@ -39,9 +39,9 @@ export function SuppliersTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Razón Social</TableHead>
-                <TableHead>Contacto</TableHead>
+                <TableHead className="hidden md:table-cell">Contacto</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Tipo</TableHead>
+                <TableHead className="hidden md:table-cell">Tipo</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -66,7 +66,7 @@ export function SuppliersTable() {
                     <div className="font-medium">{supplier.name}</div>
                     <div className="text-sm text-muted-foreground">{supplier.cuit}</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                      <div className="font-medium">{supplier.contactPerson}</div>
                     <div className="text-sm text-muted-foreground">{supplier.email}</div>
                   </TableCell>
@@ -83,7 +83,7 @@ export function SuppliersTable() {
                       {supplier.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant="secondary">{supplier.type}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -101,5 +101,3 @@ export function SuppliersTable() {
       </div>
   );
 }
-
-    

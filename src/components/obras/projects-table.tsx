@@ -38,11 +38,11 @@ export function ProjectsTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[300px]">Obra</TableHead>
-            <TableHead>Supervisor</TableHead>
+            <TableHead className="w-[250px]">Obra</TableHead>
+            <TableHead className="hidden md:table-cell">Supervisor</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead className="text-right">Saldo Contrato</TableHead>
-            <TableHead className="w-[200px] text-right">Progreso</TableHead>
+            <TableHead className="hidden text-right md:table-cell">Saldo Contrato</TableHead>
+            <TableHead className="w-[150px] text-right">Progreso</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -51,17 +51,17 @@ export function ProjectsTable() {
             <>
               <TableRow>
                 <TableCell><div className="space-y-1"><Skeleton className="h-5 w-4/5" /><Skeleton className="h-4 w-2/5" /></div></TableCell>
-                <TableCell><Skeleton className="h-5 w-3/5" /></TableCell>
+                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-3/5" /></TableCell>
                 <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                <TableCell className="hidden text-right md:table-cell"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
                 <TableCell><div className="flex justify-end"><Skeleton className="h-5 w-32" /></div></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
               </TableRow>
                <TableRow>
                 <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/5" /><Skeleton className="h-4 w-1/5" /></div></TableCell>
-                <TableCell><Skeleton className="h-5 w-4/5" /></TableCell>
+                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-4/5" /></TableCell>
                 <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                <TableCell className="hidden text-right md:table-cell"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                 <TableCell><div className="flex justify-end"><Skeleton className="h-5 w-28" /></div></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
               </TableRow>
@@ -78,9 +78,9 @@ export function ProjectsTable() {
             <TableRow key={project.id}>
               <TableCell>
                 <div className="font-medium">{project.name}</div>
-                <div className="text-sm text-muted-foreground">{project.id}</div>
+                <div className="text-sm text-muted-foreground md:hidden">{project.supervisor}</div>
               </TableCell>
-              <TableCell>{project.supervisor}</TableCell>
+              <TableCell className="hidden md:table-cell">{project.supervisor}</TableCell>
               <TableCell>
                 <Badge
                   variant="outline"
@@ -99,7 +99,7 @@ export function ProjectsTable() {
                   {project.status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right font-mono">{formatCurrency(project.balance)}</TableCell>
+              <TableCell className="hidden text-right font-mono md:table-cell">{formatCurrency(project.balance)}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
                   <span className="text-sm text-muted-foreground w-10 text-right">

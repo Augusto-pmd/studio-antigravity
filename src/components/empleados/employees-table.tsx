@@ -55,10 +55,10 @@ export function EmployeesTable() {
   const renderSkeleton = () => (
     <TableRow>
       <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
-      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
       <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
     </TableRow>
   );
@@ -70,10 +70,10 @@ export function EmployeesTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Empleado</TableHead>
-                <TableHead>Rubro</TableHead>
-                <TableHead>Salario Diario</TableHead>
+                <TableHead className="hidden md:table-cell">Rubro</TableHead>
+                <TableHead className="hidden lg:table-cell">Salario Diario</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Vencimiento ART</TableHead>
+                <TableHead className="hidden lg:table-cell">Vencimiento ART</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -98,10 +98,10 @@ export function EmployeesTable() {
                 <TableRow key={employee.id}>
                   <TableCell>
                     <div className="font-medium">{employee.name}</div>
-                    <div className="text-sm text-muted-foreground">{employee.id}</div>
+                    <div className="text-sm text-muted-foreground md:hidden">{employee.category}</div>
                   </TableCell>
-                  <TableCell>{employee.category}</TableCell>
-                  <TableCell className="font-mono">{formatCurrency(employee.dailyWage)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{employee.category}</TableCell>
+                  <TableCell className="hidden font-mono lg:table-cell">{formatCurrency(employee.dailyWage)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={employee.status === 'Activo' ? 'default' : 'secondary'}
@@ -114,7 +114,7 @@ export function EmployeesTable() {
                       {employee.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <div className="flex items-center gap-2">
                       <span>{formatDate(employee.artExpiryDate)}</span>
                       {artStatus && (
@@ -149,5 +149,3 @@ export function EmployeesTable() {
     </TooltipProvider>
   );
 }
-
-    

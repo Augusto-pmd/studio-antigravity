@@ -50,8 +50,8 @@ export function ExpensesTable() {
     <TableRow>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
     </TableRow>
@@ -64,8 +64,8 @@ export function ExpensesTable() {
               <TableRow>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Obra</TableHead>
-                <TableHead>Proveedor</TableHead>
-                <TableHead>Rubro</TableHead>
+                <TableHead className="hidden md:table-cell">Proveedor</TableHead>
+                <TableHead className="hidden md:table-cell">Rubro</TableHead>
                 <TableHead>Comprobante</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
               </TableRow>
@@ -89,8 +89,8 @@ export function ExpensesTable() {
                 <TableRow key={expense.id}>
                   <TableCell>{formatDate(expense.date)}</TableCell>
                   <TableCell className="font-medium">{getProjectName(expense.projectId)}</TableCell>
-                  <TableCell>{getSupplierName(expense.supplierId)}</TableCell>
-                  <TableCell>{getCategoryName(expense.categoryId)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{getSupplierName(expense.supplierId)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{getCategoryName(expense.categoryId)}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{expense.documentType}</Badge>
                   </TableCell>
@@ -102,5 +102,3 @@ export function ExpensesTable() {
       </div>
   );
 }
-
-  

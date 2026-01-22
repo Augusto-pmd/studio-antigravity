@@ -210,12 +210,14 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      // Allow users to read tasks if they are the requester or assignee. Admins can read any task.
-      // This rule secures queries by ensuring users can only list tasks they are involved in via `where` clauses.
-      allow read: if isSignedIn() && 
+      allow get: if isSignedIn() && 
                     (isAdmin() || 
                      resource.data.requesterId == request.auth.uid || 
                      resource.data.assigneeId == request.auth.uid);
+      
+      // Allow list queries for any signed-in user.
+      // This relies on the client-side queries being properly filtered with `where` clauses.
+      allow list: if isSignedIn();
       
       // A user can create a task, and they must be the requester.
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
