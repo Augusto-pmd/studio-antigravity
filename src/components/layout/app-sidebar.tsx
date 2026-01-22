@@ -68,7 +68,6 @@ const menuItems = [
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/contratos", label: "Contratos", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: Landmark },
-  { href: "/activos", label: "Activos", icon: Archive },
 ];
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
