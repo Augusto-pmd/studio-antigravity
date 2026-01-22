@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -247,7 +248,11 @@
         },
         "amount": {
           "type": "number",
-          "description": "The amount of the expense."
+          "description": "The total amount of the expense, including taxes."
+        },
+        "iva": {
+          "type": "number",
+          "description": "The VAT (IVA) amount included in the total expense amount."
         },
         "currency": {
           "type": "string",

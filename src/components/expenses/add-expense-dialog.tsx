@@ -30,10 +30,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { projects, suppliers, expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, FileCheck2, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
+import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { validateDocumentAction } from "@/lib/actions";
+import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/context/user-context";
 
 export function AddExpenseDialog() {
@@ -48,8 +48,9 @@ export function AddExpenseDialog() {
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   
   const [file, setFile] = useState<File | null>(null);
-  const [fileValidation, setFileValidation] = useState<{ isValid: boolean; errors: string[] } | null>(null);
-  const [isCheckingFile, setIsCheckingFile] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [iva, setIva] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
 
   const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
   const isContractBlocked = project?.balance === 0;
@@ -64,53 +65,50 @@ export function AddExpenseDialog() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if (file) {
-      handleFileValidation(file);
-    }
-  }, [file]);
-
+  
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFileValidation(null);
+    setIva('');
+    setAmount('');
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
+      handleReceiptAnalysis(selectedFile);
     }
   };
 
-  const handleFileValidation = (fileToValidate: File) => {
-    setIsCheckingFile(true);
+  const handleReceiptAnalysis = (fileToAnalyze: File) => {
+    setIsExtracting(true);
     const reader = new FileReader();
-    reader.readAsDataURL(fileToValidate);
+    reader.readAsDataURL(fileToAnalyze);
     reader.onloadend = () => {
       startTransition(async () => {
         const dataUri = reader.result as string;
-        const result = await validateDocumentAction(dataUri, fileToValidate.type, fileToValidate.size);
-        if (!result.isValid) {
-          setFileValidation({ isValid: false, errors: result.validationErrors });
+        const result = await extractInvoiceDataAction(dataUri, fileToAnalyze.size);
+        
+        if (result.data) {
+          setAmount(result.data.total > 0 ? result.data.total.toString() : '');
+          setIva(result.data.iva > 0 ? result.data.iva.toString() : '');
           toast({
-            variant: "destructive",
-            title: "Error en el Comprobante",
-            description: result.validationErrors.join("\n"),
+            title: "Factura analizada con IA",
+            description: "Se completaron los campos de IVA y Monto Total. Por favor, verifíquelos.",
           });
         } else {
-          setFileValidation({ isValid: true, errors: [] });
-           toast({
-            title: "Comprobante Verificado",
-            description: "El archivo del comprobante es válido.",
+          toast({
+            variant: "destructive",
+            title: "Error en la extracción",
+            description: result.error || "No se pudieron extraer los datos de la factura.",
           });
         }
-        setIsCheckingFile(false);
+        setIsExtracting(false);
       });
     };
     reader.onerror = () => {
-      setFileValidation({ isValid: false, errors: ['Error al leer el archivo.'] });
-      setIsCheckingFile(false);
+      toast({ variant: "destructive", title: "Error de archivo", description: "No se pudo leer el archivo." });
+      setIsExtracting(false);
     };
   };
 
-  const isSubmitDisabled = isPending || isCheckingFile || isContractBlocked || isSupplierBlocked || !file || fileValidation?.isValid === false;
+  const isSubmitDisabled = isPending || isExtracting || isContractBlocked || isSupplierBlocked || !file;
   
   if (!permissions.canLoadExpenses) return null;
 
@@ -228,12 +226,6 @@ export function AddExpenseDialog() {
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="amount" className="text-right">
-              Monto
-            </Label>
-            <Input id="amount" type="number" placeholder="0.00" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Moneda</Label>
             <RadioGroup
               value={currency}
@@ -267,16 +259,30 @@ export function AddExpenseDialog() {
             </Label>
             <div className="col-span-3 flex items-center gap-2">
               <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
-              {isCheckingFile && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
-              {fileValidation?.isValid && <FileCheck2 className="h-5 w-5 text-green-500" />}
-              {fileValidation?.isValid === false && <TriangleAlert className="h-5 w-5 text-destructive" />}
+              <Wand2 className="h-5 w-5 text-primary" title="Asistido por IA para extraer datos" />
+            </div>
+          </div>
+           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="iva" className="text-right">IVA</Label>
+            <div className="col-span-3 relative">
+                <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
+                {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
+            </div>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="amount" className="text-right">
+              Monto Total
+            </Label>
+             <div className="col-span-3 relative">
+                <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
             </div>
           </div>
 
         </div>
         <DialogFooter>
           <Button type="submit" disabled={isSubmitDisabled}>
-            {(isPending || isCheckingFile) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {(isPending || isExtracting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Gasto
           </Button>
         </DialogFooter>

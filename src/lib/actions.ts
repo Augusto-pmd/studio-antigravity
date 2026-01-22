@@ -1,29 +1,22 @@
 "use server";
-import { validateUploadedDocuments } from '@/ai/flows/validate-uploaded-documents';
+import { extractInvoiceData } from '@/ai/flows/extract-invoice-data';
 
-export async function validateDocumentAction(dataUri: string, fileType: string, fileSize: number) {
+export async function extractInvoiceDataAction(dataUri: string, fileSize: number) {
   try {
     if (!dataUri) {
-        return { isValid: false, validationErrors: ['No se ha proporcionado ningún archivo.'] };
+        return { error: 'No se ha proporcionado ningún archivo.' };
     }
 
     const maxFileSizeKB = 5 * 1024; // 5 MB
-
     if ((fileSize / 1024) > maxFileSizeKB) {
-        return { isValid: false, validationErrors: [`El archivo es demasiado grande. El tamaño máximo es de ${maxFileSizeKB/1024} MB.`] };
+      return { error: `El archivo es demasiado grande. El tamaño máximo es de ${maxFileSizeKB/1024} MB.` };
     }
 
-    const result = await validateUploadedDocuments({
-      documentDataUri: dataUri,
-      expectedDocumentType: 'Comprobante de gasto',
-      expectedFileFormat: 'PDF, JPG, PNG, HEIC',
-      maxFileSizeKB: maxFileSizeKB,
-    });
-    
-    return result;
+    const result = await extractInvoiceData({ invoiceDataUri: dataUri });
+    return { data: result };
 
   } catch (error) {
-    console.error("Error validating document:", error);
-    return { isValid: false, validationErrors: ['Ocurrió un error inesperado al validar el documento.'] };
+    console.error("Error extracting invoice data:", error);
+    return { error: 'Ocurrió un error inesperado al procesar la factura.' };
   }
 }

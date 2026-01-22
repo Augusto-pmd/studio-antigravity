@@ -1,4 +1,4 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/validate-uploaded-documents.ts';
+import '@/ai/flows/extract-invoice-data.ts';
