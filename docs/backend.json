@@ -326,6 +326,70 @@
         }
       },
       "required": ["id", "projectId", "amount", "balance"]
+    },
+    "FundRequest": {
+      "title": "Fund Request",
+      "type": "object",
+      "description": "A request for funds to be included in the weekly payment sheet (e.g., for materials, logistics, cash).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID for the fund request."
+        },
+        "requesterId": {
+          "type": "string",
+          "description": "ID of the user making the request."
+        },
+        "requesterName": {
+          "type": "string",
+          "description": "Name of the user making the request."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount requested."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the request.",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the request (e.g., Logística, Materiales, Viáticos)."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Optional project to associate the request with."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the request.",
+          "enum": [
+            "Pendiente",
+            "Aprobado",
+            "Rechazado",
+            "Pagado"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the request.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "requesterId",
+        "requesterName",
+        "amount",
+        "currency",
+        "category",
+        "status",
+        "date"
+      ]
     }
   },
   "auth": {
@@ -371,6 +435,12 @@
     "/cash-advances/{cashAdvanceId}": {
       "schema": { "$ref": "#/entities/CashAdvance" },
       "description": "Stores individual cash advance records."
+    },
+    "/fund-requests/{fundRequestId}": {
+      "schema": {
+        "$ref": "#/entities/FundRequest"
+      },
+      "description": "Stores all fund requests for weekly payment sheets."
     }
   }
 }

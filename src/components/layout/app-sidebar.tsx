@@ -37,6 +37,7 @@ import {
   Contact,
   CalendarCheck,
   MoreHorizontal,
+  CircleDollarSign,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 
@@ -46,6 +47,7 @@ const menuItems = [
   { href: "/proveedores", label: "Proveedores", icon: Users },
   { href: "/empleados", label: "Empleados", icon: Contact },
   { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
+  { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign },
   {
     href: "/cajas",
     label: "Cajas",
