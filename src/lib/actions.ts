@@ -3,6 +3,7 @@ import { extractInvoiceData } from '@/ai/flows/extract-invoice-data';
 import { generateDashboardSummary } from '@/ai/flows/generate-dashboard-summary';
 import { projects, taskRequests } from '@/lib/data';
 import { DashboardSummaryOutput } from '@/ai/schemas';
+import { extractBankStatement } from '@/ai/flows/extract-bank-statement';
 
 
 export async function extractInvoiceDataAction(dataUri: string, fileSize: number) {
@@ -51,4 +52,24 @@ export async function generateDashboardSummaryAction(): Promise<DashboardSummary
 
   const result = await generateDashboardSummary({ activeProjects, pendingTasks, stats });
   return result;
+}
+
+export async function extractBankStatementAction(dataUri: string, fileSize: number) {
+  try {
+    if (!dataUri) {
+        return { error: 'No se ha proporcionado ningún archivo.' };
+    }
+
+    const maxFileSizeKB = 5 * 1024; // 5 MB
+    if ((fileSize / 1024) > maxFileSizeKB) {
+      return { error: `El archivo es demasiado grande. El tamaño máximo es de ${maxFileSizeKB/1024} MB.` };
+    }
+
+    const result = await extractBankStatement({ statementDataUri: dataUri });
+    return { data: result };
+
+  } catch (error) {
+    console.error("Error extracting bank statement data:", error);
+    return { error: 'Ocurrió un error inesperado al procesar el extracto.' };
+  }
 }
