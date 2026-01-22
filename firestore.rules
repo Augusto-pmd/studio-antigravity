@@ -146,10 +146,10 @@ service cloud.firestore {
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get, update: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && hasConsistentOwnId(userId);
-      // allow update: if isExistingOwner(userId) && isOwnIdImmutable();
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isExistingOwner(userId);
 
       /**
@@ -210,7 +210,16 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      allow read, write: if isSignedIn();
+      // Admins can list all tasks. Other users must query by requesterId or assigneeId.
+      allow list: if isAdmin();
+      // A user can get a task if they are the requester, the assignee, or an admin.
+      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || isAdmin());
+      // A user can create a task, and they must be the requester.
+      allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
+      // The requester or assignee can update a task (e.g., to change status). Admins can also update.
+      allow update: if isSignedIn() && (resource.data.assigneeId == request.auth.uid || resource.data.requesterId == request.auth.uid || isAdmin());
+       // Only admins can delete tasks.
+      allow delete: if isAdmin();
     }
 
     /**
