@@ -57,120 +57,56 @@ service cloud.firestore {
     // User Data Rules
     // ----------------------------------------------------------------------
 
-    /**
-     * @description Controls access to a user's own profile document.
-     * @path /users/{userId}
-     * @allow (create) A new user can create their own profile document. `auth.uid` must match `{userId}`.
-     * @deny (list) Another user cannot list all user profiles.
-     * @principle Restricts access to a user's own data tree and enforces self-creation.
-     */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isOwner(userId) && resource != null;
-    }
+      allow list: if false; // Prevent listing all users for privacy
+      allow create: if isOwner(userId);
+      allow update, delete: if isOwner(userId);
 
-    /**
-     * @description Controls access to a user's cash accounts.
-     * @path /users/{userId}/cash/{cashId}
-     * @allow (get, list) The owner can read their own cash account documents.
-     * @deny (get, list) An authenticated user cannot read another user's cash accounts.
-     * @principle Enforces path-based ownership for subcollections.
-     */
-    match /users/{userId}/cash/{cashId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
-      allow delete: if isOwner(userId) && resource != null;
+      // --- Subcollections ---
+      match /cash/{cashId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ----------------------------------------------------------------------
     // Project Data Rules
     // ----------------------------------------------------------------------
 
-    /**
-     * @description Controls access to project documents.
-     * @path /projects/{projectId}
-     * @allow (get, list) Any authenticated user can read project information.
-     * @deny (create, update) Any user attempting to write to a project.
-     * @principle Secure default. Writes are disabled until an ownership model (e.g., an `ownerId` or `members` field) is added to the Project schema.
-     */
     match /projects/{projectId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      // CRITICAL: Cannot implement owner-only writes. The 'Project' entity is missing an 'ownerId' or 'members' field.
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-    }
+      allow get, list: if isSignedIn();
+      // CRITICAL: Writes are disabled. The 'Project' entity lacks an `ownerId` or `members` field.
+      // This is a secure default. Enable writes only after adding an ownership field to the schema.
+      allow write: if false;
 
-    /**
-     * @description Controls access to project expenses.
-     * @path /projects/{projectId}/expenses/{expenseId}
-     * @allow (get, list) An authenticated user can read expenses for an existing project.
-     * @deny (create, update) Any user attempting to write an expense.
-     * @principle Secure default. Write access depends on the parent project's ownership model, which is not yet defined.
-     */
-    match /projects/{projectId}/expenses/{expenseId} {
-      allow get: if isSignedIn() && projectExists(projectId);
-      allow list: if isSignedIn() && projectExists(projectId);
-      // CRITICAL: Writes are disabled because the parent Project document lacks an ownership field.
-      allow create: if false; // TODO: Add validation based on parent project ownership.
-      allow update: if false; // TODO: Add validation based on parent project ownership.
-      allow delete: if false; // TODO: Add validation based on parent project ownership.
-    }
+      // --- Subcollections ---
+      match /expenses/{expenseId} {
+        allow get, list: if isSignedIn() && projectExists(projectId);
+        // CRITICAL: Write access depends on parent project ownership, which isn't defined.
+        allow write: if false;
+      }
 
-    /**
-     * @description Controls access to project contracts.
-     * @path /projects/{projectId}/contracts/{contractId}
-     * @allow (get, list) An authenticated user can read contracts for an existing project.
-     * @deny (create, update) Any user attempting to write a contract.
-     * @principle Secure default. Write access depends on the parent project's ownership model, which is not yet defined.
-     */
-    match /projects/{projectId}/contracts/{contractId} {
-      allow get: if isSignedIn() && projectExists(projectId);
-      allow list: if isSignedIn() && projectExists(projectId);
-      // CRITICAL: Writes are disabled because the parent Project document lacks an ownership field.
-      allow create: if false; // TODO: Add validation based on parent project ownership.
-      allow update: if false; // TODO: Add validation based on parent project ownership.
-      allow delete: if false; // TODO: Add validation based on parent project ownership.
+      match /contracts/{contractId} {
+        allow get, list: if isSignedIn() && projectExists(projectId);
+         // CRITICAL: Write access depends on parent project ownership, which isn't defined.
+        allow write: if false;
+      }
     }
 
     // ----------------------------------------------------------------------
     // Master Data Rules
     // ----------------------------------------------------------------------
 
-    /**
-     * @description Controls access to master data for suppliers.
-     * @path /suppliers/{supplierId}
-     * @allow (get, list) Any authenticated user can read supplier data.
-     * @deny (create, update, delete) Non-admin users cannot modify the master supplier list.
-     * @principle Protects shared master data by making it read-only for standard users.
-     */
     match /suppliers/{supplierId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      // Master data should not be modifiable by clients.
+      allow write: if false;
     }
 
-    /**
-     * @description Controls access to master data for expense categories.
-     * @path /categories/{categoryId}
-     * @allow (get, list) Any authenticated user can read category data.
-     * @deny (create, update, delete) Non-admin users cannot modify the master category list.
-     * @principle Protects shared master data by making it read-only for standard users.
-     */
     match /categories/{categoryId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+       // Master data should not be modifiable by clients.
+      allow write: if false;
     }
   }
 }
