@@ -93,7 +93,7 @@ export function AddProjectDialog({
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
-    if (!name || !client || !address || !supervisor || !budget || !status || !startDate) {
+    if (!name || !client || !address || !supervisor || !budget || !status) {
         toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Por favor, complete todos los campos obligatorios (*).' });
         return;
     }
@@ -112,7 +112,7 @@ export function AddProjectDialog({
             currency,
             description,
             status,
-            startDate: startDate.toISOString(),
+            startDate: startDate?.toISOString(),
             endDate: endDate?.toISOString(),
             supervisor,
             budget: parseFloat(budget) || 0,
@@ -243,7 +243,7 @@ export function AddProjectDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="startDate">Fecha de inicio *</Label>
+                <Label htmlFor="startDate">Fecha de inicio</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button

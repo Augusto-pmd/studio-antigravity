@@ -6,7 +6,7 @@ export type Project = {
   currency: 'ARS' | 'USD';
   projectType: string;
   status: 'En Curso' | 'Completado' | 'Pausado' | 'Cancelado';
-  startDate: string;
+  startDate?: string;
   endDate?: string;
   supervisor: string;
   budget: number;
