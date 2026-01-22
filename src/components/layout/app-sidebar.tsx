@@ -24,6 +24,7 @@ import {
   FileText,
   Landmark,
   Contact,
+  CalendarCheck,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 
@@ -32,6 +33,7 @@ const menuItems = [
   { href: "/obras", label: "Obras", icon: Building2 },
   { href: "/proveedores", label: "Proveedores", icon: Users },
   { href: "/empleados", label: "Empleados", icon: Contact },
+  { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
   {
     href: "/cajas",
     label: "Cajas",
