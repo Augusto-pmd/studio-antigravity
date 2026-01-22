@@ -43,7 +43,7 @@ export default function CajaPage() {
         </Card>
       </div>
 
-       <Card className="border-destructive/50 bg-destructive/10">
+       <Card className="border-destructive/50 bg-destructive/5">
         <CardHeader className="flex-row items-center gap-4 space-y-0">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/20">
             <TriangleAlert className="h-6 w-6 text-destructive" />

@@ -43,10 +43,10 @@ export default function CajasPage() {
         </Card>
       </div>
 
-       <Card className="border-yellow-500/50 bg-yellow-500/10">
+       <Card className="border-warning/50 bg-warning/10">
         <CardHeader className="flex-row items-center gap-4 space-y-0">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/20">
-            <TriangleAlert className="h-6 w-6 text-yellow-500" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/20">
+            <TriangleAlert className="h-6 w-6 text-warning" />
           </div>
           <div>
             <CardTitle>Cierre Semanal Obligatorio</CardTitle>

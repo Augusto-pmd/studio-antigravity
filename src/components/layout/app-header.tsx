@@ -25,7 +25,7 @@ export function AppHeader() {
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-secondary px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-white/10 bg-secondary/80 px-4 backdrop-blur-sm md:px-6">
       <SidebarTrigger className="text-secondary-foreground hover:text-white/90" />
       <div className="flex-1">
         <h1 className="font-headline text-xl text-secondary-foreground">
