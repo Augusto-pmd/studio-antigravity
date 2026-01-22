@@ -256,7 +256,7 @@
         },
         "exchangeRate": {
           "type": "number",
-          "description": "The exchange rate to ARS if the currency is USD."
+          "description": "The reference daily exchange rate (e.g., Dólar BNA compra) at the time of the transaction, for bimonetary control."
         },
         "receiptUrl": {
           "type": "string",
@@ -264,7 +264,7 @@
           "format": "uri"
         }
       },
-      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount", "currency"]
+      "required": ["id", "projectId", "date", "supplierId", "categoryId", "amount", "currency", "exchangeRate"]
     },
     "Supplier": {
       "title": "Supplier",
@@ -367,7 +367,7 @@
         },
         "exchangeRate": {
           "type": "number",
-          "description": "The exchange rate to ARS if currency is USD."
+          "description": "The reference daily exchange rate (e.g., Dólar BNA compra) at the time of the request, for bimonetary control."
         },
         "category": {
           "type": "string",
@@ -401,7 +401,8 @@
         "currency",
         "category",
         "status",
-        "date"
+        "date",
+        "exchangeRate"
       ]
     }
   },

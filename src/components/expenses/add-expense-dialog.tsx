@@ -56,7 +56,12 @@ export function AddExpenseDialog() {
   const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Proveedor Vencido ART
 
   useEffect(() => {
-    setDate(new Date());
+    if (isClient) {
+      setDate(new Date());
+    }
+  }, [isClient]);
+
+  useEffect(() => {
     setIsClient(true);
   }, []);
 
@@ -245,19 +250,17 @@ export function AddExpenseDialog() {
               </div>
             </RadioGroup>
           </div>
-          {currency === 'USD' && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="exchangeRate" className="text-right">
-                Tipo de Cambio
-              </Label>
-              <Input
-                id="exchangeRate"
-                type="number"
-                placeholder="Dólar BNA compra"
-                className="col-span-3"
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="exchangeRate" className="text-right">
+              Tipo de Cambio
+            </Label>
+            <Input
+              id="exchangeRate"
+              type="number"
+              placeholder="Dólar BNA compra"
+              className="col-span-3"
+            />
+          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="receipt" className="text-right">
               Comprobante

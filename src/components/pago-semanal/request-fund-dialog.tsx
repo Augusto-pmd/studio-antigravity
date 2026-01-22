@@ -49,8 +49,13 @@ export function RequestFundDialog() {
   const isPending = false; // Mock state
 
   useEffect(() => {
+    if (isClient) {
+      setDate(new Date());
+    }
+  }, [isClient]);
+
+  useEffect(() => {
     setIsClient(true);
-    setDate(new Date());
   }, []);
 
   return (
@@ -159,19 +164,17 @@ export function RequestFundDialog() {
                 <Input id="amount" type="number" placeholder="0.00" className="col-span-3" />
             </div>
 
-            {currency === 'USD' && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="exchangeRate" className="text-right">
-                    Tipo de Cambio
-                    </Label>
-                    <Input
-                    id="exchangeRate"
-                    type="number"
-                    placeholder="Dólar BNA compra"
-                    className="col-span-3"
-                    />
-                </div>
-            )}
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="exchangeRate" className="text-right">
+                Tipo de Cambio
+                </Label>
+                <Input
+                id="exchangeRate"
+                type="number"
+                placeholder="Dólar BNA compra"
+                className="col-span-3"
+                />
+            </div>
         </div>
         <DialogFooter>
           <Button type="submit" disabled={isPending}>
