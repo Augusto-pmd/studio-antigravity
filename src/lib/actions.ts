@@ -36,8 +36,8 @@ export async function generateDashboardSummaryAction(): Promise<DashboardSummary
   const projectsSnap = await getDocs(projectsQuery);
   const activeProjects = projectsSnap.docs.map(doc => doc.data() as Project);
   
-  // Fetch pending tasks
-  // This query is removed because server-side actions are not authenticated and cannot satisfy security rules.
+  // Fetch pending tasks is removed because server-side actions are not authenticated
+  // and cannot satisfy security rules that depend on request.auth
   const pendingTasks: TaskRequest[] = [];
   
   // Using hardcoded stats from the stats-card component for now
@@ -50,7 +50,7 @@ export async function generateDashboardSummaryAction(): Promise<DashboardSummary
 
   const result = await generateDashboardSummary({ 
       activeProjects: activeProjects.map(p => ({ name: p.name, status: p.status, progress: p.progress, supervisor: p.supervisor })), 
-      pendingTasks: [], 
+      pendingTasks: [], // Pass an empty array
       stats 
     });
   return result;
