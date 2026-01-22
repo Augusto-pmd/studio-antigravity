@@ -1,34 +1,69 @@
+'use client';
+
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { AddCashAdvanceDialog } from "./add-cash-advance-dialog";
+
+// Mock data, will be replaced with Firestore data
+const advances: any[] = [];
 
 export function CashAdvances() {
   return (
     <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Gestión de Adelantos</CardTitle>
-        <CardDescription>
-          Registre y consulte los adelantos de sueldo otorgados a los empleados durante la semana.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle>Gestión de Adelantos</CardTitle>
+            <CardDescription>
+            Registre y consulte los adelantos de sueldo otorgados a los empleados.
+            </CardDescription>
+        </div>
+        <AddCashAdvanceDialog />
       </CardHeader>
       <CardContent>
-         <div className="flex h-64 items-center justify-center rounded-md border border-dashed">
-            <p className="text-muted-foreground">La funcionalidad para registrar adelantos se implementará aquí.</p>
-        </div>
+         <div className="rounded-md border">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Empleado</TableHead>
+                        <TableHead>Obra</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {advances.length > 0 ? (
+                        advances.map(advance => (
+                            <TableRow key={advance.id}>
+                                <TableCell>{advance.date}</TableCell>
+                                <TableCell>{advance.employeeName}</TableCell>
+                                <TableCell>{advance.projectName}</TableCell>
+                                <TableCell className="text-right">{advance.amount}</TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                No hay adelantos registrados para esta semana.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+         </div>
       </CardContent>
-       <CardFooter className="justify-end">
-          <Button disabled>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Registrar Adelanto
-          </Button>
-      </CardFooter>
     </Card>
   );
 }
