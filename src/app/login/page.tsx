@@ -65,7 +65,6 @@ export default function LoginPage() {
       router.push('/'); // Redirect to dashboard after successful login
 
     } catch (error: any) {
-      console.error('Google Sign-In Error:', error);
       toast({
         variant: 'destructive',
         title: 'Error al iniciar sesión',

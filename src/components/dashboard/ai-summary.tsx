@@ -23,7 +23,6 @@ export function AiSummary() {
         const result = await generateDashboardSummaryAction();
         setSummary(result.summary);
       } catch (error) {
-        console.error("Error fetching AI summary:", error);
         setSummary('No se pudo generar el resumen en este momento.');
       }
       setIsLoading(false);
