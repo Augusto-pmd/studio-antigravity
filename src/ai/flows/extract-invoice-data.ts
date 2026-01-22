@@ -23,6 +23,7 @@ const ExtractInvoiceDataOutputSchema = z.object({
   invoiceNumber: z.string().describe('The invoice number (Número de Factura). Return an empty string if not found.'),
   iva: z.number().describe('The VAT (IVA) amount found in the invoice. Return 0 if not found.'),
   iibb: z.number().describe('The Gross Income tax perception (Percepción de IIBB). Return 0 if not found.'),
+  iibbJurisdiction: z.enum(["No Aplica", "CABA", "Provincia"]).describe("The jurisdiction for the IIBB. If it's from Buenos Aires or any other province, classify as 'Provincia'. If it's from Ciudad Autónoma de Buenos Aires, classify as 'CABA'. If no IIBB is found, classify as 'No Aplica'."),
   total: z.number().describe('The total amount of the invoice. Return 0 if not found.'),
 });
 export type ExtractInvoiceDataOutput = z.infer<typeof ExtractInvoiceDataOutputSchema>;
@@ -40,6 +41,7 @@ Analyze the following invoice document and extract the following values:
 - The invoice number (Número de Factura).
 - The total VAT (IVA) amount. If there are multiple VAT rates, sum them up. If no IVA is specified, return 0.
 - The Gross Income tax perception (Percepción de IIBB). If not specified, return 0.
+- The jurisdiction for the IIBB. If it is from the City of Buenos Aires, return 'CABA'. If it is from any other province (like Buenos Aires Province), return 'Provincia'. If there is no IIBB, return 'No Aplica'.
 - The final total amount (Total). If no total is specified, return 0.
 
 Document: {{media url=invoiceDataUri}}

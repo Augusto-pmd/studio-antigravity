@@ -267,6 +267,11 @@
             "type": "number",
             "description": "The Gross Income tax perception (Percepción de IIBB)."
         },
+        "iibbJurisdiction": {
+          "type": "string",
+          "description": "The jurisdiction for the Gross Income tax perception (IIBB).",
+          "enum": ["No Aplica", "CABA", "Provincia"]
+        },
         "currency": {
           "type": "string",
           "description": "The currency for the expense.",
@@ -549,5 +554,3 @@
     }
   }
 }
-
-    

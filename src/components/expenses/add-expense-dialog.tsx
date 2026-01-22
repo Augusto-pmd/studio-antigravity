@@ -53,6 +53,7 @@ export function AddExpenseDialog() {
   const [amount, setAmount] = useState('');
   const [iva, setIva] = useState('');
   const [iibb, setIibb] = useState('');
+  const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
   const [isExtracting, setIsExtracting] = useState(false);
 
   const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
@@ -95,6 +96,9 @@ export function AddExpenseDialog() {
           setIva(result.data.iva > 0 ? result.data.iva.toString() : '');
           setIibb(result.data.iibb > 0 ? result.data.iibb.toString() : '');
           setInvoiceNumber(result.data.invoiceNumber || '');
+          if (result.data.iibbJurisdiction) {
+            setIibbJurisdiction(result.data.iibbJurisdiction);
+          }
           toast({
             title: "Factura analizada con IA",
             description: "Se completaron los campos fiscales. Por favor, verifíquelos.",
@@ -315,6 +319,27 @@ export function AddExpenseDialog() {
                     <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
                     {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
                 </div>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right pt-2">Jurisdicción IIBB</Label>
+                 <RadioGroup 
+                    value={iibbJurisdiction} 
+                    onValueChange={(v) => setIibbJurisdiction(v as any)} 
+                    className="col-span-3 flex items-center gap-6 pt-2"
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="No Aplica" id="iibb-na" />
+                        <Label htmlFor="iibb-na">No Aplica</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="CABA" id="iibb-caba" />
+                        <Label htmlFor="iibb-caba">CABA</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Provincia" id="iibb-pba" />
+                        <Label htmlFor="iibb-pba">Provincia</Label>
+                    </div>
+                </RadioGroup>
               </div>
             </>
           )}
