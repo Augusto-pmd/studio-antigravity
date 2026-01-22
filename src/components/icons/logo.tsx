@@ -4,8 +4,6 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
   // The viewBox is adjusted to match the width/height aspect ratio to prevent distortion.
   return (
     <svg
-      width="120"
-      height="53"
       viewBox="0 0 249 110"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

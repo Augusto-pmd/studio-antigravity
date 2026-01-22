@@ -74,7 +74,7 @@ export function AppSidebar() {
   return (
     <Sidebar variant="floating" collapsible="icon">
       <SidebarHeader>
-        <Logo />
+        <Logo className="h-auto w-full max-w-[120px]" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
