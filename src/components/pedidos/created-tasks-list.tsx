@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,8 +20,7 @@ export function CreatedTasksList() {
       user && firestore
         ? query(
             collection(firestore, 'taskRequests'),
-            where('requesterId', '==', user.uid),
-            orderBy('createdAt', 'desc')
+            where('requesterId', '==', user.uid)
           )
         : null,
     [user, firestore]

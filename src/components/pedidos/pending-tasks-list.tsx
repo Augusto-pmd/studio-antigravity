@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, orderBy } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,8 +24,7 @@ export function PendingTasksList() {
         ? query(
             collection(firestore, 'taskRequests'),
             where('assigneeId', '==', user.uid),
-            where('status', '==', 'Pendiente'),
-            orderBy('createdAt', 'desc')
+            where('status', '==', 'Pendiente')
           )
         : null,
     [user, firestore]
