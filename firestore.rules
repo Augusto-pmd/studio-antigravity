@@ -223,10 +223,13 @@ service cloud.firestore {
     match /taskRequests/{taskRequestId} {
       // READ permissions
       allow get: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
-      // Admins can list all tasks. Users can list tasks filtered by their own ID.
-      // Firestore merges multiple allow statements. If any are true, access is granted.
+
+      // Admins can list all tasks.
       allow list: if isAdmin();
-      allow list: if isSignedIn() && (request.query.where.requesterId == request.auth.uid || request.query.where.assigneeId == request.auth.uid);
+      // Users can list tasks filtered by their own ID.
+      // These are split into separate rules to avoid ambiguity for the rules engine.
+      allow list: if isSignedIn() && request.query.where.requesterId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.assigneeId == request.auth.uid;
 
       // WRITE permissions
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
