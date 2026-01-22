@@ -228,11 +228,9 @@ service cloud.firestore {
 
       // LIST permissions:
       // IMPORTANT: `list` rules cannot contain `get` or `exists` calls. This is why `isAdmin()` cannot be used here.
-      // An admin can list all tasks. The app does not do this on the client, but it is a safe rule.
-      allow list: if request.auth.token.email == 'info@pmdarquitectura.com';
-      // A user can list tasks they requested.
+      // The rules below allow a user to list tasks where they are either the requester or the assignee,
+      // which matches the two queries performed by the client application.
       allow list: if isSignedIn() && request.query.where.requesterId == request.auth.uid;
-      // A user can list tasks assigned to them.
       allow list: if isSignedIn() && request.query.where.assigneeId == request.auth.uid;
 
       // WRITE permissions:
