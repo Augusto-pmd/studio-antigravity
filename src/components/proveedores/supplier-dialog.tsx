@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import type { Supplier } from "@/lib/types";
+import { useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc } from "firebase/firestore";
 
 export function SupplierDialog({
   supplier,
@@ -34,7 +38,79 @@ export function SupplierDialog({
 }) {
   const [open, setOpen] = useState(false);
   const isEditMode = !!supplier;
-  const isPending = false; // Mock state
+  const [isPending, startTransition] = useTransition();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  // Form State
+  const [name, setName] = useState('');
+  const [cuit, setCuit] = useState('');
+  const [address, setAddress] = useState('');
+  const [fiscalCondition, setFiscalCondition] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [type, setType] = useState<'Servicios' | 'Materiales' | 'Mixto'>('Materiales');
+  const [status, setStatus] = useState<'Aprobado' | 'Pendiente' | 'Rechazado'>('Pendiente');
+  const [notes, setNotes] = useState('');
+
+  const resetForm = () => {
+    setName(supplier?.name || '');
+    setCuit(supplier?.cuit || '');
+    setAddress(supplier?.address || '');
+    setFiscalCondition(supplier?.fiscalCondition || '');
+    setContactPerson(supplier?.contactPerson || '');
+    setEmail(supplier?.email || '');
+    setPhone(supplier?.phone || '');
+    setType(supplier?.type || 'Materiales');
+    setStatus(supplier?.status || 'Pendiente');
+    setNotes(supplier?.notes || '');
+  };
+
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open, supplier]);
+  
+  const handleSave = () => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+      return;
+    }
+    if (!name || !cuit || !status || !type) {
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Razón Social, CUIT, Estado y Tipo son obligatorios.' });
+      return;
+    }
+
+    startTransition(() => {
+      const suppliersCollection = collection(firestore, 'suppliers');
+      const supplierRef = isEditMode ? doc(suppliersCollection, supplier.id) : doc(suppliersCollection);
+      const supplierId = supplierRef.id;
+
+      const supplierData: Supplier = {
+        id: supplierId,
+        name,
+        cuit,
+        address,
+        fiscalCondition,
+        contactPerson,
+        email,
+        phone,
+        type,
+        status,
+        notes,
+      };
+      
+      setDocumentNonBlocking(supplierRef, supplierData, { merge: true });
+
+      toast({
+        title: isEditMode ? 'Proveedor Actualizado' : 'Proveedor Creado',
+        description: `El proveedor "${name}" ha sido guardado correctamente.`,
+      });
+      setOpen(false);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -53,19 +129,19 @@ export function SupplierDialog({
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Razón Social *</Label>
-                <Input id="name" defaultValue={supplier?.name} placeholder="Nombre o Razón Social" />
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre o Razón Social" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cuit">CUIT *</Label>
-                <Input id="cuit" defaultValue={supplier?.cuit} placeholder="00-00000000-0" />
+                <Input id="cuit" value={cuit} onChange={e => setCuit(e.target.value)} placeholder="00-00000000-0" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="address">Dirección</Label>
-                <Input id="address" defaultValue={supplier?.address} placeholder="Dirección completa del proveedor" />
+                <Input id="address" value={address} onChange={e => setAddress(e.target.value)} placeholder="Dirección completa del proveedor" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="fiscalCondition">Condición Fiscal</Label>
-                <Input id="fiscalCondition" defaultValue={supplier?.fiscalCondition} placeholder="Ej. Responsable Inscripto" />
+                <Input id="fiscalCondition" value={fiscalCondition} onChange={e => setFiscalCondition(e.target.value)} placeholder="Ej. Responsable Inscripto" />
               </div>
             </div>
           </div>
@@ -77,15 +153,15 @@ export function SupplierDialog({
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="contactPerson">Persona de Contacto</Label>
-                <Input id="contactPerson" defaultValue={supplier?.contactPerson} placeholder="Nombre" />
+                <Input id="contactPerson" value={contactPerson} onChange={e => setContactPerson(e.target.value)} placeholder="Nombre" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={supplier?.email} placeholder="email@proveedor.com" />
+                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@proveedor.com" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono</Label>
-                <Input id="phone" defaultValue={supplier?.phone} placeholder="Código de área y número" />
+                <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Código de área y número" />
               </div>
             </div>
           </div>
@@ -97,7 +173,7 @@ export function SupplierDialog({
             <div className="grid md:grid-cols-2 gap-4">
                <div className="space-y-2">
                 <Label htmlFor="type">Tipo de Proveedor *</Label>
-                <Select defaultValue={supplier?.type}>
+                <Select value={type} onValueChange={(v: any) => setType(v)}>
                   <SelectTrigger id="type">
                     <SelectValue placeholder="Seleccione un tipo" />
                   </SelectTrigger>
@@ -110,7 +186,7 @@ export function SupplierDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Estado del Proveedor *</Label>
-                <Select defaultValue={supplier?.status || "Pendiente"}>
+                <Select value={status} onValueChange={(v: any) => setStatus(v)}>
                   <SelectTrigger id="status">
                     <SelectValue placeholder="Seleccione un estado" />
                   </SelectTrigger>
@@ -128,12 +204,12 @@ export function SupplierDialog({
           
           <div className="space-y-2">
              <Label htmlFor="notes">Notas y Observaciones</Label>
-             <Textarea id="notes" defaultValue={supplier?.notes} placeholder="Cualquier información adicional sobre el proveedor..." />
+             <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Cualquier información adicional sobre el proveedor..." />
           </div>
 
         </div>
         <DialogFooter className="pt-4 border-t">
-          <Button type="submit" disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? 'Guardar Cambios' : 'Guardar Proveedor'}
           </Button>
@@ -142,3 +218,5 @@ export function SupplierDialog({
     </Dialog>
   );
 }
+
+    

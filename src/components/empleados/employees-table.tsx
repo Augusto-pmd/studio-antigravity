@@ -10,25 +10,30 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { employees } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/types";
-import { differenceInDays, parseISO, isBefore } from 'date-fns';
+import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
 import { TriangleAlert, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { EmployeeDialog } from "./employee-dialog";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const formatCurrency = (amount: number) => {
+    if (typeof amount !== 'number') return '';
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 }
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    // Add timezone to prevent off-by-one day errors
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('es-AR');
+    return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
 export function EmployeesTable() {
+  const firestore = useFirestore();
+  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const { data: employees, isLoading } = useCollection<Employee>(employeesQuery);
 
   const getArtStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string, daysLeft: number | null } | null => {
     if (!dateString) return null;
@@ -47,6 +52,17 @@ export function EmployeesTable() {
     return null;
   };
 
+  const renderSkeleton = () => (
+    <TableRow>
+      <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
+      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+      <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
+    </TableRow>
+  );
+
   return (
     <TooltipProvider>
       <div className="rounded-lg border">
@@ -62,7 +78,21 @@ export function EmployeesTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee: Employee) => {
+              {isLoading && (
+                <>
+                  {renderSkeleton()}
+                  {renderSkeleton()}
+                  {renderSkeleton()}
+                </>
+              )}
+              {!isLoading && employees?.length === 0 && (
+                 <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No hay empleados registrados. Comience creando uno nuevo.
+                  </TableCell>
+                </TableRow>
+              )}
+              {employees?.map((employee: Employee) => {
                 const artStatus = getArtStatus(employee.artExpiryDate);
                 return (
                 <TableRow key={employee.id}>
@@ -119,3 +149,5 @@ export function EmployeesTable() {
     </TooltipProvider>
   );
 }
+
+    

@@ -28,28 +28,35 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { projects, suppliers, expenseCategories } from "@/lib/data";
+import { projects, suppliers as mockSuppliers, expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/context/user-context";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import type { Project, Supplier, Expense } from "@/lib/types";
 
 export function AddExpenseDialog() {
   const { user, permissions, firestore } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  
+  const [isClient, setIsClient] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form State
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [date, setDate] = useState<Date>();
-  const [isClient, setIsClient] = useState(false);
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
-  
   const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común'>('Factura');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -58,26 +65,26 @@ export function AddExpenseDialog() {
   const [iibb, setIibb] = useState('');
   const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
   const [exchangeRate, setExchangeRate] = useState('');
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentMethodOther, setPaymentMethodOther] = useState('');
 
-  const project = useMemo(() => projects.find(p => p.id === selectedProject), [selectedProject]);
+  // Data fetching
+  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const suppliersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
+
+
+  const project = useMemo(() => projects?.find(p => p.id === selectedProject), [selectedProject, projects]);
   const isContractBlocked = project?.balance === 0;
-  const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Mock data for blocked supplier
+  // const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Mock data for blocked supplier
+  const isSupplierBlocked = false; // TODO: Implement supplier blocking logic
   
   const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
 
   useEffect(() => {
-    if (isClient) {
-      setDate(new Date());
-    }
-  }, [isClient]);
-
-  useEffect(() => {
     setIsClient(true);
+    setDate(new Date());
   }, []);
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -136,9 +143,13 @@ export function AddExpenseDialog() {
     }
 
     setIsSaving(true);
-    try {
-      if (!firestore || !user) throw new Error("Firebase no está disponible.");
+    if (!firestore || !user) {
+      toast({variant: 'destructive', title: 'Error', description: "Firebase no está disponible."});
+      setIsSaving(false);
+      return;
+    }
 
+    try {
       const expensesColRef = collection(firestore, `projects/${selectedProject}/expenses`);
       const newExpenseRef = doc(expensesColRef);
       const expenseId = newExpenseRef.id;
@@ -153,7 +164,7 @@ export function AddExpenseDialog() {
         receiptUrl = await getDownloadURL(fileRef);
       }
 
-      const newExpense = {
+      const newExpense: Expense = {
         id: expenseId,
         projectId: selectedProject,
         date: date.toISOString(),
@@ -161,7 +172,7 @@ export function AddExpenseDialog() {
         categoryId: selectedCategory,
         documentType,
         invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
-        paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : null,
+        paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : '',
         amount: parseFloat(amount),
         iva: iva ? parseFloat(iva) : 0,
         iibb: iibb ? parseFloat(iibb) : 0,
@@ -171,7 +182,7 @@ export function AddExpenseDialog() {
         receiptUrl,
       };
 
-      await setDoc(newExpenseRef, newExpense);
+      setDocumentNonBlocking(newExpenseRef, newExpense, {});
       
       toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
       setOpen(false);
@@ -232,7 +243,7 @@ export function AddExpenseDialog() {
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
               <SelectContent>
-                {projects.map((p) => (
+                {projects?.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -276,7 +287,7 @@ export function AddExpenseDialog() {
                 <SelectValue placeholder="Seleccione un proveedor" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers.map((s) => (
+                {suppliers?.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
                   </SelectItem>
@@ -459,3 +470,5 @@ export function AddExpenseDialog() {
     </Dialog>
   );
 }
+
+    

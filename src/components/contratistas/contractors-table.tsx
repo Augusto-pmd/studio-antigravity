@@ -9,22 +9,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { contractors } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import type { Contractor } from "@/lib/types";
-import { differenceInDays, parseISO, isBefore } from 'date-fns';
+import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
 import { TriangleAlert, Pencil, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Button } from "../ui/button";
 import { ContractorDialog } from "./contractor-dialog";
 import { PersonnelDialog } from "./personnel-dialog";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('es-AR');
+    return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
 export function ContractorsTable() {
+  const firestore = useFirestore();
+  const contractorsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'contractors') : null), [firestore]);
+  const { data: contractors, isLoading } = useCollection<Contractor>(contractorsQuery);
 
   const getDocStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string } | null => {
     if (!dateString) return null;
@@ -43,6 +48,21 @@ export function ContractorsTable() {
     return null;
   };
 
+  const renderSkeleton = () => (
+    <TableRow>
+      <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
+      <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
+      <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <Skeleton className="h-10 w-10 rounded-md" />
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+
   return (
     <TooltipProvider>
       <div className="rounded-lg border">
@@ -57,7 +77,20 @@ export function ContractorsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {contractors.map((contractor: Contractor) => {
+              {isLoading && (
+                <>
+                  {renderSkeleton()}
+                  {renderSkeleton()}
+                </>
+              )}
+              {!isLoading && contractors?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    No hay contratistas registrados. Comience creando uno nuevo.
+                  </TableCell>
+                </TableRow>
+              )}
+              {contractors?.map((contractor: Contractor) => {
                 const artStatus = getDocStatus(contractor.artExpiryDate);
                 const insuranceStatus = getDocStatus(contractor.insuranceExpiryDate);
                 const docStatus = artStatus || insuranceStatus;
@@ -129,3 +162,5 @@ export function ContractorsTable() {
     </TooltipProvider>
   );
 }
+
+    

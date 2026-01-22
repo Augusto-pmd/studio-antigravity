@@ -112,13 +112,10 @@
         "currency",
         "status",
         "supervisor",
-        "budget",
-        "balance",
-        "progress"
+        "budget"
       ]
     },
     "Expense": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Expense",
       "type": "object",
       "description": "Represents an expense incurred for a specific project.",
@@ -136,17 +133,54 @@
           "description": "The date the expense was incurred.",
           "format": "date-time"
         },
-        "supplier": {
+        "supplierId": {
           "type": "string",
-          "description": "The name of the supplier."
+          "description": "The ID of the supplier."
         },
-        "category": {
+        "categoryId": {
           "type": "string",
-          "description": "The category of the expense (e.g., materials, labor)."
+          "description": "The ID of the expense category."
+        },
+        "documentType": {
+          "type": "string",
+          "enum": [
+            "Factura",
+            "Recibo Común"
+          ]
+        },
+        "invoiceNumber": {
+          "type": "string"
+        },
+        "paymentMethod": {
+          "type": "string"
         },
         "amount": {
           "type": "number",
           "description": "The amount of the expense."
+        },
+        "iva": {
+          "type": "number"
+        },
+        "iibb": {
+          "type": "number"
+        },
+        "iibbJurisdiction": {
+          "type": "string",
+          "enum": [
+            "No Aplica",
+            "CABA",
+            "Provincia"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "exchangeRate": {
+          "type": "number"
         },
         "receiptUrl": {
           "type": "string",
@@ -157,9 +191,12 @@
         "id",
         "projectId",
         "date",
-        "supplier",
-        "category",
-        "amount"
+        "supplierId",
+        "categoryId",
+        "amount",
+        "currency",
+        "exchangeRate",
+        "documentType"
       ]
     },
     "CashAccount": {
@@ -198,33 +235,188 @@
       ]
     },
     "Supplier": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Supplier",
       "type": "object",
       "description": "Represents a supplier providing goods or services to the company.",
       "properties": {
         "id": {
-          "type": "string",
-          "description": "Unique identifier for the supplier entity."
+          "type": "string"
         },
         "name": {
+          "type": "string"
+        },
+        "cuit": {
+          "type": "string"
+        },
+        "email": {
           "type": "string",
-          "description": "The name of the supplier."
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "contactPerson": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Aprobado",
+            "Pendiente",
+            "Rechazado"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Servicios",
+            "Materiales",
+            "Mixto"
+          ]
+        },
+        "fiscalCondition": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "cuit",
+        "status",
+        "type"
+      ]
+    },
+    "Contractor": {
+      "title": "Contractor",
+      "type": "object",
+      "description": "Represents a contractor providing services to the company.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "cuit": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "contactPerson": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Aprobado",
+            "Pendiente",
+            "Rechazado"
+          ]
+        },
+        "fiscalCondition": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
         },
         "insuranceExpiryDate": {
           "type": "string",
-          "description": "The expiration date of the supplier's insurance.",
           "format": "date-time"
         },
         "artExpiryDate": {
           "type": "string",
-          "description": "The expiration date of the supplier's ART (Aseguradora de Riesgos del Trabajo).",
           "format": "date-time"
         }
       },
       "required": [
         "id",
-        "name"
+        "name",
+        "cuit",
+        "status"
+      ]
+    },
+    "ContractorEmployee": {
+      "title": "ContractorEmployee",
+      "type": "object",
+      "description": "Represents an employee of a contractor.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contractorId": {
+          "type": "string"
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contractorId"
+      ]
+    },
+    "Employee": {
+      "title": "Employee",
+      "type": "object",
+      "description": "Represents an employee of the company.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ]
+        },
+        "paymentType": {
+          "type": "string",
+          "enum": [
+            "Diario",
+            "Semanal"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "dailyWage": {
+          "type": "number"
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "status",
+        "paymentType",
+        "category",
+        "dailyWage"
       ]
     },
     "Contract": {
@@ -377,8 +569,62 @@
             }
           ]
         }
+      },
+      {
+        "path": "/employees/{employeeId}",
+        "definition": {
+          "entityName": "Employee",
+          "schema": {
+            "$ref": "#/backend/entities/Employee"
+          },
+          "description": "Stores company employee information.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contractors/{contractorId}",
+        "definition": {
+          "entityName": "Contractor",
+          "schema": {
+            "$ref": "#/backend/entities/Contractor"
+          },
+          "description": "Stores contractor information.",
+          "params": [
+            {
+              "name": "contractorId",
+              "description": "The unique identifier for the contractor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contractors/{contractorId}/personnel/{personnelId}",
+        "definition": {
+          "entityName": "ContractorEmployee",
+          "schema": {
+            "$ref": "#/backend/entities/ContractorEmployee"
+          },
+          "description": "Stores personnel for a specific contractor.",
+          "params": [
+            {
+              "name": "contractorId",
+              "description": "The unique identifier for the contractor."
+            },
+            {
+              "name": "personnelId",
+              "description": "The unique identifier for the personnel."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, contracts) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
   }
 }
+
+    

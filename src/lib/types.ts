@@ -89,3 +89,23 @@ export type TaskRequest = {
   completedAt?: string;
   projectId?: string;
 };
+
+export type Expense = {
+  id: string;
+  projectId: string;
+  date: string;
+  supplierId: string;
+  categoryId: string;
+  documentType: 'Factura' | 'Recibo Común';
+  invoiceNumber?: string;
+  paymentMethod?: string;
+  amount: number;
+  iva?: number;
+  iibb?: number;
+  iibbJurisdiction?: 'No Aplica' | 'CABA' | 'Provincia';
+  currency: 'ARS' | 'USD';
+  exchangeRate: number;
+  receiptUrl?: string;
+};
+
+    

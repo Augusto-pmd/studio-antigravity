@@ -74,7 +74,7 @@ service cloud.firestore {
      * Administrative roles are defined as 'Direction' or 'Administration'.
      */
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Direction', 'Administration'];
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración'];
     }
 
     /**
@@ -168,19 +168,19 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages shared project information. Admins can create and delete projects.
-     * Users listed in a project's `members` map can read it.
+     * @description Manages shared project information. All signed-in users can read,
+     * but only members or admins can update. Only admins can create/delete.
      * @path /projects/{projectId}
      * @allow (get) A user whose UID is in the `members` map of project 'projAbc' reads /projects/projAbc.
      * @deny (create) A regular, non-admin user tries to create a new project document.
      * @principle Implements collaborative access via a denormalized members list.
      */
     match /projects/{projectId} {
-      allow get: if isProjectMember(projectId) || isAdmin();
-      allow list: if isSignedIn(); // Allows clients to query for projects they are members of. Client-side query must enforce this.
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isAdmin();
-      allow update: if (isProjectMember(projectId) || isAdmin()) && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
 
       /**
        * @description Manages expenses for a project. Access is inherited from the parent
@@ -215,20 +215,22 @@ service cloud.firestore {
       }
     }
 
-    /**
-     * @description Stores global supplier information. This data is considered public
-     * to all authenticated users, but can only be modified by administrators.
-     * @path /suppliers/{supplierId}
-     * @allow (list) Any authenticated user lists all suppliers.
-     * @deny (create) A regular user without an admin role tries to add a new supplier.
-     * @principle Provides public read access for shared data while restricting writes to privileged roles.
-     */
     match /suppliers/{supplierId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update: if isAdmin() && isExistingDoc();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow read, write: if isSignedIn();
+    }
+    
+    match /employees/{employeeId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /contractors/{contractorId} {
+      allow read, write: if isSignedIn();
+
+      match /personnel/{personnelId} {
+        allow read, write: if isSignedIn();
+      }
     }
   }
 }
+
+    

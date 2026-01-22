@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,10 @@ import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Separator } from "../ui/separator";
 import type { Contractor } from "@/lib/types";
+import { useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc } from "firebase/firestore";
 
 export function ContractorDialog({
   contractor,
@@ -42,18 +46,82 @@ export function ContractorDialog({
 }) {
   const [open, setOpen] = useState(false);
   const isEditMode = !!contractor;
-  const isPending = false; // Mock state
+  const [isPending, startTransition] = useTransition();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
+  // Form State
+  const [name, setName] = useState('');
+  const [cuit, setCuit] = useState('');
+  const [address, setAddress] = useState('');
+  const [fiscalCondition, setFiscalCondition] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [status, setStatus] = useState<'Aprobado' | 'Pendiente' | 'Rechazado'>('Pendiente');
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
   const [insuranceExpiryDate, setInsuranceExpiryDate] = useState<Date | undefined>();
+  const [notes, setNotes] = useState('');
+
+  const resetForm = () => {
+    setName(contractor?.name || '');
+    setCuit(contractor?.cuit || '');
+    setAddress(contractor?.address || '');
+    setFiscalCondition(contractor?.fiscalCondition || '');
+    setContactPerson(contractor?.contactPerson || '');
+    setEmail(contractor?.email || '');
+    setPhone(contractor?.phone || '');
+    setStatus(contractor?.status || 'Pendiente');
+    setArtExpiryDate(contractor?.artExpiryDate ? parseISO(contractor.artExpiryDate) : undefined);
+    setInsuranceExpiryDate(contractor?.insuranceExpiryDate ? parseISO(contractor.insuranceExpiryDate) : undefined);
+    setNotes(contractor?.notes || '');
+  };
 
   useEffect(() => {
     if (open) {
-      setArtExpiryDate(contractor?.artExpiryDate ? parseISO(contractor.artExpiryDate) : undefined);
-      setInsuranceExpiryDate(contractor?.insuranceExpiryDate ? parseISO(contractor.insuranceExpiryDate) : undefined);
+      resetForm();
     }
   }, [open, contractor]);
 
+  const handleSave = () => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+      return;
+    }
+    if (!name || !cuit || !status) {
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Razón Social, CUIT y Estado son obligatorios.' });
+      return;
+    }
+
+    startTransition(() => {
+      const contractorsCollection = collection(firestore, 'contractors');
+      const contractorRef = isEditMode ? doc(contractorsCollection, contractor.id) : doc(contractorsCollection);
+      const contractorId = contractorRef.id;
+
+      const contractorData: Contractor = {
+        id: contractorId,
+        name,
+        cuit,
+        address,
+        fiscalCondition,
+        contactPerson,
+        email,
+        phone,
+        status,
+        notes,
+        artExpiryDate: artExpiryDate?.toISOString(),
+        insuranceExpiryDate: insuranceExpiryDate?.toISOString(),
+      };
+      
+      setDocumentNonBlocking(contractorRef, contractorData, { merge: true });
+
+      toast({
+        title: isEditMode ? 'Contratista Actualizado' : 'Contratista Creado',
+        description: `El contratista "${name}" ha sido guardado correctamente.`,
+      });
+      setOpen(false);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -72,19 +140,19 @@ export function ContractorDialog({
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Razón Social *</Label>
-                <Input id="name" defaultValue={contractor?.name} placeholder="Nombre o Razón Social" />
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre o Razón Social" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cuit">CUIT *</Label>
-                <Input id="cuit" defaultValue={contractor?.cuit} placeholder="00-00000000-0" />
+                <Input id="cuit" value={cuit} onChange={e => setCuit(e.target.value)} placeholder="00-00000000-0" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="address">Dirección</Label>
-                <Input id="address" defaultValue={contractor?.address} placeholder="Dirección completa del contratista" />
+                <Input id="address" value={address} onChange={e => setAddress(e.target.value)} placeholder="Dirección completa del contratista" />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="fiscalCondition">Condición Fiscal</Label>
-                <Input id="fiscalCondition" defaultValue={contractor?.fiscalCondition} placeholder="Ej. Responsable Inscripto" />
+                <Input id="fiscalCondition" value={fiscalCondition} onChange={e => setFiscalCondition(e.target.value)} placeholder="Ej. Responsable Inscripto" />
               </div>
             </div>
           </div>
@@ -96,15 +164,15 @@ export function ContractorDialog({
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="contactPerson">Persona de Contacto</Label>
-                <Input id="contactPerson" defaultValue={contractor?.contactPerson} placeholder="Nombre" />
+                <Input id="contactPerson" value={contactPerson} onChange={e => setContactPerson(e.target.value)} placeholder="Nombre" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={contractor?.email} placeholder="email@contratista.com" />
+                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@contratista.com" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono</Label>
-                <Input id="phone" defaultValue={contractor?.phone} placeholder="Código de área y número" />
+                <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Código de área y número" />
               </div>
             </div>
           </div>
@@ -116,7 +184,7 @@ export function ContractorDialog({
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Estado del Contratista *</Label>
-                <Select defaultValue={contractor?.status || "Pendiente"}>
+                <Select value={status} onValueChange={(v: any) => setStatus(v)}>
                   <SelectTrigger id="status">
                     <SelectValue placeholder="Seleccione un estado" />
                   </SelectTrigger>
@@ -172,12 +240,12 @@ export function ContractorDialog({
           
           <div className="space-y-2">
              <Label htmlFor="notes">Notas y Observaciones</Label>
-             <Textarea id="notes" defaultValue={contractor?.notes} placeholder="Cualquier información adicional sobre el contratista..." />
+             <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Cualquier información adicional sobre el contratista..." />
           </div>
 
         </div>
         <DialogFooter className="pt-4 border-t">
-          <Button type="submit" disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? 'Guardar Cambios' : 'Guardar Contratista'}
           </Button>
@@ -186,3 +254,5 @@ export function ContractorDialog({
     </Dialog>
   );
 }
+
+    

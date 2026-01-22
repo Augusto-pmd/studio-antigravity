@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { useFirestore } from "@/firebase/provider";
+import { collection, doc } from "firebase/firestore";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useToast } from "@/hooks/use-toast";
+import type { ContractorEmployee } from "@/lib/types";
 
 export function AddPersonnelDialog({
   contractorId,
@@ -31,8 +36,43 @@ export function AddPersonnelDialog({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const isPending = false; // Mock state
+  const [isPending, startTransition] = useTransition();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  
+  const [name, setName] = useState('');
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
+
+  const handleSave = () => {
+    if (!firestore || !name) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "El nombre del empleado es obligatorio." });
+      return;
+    }
+
+    startTransition(() => {
+      const personnelCollection = collection(firestore, `contractors/${contractorId}/personnel`);
+      const personnelRef = doc(personnelCollection);
+      const personnelId = personnelRef.id;
+
+      const newPersonnel: ContractorEmployee = {
+        id: personnelId,
+        name,
+        contractorId,
+        artExpiryDate: artExpiryDate?.toISOString(),
+      };
+      
+      setDocumentNonBlocking(personnelRef, newPersonnel, { merge: true });
+
+      toast({
+        title: "Personal Agregado",
+        description: `${name} ha sido agregado al contratista.`,
+      });
+
+      setOpen(false);
+      setName('');
+      setArtExpiryDate(undefined);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -49,7 +89,7 @@ export function AddPersonnelDialog({
             <Label htmlFor="name" className="text-right">
               Nombre
             </Label>
-            <Input id="name" placeholder="Nombre completo del empleado" className="col-span-3" />
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="artExpiryDate" className="text-right">
@@ -75,7 +115,7 @@ export function AddPersonnelDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Empleado
           </Button>
@@ -84,3 +124,5 @@ export function AddPersonnelDialog({
     </Dialog>
   );
 }
+
+    

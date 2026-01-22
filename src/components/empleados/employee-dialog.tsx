@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,10 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Employee } from "@/lib/types";
+import { useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc } from "firebase/firestore";
 
 export function EmployeeDialog({
   employee,
@@ -34,16 +38,67 @@ export function EmployeeDialog({
 }) {
   const [open, setOpen] = useState(false);
   const isEditMode = !!employee;
-  const isPending = false; // Mock state
+  const [isPending, startTransition] = useTransition();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
+  // Form State
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [dailyWage, setDailyWage] = useState('');
+  const [paymentType, setPaymentType] = useState<'Diario' | 'Semanal'>('Semanal');
+  const [status, setStatus] = useState<'Activo' | 'Inactivo'>('Activo');
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
 
+  const resetForm = () => {
+    setName(employee?.name || '');
+    setCategory(employee?.category || '');
+    setDailyWage(employee?.dailyWage.toString() || '');
+    setPaymentType(employee?.paymentType || 'Semanal');
+    setStatus(employee?.status || 'Activo');
+    setArtExpiryDate(employee?.artExpiryDate ? parseISO(employee.artExpiryDate) : undefined);
+  };
+
   useEffect(() => {
-    if(open) {
-      setArtExpiryDate(employee?.artExpiryDate ? parseISO(employee.artExpiryDate) : undefined);
+    if (open) {
+      resetForm();
     }
   }, [open, employee]);
 
+  const handleSave = () => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+      return;
+    }
+    if (!name || !category || !dailyWage) {
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Nombre, Rubro y Salario son obligatorios.' });
+      return;
+    }
+
+    startTransition(() => {
+      const employeesCollection = collection(firestore, 'employees');
+      const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
+      const employeeId = employeeRef.id;
+
+      const employeeData: Employee = {
+        id: employeeId,
+        name,
+        category,
+        dailyWage: parseFloat(dailyWage) || 0,
+        paymentType,
+        status,
+        artExpiryDate: artExpiryDate?.toISOString(),
+      };
+      
+      setDocumentNonBlocking(employeeRef, employeeData, { merge: true });
+
+      toast({
+        title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
+        description: `El empleado "${name}" ha sido guardado correctamente.`,
+      });
+      setOpen(false);
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -62,32 +117,32 @@ export function EmployeeDialog({
             <Label htmlFor="name" className="text-right">
               Nombre
             </Label>
-            <Input id="name" defaultValue={employee?.name} placeholder="Nombre completo del empleado" className="col-span-3" />
+            <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="category" className="text-right">
               Rubro
             </Label>
-            <Input id="category" defaultValue={employee?.category} placeholder="Ej. Albañil, Electricista" className="col-span-3" />
+            <Input id="category" value={category} onChange={e => setCategory(e.target.value)} placeholder="Ej. Albañil, Electricista" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="dailyWage" className="text-right">
               Salario Diario
             </Label>
-            <Input id="dailyWage" type="number" defaultValue={employee?.dailyWage} placeholder="ARS" className="col-span-3" />
+            <Input id="dailyWage" type="number" value={dailyWage} onChange={e => setDailyWage(e.target.value)} placeholder="ARS" className="col-span-3" />
           </div>
           
            <div className="grid grid-cols-4 items-start gap-4 pt-2">
             <Label className="text-right leading-tight pt-2">Forma de Pago</Label>
-             <RadioGroup defaultValue={employee?.paymentType || "semanal"} className="col-span-3 flex items-center gap-6">
+             <RadioGroup value={paymentType} onValueChange={(v: any) => setPaymentType(v)} className="col-span-3 flex items-center gap-6">
                 <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="semanal" id="semanal" />
+                    <RadioGroupItem value="Semanal" id="semanal" />
                     <Label htmlFor="semanal">Semanal</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="diario" id="diario" />
+                    <RadioGroupItem value="Diario" id="diario" />
                     <Label htmlFor="diario">Diario</Label>
                 </div>
             </RadioGroup>
@@ -122,7 +177,7 @@ export function EmployeeDialog({
 
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? 'Guardar Cambios' : 'Guardar Empleado'}
           </Button>
@@ -131,3 +186,5 @@ export function EmployeeDialog({
     </Dialog>
   );
 }
+
+    

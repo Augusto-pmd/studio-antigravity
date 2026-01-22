@@ -28,13 +28,15 @@ import {
 import { cn } from "@/lib/utils";
 import { PlusCircle, TriangleAlert } from "lucide-react";
 import type { Contractor, ContractorEmployee } from "@/lib/types";
-import { contractorEmployees as allContractorEmployees } from "@/lib/data"; // mock data
-import { differenceInDays, isBefore, parseISO } from "date-fns";
+import { differenceInDays, isBefore, parseISO, format as formatDateFns } from "date-fns";
 import { AddPersonnelDialog } from "./add-personnel-dialog";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('es-AR');
+    return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
 const getArtStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string } | null => {
@@ -62,9 +64,13 @@ export function PersonnelDialog({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const personnel = allContractorEmployees.filter(
-    (p) => p.contractorId === contractor.id
+  const firestore = useFirestore();
+
+  const personnelQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, `contractors/${contractor.id}/personnel`) : null),
+    [firestore, contractor.id]
   );
+  const { data: personnel, isLoading } = useCollection<ContractorEmployee>(personnelQuery);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -88,8 +94,23 @@ export function PersonnelDialog({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {personnel.length > 0 ? (
-                    personnel.map((person) => {
+                    {isLoading && (
+                      <TableRow>
+                        <TableCell colSpan={2}>
+                          <div className="flex flex-col gap-2">
+                             <Skeleton className="h-5 w-full" />
+                             <Skeleton className="h-5 w-full" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!isLoading && (!personnel || personnel.length === 0) ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="h-24 text-center">
+                          No hay personal registrado para este contratista.
+                        </TableCell>
+                      </TableRow>
+                    ) : personnel?.map((person) => {
                         const artStatus = getArtStatus(person.artExpiryDate);
                         return (
                         <TableRow key={person.id}>
@@ -117,14 +138,7 @@ export function PersonnelDialog({
                             </TableCell>
                         </TableRow>
                         );
-                    })
-                    ) : (
-                    <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center">
-                        No hay personal registrado para este contratista.
-                        </TableCell>
-                    </TableRow>
-                    )}
+                    })}
                 </TableBody>
                 </Table>
             </div>
@@ -145,3 +159,5 @@ export function PersonnelDialog({
     </Dialog>
   );
 }
+
+    
