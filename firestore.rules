@@ -68,9 +68,8 @@ service cloud.firestore {
 
     match /projects/{projectId} {
       allow get, list: if isSignedIn();
-      // CRITICAL: Writes are disabled. The 'Project' entity lacks an `ownerId` or `members` field.
-      // This is a secure default. Enable writes only after adding an ownership field to the schema.
-      allow write: if false;
+      // Allow writes for prototyping purposes.
+      allow write: if isSignedIn();
 
       // --- Subcollections ---
       match /expenses/{expenseId} {
@@ -153,5 +152,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
