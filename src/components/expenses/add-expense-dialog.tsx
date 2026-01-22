@@ -34,13 +34,12 @@ import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } f
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
-import { useUser, useFirestore } from "@/context/user-context";
+import { useUser } from "@/context/user-context";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export function AddExpenseDialog() {
-  const { user, permissions } = useUser();
-  const firestore = useFirestore();
+  const { user, permissions, firestore } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -460,5 +459,3 @@ export function AddExpenseDialog() {
     </Dialog>
   );
 }
-
-    
