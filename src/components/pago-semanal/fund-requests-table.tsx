@@ -9,7 +9,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/context/user-context";
+import { MoreHorizontal, Check, X, Undo, Receipt } from "lucide-react";
 
 // Mock data, will be replaced with Firestore data
 const requests = [
@@ -25,6 +35,10 @@ const formatCurrency = (amount: number, currency: string) => {
 
 
 export function FundRequestsTable() {
+    const { permissions } = useUser();
+    // 'Direccion' and 'Administración' roles have canValidate = true. This will be our admin.
+    const isAdmin = permissions.canValidate;
+
   return (
      <div className="rounded-md border">
         <Table>
@@ -36,6 +50,9 @@ export function FundRequestsTable() {
                     <TableHead>Obra</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
+                    {isAdmin && (
+                      <TableHead className="text-right w-[100px]">Acciones</TableHead>
+                    )}
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -57,11 +74,59 @@ export function FundRequestsTable() {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(req.amount, req.currency)}</TableCell>
+                            {isAdmin && (
+                                <TableCell className="text-right">
+                                    {req.status !== 'Pagado' ? (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {req.status === 'Pendiente' && (
+                                                    <>
+                                                        <DropdownMenuItem>
+                                                            <Check className="mr-2 h-4 w-4 text-green-500" />
+                                                            <span>Aprobar</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem>
+                                                            <X className="mr-2 h-4 w-4 text-red-500" />
+                                                            <span>Rechazar</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                {req.status === 'Aprobado' && (
+                                                    <>
+                                                        <DropdownMenuItem>
+                                                            <Receipt className="mr-2 h-4 w-4 text-blue-500" />
+                                                            <span>Marcar como Pagado</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem>
+                                                            <Undo className="mr-2 h-4 w-4" />
+                                                            <span>Volver a Pendiente</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                {req.status === 'Rechazado' && (
+                                                    <DropdownMenuItem>
+                                                        <Undo className="mr-2 h-4 w-4" />
+                                                        <span>Volver a Pendiente</span>
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    ) : (
+                                      <div className="flex h-9 w-9 items-center justify-center" /> // Placeholder to maintain alignment
+                                    )}
+                                </TableCell>
+                            )}
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={isAdmin ? 7 : 6} className="h-24 text-center">
                             No hay solicitudes de fondos para esta semana.
                         </TableCell>
                     </TableRow>
