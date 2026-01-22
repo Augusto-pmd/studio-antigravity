@@ -51,12 +51,19 @@ interface AttendanceRecord {
 export function DailyAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
+  const [lastProjectByEmployee, setLastProjectByEmployee] = useState<Record<string, string>>({});
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     setSelectedDate(new Date());
   }, []);
+
+  useEffect(() => {
+    // When the date changes, we should ideally load the attendance for that date.
+    // For now, let's just clear the current attendance state to simulate loading a new day.
+    setAttendance({});
+  }, [selectedDate]);
 
   const activeEmployees = useMemo(() => {
     return employees.filter(
@@ -76,17 +83,29 @@ export function DailyAttendance() {
     field: keyof AttendanceRecord,
     value: string | number | null
   ) => {
+    const currentAttendanceForEmployee = getEmployeeAttendance(employeeId);
+
     setAttendance((prev) => {
-      const currentRecord = prev[employeeId] || { status: 'presente', lateHours: 0, notes: '', projectId: null };
-      
-      const newRecord = {
-        ...currentRecord,
+      const newRecord: AttendanceRecord = {
+        ...currentAttendanceForEmployee,
         [field]: value,
       };
 
-      // If employee is marked as absent, nullify the project
-      if (field === 'status' && value === 'ausente') {
-        newRecord.projectId = null;
+      if (field === 'status') {
+        if (value === 'presente') {
+          if (!newRecord.projectId) { // If toggling back to present and there's no project
+            newRecord.projectId = lastProjectByEmployee[employeeId] || null;
+          }
+        } else if (value === 'ausente') {
+          newRecord.projectId = null;
+        }
+      }
+      
+      if (field === 'projectId' && typeof value === 'string' && value) {
+        setLastProjectByEmployee(prevLastProject => ({
+            ...prevLastProject,
+            [employeeId]: value
+        }));
       }
 
       return {
@@ -97,7 +116,12 @@ export function DailyAttendance() {
   };
 
   const getEmployeeAttendance = (employeeId: string): AttendanceRecord => {
-    return attendance[employeeId] || { status: 'presente', lateHours: 0, notes: '', projectId: null };
+    return attendance[employeeId] || { 
+        status: 'presente', 
+        lateHours: 0, 
+        notes: '', 
+        projectId: lastProjectByEmployee[employeeId] || null 
+    };
   };
 
   return (
