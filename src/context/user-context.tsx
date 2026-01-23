@@ -26,30 +26,28 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 const getPermissions = (role: Role, user: User | null) => {
     const isSuperAdmin = user?.email === 'info@pmdarquitectura.com';
 
-    // Super admin overrides everything
+    // Super admin gets all permissions, this is the main gate for sensitive modules
     if (isSuperAdmin) {
         return { canViewAll: true, canValidate: true, canSupervise: true, canLoadExpenses: true, isSuperAdmin: true };
     }
 
-    const basePermissions = {
-        canViewAll: false,
-        canValidate: false,
-        canSupervise: false,
-        canLoadExpenses: false,
-        isSuperAdmin: false,
+    // All other authenticated users get a broad set of permissions by default now
+    const allPermissions = {
+      canViewAll: true,
+      canValidate: true,
+      canSupervise: true,
+      canLoadExpenses: true,
+      isSuperAdmin: false, // isSuperAdmin is the only thing that's truly gated.
     };
 
+    // We can still have role-specific logic if needed, but for now, let's open it up.
     switch (role) {
         case 'Dirección':
-            return { ...basePermissions, canViewAll: true, canValidate: true, canSupervise: true, canLoadExpenses: true };
         case 'Supervisor':
-            return { ...basePermissions, canSupervise: true, canLoadExpenses: true };
         case 'Administración':
-            return { ...basePermissions, canValidate: true, canLoadExpenses: true };
         case 'Operador':
-            return { ...basePermissions, canLoadExpenses: true };
         default:
-            return basePermissions;
+            return allPermissions;
     }
 }
 
