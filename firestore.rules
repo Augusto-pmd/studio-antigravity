@@ -258,7 +258,8 @@ service cloud.firestore {
     }
     
     match /fundRequests/{fundRequestId} {
-      allow read: if isSignedIn() && (isAdmin() || resource.data.requesterId == request.auth.uid);
+      allow get: if isSignedIn() && (isAdmin() || resource.data.requesterId == request.auth.uid);
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
