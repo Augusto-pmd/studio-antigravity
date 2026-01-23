@@ -5,3 +5,4 @@ config();
 import '@/ai/flows/extract-invoice-data.ts';
 import '@/ai/flows/generate-dashboard-summary.ts';
 import '@/ai/flows/extract-bank-statement.ts';
+import '@/ai/flows/ask-assistant-flow.ts';

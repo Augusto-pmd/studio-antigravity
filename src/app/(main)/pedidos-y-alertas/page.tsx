@@ -16,6 +16,8 @@ import {
 import { NewRequestDialog } from "@/components/pedidos/new-request-dialog";
 import { PendingTasksList } from "@/components/pedidos/pending-tasks-list";
 import { CreatedTasksList } from "@/components/pedidos/created-tasks-list";
+import { BotMessageSquare } from "lucide-react";
+import { AiAssistant } from "@/components/pedidos/ai-assistant";
 
 export default function PedidosYAlertasPage() {
   return (
@@ -25,13 +27,17 @@ export default function PedidosYAlertasPage() {
         <NewRequestDialog />
       </div>
       <p className="text-muted-foreground">
-        Un espacio centralizado para gestionar pedidos y tareas entre los miembros del equipo.
+        Un espacio centralizado para gestionar pedidos, tareas y consultas entre los miembros del equipo.
       </p>
 
       <Tabs defaultValue="pendientes" className="w-full">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pendientes">Mis Tareas Pendientes</TabsTrigger>
           <TabsTrigger value="realizados">Pedidos Realizados</TabsTrigger>
+          <TabsTrigger value="asistente">
+            <BotMessageSquare className="mr-2 h-4 w-4" />
+            Asistente IA
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="pendientes" className="mt-4">
           <Card>
@@ -58,6 +64,9 @@ export default function PedidosYAlertasPage() {
               <CreatedTasksList />
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="asistente" className="mt-4">
+            <AiAssistant />
         </TabsContent>
       </Tabs>
 

@@ -1,6 +1,7 @@
 'use server';
 import { extractInvoiceData } from '@/ai/flows/extract-invoice-data';
 import { generateDashboardSummary } from '@/ai/flows/generate-dashboard-summary';
+import { askAssistant } from '@/ai/flows/ask-assistant-flow';
 import { DashboardSummaryOutput } from '@/ai/schemas';
 import { extractBankStatement } from '@/ai/flows/extract-bank-statement';
 import { getFirestore, collection, getDocs, query, where, limit, collectionGroup } from 'firebase/firestore';
@@ -117,4 +118,17 @@ export async function extractBankStatementAction(dataUri: string, fileSize: numb
     console.error("Error extracting bank statement data:", error);
     return { error: 'Ocurrió un error inesperado al procesar el extracto.' };
   }
+}
+
+export async function askAssistantAction(question: string) {
+    try {
+        if (!question) {
+            return { answer: 'Por favor, haz una pregunta.' };
+        }
+        const result = await askAssistant({ question });
+        return result;
+    } catch (error: any) {
+        console.error("Error in askAssistantAction:", error);
+        return { answer: `Hubo un error al procesar tu pregunta: ${error.message}` };
+    }
 }

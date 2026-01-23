@@ -71,3 +71,14 @@ export const ExtractBankStatementOutputSchema = z.object({
   transactions: z.array(BankTransactionSchema).describe("An array of all transactions found in the bank statement."),
 });
 export type ExtractBankStatementOutput = z.infer<typeof ExtractBankStatementOutputSchema>;
+
+// Schemas for ask-assistant-flow.ts
+export const AskAssistantInputSchema = z.object({
+  question: z.string(),
+});
+export type AskAssistantInput = z.infer<typeof AskAssistantInputSchema>;
+
+export const AskAssistantOutputSchema = z.object({
+  answer: z.string().describe('The natural language answer to the user question.'),
+});
+export type AskAssistantOutput = z.infer<typeof AskAssistantOutputSchema>;
