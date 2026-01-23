@@ -275,11 +275,11 @@ service cloud.firestore {
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
-      allow get, write: if isRoleAdmin();
+      allow get, write: if isAdmin();
       allow list: if isSuperAdmin();
 
       match /transactions/{transactionId} {
-        allow get, write: if isRoleAdmin();
+        allow get, write: if isAdmin();
         allow list: if isSuperAdmin();
       }
     }
