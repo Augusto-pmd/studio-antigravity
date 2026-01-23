@@ -88,12 +88,12 @@ export function AddProjectDialog({
     }
   }, [open, project]);
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
-    if (!name || !client || !address || !supervisor || !budget || !status) {
+    if (!name || !client || !address || !supervisor || !budget || !status || !projectType) {
         toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Por favor, complete todos los campos obligatorios (*).' });
         return;
     }
@@ -104,27 +104,22 @@ export function AddProjectDialog({
         const projectRef = isEditMode ? doc(projectsCollection, project.id) : doc(projectsCollection);
         const projectId = projectRef.id;
 
-        const projectData: Partial<Project> = {
+        const projectData: Project = {
             id: projectId,
             name,
             client,
             address,
             projectType,
             currency,
-            description,
+            description: description || undefined,
             status,
             supervisor,
             budget: parseFloat(budget) || 0,
             progress: parseInt(progress) || 0,
-            balance: isEditMode ? project.balance : parseFloat(budget) || 0,
+            balance: isEditMode && project ? project.balance : parseFloat(budget) || 0,
+            startDate: startDate?.toISOString(),
+            endDate: endDate?.toISOString(),
         };
-
-        if (startDate) {
-          projectData.startDate = startDate.toISOString();
-        }
-        if (endDate) {
-          projectData.endDate = endDate.toISOString();
-        }
 
         await setDoc(projectRef, projectData, { merge: true });
 
@@ -207,7 +202,7 @@ export function AddProjectDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="projectType">Tipo de obra</Label>
+                <Label htmlFor="projectType">Tipo de obra *</Label>
                 <Input
                   id="projectType"
                   value={projectType}
