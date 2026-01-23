@@ -6,7 +6,6 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { useUser as useAuthUserHook } from './auth/use-user';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseContextValue {
   firebaseApp: FirebaseApp | null;
@@ -58,7 +57,6 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
   return (
     <FirebaseContext.Provider value={value}>
       {children}
-      <FirebaseErrorListener />
     </FirebaseContext.Provider>
   );
 }

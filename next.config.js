@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  transpilePackages: ['tiny-typed-emitter'],
   images: {
     remotePatterns: [
       {
