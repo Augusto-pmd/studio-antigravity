@@ -45,7 +45,7 @@ const employeeConverter = {
         snapshot: QueryDocumentSnapshot,
         options: SnapshotOptions
     ): Employee {
-        const data = snapshot.data(options);
+        const data = snapshot.data(options)!;
         return {
             id: snapshot.id,
             name: data.name,
@@ -54,7 +54,7 @@ const employeeConverter = {
             category: data.category,
             dailyWage: data.dailyWage,
             artExpiryDate: data.artExpiryDate,
-        } as Employee;
+        };
     }
 };
 
@@ -67,7 +67,7 @@ const projectConverter = {
         snapshot: QueryDocumentSnapshot,
         options: SnapshotOptions
     ): Project {
-        const data = snapshot.data(options);
+        const data = snapshot.data(options)!;
         return {
             id: snapshot.id,
             name: data.name,
@@ -83,7 +83,7 @@ const projectConverter = {
             balance: data.balance,
             progress: data.progress,
             description: data.description,
-        } as Project;
+        };
     }
 };
 

@@ -9,18 +9,38 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, Role } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { EditUserDialog } from "./edit-user-dialog";
 import { useMemo } from "react";
 
+const userProfileConverter = {
+    toFirestore(profile: UserProfile): DocumentData {
+        const { id, ...data } = profile;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): UserProfile {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            role: data.role as Role,
+            fullName: data.fullName,
+            email: data.email,
+            photoURL: data.photoURL,
+        };
+    }
+};
+
 export function UsersTable() {
   const firestore = useFirestore();
-  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
+  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users').withConverter(userProfileConverter) : null), [firestore]);
   const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
 
   const renderSkeleton = () => (

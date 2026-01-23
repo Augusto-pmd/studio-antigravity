@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
@@ -34,10 +34,35 @@ const formatDate = (dateString: string) => {
     return format(parseISO(dateString), 'dd/MM/yyyy HH:mm');
 }
 
+const transactionConverter = {
+    toFirestore(transaction: TreasuryTransaction): DocumentData {
+        const { id, ...data } = transaction;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): TreasuryTransaction {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            treasuryAccountId: data.treasuryAccountId,
+            date: data.date,
+            type: data.type,
+            amount: data.amount,
+            currency: data.currency,
+            description: data.description,
+            category: data.category,
+            relatedDocumentId: data.relatedDocumentId,
+            relatedDocumentType: data.relatedDocumentType,
+        };
+    }
+};
+
 export function ViewTreasuryTransactionsDialog({ account, children }: { account: TreasuryAccount, children: React.ReactNode }) {
   const firestore = useFirestore();
   const transactionsQuery = useMemo(
-    () => firestore ? query(collection(firestore, `treasuryAccounts/${account.id}/transactions`), orderBy('date', 'desc')) : null,
+    () => firestore ? query(collection(firestore, `treasuryAccounts/${account.id}/transactions`).withConverter(transactionConverter), orderBy('date', 'desc')) : null,
     [firestore, account.id]
   );
   const { data: transactions, isLoading } = useCollection<TreasuryTransaction>(transactionsQuery);

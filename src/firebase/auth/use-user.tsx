@@ -2,9 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, type Firestore } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import { doc, onSnapshot, type Firestore, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import type { UserProfile, Role } from '@/lib/types';
 import type { Auth } from 'firebase/auth';
+
+const userProfileConverter = {
+    toFirestore(profile: UserProfile): DocumentData {
+        const { id, ...data } = profile;
+        return data;
+    },
+    fromFirestore(
+        snapshot: DocumentSnapshot,
+        options: SnapshotOptions
+    ): UserProfile {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            role: data.role as Role,
+            fullName: data.fullName,
+            email: data.email,
+            photoURL: data.photoURL,
+        };
+    }
+};
 
 export function useUser(auth: Auth | null, firestore: Firestore | null) {
   const [user, setUser] = useState<User | null>(null);
@@ -31,10 +51,10 @@ export function useUser(auth: Auth | null, firestore: Firestore | null) {
       return;
     }
 
-    const userDocRef = doc(firestore, `users/${user.uid}`);
+    const userDocRef = doc(firestore, `users/${user.uid}`).withConverter(userProfileConverter);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
       if (doc.exists()) {
-        setUserProfile(doc.data() as UserProfile);
+        setUserProfile(doc.data());
       } else {
         setUserProfile(null);
       }

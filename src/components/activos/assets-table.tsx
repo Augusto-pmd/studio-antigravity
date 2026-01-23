@@ -39,7 +39,7 @@ const assetConverter = {
         snapshot: QueryDocumentSnapshot,
         options: SnapshotOptions
     ): Asset {
-        const data = snapshot.data(options);
+        const data = snapshot.data(options)!;
         return {
             id: snapshot.id,
             name: data.name,
@@ -49,7 +49,7 @@ const assetConverter = {
             currency: data.currency,
             category: data.category,
             status: data.status,
-        } as Asset;
+        };
     }
 };
 
