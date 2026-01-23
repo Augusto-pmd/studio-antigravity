@@ -169,15 +169,18 @@ service cloud.firestore {
        * @path /users/{userId}/cashAccounts/{cashAccountId}
        */
       match /cashAccounts/{cashAccountId} {
-        allow get, list: if isOwner(userId) || isAdmin();
-        allow create, update, delete: if isOwner(userId) || isAdmin(); // Admins can create/adjust accounts
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isSuperAdmin();
+        allow create, update, delete: if isOwner(userId) || isAdmin();
 
         /**
         * @description Manages transactions within a specific cash account.
         * @path /users/{userId}/cashAccounts/{cashAccountId}/transactions/{transactionId}
         */
         match /transactions/{transactionId} {
-          allow read, write: if isOwner(userId) || isAdmin(); // Admins can manage transactions for auditing
+          allow get: if isOwner(userId) || isAdmin();
+          allow list: if isOwner(userId) || isSuperAdmin();
+          allow write: if isOwner(userId) || isAdmin();
         }
       }
     }
@@ -263,5 +266,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
