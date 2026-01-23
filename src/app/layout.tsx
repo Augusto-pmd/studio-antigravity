@@ -3,6 +3,7 @@ import './globals.css';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
+import AppShell from '@/components/layout/app-shell';
 
 export const metadata: Metadata = {
   title: 'PMD Arquitectura',
@@ -27,7 +28,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           <SidebarProvider>
-            {children}
+            <AppShell>{children}</AppShell>
             <Toaster />
           </SidebarProvider>
         </FirebaseClientProvider>

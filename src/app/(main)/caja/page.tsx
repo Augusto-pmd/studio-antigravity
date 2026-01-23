@@ -1,7 +1,2 @@
-import { MyCashView } from "@/components/caja/my-cash-view";
-
-export default function MiCajaPage() {
-  return (
-    <MyCashView />
-  );
-}
+// This page has been moved to /app/caja/page.tsx.
+// The default export has been removed to prevent routing conflicts.
