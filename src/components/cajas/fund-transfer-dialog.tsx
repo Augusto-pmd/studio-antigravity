@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, Landmark } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
@@ -97,10 +97,7 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className='w-full'>
-          <Landmark className="mr-2 h-4 w-4" />
-          Añadir Fondos
-        </Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -155,5 +152,3 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
     </Dialog>
   );
 }
-
-    

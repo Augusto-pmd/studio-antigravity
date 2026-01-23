@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FundTransferDialog } from './fund-transfer-dialog';
+import { Button } from '../ui/button';
+import { Landmark } from 'lucide-react';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -54,7 +56,10 @@ function UserCashAccountCard({ profile }: { profile: UserProfile }) {
             </CardContent>
             <CardFooter>
                 <FundTransferDialog profile={profile} arsAccount={arsAccount} usdAccount={usdAccount}>
-                    <div className='w-full'></div>
+                    <Button className='w-full'>
+                        <Landmark className="mr-2 h-4 w-4" />
+                        Añadir Fondos
+                    </Button>
                 </FundTransferDialog>
             </CardFooter>
         </Card>
@@ -89,5 +94,3 @@ export function CashAccountsDashboard() {
     </div>
   );
 }
-
-    
