@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import {
   Building2,
   LayoutDashboard,
@@ -101,11 +101,11 @@ const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, role, setRole, permissions } = useUser();
+  const { user, role, setRole, permissions, auth } = useUser();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
   const handleLogout = async () => {
-    const auth = getAuth();
+    if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };

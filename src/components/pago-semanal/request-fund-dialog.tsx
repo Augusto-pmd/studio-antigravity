@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,8 +31,8 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useUser } from "@/context/user-context";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useUser } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { Project, FundRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +60,7 @@ export function RequestFundDialog() {
   const [amount, setAmount] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
 
-  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const resetForm = () => {

@@ -4,7 +4,7 @@ import { Banknote, BotMessageSquare, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TreasuryAccounts } from "@/components/tesoreria/treasury-accounts";
 import { BankStatementAnalyzer } from "@/components/contabilidad/bank-statement-analyzer";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function TesoreriaPage() {

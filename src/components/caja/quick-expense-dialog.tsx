@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";

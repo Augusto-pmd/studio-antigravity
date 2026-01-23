@@ -35,7 +35,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";

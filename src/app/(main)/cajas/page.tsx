@@ -3,7 +3,7 @@
 import { CashAccountsDashboard } from "@/components/cajas/cash-accounts-dashboard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { Loader2 } from "lucide-react";
 
 export default function CajasPage() {

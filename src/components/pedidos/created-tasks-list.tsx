@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useUser } from '@/context/user-context';
+import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';

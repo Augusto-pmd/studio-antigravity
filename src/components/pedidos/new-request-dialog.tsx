@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, PlusCircle } from "lucide-react";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { UserProfile, Project, TaskRequest } from "@/lib/types";

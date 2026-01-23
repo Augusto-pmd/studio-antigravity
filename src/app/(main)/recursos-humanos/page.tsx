@@ -12,7 +12,7 @@ import { TechnicalOfficeEmployeesTable } from "@/components/recursos-humanos/tec
 import { Button } from "@/components/ui/button";
 import { PlusCircle, BarChart2, CalendarClock, UserCog, Loader2 } from "lucide-react";
 import { SalaryReports } from "@/components/recursos-humanos/salary-reports";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 
 export default function RecursosHumanosPage() {
   const { permissions, isUserLoading } = useUser();

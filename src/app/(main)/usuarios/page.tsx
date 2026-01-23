@@ -1,7 +1,7 @@
 'use client';
 
 import { UsersTable } from '@/components/usuarios/users-table';
-import { useUser } from '@/context/user-context';
+import { useUser } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 

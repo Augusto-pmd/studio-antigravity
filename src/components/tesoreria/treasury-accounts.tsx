@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useUser } from '@/context/user-context';
+import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { TreasuryAccount } from '@/lib/types';

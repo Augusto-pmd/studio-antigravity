@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { MoreHorizontal, Check, X, Undo, Receipt } from "lucide-react";
 import type { FundRequest } from "@/lib/types";
 import { parseISO, format } from "date-fns";

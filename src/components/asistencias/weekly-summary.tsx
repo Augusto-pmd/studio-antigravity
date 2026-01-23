@@ -37,7 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, PlusCircle, FilePenLine, Eye, Loader2 } from "lucide-react";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";

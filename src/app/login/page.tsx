@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth, useFirestore, useUser } from '@/firebase/provider';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 

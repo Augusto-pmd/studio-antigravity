@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Send, User, Bot } from 'lucide-react';
 import { askAssistantAction } from '@/lib/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useUser } from '@/context/user-context';
+import { useUser } from '@/firebase';
 
 interface Message {
     sender: 'user' | 'bot';
