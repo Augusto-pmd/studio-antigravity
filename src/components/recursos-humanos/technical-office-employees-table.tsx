@@ -69,7 +69,7 @@ export function TechnicalOfficeEmployeesTable() {
                       <div className="text-sm text-muted-foreground md:hidden">{employee.position}</div>
                       <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <p><span className='font-medium text-foreground'>Salario:</span> <span className='font-mono'>{formatCurrency(employee.monthlySalary)}</span></p>
-                        <p>
+                        <div>
                              <Badge
                                 variant={employee.status === 'Activo' ? 'default' : 'secondary'}
                                 className={cn(
@@ -80,7 +80,7 @@ export function TechnicalOfficeEmployeesTable() {
                                 >
                                 {employee.status}
                                 </Badge>
-                        </p>
+                        </div>
                       </div>
                   </TableCell>
                   <TableCell className='hidden md:table-cell'>{employee.position}</TableCell>

@@ -94,7 +94,7 @@ export function EmployeesTable() {
                     <div className="font-medium">{employee.name}</div>
                     <div className="text-sm text-muted-foreground">{employee.category}</div>
                      <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
-                        <p>
+                        <div>
                            <Badge
                             variant={employee.status === 'Activo' ? 'default' : 'secondary'}
                             className={cn(
@@ -105,7 +105,7 @@ export function EmployeesTable() {
                             >
                             {employee.status}
                             </Badge>
-                        </p>
+                        </div>
                         <p>Jornal: <span className="font-mono text-foreground">{formatCurrency(employee.dailyWage)}</span></p>
                         {artStatus && <p className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</p>}
                     </div>

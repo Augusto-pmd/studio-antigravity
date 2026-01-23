@@ -96,7 +96,7 @@ export function ContractorsTable() {
                     <div className="font-medium">{contractor.name}</div>
                     <div className="text-sm text-muted-foreground">{contractor.cuit}</div>
                     <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
-                        <p>
+                        <div>
                             <Badge
                             variant="outline"
                             className={cn(
@@ -108,7 +108,7 @@ export function ContractorsTable() {
                             >
                             {contractor.status}
                             </Badge>
-                        </p>
+                        </div>
                         {artStatus && <p className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</p>}
                         {insuranceStatus && <p className={cn(insuranceStatus.variant === 'destructive' && 'text-destructive', insuranceStatus.variant === 'warning' && 'text-yellow-500')}>Seguro: {insuranceStatus.message}</p>}
                     </div>

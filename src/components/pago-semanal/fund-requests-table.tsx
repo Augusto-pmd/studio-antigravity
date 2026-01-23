@@ -96,7 +96,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                             <p>{req.category}</p>
                             <p>{formatDate(req.date)}</p>
                             <p className='font-mono font-semibold text-foreground'>{formatCurrency(req.amount, req.currency)}</p>
-                             <p>
+                             <div>
                                 <Badge variant="outline" className={cn(
                                     'text-xs',
                                     req.status === 'Pendiente' && 'text-yellow-500 border-yellow-500',
@@ -106,7 +106,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                                 )}>
                                     {req.status}
                                 </Badge>
-                             </p>
+                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{req.category}</TableCell>

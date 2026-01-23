@@ -62,7 +62,7 @@ export function SuppliersTable() {
                     <div className="font-medium">{supplier.name}</div>
                     <div className="text-sm text-muted-foreground">{supplier.cuit}</div>
                     <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
-                        <p>
+                        <div>
                              <Badge
                                 variant="outline"
                                 className={cn(
@@ -74,8 +74,8 @@ export function SuppliersTable() {
                                 >
                                 {supplier.status}
                                 </Badge>
-                        </p>
-                        <p><Badge variant="secondary" className="text-xs">{supplier.type}</Badge></p>
+                        </div>
+                        <div><Badge variant="secondary" className="text-xs">{supplier.type}</Badge></div>
                         {supplier.contactPerson && <p>Contacto: {supplier.contactPerson}</p>}
                     </div>
                   </TableCell>

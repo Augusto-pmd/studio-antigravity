@@ -71,7 +71,7 @@ export function ProjectsTable() {
                 <div className="font-medium">{project.name}</div>
                 <div className="text-sm text-muted-foreground">{project.client}</div>
                 <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
-                   <p>
+                   <div>
                      <Badge
                         variant="outline"
                         className={cn(
@@ -84,7 +84,7 @@ export function ProjectsTable() {
                       >
                         {project.status}
                       </Badge>
-                   </p>
+                   </div>
                     <p><span className="font-medium text-foreground">Saldo:</span> {formatCurrency(project.balance)}</p>
                    <div className="flex items-center gap-2">
                        <span className="font-medium text-foreground">Progreso:</span>
