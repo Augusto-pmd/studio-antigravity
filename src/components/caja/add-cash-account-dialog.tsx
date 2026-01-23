@@ -18,8 +18,6 @@ import { useUser } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddCashAccountDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -56,13 +54,13 @@ export function AddCashAccountDialog({ children }: { children: React.ReactNode }
           setName('');
           setOpen(false);
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: accountRef.path,
-            operation: 'create',
-            requestResourceData: newAccount,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo crear la caja. Es posible que no tengas permisos.",
+            });
         });
     });
   };

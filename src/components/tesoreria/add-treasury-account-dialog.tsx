@@ -19,8 +19,6 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { TreasuryAccount } from "@/lib/types";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddTreasuryAccountDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -63,13 +61,13 @@ export function AddTreasuryAccountDialog({ children }: { children: React.ReactNo
             resetForm();
             setOpen(false);
         })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: accountRef.path,
-                operation: 'create',
-                requestResourceData: newAccount,
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo crear la cuenta. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         });
     });
   }

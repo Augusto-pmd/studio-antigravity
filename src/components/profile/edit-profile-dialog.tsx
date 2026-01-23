@@ -20,8 +20,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export function EditProfileDialog({
   open,
@@ -63,9 +61,8 @@ export function EditProfileDialog({
     }
     
     startTransition(() => {
-        let photoURL = user.photoURL || '';
-
         const processUpdates = async () => {
+            let photoURL = user.photoURL || '';
             if (newPhoto) {
               const storage = getStorage(firebaseApp);
               const filePath = `avatars/${user.uid}/${newPhoto.name}`;
@@ -92,12 +89,8 @@ export function EditProfileDialog({
     
             if (Object.keys(firestoreUpdates).length > 0) {
               const userDocRef = doc(firestore, 'users', user.uid);
-              // This returns a promise that we will handle in the .then/.catch chain
-              return updateDoc(userDocRef, firestoreUpdates);
+              await updateDoc(userDocRef, firestoreUpdates);
             }
-            
-            // If no firestore updates, return a resolved promise
-            return Promise.resolve();
         }
 
         processUpdates()
@@ -105,14 +98,8 @@ export function EditProfileDialog({
                 toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });
                 onOpenChange(false);
             })
-            .catch(async (serverError) => {
-              // This will catch errors from updateProfile, updateDoc, or any of the storage operations
-              const permissionError = new FirestorePermissionError({
-                path: `users/${user.uid}`,
-                operation: 'update',
-                requestResourceData: { fullName },
-              });
-              errorEmitter.emit('permission-error', permissionError);
+            .catch((error) => {
+              console.error("Error writing to Firestore:", error);
               toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo guardar el perfil. Es posible que no tengas permisos.' });
             });
     });

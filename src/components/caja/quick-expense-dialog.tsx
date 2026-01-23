@@ -29,8 +29,6 @@ import { collection, doc, writeBatch } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount }) {
   const { user, firestore, permissions, firebaseApp } = useUser();
@@ -153,12 +151,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           setOpen(false);
         })
         .catch((error) => {
-          const permissionError = new FirestorePermissionError({
-            path: `/projects/${projectId}/expenses (batch)`,
-            operation: 'create',
-            requestResourceData: { amount: parseFloat(amount), description },
-          });
-          errorEmitter.emit('permission-error', permissionError);
+          console.error("Error writing to Firestore:", error);
           toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
         });
     });

@@ -35,8 +35,6 @@ import { useUser, useCollection } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
   const [open, setOpen] = useState(false);
@@ -117,13 +115,13 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
             });
             setOpen(false);
         })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: advanceRef.path,
-                operation: 'create',
-                requestResourceData: newAdvance,
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo guardar el adelanto. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         });
     });
   };

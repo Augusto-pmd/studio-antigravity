@@ -25,8 +25,6 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { doc, updateDoc } from "firebase/firestore";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
 
@@ -68,13 +66,13 @@ export function EditUserDialog({
             });
             setOpen(false);
         })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo actualizar el rol. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         });
     });
   };

@@ -27,8 +27,6 @@ import { useFirestore } from "@/firebase/provider";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { ContractorEmployee } from "@/lib/types";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddPersonnelDialog({
   contractorId,
@@ -76,13 +74,13 @@ export function AddPersonnelDialog({
             setName('');
             setArtExpiryDate(undefined);
         })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: personnelRef.path,
-                operation: 'create',
-                requestResourceData: newPersonnel,
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo agregar al personal. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         });
     });
   };

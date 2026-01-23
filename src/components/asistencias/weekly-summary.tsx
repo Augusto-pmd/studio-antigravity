@@ -46,8 +46,6 @@ import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function WeeklySummary() {
   const { permissions, firestore } = useUser();
@@ -120,12 +118,8 @@ export function WeeklySummary() {
       };
 
       generate().catch((error) => {
-        const permissionError = new FirestorePermissionError({
-            path: 'payrollWeeks',
-            operation: 'create',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: "Error", description: "No se pudo generar la nueva semana. Es posible que no tengas permisos." });
+        console.error("Error writing to Firestore:", error);
+        toast({ variant: 'destructive', title: "Error al generar", description: "No se pudo generar la nueva semana. Es posible que no tengas permisos." });
       });
     });
   };
@@ -142,13 +136,8 @@ export function WeeklySummary() {
                 });
             })
             .catch((error) => {
-                const permissionError = new FirestorePermissionError({
-                    path: weekRef.path,
-                    operation: 'update',
-                    requestResourceData: {status: 'Cerrada'},
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                toast({ variant: 'destructive', title: "Error", description: "No se pudo cerrar la semana. Es posible que no tengas permisos." });
+                console.error("Error writing to Firestore:", error);
+                toast({ variant: 'destructive', title: "Error al cerrar", description: "No se pudo cerrar la semana. Es posible que no tengas permisos." });
             });
       });
   };

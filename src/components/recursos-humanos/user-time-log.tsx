@@ -33,8 +33,6 @@ import { Calendar as CalendarIcon, Save, PlusCircle, Trash2, Loader2 } from 'luc
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 interface TimeLogEntry {
   id: string; // Temp ID for React key
@@ -126,7 +124,6 @@ export function UserTimeLog() {
             }
         });
 
-        let batchedLogs: any[] = [];
         // Set/Update current entries
         timeLogEntries.forEach(entry => {
             const isNew = entry.id.startsWith('temp-');
@@ -140,7 +137,6 @@ export function UserTimeLog() {
                 projectId: entry.projectId,
                 hours: Number(entry.hours),
             };
-            batchedLogs.push(logData);
             
             if (isNew) {
                 batch.set(docRef, logData);
@@ -154,12 +150,7 @@ export function UserTimeLog() {
                 toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
             })
             .catch((error) => {
-                const permissionError = new FirestorePermissionError({
-                    path: 'timeLogs (batch)',
-                    operation: 'write',
-                    requestResourceData: batchedLogs,
-                });
-                errorEmitter.emit('permission-error', permissionError);
+                console.error("Error writing to Firestore:", error);
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros de horas. Es posible que no tengas permisos.' });
             });
     });

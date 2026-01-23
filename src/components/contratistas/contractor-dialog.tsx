@@ -36,8 +36,6 @@ import type { Contractor } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc } from "firebase/firestore";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function ContractorDialog({
   contractor,
@@ -129,12 +127,7 @@ export function ContractorDialog({
                 setOpen(false);
             })
             .catch((error) => {
-                const permissionError = new FirestorePermissionError({
-                    path: contractorRef.path,
-                    operation: isEditMode ? 'update' : 'create',
-                    requestResourceData: contractorData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
+                console.error("Error writing to Firestore:", error);
                 toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar el contratista. Es posible que no tengas permisos." });
             });
     });

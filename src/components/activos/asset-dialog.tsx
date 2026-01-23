@@ -36,8 +36,6 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { setDoc, collection, doc } from "firebase/firestore";
 import { Textarea } from "../ui/textarea";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 const assetCategories = ["Vehículo", "Maquinaria", "Inmueble", "Equipo Informático", "Herramientas", "Otro"];
 
@@ -113,13 +111,13 @@ export function AssetDialog({
           });
           setOpen(false);
         })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-              path: assetRef.path,
-              operation: isEditMode ? 'update' : 'create',
-              requestResourceData: assetData,
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo guardar el activo. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         });
     });
   };

@@ -12,8 +12,6 @@ import { es } from 'date-fns/locale';
 import { Button } from '../ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export function PendingTasksList() {
   const { user, firestore } = useUser();
@@ -50,12 +48,7 @@ export function PendingTasksList() {
               toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
           })
           .catch((error) => {
-              const permissionError = new FirestorePermissionError({
-                  path: taskRef.path,
-                  operation: 'update',
-                  requestResourceData: updatedData,
-              });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error writing to Firestore:", error);
               toast({
                 variant: "destructive",
                 title: "Error al completar",

@@ -40,8 +40,6 @@ import { collection, doc, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "../ui/separator";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddExpenseDialog() {
   const { user, permissions, firestore, firebaseApp } = useUser();
@@ -164,13 +162,8 @@ export function AddExpenseDialog() {
             toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
             setOpen(false);
         })
-        .catch(async (error) => {
-            const permissionError = new FirestorePermissionError({
-              path: `/projects/${selectedProject}/expenses`,
-              operation: 'create',
-              requestResourceData: { amount: parseFloat(amount), selectedProject },
-            });
-            errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
             toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
         })
         .finally(() => {

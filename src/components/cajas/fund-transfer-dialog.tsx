@@ -26,8 +26,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import type { UserProfile, CashAccount, CashTransaction } from "@/lib/types";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function FundTransferDialog({ profile, cashAccounts, children }: { profile: UserProfile, cashAccounts: CashAccount[], children: React.ReactNode }) {
   const { user: operator, firestore } = useUser();
@@ -106,13 +104,13 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
             resetForm();
             setOpen(false);
           })
-          .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: `/users/${profile.id}/cashAccounts (batch)`,
-                operation: 'update',
-                requestResourceData: { amount: transferAmount, description }
+          .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo completar la transferencia. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
           });
     });
   }

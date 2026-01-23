@@ -25,8 +25,6 @@ import { parseISO, format } from "date-fns";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -58,12 +56,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
             toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}.` });
         })
         .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-                path: requestRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error writing to Firestore:", error);
             toast({
                 variant: "destructive",
                 title: "Error al actualizar",

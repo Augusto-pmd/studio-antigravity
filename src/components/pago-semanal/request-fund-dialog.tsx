@@ -36,8 +36,6 @@ import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { Project, FundRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 const fundRequestCategories = [
     'Logística y PMD',
@@ -120,13 +118,13 @@ export function RequestFundDialog() {
             resetForm();
             setOpen(false);
         })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: requestRef.path,
-                operation: 'create',
-                requestResourceData: requestData,
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo enviar la solicitud. Es posible que no tengas permisos.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         });
     });
   };

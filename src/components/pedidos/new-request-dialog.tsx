@@ -27,8 +27,6 @@ import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { UserProfile, Project, TaskRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 
 export function NewRequestDialog() {
@@ -95,12 +93,7 @@ export function NewRequestDialog() {
             setProjectId(undefined);
         })
         .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-                path: taskRef.path,
-                operation: 'create',
-                requestResourceData: taskData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error writing to Firestore:", error);
             toast({
               variant: "destructive",
               title: "Error al crear",

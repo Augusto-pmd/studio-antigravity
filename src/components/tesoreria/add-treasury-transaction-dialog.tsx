@@ -11,8 +11,6 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddTreasuryTransactionDialog({ account, children }: { account: TreasuryAccount, children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -68,13 +66,13 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
                 resetForm();
                 setOpen(false);
             })
-            .catch(async (serverError) => {
-                const permissionError = new FirestorePermissionError({
-                    path: `/treasuryAccounts/${account.id} (batch)`,
-                    operation: 'update',
-                    requestResourceData: { amount: transactionAmount, description, type }
+            .catch((error) => {
+                console.error("Error writing to Firestore:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error al guardar",
+                    description: "No se pudo registrar el movimiento. Es posible que no tengas permisos.",
                 });
-                errorEmitter.emit('permission-error', permissionError);
             });
     });
   }

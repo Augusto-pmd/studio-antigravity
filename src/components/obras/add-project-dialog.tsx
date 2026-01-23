@@ -37,8 +37,6 @@ import { useFirestore } from "@/firebase/provider";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 
 export function AddProjectDialog({
@@ -131,12 +129,7 @@ export function AddProjectDialog({
             setOpen(false);
         })
         .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-                path: projectRef.path,
-                operation: isEditMode ? 'update' : 'create',
-                requestResourceData: projectData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error writing to Firestore:", error);
             toast({
                 variant: 'destructive',
                 title: 'Error al Guardar',

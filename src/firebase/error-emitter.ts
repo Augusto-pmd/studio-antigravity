@@ -1,7 +1,2 @@
-// A dummy emitter that does nothing to prevent runtime errors.
-// The original implementation caused a persistent "is not a constructor" TypeError.
-export const errorEmitter = {
-  on: () => {},
-  off: () => {},
-  emit: () => {},
-};
+// This file is intentionally left empty to remove AI functionality and ensure build stability.
+export {};

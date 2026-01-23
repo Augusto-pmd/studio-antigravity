@@ -25,8 +25,6 @@ import type { TechnicalOfficeEmployee, UserProfile, SalaryHistory } from "@/lib/
 import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch } from "firebase/firestore";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 
 export function TechnicalOfficeEmployeeDialog({
   employee,
@@ -119,12 +117,7 @@ export function TechnicalOfficeEmployeeDialog({
             setOpen(false);
         })
         .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-                path: `/technicalOfficeEmployees/${userId} (batch)`,
-                operation: isEditMode ? 'update' : 'create',
-                requestResourceData: employeeData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error writing to Firestore:", error);
             toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar el empleado. Es posible que no tengas permisos.' });
         });
     });
