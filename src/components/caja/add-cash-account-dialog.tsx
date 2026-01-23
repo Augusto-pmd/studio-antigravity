@@ -19,7 +19,7 @@ import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
 
-export function AddCashAccountDialog({ children, disabled }: { children: React.ReactNode, disabled?: boolean }) {
+export function AddCashAccountDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { user, firestore } = useUser();
@@ -68,7 +68,7 @@ export function AddCashAccountDialog({ children, disabled }: { children: React.R
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={disabled}>{children}</Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

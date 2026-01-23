@@ -124,7 +124,7 @@ export function MyCashView() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-3xl font-headline">Mis Cajas</h1>
-        <AddCashAccountDialog disabled={(accounts?.length ?? 0) >= 3}>
+        <AddCashAccountDialog>
             <Button disabled={(accounts?.length ?? 0) >= 3}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Crear Nueva Caja
