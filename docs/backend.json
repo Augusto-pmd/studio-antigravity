@@ -862,6 +862,30 @@
         "projectId",
         "hours"
       ]
+    },
+    "SalaryHistory": {
+      "title": "Salary History",
+      "type": "object",
+      "description": "Represents a historical record of an employee's salary.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The gross monthly salary amount."
+        },
+        "effectiveDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date from which this salary is effective."
+        }
+      },
+      "required": [
+        "id",
+        "amount",
+        "effectiveDate"
+      ]
     }
   },
   "auth": {
@@ -1031,6 +1055,26 @@
             {
               "name": "employeeId",
               "description": "The unique identifier for the employee, matches their user ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/technicalOfficeEmployees/{employeeId}/salaryHistory/{salaryHistoryId}",
+        "definition": {
+          "entityName": "SalaryHistory",
+          "schema": {
+            "$ref": "#/backend/entities/SalaryHistory"
+          },
+          "description": "Stores the salary history for a technical office employee. Only accessible by 'Dirección' role.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            },
+            {
+              "name": "salaryHistoryId",
+              "description": "The unique identifier for the salary history record."
             }
           ]
         }

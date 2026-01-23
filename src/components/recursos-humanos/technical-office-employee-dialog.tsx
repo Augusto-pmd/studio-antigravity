@@ -21,10 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import type { TechnicalOfficeEmployee, UserProfile } from "@/lib/types";
-import { useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
+import type { TechnicalOfficeEmployee, UserProfile, SalaryHistory } from "@/lib/types";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, writeBatch } from "firebase/firestore";
 
 export function TechnicalOfficeEmployeeDialog({
   employee,
@@ -77,7 +77,7 @@ export function TechnicalOfficeEmployeeDialog({
       return;
     }
 
-    startTransition(() => {
+    startTransition(async () => {
       const selectedUser = users?.find(u => u.id === userId);
       if (!selectedUser) {
         toast({ variant: 'destructive', title: 'Error', description: 'El usuario seleccionado no es válido.' });
@@ -85,23 +85,44 @@ export function TechnicalOfficeEmployeeDialog({
       }
       
       const employeeRef = doc(firestore, 'technicalOfficeEmployees', userId);
+      const newSalary = parseFloat(monthlySalary) || 0;
 
-      const employeeData: TechnicalOfficeEmployee = {
-        id: userId,
-        userId,
-        fullName: selectedUser.fullName,
-        position,
-        monthlySalary: parseFloat(monthlySalary) || 0,
-        status,
-      };
-      
-      setDocumentNonBlocking(employeeRef, employeeData, { merge: true });
+      try {
+        const batch = writeBatch(firestore);
 
-      toast({
-        title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
-        description: `Los datos de ${selectedUser.fullName} han sido guardados.`,
-      });
-      setOpen(false);
+        const employeeData: TechnicalOfficeEmployee = {
+          id: userId,
+          userId,
+          fullName: selectedUser.fullName,
+          position,
+          monthlySalary: newSalary,
+          status,
+        };
+        batch.set(employeeRef, employeeData, { merge: true });
+
+        // If salary has changed or it's a new employee, add to history
+        if (!isEditMode || (employee && employee.monthlySalary !== newSalary)) {
+            const salaryHistoryRef = doc(collection(firestore, `technicalOfficeEmployees/${userId}/salaryHistory`));
+            const newSalaryHistoryEntry: SalaryHistory = {
+                id: salaryHistoryRef.id,
+                amount: newSalary,
+                effectiveDate: new Date().toISOString(),
+            };
+            batch.set(salaryHistoryRef, newSalaryHistoryEntry);
+        }
+
+        await batch.commit();
+
+        toast({
+          title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
+          description: `Los datos de ${selectedUser.fullName} han sido guardados.`,
+        });
+        setOpen(false);
+
+      } catch (error: any) {
+        console.error("Error saving technical office employee:", error);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || 'No se pudo guardar el empleado.' });
+      }
     });
   };
 

@@ -10,6 +10,7 @@ import { TechnicalOfficeEmployeeDialog } from "@/components/recursos-humanos/tec
 import { TechnicalOfficeEmployeesTable } from "@/components/recursos-humanos/technical-office-employees-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, BarChart2, CalendarClock, UserCog } from "lucide-react";
+import { SalaryReports } from "@/components/recursos-humanos/salary-reports";
 
 export default function RecursosHumanosPage() {
   return (
@@ -59,9 +60,7 @@ export default function RecursosHumanosPage() {
             </div>
         </TabsContent>
         <TabsContent value="reportes" className="mt-6">
-           <div className="flex h-64 items-center justify-center rounded-md border border-dashed">
-                <p className="text-muted-foreground">Próximamente: Gráficos de evolución salarial e incidencia en obras.</p>
-            </div>
+           <SalaryReports />
         </TabsContent>
       </Tabs>
     </div>

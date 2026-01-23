@@ -198,3 +198,9 @@ export type TimeLog = {
   hours: number;
   description?: string;
 };
+
+export type SalaryHistory = {
+  id: string;
+  amount: number;
+  effectiveDate: string;
+};
