@@ -24,8 +24,7 @@ import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useFirestore } from "@/firebase/provider";
-import { collection, doc } from "firebase/firestore";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { ContractorEmployee } from "@/lib/types";
 
@@ -44,37 +43,46 @@ export function AddPersonnelDialog({
   const [name, setName] = useState('');
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !name) {
       toast({ variant: "destructive", title: "Faltan datos", description: "El nombre del empleado es obligatorio." });
       return;
     }
 
-    startTransition(() => {
-      const personnelCollection = collection(firestore, `contractors/${contractorId}/personnel`);
-      const personnelRef = doc(personnelCollection);
-      const personnelId = personnelRef.id;
+    startTransition(async () => {
+      try {
+        const personnelCollection = collection(firestore, `contractors/${contractorId}/personnel`);
+        const personnelRef = doc(personnelCollection);
+        const personnelId = personnelRef.id;
 
-      const newPersonnel: Partial<ContractorEmployee> = {
-        id: personnelId,
-        name,
-        contractorId,
-      };
-      
-      if (artExpiryDate) {
-        newPersonnel.artExpiryDate = artExpiryDate.toISOString();
+        const newPersonnel: Partial<ContractorEmployee> = {
+          id: personnelId,
+          name,
+          contractorId,
+        };
+        
+        if (artExpiryDate) {
+          newPersonnel.artExpiryDate = artExpiryDate.toISOString();
+        }
+        
+        await setDoc(personnelRef, newPersonnel, { merge: true });
+
+        toast({
+          title: "Personal Agregado",
+          description: `${name} ha sido agregado al contratista.`,
+        });
+
+        setOpen(false);
+        setName('');
+        setArtExpiryDate(undefined);
+      } catch (error: any) {
+        console.error("Error saving personnel:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al guardar",
+          description: error.message || "No se pudo agregar al personal.",
+        });
       }
-      
-      setDocumentNonBlocking(personnelRef, newPersonnel, { merge: true });
-
-      toast({
-        title: "Personal Agregado",
-        description: `${name} ha sido agregado al contratista.`,
-      });
-
-      setOpen(false);
-      setName('');
-      setArtExpiryDate(undefined);
     });
   };
 
@@ -128,5 +136,3 @@ export function AddPersonnelDialog({
     </Dialog>
   );
 }
-
-    

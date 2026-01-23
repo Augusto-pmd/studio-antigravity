@@ -15,8 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@/context/user-context";
-import { updateDocumentNonBlocking } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
 
@@ -34,7 +33,7 @@ export function EditCashAccountDialog({ children, cashAccount }: { children: Rea
     }
   }, [open, cashAccount]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user) {
       toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
       return;
@@ -44,13 +43,22 @@ export function EditCashAccountDialog({ children, cashAccount }: { children: Rea
       return;
     }
 
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const accountRef = doc(firestore, `users/${user.uid}/cashAccounts`, cashAccount.id);
         
-        updateDocumentNonBlocking(accountRef, { name: name.trim() });
+        await updateDoc(accountRef, { name: name.trim() });
         
         toast({ title: 'Caja Actualizada', description: `La caja ha sido renombrada a "${name.trim()}".` });
         setOpen(false);
+      } catch (error: any) {
+        console.error("Error updating cash account:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al actualizar",
+          description: error.message || "No se pudo actualizar el nombre de la caja.",
+        });
+      }
     });
   };
 

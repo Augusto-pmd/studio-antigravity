@@ -23,8 +23,7 @@ import { Loader2 } from "lucide-react";
 import type { UserProfile, Role } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
@@ -49,22 +48,31 @@ export function EditUserDialog({
     }
   }, [open, userProfile]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
     
-    startTransition(() => {
-      const userRef = doc(firestore, 'users', userProfile.id);
-      
-      updateDocumentNonBlocking(userRef, { role });
+    startTransition(async () => {
+      try {
+        const userRef = doc(firestore, 'users', userProfile.id);
+        
+        await updateDoc(userRef, { role });
 
-      toast({
-        title: 'Rol Actualizado',
-        description: `El rol de ${userProfile.fullName} ha sido cambiado a ${role}.`,
-      });
-      setOpen(false);
+        toast({
+          title: 'Rol Actualizado',
+          description: `El rol de ${userProfile.fullName} ha sido cambiado a ${role}.`,
+        });
+        setOpen(false);
+      } catch (error: any) {
+        console.error("Error updating user role:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al actualizar",
+          description: error.message || "No se pudo actualizar el rol del usuario.",
+        });
+      }
     });
   };
 

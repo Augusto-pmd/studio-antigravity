@@ -27,8 +27,7 @@ import { es } from "date-fns/locale";
 import type { Employee } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 
 export function EmployeeDialog({
   employee,
@@ -66,7 +65,7 @@ export function EmployeeDialog({
     }
   }, [open, employee]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -76,31 +75,40 @@ export function EmployeeDialog({
       return;
     }
 
-    startTransition(() => {
-      const employeesCollection = collection(firestore, 'employees');
-      const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
-      const employeeId = employeeRef.id;
+    startTransition(async () => {
+      try {
+        const employeesCollection = collection(firestore, 'employees');
+        const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
+        const employeeId = employeeRef.id;
 
-      const employeeData: Partial<Employee> = {
-        id: employeeId,
-        name,
-        category,
-        dailyWage: parseFloat(dailyWage) || 0,
-        paymentType,
-        status,
-      };
+        const employeeData: Partial<Employee> = {
+          id: employeeId,
+          name,
+          category,
+          dailyWage: parseFloat(dailyWage) || 0,
+          paymentType,
+          status,
+        };
 
-      if (artExpiryDate) {
-        employeeData.artExpiryDate = artExpiryDate.toISOString();
+        if (artExpiryDate) {
+          employeeData.artExpiryDate = artExpiryDate.toISOString();
+        }
+        
+        await setDoc(employeeRef, employeeData, { merge: true });
+
+        toast({
+          title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
+          description: `El empleado "${name}" ha sido guardado correctamente.`,
+        });
+        setOpen(false);
+      } catch (error: any) {
+        console.error("Error saving employee:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al guardar",
+          description: error.message || "No se pudo guardar el empleado.",
+        });
       }
-      
-      setDocumentNonBlocking(employeeRef, employeeData, { merge: true });
-
-      toast({
-        title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
-        description: `El empleado "${name}" ha sido guardado correctamente.`,
-      });
-      setOpen(false);
     });
   };
 
@@ -191,5 +199,3 @@ export function EmployeeDialog({
     </Dialog>
   );
 }
-
-    

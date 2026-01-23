@@ -34,8 +34,7 @@ import { es } from "date-fns/locale";
 import type { Asset } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection, doc } from "firebase/firestore";
+import { setDoc, collection, doc } from "firebase/firestore";
 import { Textarea } from "../ui/textarea";
 
 const assetCategories = ["Vehículo", "Maquinaria", "Inmueble", "Equipo Informático", "Herramientas", "Otro"];
@@ -78,7 +77,7 @@ export function AssetDialog({
     }
   }, [open, asset]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -88,29 +87,38 @@ export function AssetDialog({
       return;
     }
 
-    startTransition(() => {
-      const assetsCollection = collection(firestore, 'assets');
-      const assetRef = isEditMode ? doc(assetsCollection, asset.id) : doc(assetsCollection);
-      const assetId = assetRef.id;
+    startTransition(async () => {
+      try {
+        const assetsCollection = collection(firestore, 'assets');
+        const assetRef = isEditMode ? doc(assetsCollection, asset.id) : doc(assetsCollection);
+        const assetId = assetRef.id;
 
-      const assetData: Asset = {
-        id: assetId,
-        name,
-        category,
-        purchaseDate: purchaseDate.toISOString(),
-        purchaseValue: parseFloat(purchaseValue) || 0,
-        currency,
-        status,
-        description,
-      };
-      
-      setDocumentNonBlocking(assetRef, assetData, { merge: true });
+        const assetData: Asset = {
+          id: assetId,
+          name,
+          category,
+          purchaseDate: purchaseDate.toISOString(),
+          purchaseValue: parseFloat(purchaseValue) || 0,
+          currency,
+          status,
+          description,
+        };
+        
+        await setDoc(assetRef, assetData, { merge: true });
 
-      toast({
-        title: isEditMode ? 'Activo Actualizado' : 'Activo Creado',
-        description: `El activo "${name}" ha sido guardado correctamente.`,
-      });
-      setOpen(false);
+        toast({
+          title: isEditMode ? 'Activo Actualizado' : 'Activo Creado',
+          description: `El activo "${name}" ha sido guardado correctamente.`,
+        });
+        setOpen(false);
+      } catch (error: any) {
+        console.error("Error saving asset:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al guardar",
+          description: error.message || "No se pudo guardar el activo.",
+        });
+      }
     });
   };
 

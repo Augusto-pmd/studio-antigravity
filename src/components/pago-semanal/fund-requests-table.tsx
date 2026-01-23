@@ -22,8 +22,7 @@ import { useUser } from "@/context/user-context";
 import { MoreHorizontal, Check, X, Undo, Receipt } from "lucide-react";
 import type { FundRequest } from "@/lib/types";
 import { parseISO, format } from "date-fns";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
 
@@ -43,14 +42,23 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
   const { toast } = useToast();
   const isAdmin = permissions.canValidate;
 
-  const handleStatusChange = (requestId: string, status: FundRequest['status']) => {
+  const handleStatusChange = async (requestId: string, status: FundRequest['status']) => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
-    const requestRef = doc(firestore, 'fundRequests', requestId);
-    updateDocumentNonBlocking(requestRef, { status });
-    toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}.` });
+    try {
+      const requestRef = doc(firestore, 'fundRequests', requestId);
+      await updateDoc(requestRef, { status });
+      toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}.` });
+    } catch (error: any) {
+      console.error("Error updating fund request status:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al actualizar",
+        description: error.message || "No se pudo cambiar el estado de la solicitud.",
+      });
+    }
   };
   
   const renderSkeleton = () => (

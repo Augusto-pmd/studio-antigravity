@@ -33,10 +33,9 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser } from "@/context/user-context";
 import { useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import type { Project, FundRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const fundRequestCategories = [
     'Logística y PMD',
@@ -73,7 +72,7 @@ export function RequestFundDialog() {
     setExchangeRate('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
         return;
@@ -83,7 +82,8 @@ export function RequestFundDialog() {
         return;
     }
 
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const selectedProject = projects?.find(p => p.id === projectId);
 
         const fundRequestsCollection = collection(firestore, 'fundRequests');
@@ -104,7 +104,7 @@ export function RequestFundDialog() {
             status: 'Pendiente',
         };
 
-        setDocumentNonBlocking(requestRef, requestData, { merge: false });
+        await setDoc(requestRef, requestData, { merge: false });
 
         toast({
             title: 'Solicitud Enviada',
@@ -112,6 +112,14 @@ export function RequestFundDialog() {
         });
         resetForm();
         setOpen(false);
+      } catch (error: any) {
+        console.error("Error saving fund request:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al guardar",
+          description: error.message || "No se pudo enviar la solicitud.",
+        });
+      }
     });
   };
 

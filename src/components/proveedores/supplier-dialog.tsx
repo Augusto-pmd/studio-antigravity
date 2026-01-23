@@ -26,8 +26,7 @@ import { Separator } from "../ui/separator";
 import type { Supplier } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 
 export function SupplierDialog({
   supplier,
@@ -73,7 +72,7 @@ export function SupplierDialog({
     }
   }, [open, supplier]);
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -83,32 +82,41 @@ export function SupplierDialog({
       return;
     }
 
-    startTransition(() => {
-      const suppliersCollection = collection(firestore, 'suppliers');
-      const supplierRef = isEditMode ? doc(suppliersCollection, supplier.id) : doc(suppliersCollection);
-      const supplierId = supplierRef.id;
+    startTransition(async () => {
+      try {
+        const suppliersCollection = collection(firestore, 'suppliers');
+        const supplierRef = isEditMode ? doc(suppliersCollection, supplier.id) : doc(suppliersCollection);
+        const supplierId = supplierRef.id;
 
-      const supplierData: Supplier = {
-        id: supplierId,
-        name,
-        cuit,
-        address,
-        fiscalCondition,
-        contactPerson,
-        email,
-        phone,
-        type,
-        status,
-        notes,
-      };
-      
-      setDocumentNonBlocking(supplierRef, supplierData, { merge: true });
+        const supplierData: Supplier = {
+          id: supplierId,
+          name,
+          cuit,
+          address,
+          fiscalCondition,
+          contactPerson,
+          email,
+          phone,
+          type,
+          status,
+          notes,
+        };
+        
+        await setDoc(supplierRef, supplierData, { merge: true });
 
-      toast({
-        title: isEditMode ? 'Proveedor Actualizado' : 'Proveedor Creado',
-        description: `El proveedor "${name}" ha sido guardado correctamente.`,
-      });
-      setOpen(false);
+        toast({
+          title: isEditMode ? 'Proveedor Actualizado' : 'Proveedor Creado',
+          description: `El proveedor "${name}" ha sido guardado correctamente.`,
+        });
+        setOpen(false);
+      } catch (error: any) {
+        console.error("Error saving supplier:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al guardar",
+          description: error.message || "No se pudo guardar el proveedor.",
+        });
+      }
     });
   };
 
@@ -218,5 +226,3 @@ export function SupplierDialog({
     </Dialog>
   );
 }
-
-    

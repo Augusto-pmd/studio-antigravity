@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +11,6 @@ import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '../ui/button';
 import { CheckCircle } from 'lucide-react';
-import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 
 export function PendingTasksList() {
@@ -32,14 +31,23 @@ export function PendingTasksList() {
 
   const { data: tasks, isLoading } = useCollection<TaskRequest>(tasksQuery);
 
-  const handleCompleteTask = (taskId: string) => {
+  const handleCompleteTask = async (taskId: string) => {
     if (!firestore) return;
-    const taskRef = doc(firestore, 'taskRequests', taskId);
-    updateDocumentNonBlocking(taskRef, {
-      status: 'Finalizado',
-      completedAt: new Date().toISOString(),
-    });
-    toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
+    try {
+      const taskRef = doc(firestore, 'taskRequests', taskId);
+      await updateDoc(taskRef, {
+        status: 'Finalizado',
+        completedAt: new Date().toISOString(),
+      });
+      toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
+    } catch(error: any) {
+      console.error("Error completing task:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al completar",
+        description: error.message || "No se pudo finalizar la tarea.",
+      });
+    }
   };
 
   const renderSkeleton = () => (

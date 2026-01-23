@@ -24,8 +24,8 @@ import {
 import { Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/user-context";
-import { useCollection, useMemoFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc, writeBatch } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
@@ -65,7 +65,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   };
   
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
         return;
@@ -91,6 +91,8 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             const project = projects?.find(p => p.id === projectId);
             if (!project) throw new Error("Proyecto no encontrado");
 
+            const batch = writeBatch(firestore);
+
             // 1. Upload receipt if exists
             let receiptUrl = '';
             if (receiptFile) {
@@ -105,8 +107,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
 
             // 2. Create Expense document
             const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
-            const newExpense: Expense = {
-                id: expenseRef.id,
+            const newExpense: Omit<Expense, 'id'> = {
                 projectId: projectId,
                 date: expenseDate.toISOString(),
                 supplierId: 'logistica-vial', // Generic supplier for these expenses
@@ -118,12 +119,11 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 description: `Gasto rápido: ${description}`,
                 receiptUrl: receiptUrl,
             };
-            setDocumentNonBlocking(expenseRef, newExpense, {});
+            batch.set(expenseRef, newExpense);
             
             // 3. Create CashTransaction document
             const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}/transactions`));
-            const newTransaction: CashTransaction = {
-                id: transactionRef.id,
+            const newTransaction: Omit<CashTransaction, 'id'> = {
                 userId: user.uid,
                 date: expenseDate.toISOString(),
                 type: 'Egreso',
@@ -134,12 +134,14 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 relatedProjectId: projectId,
                 relatedProjectName: project.name
             };
-            setDocumentNonBlocking(transactionRef, newTransaction, {});
+            batch.set(transactionRef, newTransaction);
 
             // 4. Update CashAccount balance
             const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}`);
             const newBalance = cashAccount.balance - expenseAmount;
-            updateDocumentNonBlocking(accountRef, { balance: newBalance });
+            batch.update(accountRef, { balance: newBalance });
+            
+            await batch.commit();
 
             toast({ title: 'Gasto Rápido Guardado', description: `Se debitaron ${formatCurrency(expenseAmount, 'ARS')} de su caja.` });
             resetForm();

@@ -15,8 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@/context/user-context";
-import { setDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
 
@@ -28,7 +27,7 @@ export function AddCashAccountDialog({ children, disabled }: { children: React.R
   
   const [name, setName] = useState('');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user) {
       toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
       return;
@@ -38,7 +37,8 @@ export function AddCashAccountDialog({ children, disabled }: { children: React.R
       return;
     }
 
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const accountRef = doc(collection(firestore, `users/${user.uid}/cashAccounts`));
         
         const newAccount: CashAccount = {
@@ -49,11 +49,19 @@ export function AddCashAccountDialog({ children, disabled }: { children: React.R
             balance: 0,
         };
 
-        setDocumentNonBlocking(accountRef, newAccount, {});
+        await setDoc(accountRef, newAccount, {});
         
         toast({ title: 'Caja Creada', description: `La caja "${name.trim()}" ha sido creada.` });
         setName('');
         setOpen(false);
+      } catch (error: any) {
+        console.error("Error saving cash account:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al crear la caja",
+          description: error.message || "No se pudo crear la caja.",
+        });
+      }
     });
   };
 

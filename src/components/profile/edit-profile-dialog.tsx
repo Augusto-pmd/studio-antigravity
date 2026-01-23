@@ -17,8 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Pencil } from 'lucide-react';
 import { useUser } from '@/context/user-context';
 import { useAuth, useFirebaseApp } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -55,7 +54,7 @@ export function EditProfileDialog({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user || !firestore || !auth || !firebaseApp) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a los servicios de Firebase.' });
       return;
@@ -91,7 +90,7 @@ export function EditProfileDialog({
         }
 
         if (Object.keys(firestoreUpdates).length > 0) {
-            updateDocumentNonBlocking(userDocRef, firestoreUpdates);
+            await updateDoc(userDocRef, firestoreUpdates);
         }
         
         toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });

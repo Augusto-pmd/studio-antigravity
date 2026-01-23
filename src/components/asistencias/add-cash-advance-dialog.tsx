@@ -32,9 +32,8 @@ import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 
 export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
@@ -73,7 +72,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
     }
   }, [open]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !currentWeek) {
         toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
         return;
@@ -83,7 +82,8 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
         return;
     }
 
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
         const selectedProject = projects?.find(p => p.id === selectedProjectId);
 
@@ -108,13 +108,21 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
             reason: reason || undefined,
         };
 
-        setDocumentNonBlocking(advanceRef, newAdvance, { merge: false });
+        await setDoc(advanceRef, newAdvance, { merge: false });
 
         toast({
             title: 'Adelanto Registrado',
             description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
         });
         setOpen(false);
+      } catch (error: any) {
+        console.error("Error saving cash advance:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al guardar",
+          description: error.message || "No se pudo registrar el adelanto.",
+        });
+      }
     });
   };
 

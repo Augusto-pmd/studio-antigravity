@@ -24,10 +24,9 @@ import {
 import { Loader2, PlusCircle } from "lucide-react";
 import { useUser } from "@/context/user-context";
 import { useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import type { UserProfile, Project, TaskRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export function NewRequestDialog() {
@@ -49,13 +48,14 @@ export function NewRequestDialog() {
   const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user || !title || !assigneeId) {
         toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'El título y el usuario asignado son obligatorios.' });
         return;
     }
     
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const tasksCollection = collection(firestore, 'taskRequests');
         const taskRef = doc(tasksCollection);
         const taskId = taskRef.id;
@@ -80,7 +80,7 @@ export function NewRequestDialog() {
             projectId: projectId || undefined,
         };
 
-        setDocumentNonBlocking(taskRef, taskData, { merge: true });
+        await setDoc(taskRef, taskData, { merge: true });
 
         toast({
             title: 'Pedido Creado',
@@ -92,6 +92,14 @@ export function NewRequestDialog() {
         setDescription('');
         setAssigneeId('');
         setProjectId(undefined);
+      } catch (error: any) {
+        console.error("Error creating new request:", error);
+        toast({
+          variant: "destructive",
+          title: "Error al crear",
+          description: error.message || "No se pudo crear el pedido.",
+        });
+      }
     });
   };
 
