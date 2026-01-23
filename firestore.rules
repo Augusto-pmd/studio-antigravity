@@ -74,6 +74,13 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isSignedIn() && request.auth.token.email == 'info@pmdarquitectura.com';
     }
+    
+    /**
+     * Returns true if the user is an employee of pmdarquitectura.
+     */
+    function isPmdEmployee() {
+      return isSignedIn() && request.auth.token.email.endsWith('@pmdarquitectura.com');
+    }
 
     /**
      * Checks for role-based admin. USES GET() - NOT safe for list queries.
@@ -186,28 +193,31 @@ service cloud.firestore {
 
     /**
      * @description Manages shared project information. All signed-in users can read,
-     * but only members or admins can update. Only admins can create/delete.
+     * but only PMD employees can write.
      * @path /projects/{projectId}
      */
     match /projects/{projectId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isPmdEmployee();
 
       /**
        * @description Manages expenses for a project. Access is inherited from the parent
-       * project; only project members or admins can manage expenses.
+       * project; only PMD employees can manage expenses.
        * @path /projects/{projectId}/expenses/{expenseId}
        */
       match /expenses/{expenseId} {
-        allow read, write: if isSignedIn();
+        allow read: if isSignedIn();
+        allow write: if isPmdEmployee();
       }
 
       /**
        * @description Manages contracts for a project. Access is inherited from the parent
-       * project; only project members or admins can manage contracts.
+       * project; only PMD employees can manage contracts.
        * @path /projects/{projectId}/contracts/{contractId}
        */
       match /contracts/{contractId} {
-        allow read, write: if isSignedIn();
+        allow read: if isSignedIn();
+        allow write: if isPmdEmployee();
       }
     }
 
