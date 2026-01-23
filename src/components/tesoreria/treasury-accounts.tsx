@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { TreasuryAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,12 +17,17 @@ const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 };
 
+const treasuryAccountConverter = {
+    toFirestore: (data: TreasuryAccount): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryAccount => ({ ...snapshot.data(options), id: snapshot.id } as TreasuryAccount)
+};
+
 export function TreasuryAccounts() {
     const { firestore, permissions } = useUser();
     const canManage = permissions.isSuperAdmin;
 
     const accountsQuery = useMemo(
-        () => (firestore && canManage ? query(collection(firestore, 'treasuryAccounts')) : null),
+        () => (firestore && canManage ? query(collection(firestore, 'treasuryAccounts').withConverter(treasuryAccountConverter)) : null),
         [firestore, canManage]
     );
     const { data: accounts, isLoading } = useCollection<TreasuryAccount>(accountsQuery);

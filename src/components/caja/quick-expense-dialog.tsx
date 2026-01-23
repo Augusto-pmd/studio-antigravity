@@ -25,10 +25,15 @@ import { Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
+
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
 
 export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount }) {
   const { user, firestore, permissions, firebaseApp } = useUser();
@@ -43,7 +48,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   // Data fetching
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const resetForm = () => {

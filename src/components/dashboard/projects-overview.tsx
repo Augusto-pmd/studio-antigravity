@@ -22,10 +22,15 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, where, limit } from "firebase/firestore";
+import { collection, query, where, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Project } from "@/lib/types";
 import { useMemo } from "react";
 import { Skeleton } from "../ui/skeleton";
+
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
 
 export function ProjectsOverview() {
   const firestore = useFirestore();
@@ -34,7 +39,7 @@ export function ProjectsOverview() {
     () =>
       firestore
         ? query(
-            collection(firestore, 'projects'),
+            collection(firestore, 'projects').withConverter(projectConverter),
             where('status', '==', 'En Curso'),
             limit(5)
           )

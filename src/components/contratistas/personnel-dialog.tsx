@@ -31,7 +31,7 @@ import type { Contractor, ContractorEmployee } from "@/lib/types";
 import { differenceInDays, isBefore, parseISO, format as formatDateFns } from "date-fns";
 import { AddPersonnelDialog } from "./add-personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
 const formatDate = (dateString?: string) => {
@@ -56,6 +56,11 @@ const getArtStatus = (dateString?: string): { variant: 'destructive' | 'warning'
     return null;
   };
 
+const contractorEmployeeConverter = {
+    toFirestore: (data: ContractorEmployee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => ({ ...snapshot.data(options), id: snapshot.id } as ContractorEmployee)
+};
+
 export function PersonnelDialog({
   contractor,
   children,
@@ -67,7 +72,7 @@ export function PersonnelDialog({
   const firestore = useFirestore();
 
   const personnelQuery = useMemo(
-    () => (firestore ? collection(firestore, `contractors/${contractor.id}/personnel`) : null),
+    () => (firestore ? collection(firestore, `contractors/${contractor.id}/personnel`).withConverter(contractorEmployeeConverter) : null),
     [firestore, contractor.id]
   );
   const { data: personnel, isLoading } = useCollection<ContractorEmployee>(personnelQuery);

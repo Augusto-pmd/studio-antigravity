@@ -9,7 +9,7 @@ import {
 import { Building2, CircleDollarSign, Receipt } from "lucide-react";
 import { useCollection, useFirestore } from "@/firebase";
 import { useMemo } from "react";
-import { collection, query, where, collectionGroup } from "firebase/firestore";
+import { collection, query, where, collectionGroup, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Project, Expense } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
 import { startOfMonth, endOfMonth, parseISO } from "date-fns";
@@ -24,16 +24,25 @@ const formatCurrency = (amount: number, currency?: string) => {
     return new Intl.NumberFormat('es-AR', options).format(amount);
 };
 
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
+const expenseConverter = {
+    toFirestore: (data: Expense): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+};
 
 export function StatsCards() {
     const firestore = useFirestore();
 
-    const projectsQuery = useMemo(() => firestore ? query(collection(firestore, 'projects')) : null, [firestore]);
+    const projectsQuery = useMemo(() => firestore ? query(collection(firestore, 'projects').withConverter(projectConverter)) : null, [firestore]);
     const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
     const expensesQuery = useMemo(() => {
         if (!firestore) return null;
-        return query(collectionGroup(firestore, 'expenses'));
+        return query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter));
     }, [firestore]);
     const { data: allExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
 

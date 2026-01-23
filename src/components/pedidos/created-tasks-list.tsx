@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +12,11 @@ import { es } from 'date-fns/locale';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 
+const taskRequestConverter = {
+    toFirestore: (data: TaskRequest): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => ({ ...snapshot.data(options), id: snapshot.id } as TaskRequest)
+};
+
 export function CreatedTasksList() {
   const { user, firestore } = useUser();
 
@@ -19,7 +24,7 @@ export function CreatedTasksList() {
     () =>
       user && firestore
         ? query(
-            collection(firestore, 'taskRequests'),
+            collection(firestore, 'taskRequests').withConverter(taskRequestConverter),
             where('requesterId', '==', user.uid)
           )
         : null,

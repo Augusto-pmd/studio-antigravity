@@ -39,13 +39,18 @@ import { Badge } from "@/components/ui/badge";
 import { Download, PlusCircle, FilePenLine, Eye, Loader2 } from "lucide-react";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
-import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { PayrollWeek } from "@/lib/types";
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
+
+const payrollWeekConverter = {
+    toFirestore: (data: PayrollWeek): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
+};
 
 export function WeeklySummary() {
   const { permissions, firestore } = useUser();
@@ -54,7 +59,7 @@ export function WeeklySummary() {
   const isAdmin = permissions.canValidate;
 
   const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc')) : null,
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc')) : null,
     [firestore]
   );
   const { data: weeks, isLoading } = useCollection<PayrollWeek>(payrollWeeksQuery);
@@ -94,7 +99,7 @@ export function WeeklySummary() {
           nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
         } else {
           const lastWeek = lastWeekSnap.docs[0].data() as PayrollWeek;
-          nextStartDate = addDays(parseISO(lastWeek.endDate), 1);
+          nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
         }
 
         const nextEndDate = endOfWeek(nextStartDate, { weekStartsOn: 1 });

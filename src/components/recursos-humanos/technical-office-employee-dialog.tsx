@@ -24,7 +24,17 @@ import { Loader2 } from "lucide-react";
 import type { TechnicalOfficeEmployee, UserProfile, SalaryHistory } from "@/lib/types";
 import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+
+const userProfileConverter = {
+    toFirestore: (data: UserProfile): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): UserProfile => ({ ...snapshot.data(options), id: snapshot.id } as UserProfile)
+};
+
+const techOfficeEmployeeConverter = {
+    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
+};
 
 export function TechnicalOfficeEmployeeDialog({
   employee,
@@ -45,9 +55,9 @@ export function TechnicalOfficeEmployeeDialog({
   const [monthlySalary, setMonthlySalary] = useState('');
   const [status, setStatus] = useState<'Activo' | 'Inactivo'>('Activo');
 
-  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
+  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users').withConverter(userProfileConverter) : null), [firestore]);
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
-  const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees') : null), [firestore]);
+  const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
   const { data: techOfficeEmployees } = useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
 
   const availableUsers = users?.filter(u => 

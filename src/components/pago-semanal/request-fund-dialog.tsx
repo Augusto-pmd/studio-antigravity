@@ -33,7 +33,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Project, FundRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +45,10 @@ const fundRequestCategories = [
     'Otros',
 ];
 
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
 
 export function RequestFundDialog() {
   const [open, setOpen] = useState(false);
@@ -60,7 +64,7 @@ export function RequestFundDialog() {
   const [amount, setAmount] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
 
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const resetForm = () => {

@@ -18,7 +18,7 @@ import { Button } from "../ui/button";
 import { ContractorDialog } from "./contractor-dialog";
 import { PersonnelDialog } from "./personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
 
@@ -27,9 +27,14 @@ const formatDate = (dateString?: string) => {
     return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
+const contractorConverter = {
+    toFirestore: (data: Contractor): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => ({ ...snapshot.data(options), id: snapshot.id } as Contractor)
+};
+
 export function ContractorsTable() {
   const firestore = useFirestore();
-  const contractorsQuery = useMemo(() => (firestore ? collection(firestore, 'contractors') : null), [firestore]);
+  const contractorsQuery = useMemo(() => (firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null), [firestore]);
   const { data: contractors, isLoading } = useCollection<Contractor>(contractorsQuery);
 
   const getDocStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string } | null => {

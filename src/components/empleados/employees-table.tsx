@@ -17,7 +17,7 @@ import { TriangleAlert, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { EmployeeDialog } from "./employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
 
@@ -31,9 +31,14 @@ const formatDate = (dateString?: string) => {
     return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
+const employeeConverter = {
+    toFirestore: (data: Employee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee)
+};
+
 export function EmployeesTable() {
   const firestore = useFirestore();
-  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading } = useCollection<Employee>(employeesQuery);
 
   const getArtStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string, daysLeft: number | null } | null => {

@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { CashAccount, CashTransaction } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,10 +27,20 @@ const formatDate = (dateString: string) => {
   return format(parseISO(dateString), 'dd/MM/yyyy HH:mm');
 }
 
+const cashTransactionConverter = {
+    toFirestore: (data: CashTransaction): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashTransaction => ({ ...snapshot.data(options), id: snapshot.id } as CashTransaction)
+};
+
+const cashAccountConverter = {
+    toFirestore: (data: CashAccount): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => ({ ...snapshot.data(options), id: snapshot.id } as CashAccount)
+};
+
 function MyTransactionsTable({ accountId }: { accountId: string }) {
     const { user, firestore } = useUser();
     const transactionsQuery = useMemo(
-        () => firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts/${accountId}/transactions`), orderBy('date', 'desc')) : null,
+        () => firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts/${accountId}/transactions`).withConverter(cashTransactionConverter), orderBy('date', 'desc')) : null,
         [firestore, user, accountId]
     );
     const { data: transactions, isLoading } = useCollection<CashTransaction>(transactionsQuery);
@@ -92,7 +102,7 @@ export function MyCashView() {
   const { user, firestore, isUserLoading, role } = useUser();
 
   const accountsQuery = useMemo(
-    () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`)) : null),
+    () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`).withConverter(cashAccountConverter)) : null),
     [firestore, user]
   );
   const { data: accounts, isLoading: isLoadingAccounts } = useCollection<CashAccount>(accountsQuery);

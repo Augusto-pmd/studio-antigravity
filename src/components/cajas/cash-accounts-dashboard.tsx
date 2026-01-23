@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { UserProfile, CashAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,10 +16,20 @@ const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 };
 
+const userProfileConverter = {
+    toFirestore: (data: UserProfile): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): UserProfile => ({ ...snapshot.data(options), id: snapshot.id } as UserProfile)
+};
+
+const cashAccountConverter = {
+    toFirestore: (data: CashAccount): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => ({ ...snapshot.data(options), id: snapshot.id } as CashAccount)
+};
+
 function UserCashAccountCard({ profile }: { profile: UserProfile }) {
     const { firestore } = useUser();
     const accountsQuery = useMemo(
-        () => firestore ? query(collection(firestore, `users/${profile.id}/cashAccounts`)) : null,
+        () => firestore ? query(collection(firestore, `users/${profile.id}/cashAccounts`).withConverter(cashAccountConverter)) : null,
         [firestore, profile.id]
     );
     const { data: accounts, isLoading } = useCollection<CashAccount>(accountsQuery);
@@ -72,7 +82,7 @@ export function CashAccountsDashboard() {
   const { firestore } = useUser();
   
   const usersQuery = useMemo(
-    () => (firestore ? query(collection(firestore, 'users')) : null),
+    () => (firestore ? query(collection(firestore, 'users').withConverter(userProfileConverter)) : null),
     [firestore]
   );
   const { data: profiles, isLoading } = useCollection<UserProfile>(usersQuery);

@@ -2,7 +2,7 @@
 
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
-import { collectionGroup, query } from 'firebase/firestore';
+import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Expense } from '@/lib/types';
 import { useMemo } from 'react';
 import { IvaSummary } from './iva-summary';
@@ -11,11 +11,16 @@ import { ExpenseReport } from './expense-report';
 import { Skeleton } from '../ui/skeleton';
 import { RetencionesSummary } from './retenciones-summary';
 
+const expenseConverter = {
+    toFirestore: (data: Expense): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+};
+
 export function AccountingDashboard() {
   const firestore = useFirestore();
 
   const expensesQuery = useMemo(
-    () => (firestore ? query(collectionGroup(firestore, 'expenses')) : null),
+    () => (firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null),
     [firestore]
   );
   const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);

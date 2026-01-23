@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Expense, Project, Supplier } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { useFirestore, useCollection } from "@/firebase";
-import { collection, collectionGroup, query } from "firebase/firestore";
+import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { expenseCategories } from "@/lib/data";
 import { useMemo } from "react";
@@ -27,19 +27,34 @@ const formatDate = (dateString?: string) => {
     return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
+const expenseConverter = {
+    toFirestore: (data: Expense): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+};
+
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
+const supplierConverter = {
+    toFirestore: (data: Supplier): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
+};
+
 export function ExpensesTable() {
   const firestore = useFirestore();
 
   const expensesQuery = useMemo(() => (
-    firestore ? query(collectionGroup(firestore, 'expenses')) : null
+    firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null
   ), [firestore]);
   
   const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
 
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
   const projectsMap = useMemo(() => {

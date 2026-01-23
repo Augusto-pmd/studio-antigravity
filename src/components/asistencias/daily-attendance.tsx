@@ -35,7 +35,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUser, useCollection } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Project, Employee } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
@@ -51,6 +51,16 @@ interface AttendanceRecord {
   projectId: string | null;
 }
 
+const employeeConverter = {
+    toFirestore: (data: Employee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee)
+};
+
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
 export function DailyAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
@@ -59,10 +69,10 @@ export function DailyAttendance() {
 
   const { firestore } = useUser();
 
-  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
 
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   useEffect(() => {

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { AddCashAdvanceDialog } from "./add-cash-advance-dialog";
 import { useUser, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { CashAdvance, PayrollWeek } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
 import { parseISO, format } from 'date-fns';
@@ -32,18 +32,28 @@ const formatDate = (dateString?: string) => {
     return format(parseISO(dateString), 'dd/MM/yyyy');
 };
 
+const payrollWeekConverter = {
+    toFirestore: (data: PayrollWeek): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
+};
+
+const cashAdvanceConverter = {
+    toFirestore: (data: CashAdvance): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance)
+};
+
 export function CashAdvances() {
   const { firestore } = useUser();
 
   const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks'), where('status', '==', 'Abierta'), limit(1)) : null,
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null,
     [firestore]
   );
   const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
   const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
   const cashAdvancesQuery = useMemo(
-    () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances'), where('payrollWeekId', '==', currentWeek.id), orderBy('date', 'desc')) : null,
+    () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id), orderBy('date', 'desc')) : null,
     [firestore, currentWeek]
   );
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(cashAdvancesQuery);

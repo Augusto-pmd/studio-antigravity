@@ -15,13 +15,18 @@ import type { Supplier } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { SupplierDialog } from "./supplier-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
 
+const supplierConverter = {
+    toFirestore: (data: Supplier): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
+};
+
 export function SuppliersTable() {
   const firestore = useFirestore();
-  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersQuery);
 
   const renderSkeleton = () => (

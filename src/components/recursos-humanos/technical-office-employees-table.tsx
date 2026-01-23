@@ -15,7 +15,7 @@ import type { TechnicalOfficeEmployee } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { TechnicalOfficeEmployeeDialog } from "./technical-office-employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
 
@@ -24,9 +24,14 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 }
 
+const techOfficeEmployeeConverter = {
+    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
+};
+
 export function TechnicalOfficeEmployeesTable() {
   const firestore = useFirestore();
-  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
   const { data: employees, isLoading } = useCollection<TechnicalOfficeEmployee>(employeesQuery);
 
   const renderSkeleton = () => (

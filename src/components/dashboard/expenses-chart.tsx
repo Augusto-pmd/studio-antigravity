@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/chart";
 import { useCollection, useFirestore } from "@/firebase";
 import { useMemo } from "react";
-import { collectionGroup, query } from "firebase/firestore";
+import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Expense } from "@/lib/types";
 import { parseISO, getMonth, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -28,10 +28,15 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const expenseConverter = {
+    toFirestore: (data: Expense): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+};
+
 export function ExpensesChart() {
     const firestore = useFirestore();
 
-    const expensesQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'expenses')) : null, [firestore]);
+    const expensesQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null, [firestore]);
     const { data: expenses, isLoading } = useCollection<Expense>(expensesQuery);
     
     const monthlyExpenses = useMemo(() => {

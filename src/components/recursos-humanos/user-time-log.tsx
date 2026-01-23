@@ -26,7 +26,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUser, useCollection } from '@/firebase';
-import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, doc, query, where, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Project, TimeLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save, PlusCircle, Trash2, Loader2 } from 'lucide-react';
@@ -40,6 +40,16 @@ interface TimeLogEntry {
   hours: number;
 }
 
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
+const timeLogConverter = {
+    toFirestore: (data: TimeLog): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
+};
+
 export function UserTimeLog() {
   const { user, firestore } = useUser();
   const { toast } = useToast();
@@ -49,13 +59,13 @@ export function UserTimeLog() {
   const [timeLogEntries, setTimeLogEntries] = useState<TimeLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
 
-  const projectsQuery = useMemo(() => (firestore ? query(collection(firestore, 'projects'), where('status', '==', 'En Curso')) : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? query(collection(firestore, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso')) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const formattedDate = useMemo(() => selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, [selectedDate]);
   
   const timeLogsQuery = useMemo(
-    () => (user && firestore && formattedDate ? query(collection(firestore, 'timeLogs'), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
+    () => (user && firestore && formattedDate ? query(collection(firestore, 'timeLogs').withConverter(timeLogConverter), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
     [user, firestore, formattedDate]
   );
   const { data: existingLogs, isLoading: isLoadingExistingLogs } = useCollection<TimeLog>(timeLogsQuery);

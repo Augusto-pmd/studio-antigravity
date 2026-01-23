@@ -17,7 +17,7 @@ import { Button } from "../ui/button";
 import { AddProjectDialog } from "./add-project-dialog";
 import { useCollection } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
 
@@ -25,11 +25,16 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(amount);
 };
 
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
 export function ProjectsTable() {
   const firestore = useFirestore();
 
   const projectsQuery = useMemo(
-    () => (firestore ? collection(firestore, 'projects') : null),
+    () => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null),
     [firestore]
   );
   const { data: projects, isLoading } = useCollection<Project>(projectsQuery);

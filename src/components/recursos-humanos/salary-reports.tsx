@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { TechnicalOfficeEmployee, SalaryHistory } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +19,20 @@ const formatDate = (dateString: string) => {
     return format(parseISO(dateString), 'MMM yyyy');
 }
 
+const techOfficeEmployeeConverter = {
+    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
+};
+
+const salaryHistoryConverter = {
+    toFirestore: (data: SalaryHistory): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): SalaryHistory => ({ ...snapshot.data(options), id: snapshot.id } as SalaryHistory)
+};
+
 function SalaryEvolutionChart({ employeeId }: { employeeId: string }) {
     const firestore = useFirestore();
     const salaryHistoryQuery = useMemo(
-        () => firestore ? query(collection(firestore, `technicalOfficeEmployees/${employeeId}/salaryHistory`), orderBy('effectiveDate', 'asc')) : null,
+        () => firestore ? query(collection(firestore, `technicalOfficeEmployees/${employeeId}/salaryHistory`).withConverter(salaryHistoryConverter), orderBy('effectiveDate', 'asc')) : null,
         [firestore, employeeId]
     );
     const { data: salaryHistory, isLoading } = useCollection<SalaryHistory>(salaryHistoryQuery);
@@ -86,7 +96,7 @@ export function SalaryReports() {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
     const firestore = useFirestore();
 
-    const employeesQuery = useMemo(() => (firestore ? query(collection(firestore, 'technicalOfficeEmployees'), where('status', '==', 'Activo')) : null), [firestore]);
+    const employeesQuery = useMemo(() => (firestore ? query(collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter), where('status', '==', 'Activo')) : null), [firestore]);
     const { data: employees, isLoading: isLoadingEmployees } = useCollection<TechnicalOfficeEmployee>(employeesQuery);
     
     useEffect(() => {
