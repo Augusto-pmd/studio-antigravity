@@ -30,11 +30,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
@@ -51,7 +50,6 @@ export function AddExpenseDialog() {
   const [open, setOpen] = useState(false);
   
   const [isClient, setIsClient] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form State
@@ -100,45 +98,7 @@ export function AddExpenseDialog() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      handleReceiptAnalysis(selectedFile);
     }
-  };
-
-  const handleReceiptAnalysis = (fileToAnalyze: File) => {
-    setIsExtracting(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(fileToAnalyze);
-    reader.onloadend = () => {
-      startTransition(async () => {
-        const dataUri = reader.result as string;
-        const result = await extractInvoiceDataAction(dataUri, fileToAnalyze.size);
-        
-        if (result.data) {
-          setAmount(result.data.total > 0 ? result.data.total.toString() : '');
-          setIva(result.data.iva > 0 ? result.data.iva.toString() : '');
-          setIibb(result.data.iibb > 0 ? result.data.iibb.toString() : '');
-          setInvoiceNumber(result.data.invoiceNumber || '');
-          if (result.data.iibbJurisdiction) {
-            setIibbJurisdiction(result.data.iibbJurisdiction);
-          }
-          toast({
-            title: "Factura analizada con IA",
-            description: "Se completaron los campos fiscales. Por favor, verifíquelos.",
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error en la extracción",
-            description: result.error || "No se pudieron extraer los datos de la factura.",
-          });
-        }
-        setIsExtracting(false);
-      });
-    };
-    reader.onerror = () => {
-      toast({ variant: "destructive", title: "Error de archivo", description: "No se pudo leer el archivo." });
-      setIsExtracting(false);
-    };
   };
 
   const handleSaveExpense = () => {
@@ -204,11 +164,11 @@ export function AddExpenseDialog() {
             toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
             setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (error) => {
             const permissionError = new FirestorePermissionError({
               path: `/projects/${selectedProject}/expenses`,
               operation: 'create',
-              requestResourceData: { amount, selectedProject },
+              requestResourceData: { amount: parseFloat(amount), selectedProject },
             });
             errorEmitter.emit('permission-error', permissionError);
             toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
@@ -219,7 +179,7 @@ export function AddExpenseDialog() {
     });
   };
 
-  const isSubmitDisabled = isPending || isExtracting || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));
+  const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));
   
   if (!permissions.canLoadExpenses) return null;
 
@@ -354,14 +314,12 @@ export function AddExpenseDialog() {
                 <Label htmlFor="receipt">Comprobante</Label>
                 <div className="flex items-center gap-2">
                   <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
-                  <Wand2 className="h-5 w-5 text-primary" title="Asistido por IA para extraer datos" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="invoiceNumber">Nº Factura</Label>
                 <div className="relative">
                     <Input id="invoiceNumber" type="text" placeholder="Nº de la factura" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
-                    {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
                 </div>
               </div>
               <div className="space-y-2">
@@ -431,14 +389,12 @@ export function AddExpenseDialog() {
                   <Label htmlFor="iva">IVA</Label>
                   <div className="relative">
                       <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
-                      {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="iibb">Percepción IIBB</Label>
                   <div className="relative">
                       <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
-                      {isExtracting && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin" />}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -494,14 +450,13 @@ export function AddExpenseDialog() {
             <Label htmlFor="amount" className="text-lg">Monto Total</Label>
              <div className="relative">
                 <Input id="amount" type="number" placeholder="0.00" className="text-lg h-12" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                {isExtracting && documentType === 'Factura' && <Loader2 className="absolute right-3 top-3.5 h-5 w-5 animate-spin" />}
             </div>
           </div>
 
         </div>
         <DialogFooter>
           <Button type="button" onClick={handleSaveExpense} disabled={isSubmitDisabled}>
-            {(isPending || isExtracting || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {(isPending || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Gasto
           </Button>
         </DialogFooter>

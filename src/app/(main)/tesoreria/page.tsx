@@ -1,9 +1,8 @@
 'use client';
 
-import { Banknote, BotMessageSquare, Loader2 } from "lucide-react";
+import { Banknote, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TreasuryAccounts } from "@/components/tesoreria/treasury-accounts";
-import { BankStatementAnalyzer } from "@/components/contabilidad/bank-statement-analyzer";
 import { useUser } from "@/firebase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -41,21 +40,14 @@ export default function TesoreriaPage() {
       </p>
 
       <Tabs defaultValue="cuentas" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="cuentas">
             <Banknote className="mr-2 h-4 w-4" />
             Cuentas Centrales
           </TabsTrigger>
-          <TabsTrigger value="analisis">
-            <BotMessageSquare className="mr-2 h-4 w-4" />
-            Análisis con IA
-          </TabsTrigger>
         </TabsList>
         <TabsContent value="cuentas" className="mt-6">
           <TreasuryAccounts />
-        </TabsContent>
-        <TabsContent value="analisis" className="mt-6">
-          <BankStatementAnalyzer />
         </TabsContent>
       </Tabs>
     </div>
