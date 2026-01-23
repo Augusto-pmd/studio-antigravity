@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { FirebaseProvider } from '@/firebase';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   title: 'PMD Arquitectura',
@@ -22,7 +24,11 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <FirebaseProvider>
+          <SidebarProvider>
+            {children}
+          </SidebarProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );
