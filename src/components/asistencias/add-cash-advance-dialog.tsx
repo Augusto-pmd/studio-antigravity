@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -52,9 +52,9 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
   const [isClient, setIsClient] = useState(false);
 
   // DATA FETCHING
-  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
-  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const resetForm = () => {
