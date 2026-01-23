@@ -192,32 +192,29 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages shared project information. All signed-in users can read,
-     * but only PMD employees can write.
+     * @description Manages shared project information. All signed-in users can read
+     * and write project data.
      * @path /projects/{projectId}
      */
     match /projects/{projectId} {
-      allow read: if isSignedIn();
-      allow write: if isPmdEmployee();
+      allow read, write: if isSignedIn();
 
       /**
        * @description Manages expenses for a project. Access is inherited from the parent
-       * project; only PMD employees can manage expenses.
+       * project.
        * @path /projects/{projectId}/expenses/{expenseId}
        */
       match /expenses/{expenseId} {
-        allow read: if isSignedIn();
-        allow write: if isPmdEmployee();
+        allow read, write: if isSignedIn();
       }
 
       /**
        * @description Manages contracts for a project. Access is inherited from the parent
-       * project; only PMD employees can manage contracts.
+       * project.
        * @path /projects/{projectId}/contracts/{contractId}
        */
       match /contracts/{contractId} {
-        allow read: if isSignedIn();
-        allow write: if isPmdEmployee();
+        allow read, write: if isSignedIn();
       }
     }
 
@@ -242,7 +239,7 @@ service cloud.firestore {
       allow list: if isSuperAdmin();
       // Allow user to query their own time logs
       allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
-      allow delete: if isAdmin();
+      allow delete: if isSuperAdmin() || (isExistingDoc() && resource.data.userId == request.auth.uid);
     }
 
     match /contractors/{contractorId} {
@@ -261,18 +258,17 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isAdmin() || resource.data.requesterId == request.auth.uid);
       allow list: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isSignedIn();
     }
 
     match /payrollWeeks/{payrollWeekId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
 
     match /taskRequests/{taskRequestId} {
       allow read, update: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      allow delete: if isAdmin();
+      allow delete: if isSignedIn();
     }
     
     match /cashAdvances/{cashAdvanceId} {
