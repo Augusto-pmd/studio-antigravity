@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,7 @@ import { PlusCircle, TriangleAlert } from "lucide-react";
 import type { Contractor, ContractorEmployee } from "@/lib/types";
 import { differenceInDays, isBefore, parseISO, format as formatDateFns } from "date-fns";
 import { AddPersonnelDialog } from "./add-personnel-dialog";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
@@ -66,7 +66,7 @@ export function PersonnelDialog({
   const [open, setOpen] = useState(false);
   const firestore = useFirestore();
 
-  const personnelQuery = useMemoFirebase(
+  const personnelQuery = useMemo(
     () => (firestore ? collection(firestore, `contractors/${contractor.id}/personnel`) : null),
     [firestore, contractor.id]
   );
@@ -159,5 +159,3 @@ export function PersonnelDialog({
     </Dialog>
   );
 }
-
-    

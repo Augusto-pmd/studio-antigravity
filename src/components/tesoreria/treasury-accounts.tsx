@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { TreasuryAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -21,7 +21,7 @@ export function TreasuryAccounts() {
     const { firestore, permissions } = useUser();
     const canManage = permissions.isSuperAdmin;
 
-    const accountsQuery = useMemoFirebase(
+    const accountsQuery = useMemo(
         () => (firestore && canManage ? query(collection(firestore, 'treasuryAccounts')) : null),
         [firestore, canManage]
     );

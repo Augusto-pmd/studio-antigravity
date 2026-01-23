@@ -18,13 +18,14 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
 import { collection, query, orderBy } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { useMemo } from "react";
 
 const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -35,7 +36,7 @@ const formatDate = (dateString: string) => {
 
 export function ViewTreasuryTransactionsDialog({ account, children }: { account: TreasuryAccount, children: React.ReactNode }) {
   const firestore = useFirestore();
-  const transactionsQuery = useMemoFirebase(
+  const transactionsQuery = useMemo(
     () => firestore ? query(collection(firestore, `treasuryAccounts/${account.id}/transactions`), orderBy('date', 'desc')) : null,
     [firestore, account.id]
   );

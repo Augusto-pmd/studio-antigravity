@@ -34,7 +34,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Project, Employee } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -59,10 +59,10 @@ export function DailyAttendance() {
 
   const { firestore } = useUser();
 
-  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
 
-  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   useEffect(() => {

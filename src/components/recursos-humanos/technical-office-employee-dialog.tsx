@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { TechnicalOfficeEmployee, UserProfile, SalaryHistory } from "@/lib/types";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch } from "firebase/firestore";
 
@@ -45,9 +45,9 @@ export function TechnicalOfficeEmployeeDialog({
   const [monthlySalary, setMonthlySalary] = useState('');
   const [status, setStatus] = useState<'Activo' | 'Inactivo'>('Activo');
 
-  const usersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
+  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
-  const techOfficeEmployeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'technicalOfficeEmployees') : null), [firestore]);
+  const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees') : null), [firestore]);
   const { data: techOfficeEmployees } = useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
 
   const availableUsers = users?.filter(u => 

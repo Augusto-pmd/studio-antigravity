@@ -15,10 +15,11 @@ import type { Project } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { Button } from "../ui/button";
 import { AddProjectDialog } from "./add-project-dialog";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(amount);
@@ -27,7 +28,7 @@ const formatCurrency = (amount: number) => {
 export function ProjectsTable() {
   const firestore = useFirestore();
 
-  const projectsQuery = useMemoFirebase(
+  const projectsQuery = useMemo(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore]
   );

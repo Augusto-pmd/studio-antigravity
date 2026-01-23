@@ -17,9 +17,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { Button } from "../ui/button";
 import { ContractorDialog } from "./contractor-dialog";
 import { PersonnelDialog } from "./personnel-dialog";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -28,7 +29,7 @@ const formatDate = (dateString?: string) => {
 
 export function ContractorsTable() {
   const firestore = useFirestore();
-  const contractorsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'contractors') : null), [firestore]);
+  const contractorsQuery = useMemo(() => (firestore ? collection(firestore, 'contractors') : null), [firestore]);
   const { data: contractors, isLoading } = useCollection<Contractor>(contractorsQuery);
 
   const getDocStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string } | null => {
@@ -109,8 +110,8 @@ export function ContractorsTable() {
                             {contractor.status}
                             </Badge>
                         </div>
-                        {artStatus && <p className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</p>}
-                        {insuranceStatus && <p className={cn(insuranceStatus.variant === 'destructive' && 'text-destructive', insuranceStatus.variant === 'warning' && 'text-yellow-500')}>Seguro: {insuranceStatus.message}</p>}
+                        {artStatus && <div className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</div>}
+                        {insuranceStatus && <div className={cn(insuranceStatus.variant === 'destructive' && 'text-destructive', insuranceStatus.variant === 'warning' && 'text-yellow-500')}>Seguro: {insuranceStatus.message}</div>}
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">

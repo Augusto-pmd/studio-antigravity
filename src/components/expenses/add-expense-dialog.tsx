@@ -36,7 +36,7 @@ import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/context/user-context";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
@@ -78,9 +78,9 @@ export function AddExpenseDialog() {
 
   // Data fetching
   const { firestore } = useUser();
-  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
-  const suppliersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
 
@@ -159,14 +159,15 @@ export function AddExpenseDialog() {
     }
 
     try {
-      const expensesColRef = collection(firestore, `projects/${selectedProject}/expenses`);
+      const projectsCollection = collection(firestore, 'projects');
+      const projectRef = doc(projectsCollection, selectedProject);
+      const expensesColRef = collection(projectRef, 'expenses');
       const newExpenseRef = doc(expensesColRef);
-      const expenseId = newExpenseRef.id;
 
       let receiptUrl = '';
       if (file && documentType === 'Factura') {
         const storage = getStorage();
-        const filePath = `receipts/${selectedProject}/${expenseId}/${file.name}`;
+        const filePath = `receipts/${selectedProject}/${newExpenseRef.id}/${file.name}`;
         const fileRef = ref(storage, filePath);
         
         await uploadBytes(fileRef, file);
@@ -174,7 +175,7 @@ export function AddExpenseDialog() {
       }
 
       const newExpense: Expense = {
-        id: expenseId,
+        id: newExpenseRef.id,
         projectId: selectedProject,
         date: date.toISOString(),
         supplierId: selectedSupplier,

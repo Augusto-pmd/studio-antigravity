@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, PlusCircle } from "lucide-react";
 import { useUser } from "@/context/user-context";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { UserProfile, Project, TaskRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -42,10 +42,10 @@ export function NewRequestDialog() {
   const [projectId, setProjectId] = useState<string | undefined>(undefined);
 
   // Data Fetching
-  const usersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
+  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
-  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   
   const handleSave = async () => {

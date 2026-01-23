@@ -14,9 +14,10 @@ import { cn } from "@/lib/utils";
 import type { TechnicalOfficeEmployee } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { TechnicalOfficeEmployeeDialog } from "./technical-office-employee-dialog";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';
@@ -25,7 +26,7 @@ const formatCurrency = (amount: number) => {
 
 export function TechnicalOfficeEmployeesTable() {
   const firestore = useFirestore();
-  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'technicalOfficeEmployees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees') : null), [firestore]);
   const { data: employees, isLoading } = useCollection<TechnicalOfficeEmployee>(employeesQuery);
 
   const renderSkeleton = () => (

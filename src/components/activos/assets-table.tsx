@@ -15,9 +15,10 @@ import type { Asset } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { Pencil } from "lucide-react";
 import { AssetDialog } from "./asset-dialog";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -31,7 +32,7 @@ const formatDate = (dateString?: string) => {
 
 export function AssetsTable() {
   const firestore = useFirestore();
-  const assetsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'assets') : null), [firestore]);
+  const assetsQuery = useMemo(() => (firestore ? collection(firestore, 'assets') : null), [firestore]);
   const { data: assets, isLoading } = useCollection<Asset>(assetsQuery);
 
   const renderSkeleton = () => (
@@ -72,7 +73,7 @@ export function AssetsTable() {
                   <div className="font-medium">{asset.name}</div>
                   <div className="text-sm text-muted-foreground">{asset.category}</div>
                   <div className="space-y-1 text-sm text-muted-foreground md:hidden mt-2">
-                     <p>
+                     <div>
                         <Badge
                             variant="outline"
                             className={cn(
@@ -85,7 +86,7 @@ export function AssetsTable() {
                         >
                             {asset.status}
                         </Badge>
-                     </p>
+                     </div>
                      <p>Compra: {formatDate(asset.purchaseDate)}</p>
                      <p>Valor: <span className="font-mono">{formatCurrency(asset.purchaseValue, asset.currency)}</span></p>
                   </div>

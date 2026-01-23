@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import type { TechnicalOfficeEmployee, SalaryHistory } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,7 +21,7 @@ const formatDate = (dateString: string) => {
 
 function SalaryEvolutionChart({ employeeId }: { employeeId: string }) {
     const firestore = useFirestore();
-    const salaryHistoryQuery = useMemoFirebase(
+    const salaryHistoryQuery = useMemo(
         () => firestore ? query(collection(firestore, `technicalOfficeEmployees/${employeeId}/salaryHistory`), orderBy('effectiveDate', 'asc')) : null,
         [firestore, employeeId]
     );
@@ -86,7 +86,7 @@ export function SalaryReports() {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
     const firestore = useFirestore();
 
-    const employeesQuery = useMemoFirebase(() => (firestore ? query(collection(firestore, 'technicalOfficeEmployees'), where('status', '==', 'Activo')) : null), [firestore]);
+    const employeesQuery = useMemo(() => (firestore ? query(collection(firestore, 'technicalOfficeEmployees'), where('status', '==', 'Activo')) : null), [firestore]);
     const { data: employees, isLoading: isLoadingEmployees } = useCollection<TechnicalOfficeEmployee>(employeesQuery);
     
     useEffect(() => {

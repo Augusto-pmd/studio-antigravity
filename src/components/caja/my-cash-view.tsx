@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { CashAccount, CashTransaction } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,7 @@ const formatDate = (dateString: string) => {
 
 function MyTransactionsTable({ accountId }: { accountId: string }) {
     const { user, firestore } = useUser();
-    const transactionsQuery = useMemoFirebase(
+    const transactionsQuery = useMemo(
         () => firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts/${accountId}/transactions`), orderBy('date', 'desc')) : null,
         [firestore, user, accountId]
     );
@@ -91,7 +91,7 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
 export function MyCashView() {
   const { user, firestore, isUserLoading, role } = useUser();
 
-  const accountsQuery = useMemoFirebase(
+  const accountsQuery = useMemo(
     () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`)) : null),
     [firestore, user]
   );

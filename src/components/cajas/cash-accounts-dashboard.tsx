@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { UserProfile, CashAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -18,7 +18,7 @@ const formatCurrency = (amount: number, currency: string) => {
 
 function UserCashAccountCard({ profile }: { profile: UserProfile }) {
     const { firestore } = useUser();
-    const accountsQuery = useMemoFirebase(
+    const accountsQuery = useMemo(
         () => firestore ? query(collection(firestore, `users/${profile.id}/cashAccounts`)) : null,
         [firestore, profile.id]
     );
@@ -71,7 +71,7 @@ function UserCashAccountCard({ profile }: { profile: UserProfile }) {
 export function CashAccountsDashboard() {
   const { firestore } = useUser();
   
-  const usersQuery = useMemoFirebase(
+  const usersQuery = useMemo(
     () => (firestore ? query(collection(firestore, 'users')) : null),
     [firestore]
   );

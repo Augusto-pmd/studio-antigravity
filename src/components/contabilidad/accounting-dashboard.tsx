@@ -1,6 +1,6 @@
 'use client';
 
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collectionGroup, query } from 'firebase/firestore';
 import type { Expense } from '@/lib/types';
@@ -14,7 +14,7 @@ import { RetencionesSummary } from './retenciones-summary';
 export function AccountingDashboard() {
   const firestore = useFirestore();
 
-  const expensesQuery = useMemoFirebase(
+  const expensesQuery = useMemo(
     () => (firestore ? query(collectionGroup(firestore, 'expenses')) : null),
     [firestore]
   );

@@ -16,9 +16,10 @@ import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'd
 import { TriangleAlert, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { EmployeeDialog } from "./employee-dialog";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';
@@ -32,7 +33,7 @@ const formatDate = (dateString?: string) => {
 
 export function EmployeesTable() {
   const firestore = useFirestore();
-  const employeesQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
   const { data: employees, isLoading } = useCollection<Employee>(employeesQuery);
 
   const getArtStatus = (dateString?: string): { variant: 'destructive' | 'warning', message: string, daysLeft: number | null } | null => {
@@ -107,7 +108,7 @@ export function EmployeesTable() {
                             </Badge>
                         </div>
                         <p>Jornal: <span className="font-mono text-foreground">{formatCurrency(employee.dailyWage)}</span></p>
-                        {artStatus && <p className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</p>}
+                        {artStatus && <div className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</div>}
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Users, HardHat, Truck, ShoppingCart } from "lucide-react";
 import { useUser } from "@/context/user-context";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import type { FundRequest } from "@/lib/types";
 
@@ -19,7 +19,7 @@ export default function PagoSemanalPage() {
   const { user, permissions, firestore } = useUser();
   const isAdmin = permissions.canValidate;
 
-  const fundRequestsQuery = useMemoFirebase(() => {
+  const fundRequestsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     const baseQuery = collection(firestore, 'fundRequests');
     if (isAdmin) {

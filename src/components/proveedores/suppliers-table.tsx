@@ -14,13 +14,14 @@ import { cn } from "@/lib/utils";
 import type { Supplier } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { SupplierDialog } from "./supplier-dialog";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 export function SuppliersTable() {
   const firestore = useFirestore();
-  const suppliersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersQuery);
 
   const renderSkeleton = () => (

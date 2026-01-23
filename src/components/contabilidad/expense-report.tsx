@@ -13,7 +13,7 @@ import type { Expense } from '@/lib/types';
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { Skeleton } from '../ui/skeleton';
 import { useMemo } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection } from 'firebase/firestore';
 import type { Project, Supplier } from '@/lib/types';
@@ -37,10 +37,10 @@ const formatDate = (dateString?: string) => {
 export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; isLoading: boolean }) {
   const firestore = useFirestore();
 
-  const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const suppliersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
   const projectsMap = useMemo(() => {

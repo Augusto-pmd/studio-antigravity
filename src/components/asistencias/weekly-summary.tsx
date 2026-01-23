@@ -38,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, PlusCircle, FilePenLine, Eye, Loader2 } from "lucide-react";
 import { useUser } from "@/context/user-context";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { PayrollWeek } from "@/lib/types";
@@ -53,7 +53,7 @@ export function WeeklySummary() {
   const [isPending, startTransition] = useTransition();
   const isAdmin = permissions.canValidate;
 
-  const payrollWeeksQuery = useMemoFirebase(
+  const payrollWeeksQuery = useMemo(
     () => firestore ? query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc')) : null,
     [firestore]
   );

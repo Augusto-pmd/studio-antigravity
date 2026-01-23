@@ -25,7 +25,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection } from '@/firebase';
 import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
 import type { Project, TimeLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -50,12 +50,12 @@ export function UserTimeLog() {
   const [isClient, setIsClient] = useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
-  const projectsQuery = useMemoFirebase(() => (firestore ? query(collection(firestore, 'projects'), where('status', '==', 'En Curso')) : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? query(collection(firestore, 'projects'), where('status', '==', 'En Curso')) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const formattedDate = useMemo(() => format(selectedDate, 'yyyy-MM-dd'), [selectedDate]);
   
-  const timeLogsQuery = useMemoFirebase(
+  const timeLogsQuery = useMemo(
     () => (user && firestore ? query(collection(firestore, 'timeLogs'), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
     [user, firestore, formattedDate]
   );

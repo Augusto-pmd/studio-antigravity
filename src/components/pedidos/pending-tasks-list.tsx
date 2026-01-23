@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +17,7 @@ export function PendingTasksList() {
   const { user, firestore } = useUser();
   const { toast } = useToast();
 
-  const tasksQuery = useMemoFirebase(
+  const tasksQuery = useMemo(
     () =>
       user && firestore
         ? query(

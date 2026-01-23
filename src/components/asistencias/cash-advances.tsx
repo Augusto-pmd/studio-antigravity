@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AddCashAdvanceDialog } from "./add-cash-advance-dialog";
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { CashAdvance, PayrollWeek } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
@@ -35,14 +35,14 @@ const formatDate = (dateString?: string) => {
 export function CashAdvances() {
   const { firestore } = useUser();
 
-  const payrollWeeksQuery = useMemoFirebase(
+  const payrollWeeksQuery = useMemo(
     () => firestore ? query(collection(firestore, 'payrollWeeks'), where('status', '==', 'Abierta'), limit(1)) : null,
     [firestore]
   );
   const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
   const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
-  const cashAdvancesQuery = useMemoFirebase(
+  const cashAdvancesQuery = useMemo(
     () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances'), where('payrollWeekId', '==', currentWeek.id), orderBy('date', 'desc')) : null,
     [firestore, currentWeek]
   );

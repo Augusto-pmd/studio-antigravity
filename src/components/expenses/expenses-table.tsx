@@ -11,10 +11,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Expense } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { collection, collectionGroup, query } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { projects as mockProjects, suppliers as mockSuppliers, expenseCategories } from "@/lib/data";
+import { useMemo } from "react";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -29,7 +30,7 @@ const formatDate = (dateString?: string) => {
 export function ExpensesTable() {
   const firestore = useFirestore();
 
-  const expensesQuery = useMemoFirebase(() => (
+  const expensesQuery = useMemo(() => (
     firestore ? query(collectionGroup(firestore, 'expenses')) : null
   ), [firestore]);
   
