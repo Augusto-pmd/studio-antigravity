@@ -9,12 +9,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Expense } from "@/lib/types";
+import type { Expense, Project, Supplier } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, collectionGroup, query } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
-import { projects as mockProjects, suppliers as mockSuppliers, expenseCategories } from "@/lib/data";
+import { expenseCategories } from "@/lib/data";
 import { useMemo } from "react";
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -36,14 +36,31 @@ export function ExpensesTable() {
   
   const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
 
-  // For now, we use mock data for projects and suppliers to enrich the table
-  // A more robust solution would be to fetch them from Firestore as well and join them.
-  const projects = mockProjects;
-  const suppliers = mockSuppliers;
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const getProjectName = (projectId: string) => projects.find(p => p.id === projectId)?.name || projectId;
-  const getSupplierName = (supplierId: string) => suppliers.find(s => s.id === supplierId)?.name || supplierId;
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
+  const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
+
+  const projectsMap = useMemo(() => {
+    if (!projects) return {};
+    return projects.reduce((acc, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [projects]);
+
+  const suppliersMap = useMemo(() => {
+    if (!suppliers) return {};
+    return suppliers.reduce((acc, s) => {
+      acc[s.id] = s.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [suppliers]);
+
   const getCategoryName = (categoryId: string) => expenseCategories.find(c => c.id === categoryId)?.name || categoryId;
+
+  const isLoading = isLoadingExpenses || isLoadingProjects || isLoadingSuppliers;
 
   const renderSkeleton = () => (
     <TableRow>
@@ -66,14 +83,14 @@ export function ExpensesTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoadingExpenses && (
+              {isLoading && (
                 <>
                   {renderSkeleton()}
                   {renderSkeleton()}
                   {renderSkeleton()}
                 </>
               )}
-              {!isLoadingExpenses && expenses?.length === 0 && (
+              {!isLoading && expenses?.length === 0 && (
                  <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
                     No hay gastos registrados. Comience creando uno nuevo.
@@ -83,14 +100,14 @@ export function ExpensesTable() {
               {expenses?.map((expense: Expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>
-                    <div className="font-medium">{getProjectName(expense.projectId)}</div>
+                    <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
                     <div className="text-sm text-muted-foreground">{getCategoryName(expense.categoryId)}</div>
                     <div className="text-sm text-muted-foreground md:hidden mt-2">
-                      <p>{getSupplierName(expense.supplierId)}</p>
+                      <p>{suppliersMap[expense.supplierId] || expense.supplierId}</p>
                       <p>{formatDate(expense.date)}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{getSupplierName(expense.supplierId)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
                   <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                 </TableRow>
