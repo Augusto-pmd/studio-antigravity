@@ -30,7 +30,7 @@ function UserCashAccountCard({ profile }: { profile: UserProfile }) {
         <Card>
             <CardHeader className="flex-row items-center gap-4 space-y-0">
                  <Avatar>
-                    <AvatarImage src={profile.photoURL} />
+                    <AvatarImage src={profile.photoURL ?? undefined} />
                     <AvatarFallback>{profile.fullName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
