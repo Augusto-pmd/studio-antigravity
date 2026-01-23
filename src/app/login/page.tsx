@@ -11,6 +11,7 @@ import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
+import { loginBackgrounds } from '@/lib/login-backgrounds';
 
 
 export default function LoginPage() {
@@ -20,6 +21,13 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [background, setBackground] = useState(loginBackgrounds[0]);
+
+  useEffect(() => {
+    // This runs only on the client, after hydration, to pick a random background
+    const randomIndex = Math.floor(Math.random() * loginBackgrounds.length);
+    setBackground(loginBackgrounds[randomIndex]);
+  }, []);
 
   useEffect(() => {
     // Si el usuario ya está logueado y la carga ha terminado, redirigir
@@ -147,17 +155,18 @@ export default function LoginPage() {
       </div>
        <div className="hidden bg-muted lg:block relative">
         <Image
-            src="https://picsum.photos/seed/arch-login/1200/1800"
-            alt="Fondo de arquitectura"
+            src={background.src}
+            alt={background.hint}
             fill
-            className="h-full w-full object-cover dark:brightness-[0.3]"
-            data-ai-hint="architecture building"
+            priority
+            className="h-full w-full object-cover grayscale dark:brightness-[0.3]"
+            data-ai-hint={background.hint}
         />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <blockquote className="text-white text-lg font-medium max-w-lg">
-            &ldquo;La arquitectura es el juego sabio, correcto y magnífico de los volúmenes bajo la luz.&rdquo;
-            <footer className="text-sm mt-2 opacity-80">- Le Corbusier</footer>
+            &ldquo;{background.quote}&rdquo;
+            <footer className="text-sm mt-2 opacity-80">- {background.author}</footer>
             </blockquote>
         </div>
       </div>
