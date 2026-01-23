@@ -13,7 +13,7 @@ import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet } from 'lucide-react';
-import { FundTransferDialog } from '../cajas/fund-transfer-dialog';
+import { FundTransferDialog } from '@/components/cajas/fund-transfer-dialog';
 import { Button } from '../ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { AddCashAccountDialog } from './add-cash-account-dialog';
