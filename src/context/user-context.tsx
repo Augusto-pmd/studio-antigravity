@@ -17,22 +17,31 @@ interface UserContextType {
     canValidate: boolean;
     canSupervise: boolean;
     canLoadExpenses: boolean;
+    isSuperAdmin: boolean;
   }
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-const getPermissions = (role: Role) => {
+const getPermissions = (role: Role, user: User | null) => {
+    const isSuperAdmin = user?.email === 'info@pmdarquitectura.com';
+
+    // Super admin overrides everything
+    if (isSuperAdmin) {
+        return { canViewAll: true, canValidate: true, canSupervise: true, canLoadExpenses: true, isSuperAdmin: true };
+    }
+
     const basePermissions = {
         canViewAll: false,
         canValidate: false,
         canSupervise: false,
         canLoadExpenses: false,
+        isSuperAdmin: false,
     };
 
     switch (role) {
         case 'Dirección':
-            return { canViewAll: true, canValidate: true, canSupervise: true, canLoadExpenses: true };
+            return { ...basePermissions, canViewAll: true, canValidate: true, canSupervise: true, canLoadExpenses: true };
         case 'Supervisor':
             return { ...basePermissions, canSupervise: true, canLoadExpenses: true };
         case 'Administración':
@@ -50,7 +59,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const firestore = useFirestore();
   const [role, setRole] = useState<Role>('Dirección');
   
-  const permissions = useMemo(() => getPermissions(role), [role]);
+  const permissions = useMemo(() => getPermissions(role, user), [role, user]);
 
   const value = {
     user,

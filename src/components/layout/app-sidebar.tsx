@@ -69,7 +69,7 @@ const menuItems = [
     href: "/cajas",
     label: "Gestión de Cajas",
     icon: Landmark,
-    role: ["Dirección", "Administración"],
+    adminOnly: true,
   },
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/contratos", label: "Contratos", icon: FileText },
@@ -78,13 +78,13 @@ const menuItems = [
     href: "/tesoreria",
     label: "Tesorería",
     icon: Scale,
-    role: ["Dirección", "Administración"],
+    adminOnly: true,
   },
   {
     href: "/recursos-humanos",
     label: "Recursos Humanos",
     icon: Briefcase,
-    role: ["Dirección"],
+    adminOnly: true,
   },
 ];
 
@@ -94,7 +94,7 @@ const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, role, setRole } = useUser();
+  const { user, role, setRole, permissions } = useUser();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
   const handleLogout = async () => {
@@ -112,6 +112,9 @@ export function AppSidebar() {
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item) => {
+              if (item.adminOnly && !permissions.isSuperAdmin) {
+                return null;
+              }
               if (item.role && !item.role.includes(role)) {
                 return null;
               }

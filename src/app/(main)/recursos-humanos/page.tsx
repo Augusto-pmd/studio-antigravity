@@ -6,13 +6,40 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TechnicalOfficeEmployeeDialog } from "@/components/recursos-humanos/technical-office-employee-dialog";
 import { TechnicalOfficeEmployeesTable } from "@/components/recursos-humanos/technical-office-employees-table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, BarChart2, CalendarClock, UserCog } from "lucide-react";
+import { PlusCircle, BarChart2, CalendarClock, UserCog, Loader2 } from "lucide-react";
 import { SalaryReports } from "@/components/recursos-humanos/salary-reports";
+import { useUser } from "@/context/user-context";
 
 export default function RecursosHumanosPage() {
+  const { permissions, isUserLoading } = useUser();
+  
+  if (isUserLoading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  
+  if (!permissions.isSuperAdmin) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Acceso Denegado</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            No tienes los permisos necesarios para acceder a esta sección.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">

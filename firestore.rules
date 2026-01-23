@@ -169,18 +169,17 @@ service cloud.firestore {
        * @path /users/{userId}/cashAccounts/{cashAccountId}
        */
       match /cashAccounts/{cashAccountId} {
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId) || isSuperAdmin();
         allow list: if isOwner(userId) || isSuperAdmin();
-        allow create, update, delete: if isOwner(userId) || isAdmin();
+        allow create, update, delete: if isOwner(userId) || isSuperAdmin();
 
         /**
         * @description Manages transactions within a specific cash account.
         * @path /users/{userId}/cashAccounts/{cashAccountId}/transactions/{transactionId}
         */
         match /transactions/{transactionId} {
-          allow get: if isOwner(userId) || isAdmin();
-          allow list: if isOwner(userId) || isSuperAdmin();
-          allow write: if isOwner(userId) || isAdmin();
+          allow read: if isOwner(userId) || isSuperAdmin();
+          allow write: if isOwner(userId) || isSuperAdmin();
         }
       }
     }
@@ -221,11 +220,10 @@ service cloud.firestore {
     }
     
     match /technicalOfficeEmployees/{employeeId} {
-      allow read: if isAdmin();
-      allow write: if isRoleAdmin(); // Only role admins can write/update salaries
+      allow read, write: if isSuperAdmin();
 
       match /salaryHistory/{salaryHistoryId} {
-        allow read, write: if isRoleAdmin();
+        allow read, write: if isSuperAdmin();
       }
     }
     
@@ -275,12 +273,10 @@ service cloud.firestore {
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
-      allow get, write: if isAdmin();
-      allow list: if isSuperAdmin();
+      allow read, write: if isSuperAdmin();
 
       match /transactions/{transactionId} {
-        allow get, write: if isAdmin();
-        allow list: if isSuperAdmin();
+        allow read, write: if isSuperAdmin();
       }
     }
 

@@ -1,11 +1,38 @@
 'use client';
 
-import { Banknote, BotMessageSquare } from "lucide-react";
+import { Banknote, BotMessageSquare, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TreasuryAccounts } from "@/components/tesoreria/treasury-accounts";
 import { BankStatementAnalyzer } from "@/components/contabilidad/bank-statement-analyzer";
+import { useUser } from "@/context/user-context";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function TesoreriaPage() {
+  const { permissions, isUserLoading } = useUser();
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  
+  if (!permissions.isSuperAdmin) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Acceso Denegado</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            No tienes los permisos necesarios para acceder a esta sección.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-headline">Tesorería</h1>
