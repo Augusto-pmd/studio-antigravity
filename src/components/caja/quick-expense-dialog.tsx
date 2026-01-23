@@ -20,18 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, PlusCircle, Upload } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/user-context";
 import { useCollection, useMemoFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
-import { expenseCategories } from "@/lib/data";
 import { Textarea } from "../ui/textarea";
 
-export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: CashAccount, usdAccount?: CashAccount }) {
+export function QuickExpenseDialog({ arsAccount }: { arsAccount?: CashAccount }) {
   const { user, firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -39,7 +37,6 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
   
   // Form State
   const [projectId, setProjectId] = useState<string | undefined>();
-  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -50,7 +47,6 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
 
   const resetForm = () => {
     setProjectId(undefined);
-    setCurrency('ARS');
     setAmount('');
     setDescription('');
     setReceiptFile(null);
@@ -78,15 +74,14 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
         return;
     }
 
-    const selectedAccount = currency === 'ARS' ? arsAccount : usdAccount;
-    if (!selectedAccount) {
-        toast({ variant: 'destructive', title: 'Error', description: `No tiene una caja en ${currency} para debitar el gasto.` });
+    if (!arsAccount) {
+        toast({ variant: 'destructive', title: 'Error', description: `No tiene una caja en ARS para debitar el gasto.` });
         return;
     }
     
     const expenseAmount = parseFloat(amount);
-    if (selectedAccount.balance < expenseAmount) {
-        toast({ variant: 'destructive', title: 'Saldo Insuficiente', description: `No tiene suficiente saldo en su caja de ${currency}.` });
+    if (arsAccount.balance < expenseAmount) {
+        toast({ variant: 'destructive', title: 'Saldo Insuficiente', description: `No tiene suficiente saldo en su caja de ARS.` });
         return;
     }
 
@@ -117,22 +112,22 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
                 categoryId: 'CAT-04', // Transporte y Logística
                 documentType: 'Recibo Común',
                 amount: expenseAmount,
-                currency: currency,
-                exchangeRate: 1, // Assume 1 for simplicity, can be improved later
+                currency: 'ARS',
+                exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
                 description: `Gasto rápido: ${description}`,
                 receiptUrl: receiptUrl,
             };
             setDocumentNonBlocking(expenseRef, newExpense, {});
             
             // 3. Create CashTransaction document
-            const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${selectedAccount.id}/transactions`));
+            const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${arsAccount.id}/transactions`));
             const newTransaction: CashTransaction = {
                 id: transactionRef.id,
                 userId: user.uid,
                 date: expenseDate.toISOString(),
                 type: 'Egreso',
                 amount: expenseAmount,
-                currency: currency,
+                currency: 'ARS',
                 description: `Gasto en ${project.name}: ${description}`,
                 relatedExpenseId: expenseRef.id,
                 relatedProjectId: projectId,
@@ -140,12 +135,12 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
             };
             setDocumentNonBlocking(transactionRef, newTransaction, {});
 
-            // 4. Update CashAccount balance (read-then-write, not ideal but constrained)
-            const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${selectedAccount.id}`);
-            const newBalance = selectedAccount.balance - expenseAmount;
+            // 4. Update CashAccount balance
+            const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${arsAccount.id}`);
+            const newBalance = arsAccount.balance - expenseAmount;
             updateDocumentNonBlocking(accountRef, { balance: newBalance });
 
-            toast({ title: 'Gasto Rápido Guardado', description: `Se debitaron ${formatCurrency(expenseAmount, currency)} de su caja.` });
+            toast({ title: 'Gasto Rápido Guardado', description: `Se debitaron ${formatCurrency(expenseAmount, 'ARS')} de su caja.` });
             resetForm();
             setOpen(false);
 
@@ -190,20 +185,7 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Moneda</Label>
-            <RadioGroup value={currency} onValueChange={(v: 'ARS' | 'USD') => setCurrency(v)} className="flex items-center gap-6 pt-1">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="ARS" id="ars-quick" />
-                <Label htmlFor="ars-quick">ARS</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="USD" id="usd-quick" />
-                <Label htmlFor="usd-quick">USD</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="amount">Monto</Label>
+            <Label htmlFor="amount">Monto (ARS)</Label>
             <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">
@@ -225,3 +207,5 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
     </Dialog>
   );
 }
+
+    

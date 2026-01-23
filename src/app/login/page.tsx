@@ -79,20 +79,16 @@ export default function LoginPage() {
         };
         await setDoc(userRef, newUserProfile);
 
-        // Create default cash accounts
+        // Create default cash account in ARS
         const cashAccountsCollection = collection(firestore, 'users', loggedInUser.uid, 'cashAccounts');
     
         const arsAccountRef = doc(cashAccountsCollection);
         const arsAccountData: CashAccount = { id: arsAccountRef.id, userId: loggedInUser.uid, name: "Caja Principal ARS", currency: "ARS", balance: 0 };
         await setDoc(arsAccountRef, arsAccountData);
 
-        const usdAccountRef = doc(cashAccountsCollection);
-        const usdAccountData: CashAccount = { id: usdAccountRef.id, userId: loggedInUser.uid, name: "Caja Principal USD", currency: "USD", balance: 0 };
-        await setDoc(usdAccountRef, usdAccountData);
-
         toast({
           title: '¡Bienvenido!',
-          description: 'Se ha creado tu perfil de usuario y tus cajas iniciales.',
+          description: 'Se ha creado tu perfil de usuario y tu caja inicial en ARS.',
         });
       }
       // La redirección ahora es manejada por el useEffect

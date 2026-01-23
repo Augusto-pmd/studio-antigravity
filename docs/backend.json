@@ -222,7 +222,7 @@
     "CashAccount": {
       "title": "CashAccount",
       "type": "object",
-      "description": "Represents a user's cash account for managing funds. A user typically has one for ARS and one for USD.",
+      "description": "Represents a user's cash account in ARS for managing funds.",
       "properties": {
         "id": {
           "type": "string",
@@ -230,7 +230,7 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N CashAccount)"
+          "description": "Reference to User. (Relationship: User 1:1 CashAccount)"
         },
         "name": {
           "type": "string",
@@ -239,8 +239,7 @@
         "currency": {
           "type": "string",
           "enum": [
-            "ARS",
-            "USD"
+            "ARS"
           ],
           "description": "The currency of the cash account."
         },
@@ -287,8 +286,7 @@
         "currency": {
           "type": "string",
           "enum": [
-            "ARS",
-            "USD"
+            "ARS"
           ]
         },
         "description": {
@@ -1065,4 +1063,5 @@
     "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, contracts) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
   }
 }
+
     

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/context/user-context';
 import { useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, query, orderBy, where } from 'firebase/firestore';
 import type { CashAccount, CashTransaction, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -93,13 +93,12 @@ export function MyCashView() {
   const { toast } = useToast();
 
   const accountsQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, `users/${user.uid}/cashAccounts`) : null),
+    () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`), where('currency', '==', 'ARS')) : null),
     [firestore, user]
   );
   const { data: accounts, isLoading: isLoadingAccounts } = useCollection<CashAccount>(accountsQuery);
   
-  const arsAccount = useMemo(() => accounts?.find(a => a.currency === 'ARS'), [accounts]);
-  const usdAccount = useMemo(() => accounts?.find(a => a.currency === 'USD'), [accounts]);
+  const arsAccount = useMemo(() => accounts?.[0], [accounts]);
   
   const isLoading = isUserLoading || isLoadingAccounts;
 
@@ -118,16 +117,12 @@ export function MyCashView() {
     if (isLoading || !firestore || !user || accounts === null) return;
 
     if (accounts.length === 0) {
-        toast({ title: 'Creando cajas...', description: 'Estamos preparando tus cajas personales.'});
+        toast({ title: 'Creando caja...', description: 'Estamos preparando tu caja personal en ARS.'});
         const cashAccountsCollection = collection(firestore, 'users', user.uid, 'cashAccounts');
         
         const arsAccountRef = doc(cashAccountsCollection);
         const arsData: CashAccount = { id: arsAccountRef.id, userId: user.uid, name: "Caja Principal ARS", currency: "ARS", balance: 0 };
         setDocumentNonBlocking(arsAccountRef, arsData, {});
-
-        const usdAccountRef = doc(cashAccountsCollection);
-        const usdData: CashAccount = { id: usdAccountRef.id, userId: user.uid, name: "Caja Principal USD", currency: "USD", balance: 0 };
-        setDocumentNonBlocking(usdAccountRef, usdData, {});
     }
   }, [firestore, user, accounts, isLoading, toast]);
 
@@ -136,10 +131,7 @@ export function MyCashView() {
     return (
         <div className="flex flex-col gap-8">
             <Skeleton className="h-10 w-1/3" />
-            <div className="grid gap-6 md:grid-cols-2">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
-            </div>
+            <Skeleton className="h-40 w-full" />
             <Skeleton className="h-64 w-full" />
         </div>
     )
@@ -151,43 +143,31 @@ export function MyCashView() {
         <h1 className="text-3xl font-headline">Mi Caja</h1>
         <div className="flex items-center gap-2">
           {userProfile && (
-            <FundTransferDialog profile={userProfile} arsAccount={arsAccount} usdAccount={usdAccount}>
+            <FundTransferDialog profile={userProfile} arsAccount={arsAccount}>
               <Button variant="outline">
                 <Landmark className="mr-2 h-4 w-4" />
                 Añadir Fondos
               </Button>
             </FundTransferDialog>
           )}
-          <QuickExpenseDialog arsAccount={arsAccount} usdAccount={usdAccount} />
+          <QuickExpenseDialog arsAccount={arsAccount} />
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Saldo en Pesos (ARS)</CardTitle>
-            <CardDescription>Saldo actual disponible en tu caja.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold font-mono">{formatCurrency(arsAccount?.balance ?? 0, 'ARS')}</p>
-          </CardContent>
-          <CardFooter>
-             {arsAccount && <MyTransactionsTable accountId={arsAccount.id} />}
-          </CardFooter>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Saldo en Dólares (USD)</CardTitle>
-            <CardDescription>Saldo actual disponible en tu caja.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold font-mono">{formatCurrency(usdAccount?.balance ?? 0, 'USD')}</p>
-          </CardContent>
-           <CardFooter>
-            {usdAccount && <MyTransactionsTable accountId={usdAccount.id} />}
-           </CardFooter>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Saldo en Pesos (ARS)</CardTitle>
+          <CardDescription>Saldo actual disponible en tu caja para registrar gastos.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-4xl font-bold font-mono">{formatCurrency(arsAccount?.balance ?? 0, 'ARS')}</p>
+        </CardContent>
+        <CardFooter>
+           {arsAccount ? <MyTransactionsTable accountId={arsAccount.id} /> : <div className="text-center w-full text-muted-foreground">No se encontró la caja.</div>}
+        </CardFooter>
+      </Card>
     </div>
   );
 }
+
+    
