@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, type Query } from "firebase/firestore";
 import type { FundRequest } from '@/lib/types';
 
 export default function PagoSemanalPage() {
@@ -15,15 +15,15 @@ export default function PagoSemanalPage() {
         if (!firestore) return null;
         // Admins and supervisors see all requests. Other roles only see their own.
         if (isAdmin) {
-          return query(collection(firestore, 'fundRequests'));
+          return query(collection(firestore, 'fundRequests')) as Query<FundRequest>;
         }
         if (user) {
-          return query(collection(firestore, 'fundRequests'), where('requesterId', '==', user.uid));
+          return query(collection(firestore, 'fundRequests'), where('requesterId', '==', user.uid)) as Query<FundRequest>;
         }
         return null;
       }, [firestore, user, isAdmin]);
 
-    const { data: requests, isLoading } = useCollection<FundRequest>(fundRequestsQuery);
+    const { data: requests, isLoading } = useCollection(fundRequestsQuery);
 
   return (
     <div className="flex flex-col gap-6">
