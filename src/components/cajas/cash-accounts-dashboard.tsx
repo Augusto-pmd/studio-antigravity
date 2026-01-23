@@ -2,14 +2,14 @@
 
 import { useMemo } from 'react';
 import { useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { UserProfile, CashAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FundTransferDialog } from './fund-transfer-dialog';
 import { Button } from '../ui/button';
-import { Landmark } from 'lucide-react';
+import { Landmark, Wallet } from 'lucide-react';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -18,12 +18,10 @@ const formatCurrency = (amount: number, currency: string) => {
 function UserCashAccountCard({ profile }: { profile: UserProfile }) {
     const { firestore } = useUser();
     const accountsQuery = useMemoFirebase(
-        () => firestore ? query(collection(firestore, `users/${profile.id}/cashAccounts`), where('currency', '==', 'ARS')) : null,
+        () => firestore ? query(collection(firestore, `users/${profile.id}/cashAccounts`)) : null,
         [firestore, profile.id]
     );
     const { data: accounts, isLoading } = useCollection<CashAccount>(accountsQuery);
-
-    const arsAccount = useMemo(() => accounts?.[0], [accounts]);
 
     return (
         <Card>
@@ -37,20 +35,28 @@ function UserCashAccountCard({ profile }: { profile: UserProfile }) {
                     <CardDescription>{profile.email}</CardDescription>
                 </div>
             </CardHeader>
-            <CardContent className="grid gap-4">
+            <CardContent className="grid gap-2">
                 {isLoading && (
                     <div className='space-y-2'>
-                        <Skeleton className="h-8 w-3/4" />
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
                     </div>
                 )}
-                <div className="flex items-center justify-between rounded-md border p-3">
-                    <span className="font-semibold text-muted-foreground">Saldo ARS</span>
-                    <span className="font-mono text-lg font-bold">{formatCurrency(arsAccount?.balance ?? 0, 'ARS')}</span>
-                </div>
+                {accounts && accounts.length > 0 ? accounts.map(account => (
+                    <div key={account.id} className="flex items-center justify-between rounded-md border p-3">
+                        <div className='flex items-center gap-2'>
+                            <Wallet className="h-4 w-4 text-muted-foreground"/>
+                            <span className="font-semibold text-muted-foreground">{account.name}</span>
+                        </div>
+                        <span className="font-mono text-lg font-bold">{formatCurrency(account.balance ?? 0, 'ARS')}</span>
+                    </div>
+                )) : (
+                    <div className="text-sm text-muted-foreground text-center p-4">Este usuario no tiene cajas.</div>
+                )}
             </CardContent>
             <CardFooter>
-                <FundTransferDialog profile={profile} arsAccount={arsAccount}>
-                    <Button className='w-full'>
+                <FundTransferDialog profile={profile} cashAccounts={accounts || []}>
+                    <Button className='w-full' disabled={!accounts || accounts.length === 0}>
                         <Landmark className="mr-2 h-4 w-4" />
                         Añadir Fondos
                     </Button>
@@ -88,5 +94,3 @@ export function CashAccountsDashboard() {
     </div>
   );
 }
-
-    

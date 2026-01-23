@@ -29,7 +29,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
 import { Textarea } from "../ui/textarea";
 
-export function QuickExpenseDialog({ arsAccount }: { arsAccount?: CashAccount }) {
+export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount }) {
   const { user, firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -74,13 +74,13 @@ export function QuickExpenseDialog({ arsAccount }: { arsAccount?: CashAccount })
         return;
     }
 
-    if (!arsAccount) {
+    if (!cashAccount) {
         toast({ variant: 'destructive', title: 'Error', description: `No tiene una caja en ARS para debitar el gasto.` });
         return;
     }
     
     const expenseAmount = parseFloat(amount);
-    if (arsAccount.balance < expenseAmount) {
+    if (cashAccount.balance < expenseAmount) {
         toast({ variant: 'destructive', title: 'Saldo Insuficiente', description: `No tiene suficiente saldo en su caja de ARS.` });
         return;
     }
@@ -120,7 +120,7 @@ export function QuickExpenseDialog({ arsAccount }: { arsAccount?: CashAccount })
             setDocumentNonBlocking(expenseRef, newExpense, {});
             
             // 3. Create CashTransaction document
-            const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${arsAccount.id}/transactions`));
+            const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}/transactions`));
             const newTransaction: CashTransaction = {
                 id: transactionRef.id,
                 userId: user.uid,
@@ -136,8 +136,8 @@ export function QuickExpenseDialog({ arsAccount }: { arsAccount?: CashAccount })
             setDocumentNonBlocking(transactionRef, newTransaction, {});
 
             // 4. Update CashAccount balance
-            const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${arsAccount.id}`);
-            const newBalance = arsAccount.balance - expenseAmount;
+            const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}`);
+            const newBalance = cashAccount.balance - expenseAmount;
             updateDocumentNonBlocking(accountRef, { balance: newBalance });
 
             toast({ title: 'Gasto Rápido Guardado', description: `Se debitaron ${formatCurrency(expenseAmount, 'ARS')} de su caja.` });
@@ -207,5 +207,3 @@ export function QuickExpenseDialog({ arsAccount }: { arsAccount?: CashAccount })
     </Dialog>
   );
 }
-
-    

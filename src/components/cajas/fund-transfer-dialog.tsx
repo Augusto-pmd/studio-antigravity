@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,13 +14,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { UserProfile, CashAccount, CashTransaction } from "@/lib/types";
 
-export function FundTransferDialog({ profile, arsAccount, usdAccount, children }: { profile: UserProfile, arsAccount?: CashAccount, usdAccount?: CashAccount, children: React.ReactNode }) {
+export function FundTransferDialog({ profile, cashAccounts, children }: { profile: UserProfile, cashAccounts: CashAccount[], children: React.ReactNode }) {
   const { user: operator, firestore } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -28,17 +35,27 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
   
   // Form State
   const [type, setType] = useState<'Ingreso' | 'Refuerzo'>('Refuerzo');
-  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
 
   const isSelf = operator?.uid === profile.id;
 
+  useEffect(() => {
+      if (open) {
+        resetForm();
+      }
+      if (cashAccounts?.length === 1) {
+          setSelectedAccountId(cashAccounts[0].id);
+      }
+  }, [cashAccounts, open]);
+
+
   const resetForm = () => {
     setType('Refuerzo');
-    setCurrency('ARS');
     setAmount('');
     setDescription('');
+    setSelectedAccountId(cashAccounts?.length === 1 ? cashAccounts[0].id : undefined);
   }
 
   const handleSave = () => {
@@ -46,14 +63,14 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
         return;
     }
-    if (!amount || !description) {
-        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Monto y descripción son obligatorios.' });
+    if (!amount || !description || !selectedAccountId) {
+        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Caja, monto y descripción son obligatorios.' });
         return;
     }
 
-    const selectedAccount = currency === 'ARS' ? arsAccount : usdAccount;
+    const selectedAccount = cashAccounts.find(acc => acc.id === selectedAccountId);
     if (!selectedAccount) {
-        toast({ variant: 'destructive', title: 'Error', description: `El usuario ${profile.fullName} no tiene una caja en ${currency}.` });
+        toast({ variant: 'destructive', title: 'Error', description: `La caja seleccionada no es válida.` });
         return;
     }
     
@@ -69,7 +86,7 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
                 date: new Date().toISOString(),
                 type: type,
                 amount: transferAmount,
-                currency: currency,
+                currency: 'ARS',
                 description: description,
                 operatorId: operator.uid,
                 operatorName: operator.displayName || undefined
@@ -81,7 +98,7 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
             const newBalance = selectedAccount.balance + transferAmount;
             updateDocumentNonBlocking(accountRef, { balance: newBalance });
 
-            toast({ title: 'Transferencia Realizada', description: `Se acreditaron ${formatCurrency(transferAmount, currency)} a la caja de ${profile.fullName}.` });
+            toast({ title: 'Transferencia Realizada', description: `Se acreditaron ${formatCurrency(transferAmount, 'ARS')} a la caja "${selectedAccount.name}" de ${profile.fullName}.` });
             resetForm();
             setOpen(false);
 
@@ -105,7 +122,7 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
         <DialogHeader>
           <DialogTitle>{isSelf ? "Añadir Fondos a Mi Caja" : `Añadir Fondos a ${profile.fullName}`}</DialogTitle>
           <DialogDescription>
-            {isSelf ? "Realice un ingreso o refuerzo a su caja personal." : "Realice un ingreso o refuerzo a la caja del usuario."}
+            {isSelf ? "Realice un ingreso o refuerzo a una de sus cajas en ARS." : "Realice un ingreso o refuerzo a una de las cajas del usuario en ARS."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -122,21 +139,27 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
               </div>
             </RadioGroup>
           </div>
+          
+          {cashAccounts && cashAccounts.length > 1 && (
+            <div className="space-y-2">
+                <Label htmlFor="cash-account">Caja de Destino</Label>
+                <Select onValueChange={setSelectedAccountId} value={selectedAccountId}>
+                <SelectTrigger id="cash-account">
+                    <SelectValue placeholder="Seleccione una caja" />
+                </SelectTrigger>
+                <SelectContent>
+                    {cashAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                        {account.name} (Saldo: {formatCurrency(account.balance, 'ARS')})
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label>Moneda</Label>
-            <RadioGroup value={currency} onValueChange={(v: 'ARS' | 'USD') => setCurrency(v)} className="flex items-center gap-6 pt-1">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="ARS" id="ars-fund" />
-                <Label htmlFor="ars-fund">ARS</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="USD" id="usd-fund" />
-                <Label htmlFor="usd-fund">USD</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="amount">Monto</Label>
+            <Label htmlFor="amount">Monto (ARS)</Label>
             <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">
@@ -145,7 +168,7 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} disabled={isPending || !amount || !description}>
+          <Button onClick={handleSave} disabled={isPending || !amount || !description || !selectedAccountId}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Confirmar Transferencia
           </Button>

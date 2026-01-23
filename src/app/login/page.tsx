@@ -17,7 +17,7 @@ import {
 import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { UserProfile, CashAccount } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
 
 
 export default function LoginPage() {
@@ -79,16 +79,9 @@ export default function LoginPage() {
         };
         await setDoc(userRef, newUserProfile);
 
-        // Create default cash account in ARS
-        const cashAccountsCollection = collection(firestore, 'users', loggedInUser.uid, 'cashAccounts');
-    
-        const arsAccountRef = doc(cashAccountsCollection);
-        const arsAccountData: CashAccount = { id: arsAccountRef.id, userId: loggedInUser.uid, name: "Caja Principal ARS", currency: "ARS", balance: 0 };
-        await setDoc(arsAccountRef, arsAccountData);
-
         toast({
           title: '¡Bienvenido!',
-          description: 'Se ha creado tu perfil de usuario y tu caja inicial en ARS.',
+          description: 'Se ha creado tu perfil de usuario.',
         });
       }
       // La redirección ahora es manejada por el useEffect
@@ -162,5 +155,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

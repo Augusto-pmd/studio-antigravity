@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useUser } from '@/context/user-context';
-import { useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc, query, orderBy, where } from 'firebase/firestore';
-import type { CashAccount, CashTransaction, UserProfile } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { CashAccount, CashTransaction } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { QuickExpenseDialog } from './quick-expense-dialog';
@@ -13,9 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowDownCircle, ArrowUpCircle, Landmark } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Landmark, PlusCircle, Wallet } from 'lucide-react';
 import { FundTransferDialog } from '../cajas/fund-transfer-dialog';
 import { Button } from '../ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { AddCashAccountDialog } from './add-cash-account-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -36,7 +37,6 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
     if (isLoading) {
         return (
             <div className="space-y-2">
-                <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
             </div>
@@ -87,22 +87,18 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
     )
 }
 
-
 export function MyCashView() {
   const { user, firestore, isUserLoading, role } = useUser();
-  const { toast } = useToast();
 
   const accountsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`), where('currency', '==', 'ARS')) : null),
+    () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`)) : null),
     [firestore, user]
   );
   const { data: accounts, isLoading: isLoadingAccounts } = useCollection<CashAccount>(accountsQuery);
   
-  const arsAccount = useMemo(() => accounts?.[0], [accounts]);
-  
   const isLoading = isUserLoading || isLoadingAccounts;
 
-  const userProfile: UserProfile | null = useMemo(() => {
+  const userProfile = useMemo(() => {
     if (!user) return null;
     return {
       id: user.uid,
@@ -112,20 +108,6 @@ export function MyCashView() {
       role,
     };
   }, [user, role]);
-
-  useEffect(() => {
-    if (isLoading || !firestore || !user || accounts === null) return;
-
-    if (accounts.length === 0) {
-        toast({ title: 'Creando caja...', description: 'Estamos preparando tu caja personal en ARS.'});
-        const cashAccountsCollection = collection(firestore, 'users', user.uid, 'cashAccounts');
-        
-        const arsAccountRef = doc(cashAccountsCollection);
-        const arsData: CashAccount = { id: arsAccountRef.id, userId: user.uid, name: "Caja Principal ARS", currency: "ARS", balance: 0 };
-        setDocumentNonBlocking(arsAccountRef, arsData, {});
-    }
-  }, [firestore, user, accounts, isLoading, toast]);
-
 
   if (isLoading) {
     return (
@@ -140,34 +122,56 @@ export function MyCashView() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-3xl font-headline">Mi Caja</h1>
-        <div className="flex items-center gap-2">
-          {userProfile && (
-            <FundTransferDialog profile={userProfile} arsAccount={arsAccount}>
-              <Button variant="outline">
-                <Landmark className="mr-2 h-4 w-4" />
-                Añadir Fondos
-              </Button>
-            </FundTransferDialog>
-          )}
-          <QuickExpenseDialog arsAccount={arsAccount} />
-        </div>
+        <h1 className="text-3xl font-headline">Mis Cajas</h1>
+        <AddCashAccountDialog disabled={(accounts?.length ?? 0) >= 3}>
+            <Button disabled={(accounts?.length ?? 0) >= 3}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Crear Nueva Caja
+            </Button>
+        </AddCashAccountDialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Saldo en Pesos (ARS)</CardTitle>
-          <CardDescription>Saldo actual disponible en tu caja para registrar gastos.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-4xl font-bold font-mono">{formatCurrency(arsAccount?.balance ?? 0, 'ARS')}</p>
-        </CardContent>
-        <CardFooter>
-           {arsAccount ? <MyTransactionsTable accountId={arsAccount.id} /> : <div className="text-center w-full text-muted-foreground">No se encontró la caja.</div>}
-        </CardFooter>
-      </Card>
+      <p className="text-muted-foreground">
+        Gestiona tus cajas de efectivo en ARS. Puedes tener hasta 3 cajas diferentes.
+      </p>
+
+      {accounts && accounts.length > 0 ? (
+        <Accordion type="single" collapsible className="w-full space-y-4">
+            {accounts.map(account => (
+                <Card key={account.id}>
+                    <AccordionItem value={account.id} className="border-b-0">
+                        <AccordionTrigger className="p-6 hover:no-underline">
+                            <div className="flex items-center gap-4">
+                                <Wallet className="h-8 w-8 text-muted-foreground" />
+                                <div>
+                                    <h3 className="text-lg font-semibold">{account.name}</h3>
+                                    <p className="text-2xl font-bold font-mono text-left">{formatCurrency(account.balance, 'ARS')}</p>
+                                </div>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                            <div className="flex items-center justify-end gap-2 mb-4 border-t pt-4">
+                                {userProfile && (
+                                    <FundTransferDialog profile={userProfile} cashAccounts={[account]}>
+                                        <Button variant="outline">
+                                            <Landmark className="mr-2 h-4 w-4" />
+                                            Añadir Fondos
+                                        </Button>
+                                    </FundTransferDialog>
+                                )}
+                                <QuickExpenseDialog cashAccount={account} />
+                            </div>
+                            <MyTransactionsTable accountId={account.id} />
+                        </AccordionContent>
+                    </AccordionItem>
+                </Card>
+            ))}
+        </Accordion>
+      ) : (
+        <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
+            <p className="text-muted-foreground">No tienes ninguna caja. ¡Crea una para empezar!</p>
+        </div>
+      )}
     </div>
   );
 }
-
-    
