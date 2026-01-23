@@ -17,7 +17,7 @@ import { useCollection, useFirestore } from "@/firebase";
 import { useMemo } from "react";
 import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Expense } from "@/lib/types";
-import { parseISO, getMonth, getYear } from 'date-fns';
+import { parseISO, getMonth, getYear, type Month } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from "../ui/skeleton";
 
@@ -45,7 +45,7 @@ export function ExpensesChart() {
         const currentYear = new Date().getFullYear();
 
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-            month: es.localize?.month(i, { width: 'abbreviated' }).replace('.', '') || '',
+            month: es.localize?.month(i as Month, { width: 'abbreviated' }).replace('.', '') || '',
             total: 0
         }));
 
