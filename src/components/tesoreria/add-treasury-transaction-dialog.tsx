@@ -9,7 +9,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
 
@@ -31,7 +30,7 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
     setDescription('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore) return toast({ variant: 'destructive', title: 'Error de conexión.' });
     if (!amount || !category || !description) return toast({ variant: 'destructive', title: 'Todos los campos son obligatorios.' });
 
@@ -41,27 +40,27 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
     }
 
     startTransition(async () => {
-        const batch = writeBatch(firestore);
-
-        // 1. Create transaction document
-        const transactionRef = doc(collection(firestore, `treasuryAccounts/${account.id}/transactions`));
-        const newTransaction: Omit<TreasuryTransaction, 'id'> = {
-            treasuryAccountId: account.id,
-            date: new Date().toISOString(),
-            type,
-            amount: transactionAmount,
-            currency: account.currency,
-            category,
-            description,
-        };
-        batch.set(transactionRef, newTransaction);
-
-        // 2. Update account balance
-        const accountRef = doc(firestore, 'treasuryAccounts', account.id);
-        const newBalance = type === 'Ingreso' ? account.balance + transactionAmount : account.balance - transactionAmount;
-        batch.update(accountRef, { balance: newBalance });
-
         try {
+            const batch = writeBatch(firestore);
+
+            // 1. Create transaction document
+            const transactionRef = doc(collection(firestore, `treasuryAccounts/${account.id}/transactions`));
+            const newTransaction: Omit<TreasuryTransaction, 'id'> = {
+                treasuryAccountId: account.id,
+                date: new Date().toISOString(),
+                type,
+                amount: transactionAmount,
+                currency: account.currency,
+                category,
+                description,
+            };
+            batch.set(transactionRef, newTransaction);
+
+            // 2. Update account balance
+            const accountRef = doc(firestore, 'treasuryAccounts', account.id);
+            const newBalance = type === 'Ingreso' ? account.balance + transactionAmount : account.balance - transactionAmount;
+            batch.update(accountRef, { balance: newBalance });
+        
             await batch.commit();
             toast({ title: 'Movimiento Registrado', description: 'El movimiento ha sido guardado y el saldo actualizado.' });
             resetForm();

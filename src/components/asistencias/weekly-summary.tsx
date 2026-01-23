@@ -39,8 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, PlusCircle, FilePenLine, Eye, Loader2 } from "lucide-react";
 import { useUser } from "@/context/user-context";
 import { useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, doc, getDocs, limit } from "firebase/firestore";
-import { setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { PayrollWeek } from "@/lib/types";
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
@@ -111,7 +110,7 @@ export function WeeklySummary() {
                 generatedAt: new Date().toISOString(),
             };
 
-            setDocumentNonBlocking(newWeekRef, newWeek, {});
+            await setDoc(newWeekRef, newWeek, {});
             toast({
                 title: "Nueva Semana Generada",
                 description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
@@ -125,14 +124,19 @@ export function WeeklySummary() {
   
   const handleCloseWeek = (weekId: string) => {
       if (!firestore) return;
-      startTransition(() => {
-        const weekRef = doc(firestore, 'payrollWeeks', weekId);
-        // Here we could add logic to validate the week before closing
-        updateDocumentNonBlocking(weekRef, { status: 'Cerrada' });
-        toast({
-            title: "Semana Cerrada",
-            description: "La semana ha sido cerrada y pasada al historial."
-        });
+      startTransition(async () => {
+        try {
+            const weekRef = doc(firestore, 'payrollWeeks', weekId);
+            // Here we could add logic to validate the week before closing
+            await updateDoc(weekRef, { status: 'Cerrada' });
+            toast({
+                title: "Semana Cerrada",
+                description: "La semana ha sido cerrada y pasada al historial."
+            });
+        } catch (error) {
+            console.error("Error closing week:", error);
+            toast({ variant: 'destructive', title: "Error", description: "No se pudo cerrar la semana." });
+        }
       });
   };
 

@@ -37,9 +37,8 @@ import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/context/user-context";
 import { useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "../ui/separator";
 
@@ -196,7 +195,7 @@ export function AddExpenseDialog() {
         retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
       };
 
-      setDocumentNonBlocking(newExpenseRef, newExpense, {});
+      await setDoc(newExpenseRef, newExpense, {});
       
       toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
       setOpen(false);

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useTransition, useEffect } from "react";
 import {
@@ -24,8 +24,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/user-context";
-import { setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, writeBatch } from "firebase/firestore";
 import type { UserProfile, CashAccount, CashTransaction } from "@/lib/types";
 
 export function FundTransferDialog({ profile, cashAccounts, children }: { profile: UserProfile, cashAccounts: CashAccount[], children: React.ReactNode }) {
@@ -59,7 +58,7 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
     setSelectedAccountId(cashAccounts?.length === 1 ? cashAccounts[0].id : undefined);
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !operator) {
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
         return;
@@ -79,10 +78,11 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
 
     startTransition(async () => {
         try {
+            const batch = writeBatch(firestore);
+
             // 1. Create CashTransaction document
             const transactionRef = doc(collection(firestore, `users/${profile.id}/cashAccounts/${selectedAccount.id}/transactions`));
-            const newTransaction: CashTransaction = {
-                id: transactionRef.id,
+            const newTransaction: Omit<CashTransaction, 'id'> = {
                 userId: profile.id,
                 date: new Date().toISOString(),
                 type: type,
@@ -92,12 +92,14 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
                 operatorId: operator.uid,
                 operatorName: operator.displayName || undefined
             };
-            setDocumentNonBlocking(transactionRef, newTransaction, {});
+            batch.set(transactionRef, newTransaction);
 
-            // 2. Update CashAccount balance (read-then-write)
+            // 2. Update CashAccount balance
             const accountRef = doc(firestore, `users/${profile.id}/cashAccounts/${selectedAccount.id}`);
             const newBalance = selectedAccount.balance + transferAmount;
-            updateDocumentNonBlocking(accountRef, { balance: newBalance });
+            batch.update(accountRef, { balance: newBalance });
+            
+            await batch.commit();
 
             toast({ title: 'Transferencia Realizada', description: `Se acreditaron ${formatCurrency(transferAmount, 'ARS')} a la caja "${selectedAccount.name}" de ${profile.fullName}.` });
             resetForm();
