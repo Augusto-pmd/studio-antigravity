@@ -56,9 +56,6 @@ export function EmployeesTable() {
     <TableRow>
       <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-      <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
     </TableRow>
   );
@@ -70,10 +67,7 @@ export function EmployeesTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Empleado</TableHead>
-                <TableHead className="hidden md:table-cell">Rubro</TableHead>
-                <TableHead className="hidden lg:table-cell">Salario Diario</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="hidden lg:table-cell">Vencimiento ART</TableHead>
+                <TableHead className="hidden md:table-cell">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -87,7 +81,7 @@ export function EmployeesTable() {
               )}
               {!isLoading && employees?.length === 0 && (
                  <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     No hay empleados registrados. Comience creando uno nuevo.
                   </TableCell>
                 </TableRow>
@@ -98,11 +92,25 @@ export function EmployeesTable() {
                 <TableRow key={employee.id}>
                   <TableCell>
                     <div className="font-medium">{employee.name}</div>
-                    <div className="text-sm text-muted-foreground md:hidden">{employee.category}</div>
+                    <div className="text-sm text-muted-foreground">{employee.category}</div>
+                     <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
+                        <p>
+                           <Badge
+                            variant={employee.status === 'Activo' ? 'default' : 'secondary'}
+                            className={cn(
+                                "capitalize text-xs",
+                                employee.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
+                                employee.status === "Inactivo" && "bg-gray-700/40 text-gray-400 border-gray-600",
+                            )}
+                            >
+                            {employee.status}
+                            </Badge>
+                        </p>
+                        <p>Jornal: <span className="font-mono text-foreground">{formatCurrency(employee.dailyWage)}</span></p>
+                        {artStatus && <p className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</p>}
+                    </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{employee.category}</TableCell>
-                  <TableCell className="hidden font-mono lg:table-cell">{formatCurrency(employee.dailyWage)}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge
                       variant={employee.status === 'Activo' ? 'default' : 'secondary'}
                       className={cn(
@@ -113,25 +121,6 @@ export function EmployeesTable() {
                     >
                       {employee.status}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <div className="flex items-center gap-2">
-                      <span>{formatDate(employee.artExpiryDate)}</span>
-                      {artStatus && (
-                          <Tooltip>
-                              <TooltipTrigger>
-                                <TriangleAlert className={cn(
-                                    "h-5 w-5",
-                                    artStatus.variant === 'destructive' && 'text-destructive',
-                                    artStatus.variant === 'warning' && 'text-yellow-500'
-                                )} />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{artStatus.message}</p>
-                              </TooltipContent>
-                          </Tooltip>
-                      )}
-                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <EmployeeDialog employee={employee}>

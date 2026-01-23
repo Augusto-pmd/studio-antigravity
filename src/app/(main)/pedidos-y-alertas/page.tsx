@@ -31,7 +31,7 @@ export default function PedidosYAlertasPage() {
       </p>
 
       <Tabs defaultValue="pendientes" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="pendientes">Mis Tareas Pendientes</TabsTrigger>
           <TabsTrigger value="realizados">Pedidos Realizados</TabsTrigger>
           <TabsTrigger value="asistente">

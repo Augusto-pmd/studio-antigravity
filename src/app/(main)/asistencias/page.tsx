@@ -17,7 +17,7 @@ export default function AsistenciasPage() {
       <h1 className="text-3xl font-headline">Gestión de Asistencias y Pagos</h1>
 
       <Tabs defaultValue="resumen" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="resumen">
             <FileText className="mr-2 h-4 w-4" />
             Planillas Semanales

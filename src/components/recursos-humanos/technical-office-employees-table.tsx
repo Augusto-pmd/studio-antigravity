@@ -31,8 +31,7 @@ export function TechnicalOfficeEmployeesTable() {
   const renderSkeleton = () => (
     <TableRow>
       <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
     </TableRow>
@@ -44,9 +43,8 @@ export function TechnicalOfficeEmployeesTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead className="hidden lg:table-cell">Salario Mensual</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead className="hidden md:table-cell">Cargo</TableHead>
+                <TableHead className="hidden md:table-cell">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -59,17 +57,34 @@ export function TechnicalOfficeEmployeesTable() {
               )}
               {!isLoading && employees?.length === 0 && (
                  <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No hay empleados de oficina registrados.
                   </TableCell>
                 </TableRow>
               )}
               {employees?.map((employee) => (
                 <TableRow key={employee.id}>
-                  <TableCell className="font-medium">{employee.fullName}</TableCell>
-                  <TableCell>{employee.position}</TableCell>
-                  <TableCell className="hidden font-mono lg:table-cell">{formatCurrency(employee.monthlySalary)}</TableCell>
                   <TableCell>
+                      <div className="font-medium">{employee.fullName}</div>
+                      <div className="text-sm text-muted-foreground md:hidden">{employee.position}</div>
+                      <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
+                        <p><span className='font-medium text-foreground'>Salario:</span> <span className='font-mono'>{formatCurrency(employee.monthlySalary)}</span></p>
+                        <p>
+                             <Badge
+                                variant={employee.status === 'Activo' ? 'default' : 'secondary'}
+                                className={cn(
+                                    "capitalize text-xs",
+                                    employee.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
+                                    employee.status === "Inactivo" && "bg-gray-700/40 text-gray-400 border-gray-600",
+                                )}
+                                >
+                                {employee.status}
+                                </Badge>
+                        </p>
+                      </div>
+                  </TableCell>
+                  <TableCell className='hidden md:table-cell'>{employee.position}</TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge
                       variant={employee.status === 'Activo' ? 'default' : 'secondary'}
                       className={cn(

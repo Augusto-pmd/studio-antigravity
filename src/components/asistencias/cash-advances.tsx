@@ -54,16 +54,16 @@ export function CashAdvances() {
     Array.from({ length: 2 }).map((_, i) => (
       <TableRow key={`skel-adv-${i}`}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+        <TableCell className="text-right md:hidden"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
       </TableRow>
     ))
   );
 
   return (
     <Card className="mt-4">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex-row items-center justify-between">
         <div>
             <CardTitle>Gestión de Adelantos</CardTitle>
             <CardDescription>
@@ -84,9 +84,9 @@ export function CashAdvances() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Fecha</TableHead>
-                            <TableHead>Empleado</TableHead>
-                            <TableHead>Obra</TableHead>
-                            <TableHead className="text-right">Monto</TableHead>
+                            <TableHead className='hidden md:table-cell'>Empleado</TableHead>
+                            <TableHead className='hidden md:table-cell'>Obra</TableHead>
+                            <TableHead className="text-right hidden md:table-cell">Monto</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -100,10 +100,17 @@ export function CashAdvances() {
                         )}
                         {!isLoading && advances?.map(advance => (
                                 <TableRow key={advance.id}>
-                                    <TableCell>{formatDate(advance.date)}</TableCell>
-                                    <TableCell>{advance.employeeName}</TableCell>
-                                    <TableCell>{advance.projectName || 'N/A'}</TableCell>
-                                    <TableCell className="text-right font-mono">{formatCurrency(advance.amount)}</TableCell>
+                                    <TableCell>
+                                      <div>{formatDate(advance.date)}</div>
+                                      <div className='md:hidden mt-2 space-y-1 text-sm text-muted-foreground'>
+                                        <p className='font-medium text-foreground'>{advance.employeeName}</p>
+                                        <p>{advance.projectName || 'N/A'}</p>
+                                        <p className='font-mono font-semibold text-foreground'>{formatCurrency(advance.amount)}</p>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className='hidden md:table-cell'>{advance.employeeName}</TableCell>
+                                    <TableCell className='hidden md:table-cell'>{advance.projectName || 'N/A'}</TableCell>
+                                    <TableCell className="text-right font-mono hidden md:table-cell">{formatCurrency(advance.amount)}</TableCell>
                                 </TableRow>
                             ))
                         }

@@ -110,20 +110,16 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
     Array.from({ length: 3 }).map((_, i) => (
       <TableRow key={i}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+        <TableCell className='hidden sm:table-cell'><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell className='hidden md:table-cell'><Skeleton className="h-5 w-28" /></TableCell>
+        <TableCell className="text-right hidden lg:table-cell"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
       </TableRow>
     ))
   );
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader className="flex-col items-start gap-y-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Reporte de Gastos</CardTitle>
           <CardDescription>Detalle de todos los gastos registrados con información fiscal.</CardDescription>
@@ -139,13 +135,12 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
-                <TableHead>Obra</TableHead>
-                <TableHead>Proveedor</TableHead>
-                <TableHead className="text-right">IVA</TableHead>
-                <TableHead className="text-right">IIBB</TableHead>
-                <TableHead className="text-right">Ret. Gan.</TableHead>
-                <TableHead className="text-right">Otras Ret.</TableHead>
-                <TableHead className="text-right">Monto Total</TableHead>
+                <TableHead className='hidden sm:table-cell'>Obra</TableHead>
+                <TableHead className="hidden md:table-cell">Proveedor</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">IVA</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">IIBB</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Retenciones</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Monto Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -159,14 +154,20 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
               )}
               {expenses.map((expense: Expense) => (
                 <TableRow key={expense.id}>
-                  <TableCell>{formatDate(expense.date)}</TableCell>
-                  <TableCell className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</TableCell>
-                  <TableCell>{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(expense.iva)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(expense.iibb)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(expense.retencionGanancias)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency((expense.retencionIIBB || 0) + (expense.retencionIVA || 0) + (expense.retencionSUSS || 0))}</TableCell>
-                  <TableCell className="text-right font-mono font-bold">{formatCurrency(expense.amount, expense.currency)}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{formatDate(expense.date)}</div>
+                    <div className="space-y-1 text-sm text-muted-foreground sm:hidden mt-2">
+                        <p><span className='font-medium'>Obra:</span> {projectsMap[expense.projectId] || expense.projectId}</p>
+                        <p><span className='font-medium'>Prov:</span> {suppliersMap[expense.supplierId] || expense.supplierId}</p>
+                        <div className='font-mono pt-1 font-semibold text-foreground'>{formatCurrency(expense.amount, expense.currency)}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium hidden sm:table-cell">{projectsMap[expense.projectId] || expense.projectId}</TableCell>
+                  <TableCell className='hidden md:table-cell'>{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
+                  <TableCell className="text-right font-mono hidden lg:table-cell">{formatCurrency(expense.iva)}</TableCell>
+                  <TableCell className="text-right font-mono hidden lg:table-cell">{formatCurrency(expense.iibb)}</TableCell>
+                  <TableCell className="text-right font-mono hidden lg:table-cell">{formatCurrency((expense.retencionGanancias || 0) + (expense.retencionIIBB || 0) + (expense.retencionIVA || 0) + (expense.retencionSUSS || 0))}</TableCell>
+                  <TableCell className="text-right font-mono font-bold hidden sm:table-cell">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -9,9 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { Expense, Project, Supplier, ExpenseCategory } from "@/lib/types";
+import type { Expense } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, collectionGroup, query } from "firebase/firestore";
@@ -49,10 +47,8 @@ export function ExpensesTable() {
   const renderSkeleton = () => (
     <TableRow>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
-      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
     </TableRow>
   );
@@ -62,11 +58,9 @@ export function ExpensesTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Fecha</TableHead>
                 <TableHead>Obra</TableHead>
                 <TableHead className="hidden md:table-cell">Proveedor</TableHead>
-                <TableHead className="hidden md:table-cell">Rubro</TableHead>
-                <TableHead>Comprobante</TableHead>
+                <TableHead className="hidden md:table-cell">Fecha</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
               </TableRow>
             </TableHeader>
@@ -80,25 +74,23 @@ export function ExpensesTable() {
               )}
               {!isLoadingExpenses && expenses?.length === 0 && (
                  <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No hay gastos registrados. Comience creando uno nuevo.
                   </TableCell>
                 </TableRow>
               )}
               {expenses?.map((expense: Expense) => (
                 <TableRow key={expense.id}>
-                  <TableCell>{formatDate(expense.date)}</TableCell>
-                  <TableCell className="font-medium">
-                    {getProjectName(expense.projectId)}
-                    <div className="text-sm text-muted-foreground md:hidden">
-                        {getSupplierName(expense.supplierId)}
+                  <TableCell>
+                    <div className="font-medium">{getProjectName(expense.projectId)}</div>
+                    <div className="text-sm text-muted-foreground">{getCategoryName(expense.categoryId)}</div>
+                    <div className="text-sm text-muted-foreground md:hidden mt-2">
+                      <p>{getSupplierName(expense.supplierId)}</p>
+                      <p>{formatDate(expense.date)}</p>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{getSupplierName(expense.supplierId)}</TableCell>
-                  <TableCell className="hidden md:table-cell">{getCategoryName(expense.categoryId)}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{expense.documentType}</Badge>
-                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                 </TableRow>
               ))}

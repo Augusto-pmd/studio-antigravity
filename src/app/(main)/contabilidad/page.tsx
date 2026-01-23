@@ -17,7 +17,7 @@ export default function ContabilidadPage() {
       </div>
       
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="dashboard">
             <BookText className="mr-2 h-4 w-4" />
             Dashboard Contable

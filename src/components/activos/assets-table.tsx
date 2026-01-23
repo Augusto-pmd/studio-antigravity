@@ -38,9 +38,6 @@ export function AssetsTable() {
     <TableRow>
       <TableCell><div className="space-y-1"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-      <TableCell className="hidden text-right lg:table-cell"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
-      <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
     </TableRow>
   );
@@ -51,10 +48,7 @@ export function AssetsTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Activo</TableHead>
-              <TableHead className="hidden md:table-cell">Categoría</TableHead>
-              <TableHead className="hidden lg:table-cell">Fecha de Compra</TableHead>
-              <TableHead className="hidden text-right lg:table-cell">Valor de Compra</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead className="hidden md:table-cell">Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -67,7 +61,7 @@ export function AssetsTable() {
             )}
             {!isLoading && assets?.length === 0 && (
                <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={3} className="h-24 text-center">
                   No hay activos registrados. Comience creando uno nuevo.
                 </TableCell>
               </TableRow>
@@ -76,13 +70,27 @@ export function AssetsTable() {
               <TableRow key={asset.id}>
                 <TableCell>
                   <div className="font-medium">{asset.name}</div>
-                  <div className="text-sm text-muted-foreground md:hidden">{asset.category}</div>
-                  <div className="text-sm text-muted-foreground lg:hidden">{asset.description || asset.id}</div>
+                  <div className="text-sm text-muted-foreground">{asset.category}</div>
+                  <div className="space-y-1 text-sm text-muted-foreground md:hidden mt-2">
+                     <p>
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                "capitalize text-xs",
+                                asset.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
+                                asset.status === "Mantenimiento" && "bg-yellow-900/40 text-yellow-300 border-yellow-700",
+                                asset.status === "Vendido" && "bg-blue-900/40 text-blue-300 border-blue-700",
+                                asset.status === "De Baja" && "bg-red-900/40 text-red-300 border-red-700",
+                            )}
+                        >
+                            {asset.status}
+                        </Badge>
+                     </p>
+                     <p>Compra: {formatDate(asset.purchaseDate)}</p>
+                     <p>Valor: <span className="font-mono">{formatCurrency(asset.purchaseValue, asset.currency)}</span></p>
+                  </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">{asset.category}</TableCell>
-                <TableCell className="hidden lg:table-cell">{formatDate(asset.purchaseDate)}</TableCell>
-                <TableCell className="hidden text-right font-mono lg:table-cell">{formatCurrency(asset.purchaseValue, asset.currency)}</TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <Badge
                     variant="outline"
                     className={cn(

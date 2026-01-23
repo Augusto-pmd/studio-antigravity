@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Skeleton } from '../ui/skeleton';
 
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
@@ -135,6 +136,72 @@ export function DailyAttendance() {
     };
   };
 
+  const renderAttendanceControls = (employee: Employee) => {
+    const employeeAttendance = getEmployeeAttendance(employee.id);
+    const isPresent = employeeAttendance.status === 'presente';
+    return (
+      <>
+        <div className="space-y-2">
+            <Label>Estado</Label>
+            <RadioGroup
+                value={employeeAttendance.status}
+                onValueChange={(value) => handleAttendanceChange(employee.id, 'status', value as AttendanceStatus)}
+                className="flex gap-4"
+            >
+                <div className="flex items-center space-x-2">
+                <RadioGroupItem value="presente" id={`mobile-${employee.id}-presente`} />
+                <Label htmlFor={`mobile-${employee.id}-presente`}>Presente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                <RadioGroupItem value="ausente" id={`mobile-${employee.id}-ausente`} />
+                <Label htmlFor={`mobile-${employee.id}-ausente`}>Ausente</Label>
+                </div>
+            </RadioGroup>
+        </div>
+        <div className="space-y-2">
+            <Label>Obra</Label>
+            <Select
+                value={employeeAttendance.projectId ?? ''}
+                onValueChange={(value) => handleAttendanceChange(employee.id, 'projectId', value)}
+                disabled={!isPresent || isLoadingProjects}
+            >
+                <SelectTrigger>
+                <SelectValue placeholder="Asignar Obra" />
+                </SelectTrigger>
+                <SelectContent>
+                {projects
+                    ?.filter((p) => p.status === 'En Curso')
+                    .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+        <div className="space-y-2">
+            <Label>Horas Tarde</Label>
+            <Input
+                type="number"
+                min="0"
+                value={employeeAttendance.lateHours}
+                onChange={(e) => handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)}
+                disabled={!isPresent}
+            />
+        </div>
+        <div className="space-y-2">
+            <Label>Observaciones</Label>
+             <Input
+                type="text"
+                placeholder="Añadir nota..."
+                value={employeeAttendance.notes}
+                onChange={(e) => handleAttendanceChange(employee.id, 'notes', e.target.value)}
+            />
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 pt-4">
       <Card>
@@ -152,7 +219,7 @@ export function DailyAttendance() {
                   id="date"
                   variant={'outline'}
                   className={cn(
-                    'w-[240px] justify-start text-left font-normal',
+                    'w-full sm:w-[240px] justify-start text-left font-normal',
                     !selectedDate && 'text-muted-foreground'
                   )}
                 >
@@ -170,7 +237,7 @@ export function DailyAttendance() {
                 />
               </PopoverContent>
             </Popover>
-            <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1">
+            <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1 flex-wrap">
               {isClient && weekDays.map(day => (
                 <Button
                   key={day.toISOString()}
@@ -196,7 +263,30 @@ export function DailyAttendance() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-md border">
+           {/* Mobile View */}
+           <div className="md:hidden flex flex-col gap-4">
+             {isLoadingEmployees ? (
+                Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-lg" />)
+             ) : activeEmployees.length > 0 ? (
+                activeEmployees.map((employee) => (
+                    <Card key={employee.id}>
+                        <CardHeader>
+                            <CardTitle>{employee.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            {renderAttendanceControls(employee)}
+                        </CardContent>
+                    </Card>
+                ))
+             ) : (
+                <div className="text-center text-muted-foreground py-10">
+                    No hay empleados activos en el sistema.
+                </div>
+             )}
+           </div>
+
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
