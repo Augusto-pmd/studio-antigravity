@@ -19,7 +19,7 @@ const formatCurrency = (amount: number, currency: string) => {
 
 export function TreasuryAccounts() {
     const { firestore, permissions } = useUser();
-    const canManage = permissions.canValidate; // Using canValidate for Tesoreria management for now
+    const canManage = permissions.isSuperAdmin;
 
     const accountsQuery = useMemoFirebase(
         () => (firestore && canManage ? query(collection(firestore, 'treasuryAccounts')) : null),
