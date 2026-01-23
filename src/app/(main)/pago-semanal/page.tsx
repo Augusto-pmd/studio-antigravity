@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Users, HardHat, Truck, ShoppingCart } from "lucide-react";
-import { useUser } from "@/context/user-context";
+import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import type { FundRequest } from "@/lib/types";
