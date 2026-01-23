@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useUser, useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useUser } from '@/context/user-context';
+import { useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc, query, orderBy } from 'firebase/firestore';
 import type { CashAccount, CashTransaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -167,5 +168,3 @@ export function MyCashView() {
     </div>
   );
 }
-
-    

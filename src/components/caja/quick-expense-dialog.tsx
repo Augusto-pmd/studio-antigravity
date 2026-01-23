@@ -23,7 +23,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, PlusCircle, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useCollection, useMemoFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
+import { useUser } from "@/context/user-context";
+import { useCollection, useMemoFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
@@ -61,6 +62,11 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
       setReceiptFile(file);
     }
   };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+  };
+  
 
   const handleSave = () => {
     if (!firestore || !user) {
@@ -219,5 +225,3 @@ export function QuickExpenseDialog({ arsAccount, usdAccount }: { arsAccount?: Ca
     </Dialog>
   );
 }
-
-    
