@@ -2,127 +2,39 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth, useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup, User, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { UserProfile } from '@/lib/types';
 import { loginBackgrounds } from '@/lib/login-backgrounds';
 
 
 export default function LoginPage() {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [background, setBackground] = useState(loginBackgrounds[0]);
+  const [background, setBackground] = useState(loginBackgrounds[0] || { src: '', hint: '', quote: '', author: '' });
 
   useEffect(() => {
     // This runs only on the client, after hydration, to pick a random background
-    const randomIndex = Math.floor(Math.random() * loginBackgrounds.length);
-    setBackground(loginBackgrounds[randomIndex]);
+    if (loginBackgrounds.length > 0) {
+      const randomIndex = Math.floor(Math.random() * loginBackgrounds.length);
+      setBackground(loginBackgrounds[randomIndex]);
+    }
   }, []);
 
-  useEffect(() => {
-    // Si el usuario ya está logueado y la carga ha terminado, redirigir
-    if (!isUserLoading && user) {
-      router.replace('/');
-    }
-  }, [user, isUserLoading, router]);
-
-  const handleGoogleSignIn = async () => {
-    if (!auth || !firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Error de configuración',
-        description: 'Los servicios de autenticación no están disponibles.',
-      });
-      return;
-    }
-
+  const handleSignIn = () => {
     setIsSigningIn(true);
-    const provider = new GoogleAuthProvider();
-
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const loggedInUser = result.user;
-      const userEmail = loggedInUser.email;
-      
-      const corporateDomain = 'pmdarquitectura.com';
-      if (!userEmail || !userEmail.endsWith(`@${corporateDomain}`)) {
-        await signOut(auth);
-        toast({
-          variant: 'destructive',
-          title: 'Acceso Denegado',
-          description: `El inicio de sesión solo está permitido para usuarios del dominio @${corporateDomain}.`,
-        });
-        setIsSigningIn(false);
-        return;
-      }
-
-      const userRef = doc(firestore, 'users', loggedInUser.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        const newUserProfile: UserProfile = {
-          id: loggedInUser.uid,
-          email: loggedInUser.email || '',
-          fullName: loggedInUser.displayName || 'Usuario Anónimo',
-          role: 'Operador',
-          photoURL: loggedInUser.photoURL || '',
-        };
-        
-        setDoc(userRef, newUserProfile)
-          .then(() => {
-            toast({
-              title: '¡Bienvenido!',
-              description: 'Se ha creado tu perfil de usuario.',
-            });
-            // La redirección es manejada por el useEffect
-          })
-          .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-              path: userRef.path,
-              operation: 'create',
-              requestResourceData: newUserProfile,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-              variant: 'destructive',
-              title: 'Error de Perfil',
-              description: 'No se pudo crear tu perfil de usuario. Contacta al administrador.',
-            });
-          });
-      }
-    } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user') {
-        toast({
-          variant: 'destructive',
-          title: 'Error al iniciar sesión',
-          description: error.message || 'No se pudo completar el inicio de sesión con Google.',
-        });
-      }
-    } finally {
-      setIsSigningIn(false);
-    }
+    toast({
+      title: 'Simulando inicio de sesión...',
+      description: 'Redirigiendo al dashboard.',
+    });
+    // Simulate a network request
+    setTimeout(() => {
+      router.replace('/');
+    }, 1000);
   };
   
-  // Muestra un loader mientras se determina el estado de autenticación inicial
-  if (isUserLoading || user) {
-    return (
-       <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-muted-foreground">Verificando sesión...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="flex items-center justify-center py-12">
@@ -137,7 +49,7 @@ export default function LoginPage() {
           <div className="grid gap-4">
             <Button
               className="w-full"
-              onClick={handleGoogleSignIn}
+              onClick={handleSignIn}
               disabled={isSigningIn}
             >
               {isSigningIn ? (
@@ -159,23 +71,25 @@ export default function LoginPage() {
                   ></path>
                 </svg>
               )}
-              Iniciar Sesión con Google
+              Ingresar al Sistema (Simulado)
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-                Usa tu cuenta corporativa de Google para acceder.
+                La autenticación real ha sido desactivada temporalmente.
             </p>
           </div>
         </div>
       </div>
        <div className="hidden bg-muted lg:block relative">
-        <Image
-            src={background.src}
-            alt={background.hint}
-            fill
-            priority
-            className="h-full w-full object-cover grayscale dark:brightness-[0.3]"
-            data-ai-hint={background.hint}
-        />
+        {background.src && (
+            <Image
+                src={background.src}
+                alt={background.hint}
+                fill
+                priority
+                className="h-full w-full object-cover grayscale dark:brightness-[0.3]"
+                data-ai-hint={background.hint}
+            />
+        )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <blockquote className="text-white text-lg font-medium max-w-lg">
