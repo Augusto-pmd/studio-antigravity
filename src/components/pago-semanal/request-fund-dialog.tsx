@@ -53,7 +53,7 @@ export function RequestFundDialog() {
   const { toast } = useToast();
 
   // Form State
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [projectId, setProjectId] = useState<string | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
@@ -71,6 +71,12 @@ export function RequestFundDialog() {
     setAmount('');
     setExchangeRate('');
   };
+
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open]);
 
   const handleSave = async () => {
     if (!firestore || !user) {
@@ -104,7 +110,7 @@ export function RequestFundDialog() {
             status: 'Pendiente',
         };
 
-        await setDoc(requestRef, requestData, { merge: false });
+        await setDoc(requestRef, requestData);
 
         toast({
             title: 'Solicitud Enviada',

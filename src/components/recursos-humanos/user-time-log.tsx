@@ -45,41 +45,44 @@ export function UserTimeLog() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [timeLogEntries, setTimeLogEntries] = useState<TimeLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
-  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   const projectsQuery = useMemo(() => (firestore ? query(collection(firestore, 'projects'), where('status', '==', 'En Curso')) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const formattedDate = useMemo(() => format(selectedDate, 'yyyy-MM-dd'), [selectedDate]);
+  const formattedDate = useMemo(() => selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, [selectedDate]);
   
   const timeLogsQuery = useMemo(
-    () => (user && firestore ? query(collection(firestore, 'timeLogs'), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
+    () => (user && firestore && formattedDate ? query(collection(firestore, 'timeLogs'), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
     [user, firestore, formattedDate]
   );
   const { data: existingLogs, isLoading: isLoadingExistingLogs } = useCollection<TimeLog>(timeLogsQuery);
 
   useEffect(() => {
     setIsClient(true);
+    setSelectedDate(new Date());
   }, []);
   
   useEffect(() => {
     if (existingLogs) {
-      const entries = existingLogs.map(log => ({
-        id: log.id,
-        projectId: log.projectId,
-        hours: log.hours,
-      }));
-      setTimeLogEntries(entries);
-    } else {
+      if (existingLogs.length > 0) {
+        const entries = existingLogs.map(log => ({
+          id: log.id,
+          projectId: log.projectId,
+          hours: log.hours,
+        }));
+        setTimeLogEntries(entries);
+      } else {
         setTimeLogEntries([{ id: `temp-${Date.now()}`, projectId: '', hours: 8 }]);
+      }
     }
   }, [existingLogs]);
 
 
   const weekDays = useMemo(() => {
+    if (!selectedDate) return [];
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [selectedDate]);
@@ -99,14 +102,17 @@ export function UserTimeLog() {
   };
 
   const handleSaveLogs = () => {
-    if (!firestore || !user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+    if (!firestore || !user || !selectedDate) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos o la fecha no es válida.' });
         return;
     }
     if (timeLogEntries.some(entry => !entry.projectId || entry.hours <= 0)) {
         toast({ variant: 'destructive', title: 'Datos Incompletos', description: 'Asegúrese de seleccionar una obra y asignar horas a cada entrada.' });
         return;
     }
+    
+    const currentFormattedDate = format(selectedDate, 'yyyy-MM-dd');
+
 
     startTransition(async () => {
         try {
@@ -129,7 +135,7 @@ export function UserTimeLog() {
                 
                 const logData: Omit<TimeLog, 'id'> = {
                     userId: user.uid,
-                    date: formattedDate,
+                    date: currentFormattedDate,
                     projectId: entry.projectId,
                     hours: Number(entry.hours),
                 };
@@ -166,17 +172,17 @@ export function UserTimeLog() {
                         <Button
                         id="date"
                         variant={'outline'}
-                        className={cn('w-[240px] justify-start text-left font-normal',!selectedDate && 'text-muted-foreground')}
+                        className={cn('w-full sm:w-[240px] justify-start text-left font-normal',!selectedDate && 'text-muted-foreground')}
                         >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Seleccione una fecha</span>}
+                        {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Cargando...</span>}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                        <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)} locale={es} initialFocus />
+                        <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)} locale={es} />
                     </PopoverContent>
                     </Popover>
-                    <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1">
+                    <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1 flex-wrap">
                     {isClient && weekDays.map(day => (
                         <Button
                         key={day.toISOString()}
@@ -233,7 +239,7 @@ export function UserTimeLog() {
                             </Button>
                         </div>
                     ))}
-                     <Button variant="outline" onClick={addEntry} className="w-full">
+                     <Button variant="outline" onClick={addEntry} className="w-full" disabled={!selectedDate}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Añadir Otra Obra
                     </Button>
