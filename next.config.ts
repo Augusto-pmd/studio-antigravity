@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  generateBuildId: async () => {
+    // Using a timestamp ensures a unique ID for every new build, busting caches.
+    return new Date().getTime().toString();
+  },
 };
 
 export default nextConfig;
