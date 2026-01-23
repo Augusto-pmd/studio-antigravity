@@ -204,3 +204,25 @@ export type SalaryHistory = {
   amount: number;
   effectiveDate: string;
 };
+
+export type TreasuryAccount = {
+  id: string;
+  name: string;
+  currency: 'ARS' | 'USD';
+  balance: number;
+  accountType: 'Banco' | 'Efectivo';
+  cbu?: string;
+};
+
+export type TreasuryTransaction = {
+  id: string;
+  treasuryAccountId: string;
+  date: string;
+  type: 'Ingreso' | 'Egreso';
+  amount: number;
+  currency: 'ARS' | 'USD';
+  description: string;
+  category: string;
+  relatedDocumentId?: string;
+  relatedDocumentType?: string;
+};

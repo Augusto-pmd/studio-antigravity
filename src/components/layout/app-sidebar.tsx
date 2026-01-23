@@ -46,6 +46,7 @@ import {
   BookText,
   Briefcase,
   Clock,
+  Scale,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -73,6 +74,12 @@ const menuItems = [
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/contratos", label: "Contratos", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  {
+    href: "/tesoreria",
+    label: "Tesorería",
+    icon: Scale,
+    role: ["Dirección", "Administración"],
+  },
   {
     href: "/recursos-humanos",
     label: "Recursos Humanos",
