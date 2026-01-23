@@ -5,7 +5,7 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { Role, UserProfile } from '@/lib/types';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
@@ -58,44 +58,46 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [userError, setUserError] = useState<Error | null>(null);
-  const [role, setRole] = useState<Role>('Operador');
+  const [realRole, setRealRole] = useState<Role>('Operador');
+  const [simulatedRole, setSimulatedRole] = useState<Role | null>(null);
 
   useEffect(() => {
     if (!auth || !firestore) {
-      setIsUserLoading(false); // If no auth, not loading
+      // If Firebase services aren't available, we're not loading a user.
+      setIsUserLoading(false);
       return;
     };
     
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-        // Fetch user role from Firestore
-        const userDocRef = doc(firestore, 'users', user.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        const userDocRef = doc(firestore, 'users', authUser.uid);
         try {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
             const userProfile = userDoc.data() as UserProfile;
-            setRole(userProfile.role);
+            setRealRole(userProfile.role);
           } else {
-             // Handle case where user is authenticated but has no profile document
-             // For now, we'll create a default one.
+             // Handle case where user is authenticated but has no profile document (first login)
             const newUserProfile: UserProfile = {
-                id: user.uid,
-                email: user.email || 'no-email@example.com',
-                fullName: user.displayName || 'Nuevo Usuario',
+                id: authUser.uid,
+                email: authUser.email || 'no-email@example.com',
+                fullName: authUser.displayName || 'Nuevo Usuario',
                 role: 'Operador',
-                photoURL: user.photoURL || undefined,
+                photoURL: authUser.photoURL || undefined,
             };
             await setDoc(userDocRef, newUserProfile);
-            setRole('Operador');
+            setRealRole('Operador');
           }
         } catch (e: any) {
+          console.error("Error fetching user profile:", e);
           setUserError(e);
-          setRole('Operador'); // Default role on error
+          setRealRole('Operador'); // Default role on error
         }
       } else {
         setUser(null);
-        setRole('Operador'); // Reset role on logout
+        setRealRole('Operador'); // Reset role on logout
+        setSimulatedRole(null);
       }
       setIsUserLoading(false);
     });
@@ -103,9 +105,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     return () => unsubscribe();
   }, [auth, firestore]);
   
-  // Use a separate state for role simulation to avoid conflicts with the real role
-  const [simulatedRole, setSimulatedRole] = useState<Role | null>(null);
-  const displayRole = simulatedRole || role;
+  const displayRole = simulatedRole || realRole;
   
   const handleSetRole = (newRole: Role) => {
     setSimulatedRole(newRole);
