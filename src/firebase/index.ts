@@ -1,23 +1,25 @@
 'use client';
 
-import { FirebaseApp, initializeApp, getApps } from 'firebase/app';
+import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
-interface FirebaseInstances {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
+let firebaseApp: FirebaseApp;
+let auth: Auth;
+let firestore: Firestore;
+
+// This check prevents re-initializing the app on hot reloads.
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
+} else {
+  firebaseApp = getApp();
 }
 
-export function initializeFirebase(): FirebaseInstances {
-  const apps = getApps();
-  const firebaseApp = apps.length ? apps[0] : initializeApp(firebaseConfig);
-  const auth = getAuth(firebaseApp);
-  const firestore = getFirestore(firebaseApp);
-  return { firebaseApp, auth, firestore };
-}
+auth = getAuth(firebaseApp);
+firestore = getFirestore(firebaseApp);
+
+export { firebaseApp, auth, firestore };
 
 export { FirebaseProvider } from './provider';
 export { FirebaseClientProvider } from './client-provider';
