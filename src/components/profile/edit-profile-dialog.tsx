@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition, ChangeEvent } from 'react';
@@ -15,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Pencil } from 'lucide-react';
 import { useUser } from '@/context/user-context';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirebaseApp } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -31,6 +32,7 @@ export function EditProfileDialog({
 }) {
   const { user, firestore } = useUser();
   const auth = useAuth();
+  const firebaseApp = useFirebaseApp();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -54,7 +56,7 @@ export function EditProfileDialog({
   };
 
   const handleSave = () => {
-    if (!user || !firestore || !auth) {
+    if (!user || !firestore || !auth || !firebaseApp) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a los servicios de Firebase.' });
       return;
     }
@@ -65,7 +67,7 @@ export function EditProfileDialog({
         const userDocRef = doc(firestore, 'users', user.uid);
         
         if (newPhoto) {
-          const storage = getStorage();
+          const storage = getStorage(firebaseApp);
           const filePath = `avatars/${user.uid}/${newPhoto.name}`;
           const storageRef = ref(storage, filePath);
           const snapshot = await uploadBytes(storageRef, newPhoto);
@@ -84,8 +86,8 @@ export function EditProfileDialog({
             firestoreUpdates.photoURL = photoURL;
         }
 
-        if (Object.keys(profileUpdates).length > 0) {
-            await updateProfile(auth.currentUser!, profileUpdates);
+        if (auth.currentUser && Object.keys(profileUpdates).length > 0) {
+            await updateProfile(auth.currentUser, profileUpdates);
         }
 
         if (Object.keys(firestoreUpdates).length > 0) {

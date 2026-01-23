@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, ChangeEvent } from "react";
@@ -151,7 +152,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
     });
   }
 
-  if (!permissions.canLoadExpenses) return null;
+  if (!permissions?.canLoadExpenses) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
