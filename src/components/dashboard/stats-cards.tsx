@@ -12,7 +12,7 @@ import { useMemo } from "react";
 import { collection, query, where, collectionGroup } from "firebase/firestore";
 import type { Project, Expense } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth, parseISO } from "date-fns";
 
 const formatCurrency = (amount: number, currency?: string) => {
     if (typeof amount !== 'number') return '';
@@ -33,19 +33,12 @@ export function StatsCards() {
 
     const expensesQuery = useMemo(() => {
         if (!firestore) return null;
-        const now = new Date();
-        const start = startOfMonth(now);
-        const end = endOfMonth(now);
-        return query(
-            collectionGroup(firestore, 'expenses'), 
-            where('date', '>=', start.toISOString()),
-            where('date', '<=', end.toISOString())
-        );
+        return query(collectionGroup(firestore, 'expenses'));
     }, [firestore]);
-    const { data: monthlyExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
-    
+    const { data: allExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
+
     const stats = useMemo(() => {
-        if (!projects || !monthlyExpenses) {
+        if (!projects || !allExpenses) {
             return {
                 activeProjects: 0,
                 totalBalance: 0,
@@ -55,6 +48,19 @@ export function StatsCards() {
 
         const activeProjects = projects.filter(p => p.status === 'En Curso').length;
         const totalBalance = projects.reduce((acc, p) => p.currency === 'ARS' ? acc + p.balance : acc, 0);
+
+        const now = new Date();
+        const start = startOfMonth(now);
+        const end = endOfMonth(now);
+        const monthlyExpenses = allExpenses.filter(e => {
+            try {
+                const expenseDate = parseISO(e.date);
+                return expenseDate >= start && expenseDate <= end;
+            } catch (error) {
+                return false;
+            }
+        });
+
         const totalMonthlyExpenses = monthlyExpenses.reduce((acc, e) => e.currency === 'ARS' ? acc + e.amount : acc, 0);
 
         return {
@@ -62,7 +68,7 @@ export function StatsCards() {
             totalBalance,
             totalMonthlyExpenses
         };
-    }, [projects, monthlyExpenses]);
+    }, [projects, allExpenses]);
     
     const isLoading = isLoadingProjects || isLoadingExpenses;
 
