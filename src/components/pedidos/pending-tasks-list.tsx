@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useTransition } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
 import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '../ui/button';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -18,6 +18,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 export function PendingTasksList() {
   const { user, firestore } = useUser();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   const tasksQuery = useMemo(
     () =>
@@ -33,31 +35,37 @@ export function PendingTasksList() {
 
   const { data: tasks, isLoading } = useCollection<TaskRequest>(tasksQuery);
 
-  const handleCompleteTask = async (taskId: string) => {
+  const handleCompleteTask = (taskId: string) => {
     if (!firestore) return;
-    const taskRef = doc(firestore, 'taskRequests', taskId);
-    const updatedData = {
-        status: 'Finalizado',
-        completedAt: new Date().toISOString(),
-    };
-    
-    updateDoc(taskRef, updatedData)
-        .then(() => {
-            toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
-        })
-        .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-                path: taskRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-              variant: "destructive",
-              title: "Error al completar",
-              description: "No se pudo finalizar la tarea. Es posible que no tengas permisos.",
-            });
-        });
+    setUpdatingTaskId(taskId);
+    startTransition(() => {
+      const taskRef = doc(firestore, 'taskRequests', taskId);
+      const updatedData = {
+          status: 'Finalizado',
+          completedAt: new Date().toISOString(),
+      };
+      
+      updateDoc(taskRef, updatedData)
+          .then(() => {
+              toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
+          })
+          .catch((error) => {
+              const permissionError = new FirestorePermissionError({
+                  path: taskRef.path,
+                  operation: 'update',
+                  requestResourceData: updatedData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              toast({
+                variant: "destructive",
+                title: "Error al completar",
+                description: "No se pudo finalizar la tarea. Es posible que no tengas permisos.",
+              });
+          })
+          .finally(() => {
+            setUpdatingTaskId(null);
+          });
+    });
   };
 
   const renderSkeleton = () => (
@@ -105,8 +113,8 @@ export function PendingTasksList() {
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button size="sm" onClick={() => handleCompleteTask(task.id)}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
+                <Button size="sm" onClick={() => handleCompleteTask(task.id)} disabled={isPending && updatingTaskId === task.id}>
+                  {isPending && updatingTaskId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                   Marcar como Finalizado
                 </Button>
               </TableCell>

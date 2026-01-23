@@ -44,6 +44,7 @@ export function EditProfileDialog({
     if (user && open) {
       setFullName(user.displayName || '');
       setPhotoPreview(user.photoURL || null);
+      setNewPhoto(null);
     }
   }, [user, open]);
 
@@ -61,8 +62,8 @@ export function EditProfileDialog({
       return;
     }
     
-    startTransition(async () => {
-      try {
+    startTransition(() => {
+      const saveUpdates = async () => {
         let photoURL = user.photoURL || '';
         const userDocRef = doc(firestore, 'users', user.uid);
         
@@ -93,18 +94,22 @@ export function EditProfileDialog({
         if (Object.keys(firestoreUpdates).length > 0) {
             await updateDoc(userDocRef, firestoreUpdates);
         }
-        
-        toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });
-        onOpenChange(false);
-      } catch (error: any) {
-        const permissionError = new FirestorePermissionError({
-          path: `users/${user.uid}`,
-          operation: 'update',
-          requestResourceData: { fullName },
+      };
+
+      saveUpdates()
+        .then(() => {
+          toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });
+          onOpenChange(false);
+        })
+        .catch((error) => {
+          const permissionError = new FirestorePermissionError({
+            path: `users/${user.uid}`,
+            operation: 'update',
+            requestResourceData: { fullName },
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo guardar el perfil. Es posible que no tengas permisos.' });
         });
-        errorEmitter.emit('permission-error', permissionError);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo guardar el perfil. Es posible que no tengas permisos.' });
-      }
     });
   };
 

@@ -88,7 +88,6 @@ export function TechnicalOfficeEmployeeDialog({
       
       const employeeRef = doc(firestore, 'technicalOfficeEmployees', userId);
       const newSalary = parseFloat(monthlySalary) || 0;
-
       const batch = writeBatch(firestore);
 
       const employeeData: TechnicalOfficeEmployee = {
@@ -101,7 +100,6 @@ export function TechnicalOfficeEmployeeDialog({
       };
       batch.set(employeeRef, employeeData, { merge: true });
 
-      // If salary has changed or it's a new employee, add to history
       if (!isEditMode || (employee && employee.monthlySalary !== newSalary)) {
           const salaryHistoryRef = doc(collection(firestore, `technicalOfficeEmployees/${userId}/salaryHistory`));
           const newSalaryHistoryEntry: SalaryHistory = {

@@ -33,7 +33,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 
 export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount }) {
-  const { user, firestore, permissions } = useUser();
+  const { user, firestore, permissions, firebaseApp } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -68,8 +68,8 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   
 
   const handleSave = () => {
-    if (!firestore || !user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
+    if (!firestore || !user || !firebaseApp) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
         return;
     }
     if (!projectId || !amount || !description) {
@@ -88,76 +88,79 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
         return;
     }
 
-    startTransition(async () => {
-      try {
-          const project = projects?.find(p => p.id === projectId);
-          if (!project) throw new Error("Proyecto no encontrado");
+    startTransition(() => {
+      const saveData = async () => {
+        const project = projects?.find(p => p.id === projectId);
+        if (!project) throw new Error("Proyecto no encontrado");
 
-          const batch = writeBatch(firestore);
+        const batch = writeBatch(firestore);
 
-          // 1. Upload receipt if exists
-          let receiptUrl = '';
-          if (receiptFile) {
-              const storage = getStorage();
-              const filePath = `receipts/${projectId}/${new Date().toISOString()}_${receiptFile.name}`;
-              const fileRef = ref(storage, filePath);
-              await uploadBytes(fileRef, receiptFile);
-              receiptUrl = await getDownloadURL(fileRef);
-          }
+        // 1. Upload receipt if exists
+        let receiptUrl = '';
+        if (receiptFile) {
+            const storage = getStorage(firebaseApp);
+            const filePath = `receipts/${projectId}/${new Date().toISOString()}_${receiptFile.name}`;
+            const fileRef = ref(storage, filePath);
+            await uploadBytes(fileRef, receiptFile);
+            receiptUrl = await getDownloadURL(fileRef);
+        }
 
-          const expenseDate = new Date();
+        const expenseDate = new Date();
 
-          // 2. Create Expense document
-          const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
-          const newExpense: Omit<Expense, 'id'> = {
-              projectId: projectId,
-              date: expenseDate.toISOString(),
-              supplierId: 'logistica-vial', // Generic supplier for these expenses
-              categoryId: 'CAT-04', // Transporte y Logística
-              documentType: 'Recibo Común',
-              amount: expenseAmount,
-              currency: 'ARS',
-              exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
-              description: `Gasto rápido: ${description}`,
-              receiptUrl: receiptUrl,
-          };
-          batch.set(expenseRef, newExpense);
-          
-          // 3. Create CashTransaction document
-          const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}/transactions`));
-          const newTransaction: Omit<CashTransaction, 'id'> = {
-              userId: user.uid,
-              date: expenseDate.toISOString(),
-              type: 'Egreso',
-              amount: expenseAmount,
-              currency: 'ARS',
-              description: `Gasto en ${project.name}: ${description}`,
-              relatedExpenseId: expenseRef.id,
-              relatedProjectId: projectId,
-              relatedProjectName: project.name
-          };
-          batch.set(transactionRef, newTransaction);
+        // 2. Create Expense document
+        const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
+        const newExpense: Omit<Expense, 'id'> = {
+            projectId: projectId,
+            date: expenseDate.toISOString(),
+            supplierId: 'logistica-vial', // Generic supplier for these expenses
+            categoryId: 'CAT-04', // Transporte y Logística
+            documentType: 'Recibo Común',
+            amount: expenseAmount,
+            currency: 'ARS',
+            exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
+            description: `Gasto rápido: ${description}`,
+            receiptUrl: receiptUrl,
+        };
+        batch.set(expenseRef, newExpense);
+        
+        // 3. Create CashTransaction document
+        const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}/transactions`));
+        const newTransaction: Omit<CashTransaction, 'id'> = {
+            userId: user.uid,
+            date: expenseDate.toISOString(),
+            type: 'Egreso',
+            amount: expenseAmount,
+            currency: 'ARS',
+            description: `Gasto en ${project.name}: ${description}`,
+            relatedExpenseId: expenseRef.id,
+            relatedProjectId: projectId,
+            relatedProjectName: project.name
+        };
+        batch.set(transactionRef, newTransaction);
 
-          // 4. Update CashAccount balance
-          const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}`);
-          const newBalance = cashAccount.balance - expenseAmount;
-          batch.update(accountRef, { balance: newBalance });
-          
-          await batch.commit();
+        // 4. Update CashAccount balance
+        const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}`);
+        const newBalance = cashAccount.balance - expenseAmount;
+        batch.update(accountRef, { balance: newBalance });
+        
+        return batch.commit();
+      };
 
+      saveData()
+        .then(() => {
           toast({ title: 'Gasto Rápido Guardado', description: `Se debitaron ${formatCurrency(expenseAmount, 'ARS')} de su caja.` });
           resetForm();
           setOpen(false);
-
-      } catch (error: any) {
+        })
+        .catch((error) => {
           const permissionError = new FirestorePermissionError({
             path: `/projects/${projectId}/expenses (batch)`,
             operation: 'create',
-            requestResourceData: { amount: expenseAmount, description },
+            requestResourceData: { amount: parseFloat(amount), description },
           });
           errorEmitter.emit('permission-error', permissionError);
           toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
-      }
+        });
     });
   }
 

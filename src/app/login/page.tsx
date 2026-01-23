@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -70,7 +70,6 @@ export default function LoginPage() {
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        // Create User Profile
         const newUserProfile: UserProfile = {
           id: loggedInUser.uid,
           email: loggedInUser.email || '',
@@ -78,22 +77,37 @@ export default function LoginPage() {
           role: 'Operador',
           photoURL: loggedInUser.photoURL || '',
         };
-        await setDoc(userRef, newUserProfile);
-
+        
+        setDoc(userRef, newUserProfile)
+          .then(() => {
+            toast({
+              title: '¡Bienvenido!',
+              description: 'Se ha creado tu perfil de usuario.',
+            });
+            // La redirección es manejada por el useEffect
+          })
+          .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+              path: userRef.path,
+              operation: 'create',
+              requestResourceData: newUserProfile,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: 'destructive',
+              title: 'Error de Perfil',
+              description: 'No se pudo crear tu perfil de usuario. Contacta al administrador.',
+            });
+          });
+      }
+    } catch (error: any) {
+      if (error.code !== 'auth/popup-closed-by-user') {
         toast({
-          title: '¡Bienvenido!',
-          description: 'Se ha creado tu perfil de usuario.',
+          variant: 'destructive',
+          title: 'Error al iniciar sesión',
+          description: error.message || 'No se pudo completar el inicio de sesión con Google.',
         });
       }
-      // La redirección ahora es manejada por el useEffect
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error al iniciar sesión',
-        description: error.code === 'auth/popup-closed-by-user' 
-          ? 'El inicio de sesión fue cancelado.'
-          : error.message || 'No se pudo completar el inicio de sesión con Google.',
-      });
     } finally {
       setIsSigningIn(false);
     }

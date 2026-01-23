@@ -85,46 +85,48 @@ export function WeeklySummary() {
       return;
     }
 
-    startTransition(async () => {
-        try {
-            const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
-            const lastWeekSnap = await getDocs(lastWeekQuery);
-            
-            let nextStartDate: Date;
+    startTransition(() => {
+      const generate = async () => {
+        const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
+        const lastWeekSnap = await getDocs(lastWeekQuery);
+        
+        let nextStartDate: Date;
 
-            if (lastWeekSnap.empty) {
-                // No weeks exist, start with the current week (Monday)
-                nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
-            } else {
-                // Start from the day after the last week ended
-                const lastWeek = lastWeekSnap.docs[0].data() as PayrollWeek;
-                nextStartDate = addDays(parseISO(lastWeek.endDate), 1);
-            }
+        if (lastWeekSnap.empty) {
+          nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+        } else {
+          const lastWeek = lastWeekSnap.docs[0].data() as PayrollWeek;
+          nextStartDate = addDays(parseISO(lastWeek.endDate), 1);
+        }
 
-            const nextEndDate = endOfWeek(nextStartDate, { weekStartsOn: 1 });
+        const nextEndDate = endOfWeek(nextStartDate, { weekStartsOn: 1 });
 
-            const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-            const newWeek: PayrollWeek = {
-                id: newWeekRef.id,
-                startDate: nextStartDate.toISOString(),
-                endDate: nextEndDate.toISOString(),
-                status: 'Abierta',
-                generatedAt: new Date().toISOString(),
-            };
+        const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
+        const newWeek: PayrollWeek = {
+          id: newWeekRef.id,
+          startDate: nextStartDate.toISOString(),
+          endDate: nextEndDate.toISOString(),
+          status: 'Abierta',
+          generatedAt: new Date().toISOString(),
+        };
 
-            await setDoc(newWeekRef, newWeek, {});
+        return setDoc(newWeekRef, newWeek)
+          .then(() => {
             toast({
                 title: "Nueva Semana Generada",
                 description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
             });
-        } catch (error) {
-            const permissionError = new FirestorePermissionError({
-                path: 'payrollWeeks',
-                operation: 'create',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({ variant: 'destructive', title: "Error", description: "No se pudo generar la nueva semana. Es posible que no tengas permisos." });
-        }
+          });
+      };
+
+      generate().catch((error) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'payrollWeeks',
+            operation: 'create',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: "Error", description: "No se pudo generar la nueva semana. Es posible que no tengas permisos." });
+      });
     });
   };
   

@@ -28,7 +28,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { projects, suppliers as mockSuppliers, expenseCategories } from "@/lib/data";
+import { expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
 import { format } from "date-fns";
@@ -45,7 +45,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddExpenseDialog() {
-  const { user, permissions } = useUser();
+  const { user, permissions, firestore, firebaseApp } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -79,7 +79,6 @@ export function AddExpenseDialog() {
 
 
   // Data fetching
-  const { firestore } = useUser();
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
@@ -88,8 +87,7 @@ export function AddExpenseDialog() {
 
   const project = useMemo(() => projects?.find(p => p.id === selectedProject), [selectedProject, projects]);
   const isContractBlocked = project?.balance === 0;
-  // const isSupplierBlocked = selectedSupplier === 'SUP-03'; // Mock data for blocked supplier
-  const isSupplierBlocked = false; // TODO: Implement supplier blocking logic
+  const isSupplierBlocked = false; 
   
   const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
 
@@ -153,57 +151,60 @@ export function AddExpenseDialog() {
       return;
     }
 
-    setIsSaving(true);
-    if (!firestore || !user) {
+    if (!firestore || !user || !firebaseApp) {
       toast({variant: 'destructive', title: 'Error', description: "Firebase no está disponible."});
-      setIsSaving(false);
       return;
     }
 
-    startTransition(async () => {
-        try {
-            const projectsCollection = collection(firestore, 'projects');
-            const projectRef = doc(projectsCollection, selectedProject);
-            const expensesColRef = collection(projectRef, 'expenses');
-            const newExpenseRef = doc(expensesColRef);
+    startTransition(() => {
+      setIsSaving(true);
+      const saveData = async () => {
+        const projectsCollection = collection(firestore, 'projects');
+        const projectRef = doc(projectsCollection, selectedProject);
+        const expensesColRef = collection(projectRef, 'expenses');
+        const newExpenseRef = doc(expensesColRef);
 
-            let receiptUrl = '';
-            if (file && documentType === 'Factura') {
-                const storage = getStorage();
-                const filePath = `receipts/${selectedProject}/${newExpenseRef.id}/${file.name}`;
-                const fileRef = ref(storage, filePath);
-                
-                await uploadBytes(fileRef, file);
-                receiptUrl = await getDownloadURL(fileRef);
-            }
-
-            const newExpense: Expense = {
-                id: newExpenseRef.id,
-                projectId: selectedProject,
-                date: date.toISOString(),
-                supplierId: selectedSupplier,
-                categoryId: selectedCategory,
-                documentType,
-                invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
-                paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : '',
-                amount: parseFloat(amount),
-                iva: iva ? parseFloat(iva) : 0,
-                iibb: iibb ? parseFloat(iibb) : 0,
-                iibbJurisdiction: documentType === 'Factura' ? iibbJurisdiction : 'No Aplica',
-                currency,
-                exchangeRate: parseFloat(exchangeRate),
-                receiptUrl,
-                retencionGanancias: retencionGanancias ? parseFloat(retencionGanancias) : 0,
-                retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
-                retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
-                retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
-            };
-
-            await setDoc(newExpenseRef, newExpense, {});
+        let receiptUrl = '';
+        if (file && documentType === 'Factura') {
+            const storage = getStorage(firebaseApp);
+            const filePath = `receipts/${selectedProject}/${newExpenseRef.id}/${file.name}`;
+            const fileRef = ref(storage, filePath);
             
+            await uploadBytes(fileRef, file);
+            receiptUrl = await getDownloadURL(fileRef);
+        }
+
+        const newExpense: Expense = {
+            id: newExpenseRef.id,
+            projectId: selectedProject,
+            date: date.toISOString(),
+            supplierId: selectedSupplier,
+            categoryId: selectedCategory,
+            documentType,
+            invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
+            paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : '',
+            amount: parseFloat(amount),
+            iva: iva ? parseFloat(iva) : 0,
+            iibb: iibb ? parseFloat(iibb) : 0,
+            iibbJurisdiction: documentType === 'Factura' ? iibbJurisdiction : 'No Aplica',
+            currency,
+            exchangeRate: parseFloat(exchangeRate),
+            receiptUrl,
+            retencionGanancias: retencionGanancias ? parseFloat(retencionGanancias) : 0,
+            retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
+            retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
+            retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
+        };
+
+        return setDoc(newExpenseRef, newExpense);
+      };
+
+      saveData()
+        .then(() => {
             toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
             setOpen(false);
-        } catch (error: any) {
+        })
+        .catch((error) => {
             const permissionError = new FirestorePermissionError({
               path: `/projects/${selectedProject}/expenses`,
               operation: 'create',
@@ -211,9 +212,10 @@ export function AddExpenseDialog() {
             });
             errorEmitter.emit('permission-error', permissionError);
             toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
-        } finally {
+        })
+        .finally(() => {
             setIsSaving(false);
-        }
+        });
     });
   };
 
