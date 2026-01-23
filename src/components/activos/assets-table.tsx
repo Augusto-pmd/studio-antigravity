@@ -16,7 +16,7 @@ import { parseISO, format as formatDateFns } from 'date-fns';
 import { Pencil } from "lucide-react";
 import { AssetDialog } from "./asset-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
 
@@ -30,10 +30,33 @@ const formatDate = (dateString?: string) => {
     return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 }
 
+const assetConverter = {
+    toFirestore(asset: Asset): DocumentData {
+        const { id, ...data } = asset;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Asset {
+        const data = snapshot.data(options);
+        return {
+            id: snapshot.id,
+            name: data.name,
+            description: data.description,
+            purchaseDate: data.purchaseDate,
+            purchaseValue: data.purchaseValue,
+            currency: data.currency,
+            category: data.category,
+            status: data.status,
+        } as Asset;
+    }
+};
+
 export function AssetsTable() {
   const firestore = useFirestore();
-  const assetsQuery = useMemo(() => (firestore ? collection(firestore, 'assets') : null), [firestore]);
-  const { data: assets, isLoading } = useCollection<Asset>(assetsQuery);
+  const assetsQuery = useMemo(() => (firestore ? collection(firestore, 'assets').withConverter(assetConverter) : null), [firestore]);
+  const { data: assets, isLoading } = useCollection(assetsQuery);
 
   const renderSkeleton = () => (
     <TableRow>
