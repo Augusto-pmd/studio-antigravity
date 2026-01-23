@@ -61,9 +61,9 @@ export function AddExpenseDialog() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Form State
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
-  const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común'>('Factura');
@@ -74,7 +74,7 @@ export function AddExpenseDialog() {
   const [iibb, setIibb] = useState('');
   const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
   const [exchangeRate, setExchangeRate] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentMethodOther, setPaymentMethodOther] = useState('');
 
   // Retenciones
@@ -223,7 +223,7 @@ export function AddExpenseDialog() {
 
           <div className="space-y-2">
             <Label htmlFor="project">Obra</Label>
-            <Select onValueChange={setSelectedProject} value={selectedProject ?? ''}>
+            <Select onValueChange={setSelectedProject} value={selectedProject}>
               <SelectTrigger id="project">
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
@@ -265,7 +265,7 @@ export function AddExpenseDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="supplier">Proveedor</Label>
-            <Select onValueChange={setSelectedSupplier} value={selectedSupplier ?? ''}>
+            <Select onValueChange={setSelectedSupplier} value={selectedSupplier}>
               <SelectTrigger id="supplier">
                 <SelectValue placeholder="Seleccione un proveedor" />
               </SelectTrigger>
@@ -280,7 +280,7 @@ export function AddExpenseDialog() {
           </div>
            <div className="space-y-2">
             <Label htmlFor="category">Rubro</Label>
-            <Select onValueChange={setSelectedCategory} value={selectedCategory ?? ''}>
+            <Select onValueChange={setSelectedCategory} value={selectedCategory}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Seleccione un rubro" />
               </SelectTrigger>
@@ -327,7 +327,7 @@ export function AddExpenseDialog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Medio de Pago</Label>
-                <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod ?? ''}>
+                <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod}>
                     <SelectTrigger id="paymentMethod">
                         <SelectValue placeholder="Seleccione un medio" />
                     </SelectTrigger>
