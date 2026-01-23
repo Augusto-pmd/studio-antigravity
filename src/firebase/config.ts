@@ -1,10 +1,10 @@
 import { FirebaseOptions } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyC7kUjCbK4aRy_8bcz_UYxx_zR1uRU3k8Q",
+  authDomain: "pmd-arquitectura-2-27039-d59c2.firebaseapp.com",
+  projectId: "pmd-arquitectura-2-27039-d59c2",
+  storageBucket: "pmd-arquitectura-2-27039-d59c2.appspot.com",
+  messagingSenderId: "993486565523",
+  appId: "1:993486565523:web:a68e3fa01b71c6cc939d66",
 };
