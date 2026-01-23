@@ -164,10 +164,10 @@ service cloud.firestore {
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId) || isSuperAdmin();
       allow list: if isSignedIn();
       allow create: if isOwner(userId) && hasConsistentOwnId(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isSuperAdmin();
       allow delete: if isExistingOwner(userId);
       
       /**
@@ -270,12 +270,8 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      allow get: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
-      allow list: if isSuperAdmin();
-      allow list: if isSignedIn() && request.query.where.requesterId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.where.assigneeId == request.auth.uid;
+      allow read, update: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      allow update: if isSignedIn() && (isAdmin() || (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid));
       allow delete: if isAdmin();
     }
     
