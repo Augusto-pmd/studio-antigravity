@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Separator } from "../ui/separator";
 import type { Project } from "@/lib/types";
 import { useFirestore } from "@/firebase/provider";
@@ -254,11 +255,11 @@ export function AddProjectDialog({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : <span>Seleccione una fecha</span>}
+                      {startDate ? format(startDate, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} locale={es} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -274,11 +275,11 @@ export function AddProjectDialog({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : <span>Seleccione una fecha</span>}
+                      {endDate ? format(endDate, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                    <Calendar mode="single" selected={endDate} onSelect={setEndDate} locale={es} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>

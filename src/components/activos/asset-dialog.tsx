@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import type { Asset } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -160,10 +161,10 @@ export function AssetDialog({
                     className={cn("w-full justify-start text-left font-normal", !purchaseDate && "text-muted-foreground")}
                     >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {purchaseDate ? format(purchaseDate, "PPP") : <span>Seleccionar</span>}
+                    {purchaseDate ? format(purchaseDate, "PPP", { locale: es }) : <span>Seleccionar</span>}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={purchaseDate} onSelect={setPurchaseDate} /></PopoverContent>
+                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={purchaseDate} onSelect={setPurchaseDate} locale={es} /></PopoverContent>
                 </Popover>
             </div>
             <div className="space-y-2">

@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { useUser } from "@/context/user-context";
 import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
@@ -172,11 +173,11 @@ export function RequestFundDialog() {
                     className={cn( "w-full justify-start text-left font-normal", !date && "text-muted-foreground" )}
                     >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Seleccione una fecha</span>}
+                    {date ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                    <Calendar mode="single" selected={date} onSelect={setDate} locale={es} initialFocus />
                 </PopoverContent>
                 </Popover>
             </div>

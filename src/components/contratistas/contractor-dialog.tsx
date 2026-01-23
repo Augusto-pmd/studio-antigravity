@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { Separator } from "../ui/separator";
 import type { Contractor } from "@/lib/types";
 import { useFirestore } from "@/firebase";
@@ -212,10 +213,10 @@ export function ContractorDialog({
                       className={cn("w-full justify-start text-left font-normal", !artExpiryDate && "text-muted-foreground")}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {artExpiryDate ? format(artExpiryDate, "PPP") : <span>Opcional</span>}
+                      {artExpiryDate ? format(artExpiryDate, "PPP", { locale: es }) : <span>Opcional</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={artExpiryDate} onSelect={setArtExpiryDate} /></PopoverContent>
+                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={artExpiryDate} onSelect={setArtExpiryDate} locale={es} /></PopoverContent>
                 </Popover>
               </div>
               <div className="space-y-2">
@@ -227,10 +228,10 @@ export function ContractorDialog({
                       className={cn("w-full justify-start text-left font-normal", !insuranceExpiryDate && "text-muted-foreground")}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {insuranceExpiryDate ? format(insuranceExpiryDate, "PPP") : <span>Opcional</span>}
+                      {insuranceExpiryDate ? format(insuranceExpiryDate, "PPP", { locale: es }) : <span>Opcional</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={insuranceExpiryDate} onSelect={setInsuranceExpiryDate} /></PopoverContent>
+                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={insuranceExpiryDate} onSelect={setInsuranceExpiryDate} locale={es} /></PopoverContent>
                 </Popover>
               </div>
             </div>

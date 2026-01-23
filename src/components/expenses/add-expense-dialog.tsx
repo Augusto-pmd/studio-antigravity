@@ -32,6 +32,7 @@ import { projects, suppliers as mockSuppliers, expenseCategories } from "@/lib/d
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Wand2, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataAction } from "@/lib/actions";
 import { useUser } from "@/context/user-context";
@@ -43,7 +44,7 @@ import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "../ui/separator";
 
 export function AddExpenseDialog() {
-  const { user, permissions, firestore } = useUser();
+  const { user, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -77,6 +78,7 @@ export function AddExpenseDialog() {
 
 
   // Data fetching
+  const { firestore } = useUser();
   const projectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   const suppliersQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'suppliers') : null), [firestore]);
@@ -274,7 +276,7 @@ export function AddExpenseDialog() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date && isClient ? format(date, "PPP") : <span>Seleccione una fecha</span>}
+                  {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -282,6 +284,7 @@ export function AddExpenseDialog() {
                   mode="single"
                   selected={date}
                   onSelect={setDate}
+                  locale={es}
                   initialFocus
                 />
               </PopoverContent>

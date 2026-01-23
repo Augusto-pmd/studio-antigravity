@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import type { Employee } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -162,7 +163,7 @@ export function EmployeeDialog({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {artExpiryDate ? format(artExpiryDate, "PPP") : <span>Opcional</span>}
+                  {artExpiryDate ? format(artExpiryDate, "PPP", { locale: es }) : <span>Opcional</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -170,6 +171,7 @@ export function EmployeeDialog({
                   mode="single"
                   selected={artExpiryDate}
                   onSelect={setArtExpiryDate}
+                  locale={es}
                 />
               </PopoverContent>
             </Popover>

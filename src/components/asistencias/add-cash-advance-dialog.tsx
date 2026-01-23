@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
@@ -183,7 +184,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date && isClient ? format(date, "PPP") : <span>Seleccione una fecha</span>}
+                  {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -192,6 +193,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                   selected={date}
                   onSelect={setDate}
                   initialFocus
+                  locale={es}
                   disabled={(d) => currentWeek ? (d < parseISO(currentWeek.startDate) || d > parseISO(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
