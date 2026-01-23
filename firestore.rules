@@ -74,13 +74,6 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isSignedIn() && request.auth.token.email == 'info@pmdarquitectura.com';
     }
-    
-    /**
-     * Returns true if the user is an employee of pmdarquitectura.
-     */
-    function isPmdEmployee() {
-      return isSignedIn() && request.auth.token.email.endsWith('@pmdarquitectura.com');
-    }
 
     /**
      * Checks for role-based admin. USES GET() - NOT safe for list queries.
@@ -99,61 +92,6 @@ service cloud.firestore {
       return isSuperAdmin() || isRoleAdmin();
     }
 
-    /**
-     * Checks if the user is a member of a given project by looking for their UID
-     * in the `members` map on the project document.
-     */
-    function isProjectMember(projectId) {
-      // NOTE: This function is not currently used as project membership is not yet implemented.
-      // It is kept for future use. For now, isAdmin() is the primary check for cross-project access.
-      return true; // Temporarily allowing access for development
-    }
-    
-    /**
-     * Validates that the `id` field in a new user document matches the document's ID (which is the user's UID).
-     * This enforces relational integrity from the start.
-     */
-    function hasConsistentOwnId(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * Enforces the immutability of the `id` field on a user document during an update.
-     */
-    function isOwnIdImmutable() {
-      return request.resource.data.id == resource.data.id;
-    }
-    
-    /**
-     * Validates that the `userId` field in a new document within a user's subcollection
-     * correctly references the parent user.
-     */
-    function hasConsistentUserId(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    /**
-     * Enforces the immutability of the `userId` field during an update to prevent re-assigning ownership.
-     */
-    function isUserIdImmutable() {
-      return request.resource.data.userId == resource.data.userId;
-    }
-    
-    /**
-     * Validates that the `projectId` field in a new document within a project's subcollection
-     * correctly references the parent project.
-     */
-    function hasConsistentProjectId(projectId) {
-      return request.resource.data.projectId == projectId;
-    }
-
-    /**
-     * Enforces the immutability of the `projectId` field during an update.
-     */
-    function isProjectIdImmutable() {
-      return request.resource.data.projectId == resource.data.projectId;
-    }
-
     // ----------------------------------------------------------------------
     // Collection Rules
     // ----------------------------------------------------------------------
@@ -166,7 +104,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isSuperAdmin();
       allow list: if isSignedIn();
-      allow create: if isOwner(userId) && hasConsistentOwnId(userId);
+      allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isSuperAdmin();
       allow delete: if isExistingOwner(userId);
       
@@ -176,114 +114,86 @@ service cloud.firestore {
        * @path /users/{userId}/cashAccounts/{cashAccountId}
        */
       match /cashAccounts/{cashAccountId} {
-        allow get: if isOwner(userId) || isSuperAdmin();
-        allow list: if isOwner(userId) || isSuperAdmin();
-        allow create, update, delete: if isOwner(userId) || isSuperAdmin();
+        allow get, list, write: if isOwner(userId) || isSuperAdmin();
 
         /**
         * @description Manages transactions within a specific cash account.
         * @path /users/{userId}/cashAccounts/{cashAccountId}/transactions/{transactionId}
         */
         match /transactions/{transactionId} {
-          allow read: if isOwner(userId) || isSuperAdmin();
-          allow write: if isOwner(userId) || isSuperAdmin();
+          allow read, write: if isOwner(userId) || isSuperAdmin();
         }
       }
     }
 
-    /**
-     * @description Manages shared project information. All signed-in users can read
-     * and write project data.
-     * @path /projects/{projectId}
-     */
     match /projects/{projectId} {
-      allow read, write: if request.auth != null;
-
-      /**
-       * @description Manages expenses for a project. Access is inherited from the parent
-       * project.
-       * @path /projects/{projectId}/expenses/{expenseId}
-       */
+      allow read, write: if isSignedIn();
       match /expenses/{expenseId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if isSignedIn();
       }
-
-      /**
-       * @description Manages contracts for a project. Access is inherited from the parent
-       * project.
-       * @path /projects/{projectId}/contracts/{contractId}
-       */
       match /contracts/{contractId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if isSignedIn();
       }
     }
 
     match /suppliers/{supplierId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
     
     match /employees/{employeeId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
     
     match /technicalOfficeEmployees/{employeeId} {
       allow read, write: if isSuperAdmin();
-
       match /salaryHistory/{salaryHistoryId} {
         allow read, write: if isSuperAdmin();
       }
     }
     
     match /timeLogs/{logId} {
-      allow read, create, update: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow read, create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow list: if isSuperAdmin();
-      // Allow user to query their own time logs
       allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
       allow delete: if isSuperAdmin() || (isExistingDoc() && resource.data.userId == request.auth.uid);
     }
 
     match /contractors/{contractorId} {
-      allow read, write: if request.auth != null;
-
+      allow read, write: if isSignedIn();
       match /personnel/{personnelId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if isSignedIn();
       }
     }
     
     match /assets/{assetId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
     
     match /fundRequests/{fundRequestId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
 
     match /payrollWeeks/{payrollWeekId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
 
     match /taskRequests/{taskRequestId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
     
     match /cashAdvances/{cashAdvanceId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
       allow read, write: if isSuperAdmin();
-
       match /transactions/{transactionId} {
         allow read, write: if isSuperAdmin();
       }
     }
 
-    /**
-     * @description Enables collection group queries on 'expenses'. This is necessary
-     * for administrative views that aggregate all expenses across all projects.
-     */
     match /{path=**}/expenses/{expenseId} {
-      allow get, list: if request.auth != null;
+      allow get, list: if isSignedIn();
     }
   }
 }

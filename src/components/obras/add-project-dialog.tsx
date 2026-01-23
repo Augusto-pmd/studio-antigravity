@@ -34,8 +34,7 @@ import { es } from "date-fns/locale";
 import { Separator } from "../ui/separator";
 import type { Project } from "@/lib/types";
 import { useFirestore } from "@/firebase/provider";
-import { collection, doc } from "firebase/firestore";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
 
@@ -99,7 +98,8 @@ export function AddProjectDialog({
         return;
     }
     
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const projectsCollection = collection(firestore, 'projects');
         const projectRef = isEditMode ? doc(projectsCollection, project.id) : doc(projectsCollection);
         const projectId = projectRef.id;
@@ -126,13 +126,21 @@ export function AddProjectDialog({
           projectData.endDate = endDate.toISOString();
         }
 
-        setDocumentNonBlocking(projectRef, projectData, { merge: true });
+        await setDoc(projectRef, projectData, { merge: true });
 
         toast({
             title: isEditMode ? 'Obra Actualizada' : 'Obra Creada',
             description: `La obra "${name}" ha sido guardada correctamente.`,
         });
         setOpen(false);
+      } catch (error: any) {
+        console.error("Error al guardar la obra:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error al Guardar',
+            description: error.message || 'No se pudo guardar la obra. Revisa la consola para más detalles.'
+        });
+      }
     });
   };
 
