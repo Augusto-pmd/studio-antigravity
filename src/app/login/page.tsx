@@ -7,32 +7,47 @@ import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { loginBackgrounds } from '@/lib/login-backgrounds';
-
+import { useAuth } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [background, setBackground] = useState(loginBackgrounds[0] || { src: '', hint: '', quote: '', author: '' });
 
   useEffect(() => {
-    // This runs only on the client, after hydration, to pick a random background
     if (loginBackgrounds.length > 0) {
       const randomIndex = Math.floor(Math.random() * loginBackgrounds.length);
       setBackground(loginBackgrounds[randomIndex]);
     }
   }, []);
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
+    if (!auth) {
+      toast({
+        variant: "destructive",
+        title: "Error de configuración",
+        description: "La autenticación no está disponible en este momento.",
+      });
+      return;
+    }
     setIsSigningIn(true);
-    toast({
-      title: 'Simulando inicio de sesión...',
-      description: 'Redirigiendo al dashboard.',
-    });
-    // Simulate a network request
-    setTimeout(() => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
       router.replace('/');
-    }, 1000);
+    } catch (error: any) {
+      console.error("Error signing in with Google: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al iniciar sesión",
+        description: error.message || "No se pudo iniciar sesión con Google. Por favor, intente de nuevo.",
+      });
+    } finally {
+      setIsSigningIn(false);
+    }
   };
   
   return (
@@ -71,11 +86,8 @@ export default function LoginPage() {
                   ></path>
                 </svg>
               )}
-              Ingresar al Sistema (Simulado)
+              Ingresar con Google
             </Button>
-            <p className="text-center text-xs text-muted-foreground">
-                La autenticación real ha sido desactivada temporalmente.
-            </p>
           </div>
         </div>
       </div>
