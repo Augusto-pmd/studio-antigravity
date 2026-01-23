@@ -99,7 +99,7 @@ export function ContractorDialog({
       const contractorRef = isEditMode ? doc(contractorsCollection, contractor.id) : doc(contractorsCollection);
       const contractorId = contractorRef.id;
 
-      const contractorData: Contractor = {
+      const contractorData: Partial<Contractor> = {
         id: contractorId,
         name,
         cuit,
@@ -110,9 +110,14 @@ export function ContractorDialog({
         phone,
         status,
         notes,
-        artExpiryDate: artExpiryDate?.toISOString(),
-        insuranceExpiryDate: insuranceExpiryDate?.toISOString(),
       };
+
+      if (artExpiryDate) {
+        contractorData.artExpiryDate = artExpiryDate.toISOString();
+      }
+      if (insuranceExpiryDate) {
+        contractorData.insuranceExpiryDate = insuranceExpiryDate.toISOString();
+      }
       
       setDocumentNonBlocking(contractorRef, contractorData, { merge: true });
 

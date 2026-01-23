@@ -81,15 +81,18 @@ export function EmployeeDialog({
       const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
       const employeeId = employeeRef.id;
 
-      const employeeData: Employee = {
+      const employeeData: Partial<Employee> = {
         id: employeeId,
         name,
         category,
         dailyWage: parseFloat(dailyWage) || 0,
         paymentType,
         status,
-        artExpiryDate: artExpiryDate?.toISOString(),
       };
+
+      if (artExpiryDate) {
+        employeeData.artExpiryDate = artExpiryDate.toISOString();
+      }
       
       setDocumentNonBlocking(employeeRef, employeeData, { merge: true });
 

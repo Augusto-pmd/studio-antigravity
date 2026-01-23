@@ -22,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { useFirestore } from "@/firebase/provider";
 import { collection, doc } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -54,12 +55,15 @@ export function AddPersonnelDialog({
       const personnelRef = doc(personnelCollection);
       const personnelId = personnelRef.id;
 
-      const newPersonnel: ContractorEmployee = {
+      const newPersonnel: Partial<ContractorEmployee> = {
         id: personnelId,
         name,
         contractorId,
-        artExpiryDate: artExpiryDate?.toISOString(),
       };
+      
+      if (artExpiryDate) {
+        newPersonnel.artExpiryDate = artExpiryDate.toISOString();
+      }
       
       setDocumentNonBlocking(personnelRef, newPersonnel, { merge: true });
 
@@ -105,11 +109,11 @@ export function AddPersonnelDialog({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {artExpiryDate ? format(artExpiryDate, "PPP") : <span>Opcional</span>}
+                  {artExpiryDate ? format(artExpiryDate, "PPP", { locale: es }) : <span>Opcional</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={artExpiryDate} onSelect={setArtExpiryDate} />
+                <Calendar mode="single" selected={artExpiryDate} onSelect={setArtExpiryDate} locale={es} />
               </PopoverContent>
             </Popover>
           </div>

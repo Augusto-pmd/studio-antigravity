@@ -104,7 +104,7 @@ export function AddProjectDialog({
         const projectRef = isEditMode ? doc(projectsCollection, project.id) : doc(projectsCollection);
         const projectId = projectRef.id;
 
-        const projectData: Project = {
+        const projectData: Partial<Project> = {
             id: projectId,
             name,
             client,
@@ -113,14 +113,18 @@ export function AddProjectDialog({
             currency,
             description,
             status,
-            startDate: startDate?.toISOString(),
-            endDate: endDate?.toISOString(),
             supervisor,
             budget: parseFloat(budget) || 0,
             progress: parseInt(progress) || 0,
-            // Balance is managed by other logic (expenses), so we preserve it on edit, or initialize it.
             balance: isEditMode ? project.balance : parseFloat(budget) || 0,
         };
+
+        if (startDate) {
+          projectData.startDate = startDate.toISOString();
+        }
+        if (endDate) {
+          projectData.endDate = endDate.toISOString();
+        }
 
         setDocumentNonBlocking(projectRef, projectData, { merge: true });
 
