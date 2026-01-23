@@ -57,59 +57,64 @@ export function EditProfileDialog({
   };
 
   const handleSave = () => {
-    if (!user || !firestore || !auth || !firebaseApp) {
+    if (!user || !firestore || !auth || !auth.currentUser || !firebaseApp) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a los servicios de Firebase.' });
       return;
     }
     
     startTransition(() => {
-      const saveUpdates = async () => {
         let photoURL = user.photoURL || '';
-        const userDocRef = doc(firestore, 'users', user.uid);
-        
-        if (newPhoto) {
-          const storage = getStorage(firebaseApp);
-          const filePath = `avatars/${user.uid}/${newPhoto.name}`;
-          const storageRef = ref(storage, filePath);
-          const snapshot = await uploadBytes(storageRef, newPhoto);
-          photoURL = await getDownloadURL(snapshot.ref);
+
+        const processUpdates = async () => {
+            if (newPhoto) {
+              const storage = getStorage(firebaseApp);
+              const filePath = `avatars/${user.uid}/${newPhoto.name}`;
+              const storageRef = ref(storage, filePath);
+              const snapshot = await uploadBytes(storageRef, newPhoto);
+              photoURL = await getDownloadURL(snapshot.ref);
+            }
+
+            const profileUpdates: { displayName?: string, photoURL?: string } = {};
+            const firestoreUpdates: { fullName?: string, photoURL?: string } = {};
+
+            if (fullName !== user.displayName) {
+                profileUpdates.displayName = fullName;
+                firestoreUpdates.fullName = fullName;
+            }
+            if (photoURL !== user.photoURL) {
+                profileUpdates.photoURL = photoURL;
+                firestoreUpdates.photoURL = photoURL;
+            }
+            
+            if (auth.currentUser && Object.keys(profileUpdates).length > 0) {
+              await updateProfile(auth.currentUser, profileUpdates);
+            }
+    
+            if (Object.keys(firestoreUpdates).length > 0) {
+              const userDocRef = doc(firestore, 'users', user.uid);
+              // This returns a promise that we will handle in the .then/.catch chain
+              return updateDoc(userDocRef, firestoreUpdates);
+            }
+            
+            // If no firestore updates, return a resolved promise
+            return Promise.resolve();
         }
 
-        const profileUpdates: { displayName?: string, photoURL?: string } = {};
-        const firestoreUpdates: { fullName?: string, photoURL?: string } = {};
-
-        if (fullName !== user.displayName) {
-            profileUpdates.displayName = fullName;
-            firestoreUpdates.fullName = fullName;
-        }
-        if (photoURL !== user.photoURL) {
-            profileUpdates.photoURL = photoURL;
-            firestoreUpdates.photoURL = photoURL;
-        }
-
-        if (auth.currentUser && Object.keys(profileUpdates).length > 0) {
-            await updateProfile(auth.currentUser, profileUpdates);
-        }
-
-        if (Object.keys(firestoreUpdates).length > 0) {
-            await updateDoc(userDocRef, firestoreUpdates);
-        }
-      };
-
-      saveUpdates()
-        .then(() => {
-          toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });
-          onOpenChange(false);
-        })
-        .catch((error) => {
-          const permissionError = new FirestorePermissionError({
-            path: `users/${user.uid}`,
-            operation: 'update',
-            requestResourceData: { fullName },
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo guardar el perfil. Es posible que no tengas permisos.' });
-        });
+        processUpdates()
+            .then(() => {
+                toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });
+                onOpenChange(false);
+            })
+            .catch(async (serverError) => {
+              // This will catch errors from updateProfile, updateDoc, or any of the storage operations
+              const permissionError = new FirestorePermissionError({
+                path: `users/${user.uid}`,
+                operation: 'update',
+                requestResourceData: { fullName },
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo guardar el perfil. Es posible que no tengas permisos.' });
+            });
     });
   };
 

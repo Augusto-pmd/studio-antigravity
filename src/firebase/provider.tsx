@@ -2,10 +2,10 @@
 
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-import type { Role, UserProfile } from '@/lib/types';
+import type { Role } from '@/lib/types';
 
 // The shape of the context that will be provided.
 export interface FirebaseContextState {
@@ -28,13 +28,15 @@ export interface FirebaseContextState {
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+// This is a simplified permission model based on the simulated role.
+// It no longer depends on Firestore for the initial role check.
 const getPermissions = (role: Role, user: User | null) => {
-  const isSuperAdmin = user?.email === 'info@pmdarquitectura.com';
+  const isSuperAdmin = user?.email === 'info@pmdarquitectura.com' || role === 'Dirección';
   return {
-    canViewAll: true,
-    canValidate: true,
-    canSupervise: true,
-    canLoadExpenses: true,
+    canViewAll: isSuperAdmin || role === 'Administración' || role === 'Supervisor',
+    canValidate: isSuperAdmin || role === 'Administración',
+    canSupervise: isSuperAdmin || role === 'Supervisor',
+    canLoadExpenses: true, // All roles can load expenses
     isSuperAdmin: isSuperAdmin,
   };
 };
@@ -55,40 +57,24 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [userError, setUserError] = useState<Error | null>(null);
-  // Default role is 'Operador', it will be updated upon login from Firestore profile.
   const [role, setRole] = useState<Role>('Operador');
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    if (!auth) {
       setIsUserLoading(false);
-      setUserError(new Error("Auth or Firestore service not provided."));
+      setUserError(new Error("Auth service not provided."));
       return;
     }
 
     const unsubscribe = onAuthStateChanged(
       auth,
-      async (firebaseUser) => {
+      (firebaseUser) => {
         setUser(firebaseUser);
-        if (firebaseUser) {
-          // Fetch user profile from Firestore to get the real role
-          const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-          try {
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-              const userProfile = userDocSnap.data() as UserProfile;
-              setRole(userProfile.role);
-            } else {
-               // This case happens for a brand new user who just signed up
-               // The login page will create the doc, but there's a race condition.
-               // Let's keep the simulated role for now. The simulation is part of the app.
-            }
-          } catch (e) {
-            console.error("Failed to fetch user profile:", e);
-            // Keep the simulated role, but log the error.
-          }
-        } else {
-          // On logout, reset role to a sensible default.
-          setRole('Operador');
+        // We revert to only using the simulated role.
+        // This removes the dependency on a Firestore read during the critical auth path, increasing stability for the build process.
+        // The role can be changed via the simulation dropdown.
+        if (!firebaseUser) {
+           setRole('Operador');
         }
         setIsUserLoading(false);
       },
@@ -99,11 +85,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       }
     );
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth]);
 
   const permissions = useMemo(() => getPermissions(role, user), [role, user]);
 
-  // Memoize the entire context value to prevent unnecessary re-renders of consumers.
   const contextValue = useMemo((): FirebaseContextState => ({
     firebaseApp,
     firestore,
@@ -112,7 +97,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     isUserLoading,
     userError,
     role,
-    setRole, // This allows the role simulation to continue working
+    setRole,
     permissions,
   }), [firebaseApp, firestore, auth, user, isUserLoading, userError, role, permissions]);
 
@@ -124,10 +109,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   );
 };
 
-/**
- * Hook to access the full Firebase context.
- * Throws an error if used outside of FirebaseProvider.
- */
 export const useFirebase = (): FirebaseContextState => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
@@ -136,14 +117,10 @@ export const useFirebase = (): FirebaseContextState => {
   return context;
 };
 
-// Hooks for specific parts of the context
 export const useAuth = (): Auth | null => useFirebase().auth;
 export const useFirestore = (): Firestore | null => useFirebase().firestore;
 export const useFirebaseApp = (): FirebaseApp | null => useFirebase().firebaseApp;
 
-/**
- * The primary hook for components to get user info, auth state, role, and permissions.
- */
 export const useUser = () => {
   return useFirebase();
 };
