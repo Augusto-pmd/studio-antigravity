@@ -1,0 +1,117 @@
+"use client";
+
+import { useState, useEffect, useTransition } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import type { UserProfile, Role } from "@/lib/types";
+import { useFirestore } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc } from "firebase/firestore";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+
+const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
+
+export function EditUserDialog({
+  userProfile,
+  children,
+}: {
+  userProfile: UserProfile;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const [role, setRole] = useState<Role>(userProfile.role);
+
+  useEffect(() => {
+    if (open) {
+      setRole(userProfile.role);
+    }
+  }, [open, userProfile]);
+
+  const handleSave = () => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+      return;
+    }
+    
+    startTransition(() => {
+      const userRef = doc(firestore, 'users', userProfile.id);
+      
+      updateDocumentNonBlocking(userRef, { role });
+
+      toast({
+        title: 'Rol Actualizado',
+        description: `El rol de ${userProfile.fullName} ha sido cambiado a ${role}.`,
+      });
+      setOpen(false);
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar Rol de Usuario</DialogTitle>
+          <DialogDescription>
+            Seleccione el nuevo rol para {userProfile.fullName}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+            <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                    <AvatarImage src={userProfile.photoURL} />
+                    <AvatarFallback className="text-2xl">{userProfile.fullName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="font-semibold">{userProfile.fullName}</p>
+                    <p className="text-sm text-muted-foreground">{userProfile.email}</p>
+                </div>
+            </div>
+          <div className="space-y-2">
+            <Label htmlFor="role">Rol en el sistema</Label>
+            <Select value={role} onValueChange={(v: any) => setRole(v)}>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Seleccione un rol" />
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Guardar Cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -57,7 +57,7 @@ export function AddExpenseDialog() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común'>('Factura');
   const [invoiceNumber, setInvoiceNumber] = useState('');

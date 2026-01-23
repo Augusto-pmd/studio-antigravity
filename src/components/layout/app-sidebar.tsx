@@ -47,6 +47,7 @@ import {
   Briefcase,
   Clock,
   Scale,
+  UserCog,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -65,15 +66,15 @@ const menuItems = [
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
   { href: "/mis-horas", label: "Mis Horas", icon: Clock },
   { href: "/caja", label: "Mi Caja", icon: Wallet },
-  {
-    href: "/cajas",
-    label: "Gestión de Cajas",
-    icon: Landmark,
-    adminOnly: true,
-  },
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/contratos", label: "Contratos", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  {
+    href: "/recursos-humanos",
+    label: "Recursos Humanos",
+    icon: Briefcase,
+    adminOnly: true,
+  },
   {
     href: "/tesoreria",
     label: "Tesorería",
@@ -81,9 +82,15 @@ const menuItems = [
     adminOnly: true,
   },
   {
-    href: "/recursos-humanos",
-    label: "Recursos Humanos",
-    icon: Briefcase,
+    href: "/cajas",
+    label: "Gestión de Cajas",
+    icon: Landmark,
+    adminOnly: true,
+  },
+  {
+    href: "/usuarios",
+    label: "Usuarios",
+    icon: UserCog,
     adminOnly: true,
   },
 ];
@@ -115,9 +122,10 @@ export function AppSidebar() {
               if (item.adminOnly && !permissions.isSuperAdmin) {
                 return null;
               }
-              if (item.role && !item.role.includes(role)) {
-                return null;
-              }
+              // This logic for role-based visibility is now secondary to the adminOnly flag
+              // if (item.role && !item.role.includes(role)) {
+              //   return null;
+              // }
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton

@@ -44,7 +44,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
   const [isPending, startTransition] = useTransition();
 
   // FORM STATE
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   const [amount, setAmount] = useState('');

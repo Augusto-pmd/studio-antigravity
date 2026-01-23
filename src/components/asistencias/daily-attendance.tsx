@@ -52,7 +52,7 @@ interface AttendanceRecord {
 }
 
 export function DailyAttendance() {
-  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [lastProjectByEmployee, setLastProjectByEmployee] = useState<Record<string, string>>({});
   const [isClient, setIsClient] = useState(false);

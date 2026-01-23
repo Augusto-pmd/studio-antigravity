@@ -56,7 +56,7 @@ export function AssetDialog({
   // Form State
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState<Date>();
+  const [purchaseDate, setPurchaseDate] = useState<Date | undefined>();
   const [purchaseValue, setPurchaseValue] = useState('');
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [status, setStatus] = useState<'Activo' | 'Mantenimiento' | 'Vendido' | 'De Baja'>('Activo');
