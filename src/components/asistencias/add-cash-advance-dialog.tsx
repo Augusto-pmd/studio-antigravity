@@ -32,9 +32,60 @@ import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser, useCollection } from '@/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+
+const employeeConverter = {
+    toFirestore(employee: Employee): DocumentData {
+        const { id, ...data } = employee;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Employee {
+        const data = snapshot.data(options);
+        return {
+            id: snapshot.id,
+            name: data.name,
+            status: data.status,
+            paymentType: data.paymentType,
+            category: data.category,
+            dailyWage: data.dailyWage,
+            artExpiryDate: data.artExpiryDate,
+        } as Employee;
+    }
+};
+
+const projectConverter = {
+    toFirestore(project: Project): DocumentData {
+        const { id, ...data } = project;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Project {
+        const data = snapshot.data(options);
+        return {
+            id: snapshot.id,
+            name: data.name,
+            client: data.client,
+            address: data.address,
+            currency: data.currency,
+            projectType: data.projectType,
+            status: data.status,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            supervisor: data.supervisor,
+            budget: data.budget,
+            balance: data.balance,
+            progress: data.progress,
+            description: data.description,
+        } as Project;
+    }
+};
 
 export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
   const [open, setOpen] = useState(false);
@@ -52,9 +103,9 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
   const [isClient, setIsClient] = useState(false);
 
   // DATA FETCHING
-  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees') : null), [firestore]);
+  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const resetForm = () => {
