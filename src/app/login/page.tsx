@@ -7,12 +7,9 @@ import { Logo } from '@/components/icons/logo';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { loginBackgrounds } from '@/lib/login-backgrounds';
-import { useAuth } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [background, setBackground] = useState(loginBackgrounds[0] || { src: '', hint: '', quote: '', author: '' });
@@ -25,29 +22,10 @@ export default function LoginPage() {
   }, []);
 
   const handleSignIn = async () => {
-    if (!auth) {
-      toast({
-        variant: "destructive",
-        title: "Error de configuración",
-        description: "La autenticación no está disponible en este momento.",
-      });
-      return;
-    }
     setIsSigningIn(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      router.replace('/');
-    } catch (error: any) {
-      console.error("Error signing in with Google: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error al iniciar sesión",
-        description: error.message || "No se pudo iniciar sesión con Google. Por favor, intente de nuevo.",
-      });
-    } finally {
-      setIsSigningIn(false);
-    }
+    // Simulate a successful login by redirecting to the main page.
+    // This bypasses the actual Firebase authentication for diagnostic purposes.
+    router.replace('/');
   };
   
   return (
