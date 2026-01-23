@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
+import { useUser } from "@/context/user-context";
+import { setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { UserProfile, CashAccount, CashTransaction } from "@/lib/types";
 
