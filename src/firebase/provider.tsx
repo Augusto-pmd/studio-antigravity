@@ -5,7 +5,7 @@ import type { Role, UserProfile, Permissions } from '@/lib/types';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { useUser as useAuthUser } from './auth/use-user';
+import { useUser as useAuthUserHook } from './auth/use-user';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseContextValue {
@@ -30,7 +30,7 @@ interface FirebaseProviderProps {
 }
 
 export function FirebaseProvider({ children, firebaseApp, auth, firestore }: FirebaseProviderProps) {
-  const { user, userProfile, isLoading } = useAuthUser();
+  const { user, userProfile, isLoading } = useAuthUserHook(auth, firestore);
   const [simulatedRole, setSimulatedRole] = useState<Role>('Dirección');
 
   const role = userProfile?.role || simulatedRole;

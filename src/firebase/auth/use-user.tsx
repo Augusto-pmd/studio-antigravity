@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase/provider';
+import { doc, onSnapshot, type Firestore } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
+import type { Auth } from 'firebase/auth';
 
-export function useUser() {
-  const auth = useAuth();
-  const firestore = useFirestore();
+export function useUser(auth: Auth | null, firestore: Firestore | null) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
