@@ -36,6 +36,8 @@ import type { Contractor } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function ContractorDialog({
   contractor,
@@ -83,7 +85,7 @@ export function ContractorDialog({
     }
   }, [open, contractor]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -93,43 +95,48 @@ export function ContractorDialog({
       return;
     }
 
-    startTransition(async () => {
-        try {
-            const contractorsCollection = collection(firestore, 'contractors');
-            const contractorRef = isEditMode ? doc(contractorsCollection, contractor.id) : doc(contractorsCollection);
-            const contractorId = contractorRef.id;
+    startTransition(() => {
+        const contractorsCollection = collection(firestore, 'contractors');
+        const contractorRef = isEditMode ? doc(contractorsCollection, contractor.id) : doc(contractorsCollection);
+        const contractorId = contractorRef.id;
 
-            const contractorData: Partial<Contractor> = {
-                id: contractorId,
-                name,
-                cuit,
-                address,
-                fiscalCondition,
-                contactPerson,
-                email,
-                phone,
-                status,
-                notes,
-            };
+        const contractorData: Partial<Contractor> = {
+            id: contractorId,
+            name,
+            cuit,
+            address,
+            fiscalCondition,
+            contactPerson,
+            email,
+            phone,
+            status,
+            notes,
+        };
 
-            if (artExpiryDate) {
-                contractorData.artExpiryDate = artExpiryDate.toISOString();
-            }
-            if (insuranceExpiryDate) {
-                contractorData.insuranceExpiryDate = insuranceExpiryDate.toISOString();
-            }
-            
-            await setDoc(contractorRef, contractorData, { merge: true });
-
-            toast({
-                title: isEditMode ? 'Contratista Actualizado' : 'Contratista Creado',
-                description: `El contratista "${name}" ha sido guardado correctamente.`,
-            });
-            setOpen(false);
-        } catch (error: any) {
-            console.error("Error saving contractor:", error);
-            toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || "No se pudo guardar el contratista." });
+        if (artExpiryDate) {
+            contractorData.artExpiryDate = artExpiryDate.toISOString();
         }
+        if (insuranceExpiryDate) {
+            contractorData.insuranceExpiryDate = insuranceExpiryDate.toISOString();
+        }
+        
+        setDoc(contractorRef, contractorData, { merge: true })
+            .then(() => {
+                toast({
+                    title: isEditMode ? 'Contratista Actualizado' : 'Contratista Creado',
+                    description: `El contratista "${name}" ha sido guardado correctamente.`,
+                });
+                setOpen(false);
+            })
+            .catch((error) => {
+                const permissionError = new FirestorePermissionError({
+                    path: contractorRef.path,
+                    operation: isEditMode ? 'update' : 'create',
+                    requestResourceData: contractorData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar el contratista. Es posible que no tengas permisos." });
+            });
     });
   };
 

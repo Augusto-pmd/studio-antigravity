@@ -33,6 +33,8 @@ import { Calendar as CalendarIcon, Save, PlusCircle, Trash2, Loader2 } from 'luc
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface TimeLogEntry {
   id: string; // Temp ID for React key
@@ -113,46 +115,53 @@ export function UserTimeLog() {
     
     const currentFormattedDate = format(selectedDate, 'yyyy-MM-dd');
 
+    startTransition(() => {
+        const batch = writeBatch(firestore);
 
-    startTransition(async () => {
-        try {
-            const batch = writeBatch(firestore);
+        // Delete old logs for this day that are no longer in the entries
+        existingLogs?.forEach(oldLog => {
+            if (!timeLogEntries.some(entry => entry.id === oldLog.id)) {
+                const docRef = doc(firestore, 'timeLogs', oldLog.id);
+                batch.delete(docRef);
+            }
+        });
 
-            // Delete old logs for this day that are no longer in the entries
-            existingLogs?.forEach(oldLog => {
-                if (!timeLogEntries.some(entry => entry.id === oldLog.id)) {
-                    const docRef = doc(firestore, 'timeLogs', oldLog.id);
-                    batch.delete(docRef);
-                }
+        let batchedLogs: any[] = [];
+        // Set/Update current entries
+        timeLogEntries.forEach(entry => {
+            const isNew = entry.id.startsWith('temp-');
+            const docRef = isNew 
+                ? doc(collection(firestore, 'timeLogs')) 
+                : doc(firestore, 'timeLogs', entry.id);
+            
+            const logData: Omit<TimeLog, 'id'> = {
+                userId: user.uid,
+                date: currentFormattedDate,
+                projectId: entry.projectId,
+                hours: Number(entry.hours),
+            };
+            batchedLogs.push(logData);
+            
+            if (isNew) {
+                batch.set(docRef, logData);
+            } else {
+                batch.update(docRef, logData);
+            }
+        });
+
+        batch.commit()
+            .then(() => {
+                toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
+            })
+            .catch((error) => {
+                const permissionError = new FirestorePermissionError({
+                    path: 'timeLogs (batch)',
+                    operation: 'write',
+                    requestResourceData: batchedLogs,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros de horas. Es posible que no tengas permisos.' });
             });
-
-            // Set/Update current entries
-            timeLogEntries.forEach(entry => {
-                const isNew = entry.id.startsWith('temp-');
-                const docRef = isNew 
-                    ? doc(collection(firestore, 'timeLogs')) 
-                    : doc(firestore, 'timeLogs', entry.id);
-                
-                const logData: Omit<TimeLog, 'id'> = {
-                    userId: user.uid,
-                    date: currentFormattedDate,
-                    projectId: entry.projectId,
-                    hours: Number(entry.hours),
-                };
-                
-                if (isNew) {
-                    batch.set(docRef, logData);
-                } else {
-                    batch.update(docRef, logData);
-                }
-            });
-
-            await batch.commit();
-            toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
-        } catch (error) {
-            console.error("Error saving time logs:", error);
-            toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros de horas.' });
-        }
     });
   }
 

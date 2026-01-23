@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import type { UserProfile, CashAccount, CashTransaction } from "@/lib/types";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function FundTransferDialog({ profile, cashAccounts, children }: { profile: UserProfile, cashAccounts: CashAccount[], children: React.ReactNode }) {
   const { user: operator, firestore } = useUser();
@@ -58,7 +60,7 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
     setSelectedAccountId(cashAccounts?.length === 1 ? cashAccounts[0].id : undefined);
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !operator) {
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
         return;
@@ -76,39 +78,43 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
     
     const transferAmount = parseFloat(amount);
 
-    startTransition(async () => {
-        try {
-            const batch = writeBatch(firestore);
+    startTransition(() => {
+        const batch = writeBatch(firestore);
 
-            // 1. Create CashTransaction document
-            const transactionRef = doc(collection(firestore, `users/${profile.id}/cashAccounts/${selectedAccount.id}/transactions`));
-            const newTransaction: Omit<CashTransaction, 'id'> = {
-                userId: profile.id,
-                date: new Date().toISOString(),
-                type: type,
-                amount: transferAmount,
-                currency: 'ARS',
-                description: description,
-                operatorId: operator.uid,
-                operatorName: operator.displayName || undefined
-            };
-            batch.set(transactionRef, newTransaction);
+        // 1. Create CashTransaction document
+        const transactionRef = doc(collection(firestore, `users/${profile.id}/cashAccounts/${selectedAccount.id}/transactions`));
+        const newTransaction: Omit<CashTransaction, 'id'> = {
+            userId: profile.id,
+            date: new Date().toISOString(),
+            type: type,
+            amount: transferAmount,
+            currency: 'ARS',
+            description: description,
+            operatorId: operator.uid,
+            operatorName: operator.displayName || undefined
+        };
+        batch.set(transactionRef, newTransaction);
 
-            // 2. Update CashAccount balance
-            const accountRef = doc(firestore, `users/${profile.id}/cashAccounts/${selectedAccount.id}`);
-            const newBalance = selectedAccount.balance + transferAmount;
-            batch.update(accountRef, { balance: newBalance });
-            
-            await batch.commit();
-
+        // 2. Update CashAccount balance
+        const accountRef = doc(firestore, `users/${profile.id}/cashAccounts/${selectedAccount.id}`);
+        const newBalance = selectedAccount.balance + transferAmount;
+        batch.update(accountRef, { balance: newBalance });
+        
+        batch.commit()
+          .then(() => {
             toast({ title: 'Transferencia Realizada', description: `Se acreditaron ${formatCurrency(transferAmount, 'ARS')} a la caja "${selectedAccount.name}" de ${profile.fullName}.` });
             resetForm();
             setOpen(false);
-
-        } catch (error: any) {
-            console.error("Error saving fund transfer:", error);
-            toast({ variant: 'destructive', title: 'Error al transferir', description: error.message || 'No se pudo registrar el movimiento.' });
-        }
+          })
+          .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: `/users/${profile.id}/cashAccounts (batch)`,
+                operation: 'update',
+                requestResourceData: { amount: transferAmount, description }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error al transferir', description: 'No se pudo registrar el movimiento. Es posible que no tengas permisos.' });
+          });
     });
   }
   

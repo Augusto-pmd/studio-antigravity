@@ -37,6 +37,8 @@ import { useFirestore } from "@/firebase/provider";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 
 export function AddProjectDialog({
@@ -88,7 +90,7 @@ export function AddProjectDialog({
     }
   }, [open, project]);
   
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -98,44 +100,49 @@ export function AddProjectDialog({
         return;
     }
     
-    startTransition(async () => {
-      try {
-        const projectsCollection = collection(firestore, 'projects');
-        const projectRef = isEditMode ? doc(projectsCollection, project.id) : doc(projectsCollection);
-        const projectId = projectRef.id;
+    startTransition(() => {
+      const projectsCollection = collection(firestore, 'projects');
+      const projectRef = isEditMode ? doc(projectsCollection, project.id) : doc(projectsCollection);
+      const projectId = projectRef.id;
 
-        const projectData: Project = {
-            id: projectId,
-            name,
-            client,
-            address,
-            projectType,
-            currency,
-            description: description || undefined,
-            status,
-            supervisor,
-            budget: parseFloat(budget) || 0,
-            progress: parseInt(progress) || 0,
-            balance: isEditMode && project ? project.balance : parseFloat(budget) || 0,
-            startDate: startDate?.toISOString(),
-            endDate: endDate?.toISOString(),
-        };
+      const projectData: Project = {
+          id: projectId,
+          name,
+          client,
+          address,
+          projectType,
+          currency,
+          description: description || undefined,
+          status,
+          supervisor,
+          budget: parseFloat(budget) || 0,
+          progress: parseInt(progress) || 0,
+          balance: isEditMode && project ? project.balance : parseFloat(budget) || 0,
+          startDate: startDate?.toISOString(),
+          endDate: endDate?.toISOString(),
+      };
 
-        await setDoc(projectRef, projectData, { merge: true });
-
-        toast({
-            title: isEditMode ? 'Obra Actualizada' : 'Obra Creada',
-            description: `La obra "${name}" ha sido guardada correctamente.`,
+      setDoc(projectRef, projectData, { merge: true })
+        .then(() => {
+            toast({
+                title: isEditMode ? 'Obra Actualizada' : 'Obra Creada',
+                description: `La obra "${name}" ha sido guardada correctamente.`,
+            });
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: projectRef.path,
+                operation: isEditMode ? 'update' : 'create',
+                requestResourceData: projectData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Error al Guardar',
+                description: 'No se pudo guardar la obra. Es posible que no tengas permisos.'
+            });
         });
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error al guardar la obra:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Error al Guardar',
-            description: error.message || 'No se pudo guardar la obra. Revisa la consola para más detalles.'
-        });
-      }
     });
   };
 

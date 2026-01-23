@@ -25,6 +25,8 @@ import type { TechnicalOfficeEmployee, UserProfile, SalaryHistory } from "@/lib/
 import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function TechnicalOfficeEmployeeDialog({
   employee,
@@ -77,7 +79,7 @@ export function TechnicalOfficeEmployeeDialog({
       return;
     }
 
-    startTransition(async () => {
+    startTransition(() => {
       const selectedUser = users?.find(u => u.id === userId);
       if (!selectedUser) {
         toast({ variant: 'destructive', title: 'Error', description: 'El usuario seleccionado no es válido.' });
@@ -87,42 +89,46 @@ export function TechnicalOfficeEmployeeDialog({
       const employeeRef = doc(firestore, 'technicalOfficeEmployees', userId);
       const newSalary = parseFloat(monthlySalary) || 0;
 
-      try {
-        const batch = writeBatch(firestore);
+      const batch = writeBatch(firestore);
 
-        const employeeData: TechnicalOfficeEmployee = {
-          id: userId,
-          userId,
-          fullName: selectedUser.fullName,
-          position,
-          monthlySalary: newSalary,
-          status,
-        };
-        batch.set(employeeRef, employeeData, { merge: true });
+      const employeeData: TechnicalOfficeEmployee = {
+        id: userId,
+        userId,
+        fullName: selectedUser.fullName,
+        position,
+        monthlySalary: newSalary,
+        status,
+      };
+      batch.set(employeeRef, employeeData, { merge: true });
 
-        // If salary has changed or it's a new employee, add to history
-        if (!isEditMode || (employee && employee.monthlySalary !== newSalary)) {
-            const salaryHistoryRef = doc(collection(firestore, `technicalOfficeEmployees/${userId}/salaryHistory`));
-            const newSalaryHistoryEntry: SalaryHistory = {
-                id: salaryHistoryRef.id,
-                amount: newSalary,
-                effectiveDate: new Date().toISOString(),
-            };
-            batch.set(salaryHistoryRef, newSalaryHistoryEntry);
-        }
-
-        await batch.commit();
-
-        toast({
-          title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
-          description: `Los datos de ${selectedUser.fullName} han sido guardados.`,
-        });
-        setOpen(false);
-
-      } catch (error: any) {
-        console.error("Error saving technical office employee:", error);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || 'No se pudo guardar el empleado.' });
+      // If salary has changed or it's a new employee, add to history
+      if (!isEditMode || (employee && employee.monthlySalary !== newSalary)) {
+          const salaryHistoryRef = doc(collection(firestore, `technicalOfficeEmployees/${userId}/salaryHistory`));
+          const newSalaryHistoryEntry: SalaryHistory = {
+              id: salaryHistoryRef.id,
+              amount: newSalary,
+              effectiveDate: new Date().toISOString(),
+          };
+          batch.set(salaryHistoryRef, newSalaryHistoryEntry);
       }
+
+      batch.commit()
+        .then(() => {
+            toast({
+              title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
+              description: `Los datos de ${selectedUser.fullName} han sido guardados.`,
+            });
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: `/technicalOfficeEmployees/${userId} (batch)`,
+                operation: isEditMode ? 'update' : 'create',
+                requestResourceData: employeeData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar el empleado. Es posible que no tengas permisos.' });
+        });
     });
   };
 

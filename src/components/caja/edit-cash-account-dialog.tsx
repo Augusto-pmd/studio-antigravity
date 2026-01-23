@@ -18,6 +18,8 @@ import { useUser } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function EditCashAccountDialog({ children, cashAccount }: { children: React.ReactNode, cashAccount: CashAccount }) {
   const [open, setOpen] = useState(false);
@@ -33,7 +35,7 @@ export function EditCashAccountDialog({ children, cashAccount }: { children: Rea
     }
   }, [open, cashAccount]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !user) {
       toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
       return;
@@ -43,22 +45,28 @@ export function EditCashAccountDialog({ children, cashAccount }: { children: Rea
       return;
     }
 
-    startTransition(async () => {
-      try {
-        const accountRef = doc(firestore, `users/${user.uid}/cashAccounts`, cashAccount.id);
-        
-        await updateDoc(accountRef, { name: name.trim() });
-        
-        toast({ title: 'Caja Actualizada', description: `La caja ha sido renombrada a "${name.trim()}".` });
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error updating cash account:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al actualizar",
-          description: error.message || "No se pudo actualizar el nombre de la caja.",
+    startTransition(() => {
+      const accountRef = doc(firestore, `users/${user.uid}/cashAccounts`, cashAccount.id);
+      const updatedData = { name: name.trim() };
+      
+      updateDoc(accountRef, updatedData)
+        .then(() => {
+          toast({ title: 'Caja Actualizada', description: `La caja ha sido renombrada a "${name.trim()}".` });
+          setOpen(false);
+        })
+        .catch((error) => {
+          const permissionError = new FirestorePermissionError({
+            path: accountRef.path,
+            operation: 'update',
+            requestResourceData: updatedData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          toast({
+            variant: "destructive",
+            title: "Error al actualizar",
+            description: "No se pudo actualizar el nombre de la caja. Es posible que no tengas permisos.",
+          });
         });
-      }
     });
   };
 

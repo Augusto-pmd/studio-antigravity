@@ -20,6 +20,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export function EditProfileDialog({
   open,
@@ -53,7 +55,7 @@ export function EditProfileDialog({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!user || !firestore || !auth || !firebaseApp) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a los servicios de Firebase.' });
       return;
@@ -95,8 +97,13 @@ export function EditProfileDialog({
         toast({ title: 'Perfil Actualizado', description: 'Tu información ha sido guardada.' });
         onOpenChange(false);
       } catch (error: any) {
-        console.error("Error updating profile:", error);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: error.message || 'No se pudo guardar el perfil.' });
+        const permissionError = new FirestorePermissionError({
+          path: `users/${user.uid}`,
+          operation: 'update',
+          requestResourceData: { fullName },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo guardar el perfil. Es posible que no tengas permisos.' });
       }
     });
   };

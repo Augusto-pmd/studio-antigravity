@@ -27,6 +27,8 @@ import { useFirestore } from "@/firebase/provider";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { ContractorEmployee } from "@/lib/types";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddPersonnelDialog({
   contractorId,
@@ -43,46 +45,50 @@ export function AddPersonnelDialog({
   const [name, setName] = useState('');
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !name) {
       toast({ variant: "destructive", title: "Faltan datos", description: "El nombre del empleado es obligatorio." });
       return;
     }
 
-    startTransition(async () => {
-      try {
-        const personnelCollection = collection(firestore, `contractors/${contractorId}/personnel`);
-        const personnelRef = doc(personnelCollection);
-        const personnelId = personnelRef.id;
+    startTransition(() => {
+      const personnelCollection = collection(firestore, `contractors/${contractorId}/personnel`);
+      const personnelRef = doc(personnelCollection);
+      const personnelId = personnelRef.id;
 
-        const newPersonnel: Partial<ContractorEmployee> = {
-          id: personnelId,
-          name,
-          contractorId,
-        };
-        
-        if (artExpiryDate) {
-          newPersonnel.artExpiryDate = artExpiryDate.toISOString();
-        }
-        
-        await setDoc(personnelRef, newPersonnel, { merge: true });
-
-        toast({
-          title: "Personal Agregado",
-          description: `${name} ha sido agregado al contratista.`,
-        });
-
-        setOpen(false);
-        setName('');
-        setArtExpiryDate(undefined);
-      } catch (error: any) {
-        console.error("Error saving personnel:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al guardar",
-          description: error.message || "No se pudo agregar al personal.",
-        });
+      const newPersonnel: Partial<ContractorEmployee> = {
+        id: personnelId,
+        name,
+        contractorId,
+      };
+      
+      if (artExpiryDate) {
+        newPersonnel.artExpiryDate = artExpiryDate.toISOString();
       }
+      
+      setDoc(personnelRef, newPersonnel, { merge: true })
+        .then(() => {
+            toast({
+              title: "Personal Agregado",
+              description: `${name} ha sido agregado al contratista.`,
+            });
+            setOpen(false);
+            setName('');
+            setArtExpiryDate(undefined);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: personnelRef.path,
+                operation: 'create',
+                requestResourceData: newPersonnel,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo agregar al personal. Es posible que no tengas permisos.",
+            });
+        });
     });
   };
 

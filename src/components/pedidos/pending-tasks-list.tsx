@@ -12,6 +12,8 @@ import { es } from 'date-fns/locale';
 import { Button } from '../ui/button';
 import { CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export function PendingTasksList() {
   const { user, firestore } = useUser();
@@ -33,21 +35,29 @@ export function PendingTasksList() {
 
   const handleCompleteTask = async (taskId: string) => {
     if (!firestore) return;
-    try {
-      const taskRef = doc(firestore, 'taskRequests', taskId);
-      await updateDoc(taskRef, {
+    const taskRef = doc(firestore, 'taskRequests', taskId);
+    const updatedData = {
         status: 'Finalizado',
         completedAt: new Date().toISOString(),
-      });
-      toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
-    } catch(error: any) {
-      console.error("Error completing task:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al completar",
-        description: error.message || "No se pudo finalizar la tarea.",
-      });
-    }
+    };
+    
+    updateDoc(taskRef, updatedData)
+        .then(() => {
+            toast({ title: "¡Tarea completada!", description: "Has marcado la tarea como finalizada." });
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: taskRef.path,
+                operation: 'update',
+                requestResourceData: updatedData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: "destructive",
+              title: "Error al completar",
+              description: "No se pudo finalizar la tarea. Es posible que no tengas permisos.",
+            });
+        });
   };
 
   const renderSkeleton = () => (

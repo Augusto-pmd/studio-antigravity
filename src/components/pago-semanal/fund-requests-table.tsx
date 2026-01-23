@@ -25,6 +25,8 @@ import { parseISO, format } from "date-fns";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -42,23 +44,32 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
   const { toast } = useToast();
   const isAdmin = permissions.canValidate;
 
-  const handleStatusChange = async (requestId: string, status: FundRequest['status']) => {
+  const handleStatusChange = (requestId: string, status: FundRequest['status']) => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
-    try {
-      const requestRef = doc(firestore, 'fundRequests', requestId);
-      await updateDoc(requestRef, { status });
-      toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}.` });
-    } catch (error: any) {
-      console.error("Error updating fund request status:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al actualizar",
-        description: error.message || "No se pudo cambiar el estado de la solicitud.",
-      });
-    }
+    
+    const requestRef = doc(firestore, 'fundRequests', requestId);
+    const updatedData = { status };
+
+    updateDoc(requestRef, updatedData)
+        .then(() => {
+            toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}.` });
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: requestRef.path,
+                operation: 'update',
+                requestResourceData: updatedData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: "destructive",
+                title: "Error al actualizar",
+                description: "No se pudo cambiar el estado de la solicitud. Es posible que no tengas permisos.",
+            });
+        });
   };
   
   const renderSkeleton = () => (

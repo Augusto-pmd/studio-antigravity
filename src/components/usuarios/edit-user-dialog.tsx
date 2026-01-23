@@ -25,6 +25,8 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { doc, updateDoc } from "firebase/firestore";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
 
@@ -48,31 +50,37 @@ export function EditUserDialog({
     }
   }, [open, userProfile]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
     
-    startTransition(async () => {
-      try {
-        const userRef = doc(firestore, 'users', userProfile.id);
-        
-        await updateDoc(userRef, { role });
-
-        toast({
-          title: 'Rol Actualizado',
-          description: `El rol de ${userProfile.fullName} ha sido cambiado a ${role}.`,
+    startTransition(() => {
+      const userRef = doc(firestore, 'users', userProfile.id);
+      const updatedData = { role };
+      
+      updateDoc(userRef, updatedData)
+        .then(() => {
+            toast({
+              title: 'Rol Actualizado',
+              description: `El rol de ${userProfile.fullName} ha sido cambiado a ${role}.`,
+            });
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: updatedData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: "destructive",
+              title: "Error al actualizar",
+              description: "No se pudo actualizar el rol. Es posible que no tengas permisos.",
+            });
         });
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error updating user role:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al actualizar",
-          description: error.message || "No se pudo actualizar el rol del usuario.",
-        });
-      }
     });
   };
 

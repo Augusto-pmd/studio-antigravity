@@ -28,6 +28,8 @@ import type { Employee } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function EmployeeDialog({
   employee,
@@ -65,7 +67,7 @@ export function EmployeeDialog({
     }
   }, [open, employee]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -75,40 +77,45 @@ export function EmployeeDialog({
       return;
     }
 
-    startTransition(async () => {
-      try {
-        const employeesCollection = collection(firestore, 'employees');
-        const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
-        const employeeId = employeeRef.id;
+    startTransition(() => {
+      const employeesCollection = collection(firestore, 'employees');
+      const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
+      const employeeId = employeeRef.id;
 
-        const employeeData: Partial<Employee> = {
-          id: employeeId,
-          name,
-          category,
-          dailyWage: parseFloat(dailyWage) || 0,
-          paymentType,
-          status,
-        };
+      const employeeData: Partial<Employee> = {
+        id: employeeId,
+        name,
+        category,
+        dailyWage: parseFloat(dailyWage) || 0,
+        paymentType,
+        status,
+      };
 
-        if (artExpiryDate) {
-          employeeData.artExpiryDate = artExpiryDate.toISOString();
-        }
-        
-        await setDoc(employeeRef, employeeData, { merge: true });
-
-        toast({
-          title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
-          description: `El empleado "${name}" ha sido guardado correctamente.`,
-        });
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error saving employee:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al guardar",
-          description: error.message || "No se pudo guardar el empleado.",
-        });
+      if (artExpiryDate) {
+        employeeData.artExpiryDate = artExpiryDate.toISOString();
       }
+      
+      setDoc(employeeRef, employeeData, { merge: true })
+        .then(() => {
+            toast({
+              title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',
+              description: `El empleado "${name}" ha sido guardado correctamente.`,
+            });
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: employeeRef.path,
+                operation: isEditMode ? 'update' : 'create',
+                requestResourceData: employeeData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: "destructive",
+              title: "Error al guardar",
+              description: "No se pudo guardar el empleado. Es posible que no tengas permisos.",
+            });
+        });
     });
   };
 

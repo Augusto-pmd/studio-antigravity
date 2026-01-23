@@ -36,6 +36,8 @@ import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { Project, FundRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 const fundRequestCategories = [
     'Logística y PMD',
@@ -78,7 +80,7 @@ export function RequestFundDialog() {
     }
   }, [open]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
         return;
@@ -88,44 +90,49 @@ export function RequestFundDialog() {
         return;
     }
 
-    startTransition(async () => {
-      try {
-        const selectedProject = projects?.find(p => p.id === projectId);
+    startTransition(() => {
+      const selectedProject = projects?.find(p => p.id === projectId);
 
-        const fundRequestsCollection = collection(firestore, 'fundRequests');
-        const requestRef = doc(fundRequestsCollection);
-        const requestId = requestRef.id;
+      const fundRequestsCollection = collection(firestore, 'fundRequests');
+      const requestRef = doc(fundRequestsCollection);
+      const requestId = requestRef.id;
 
-        const requestData: FundRequest = {
-            id: requestId,
-            requesterId: user.uid,
-            requesterName: user.displayName || 'Usuario Anónimo',
-            date: date.toISOString(),
-            category: category as FundRequest['category'],
-            projectId: projectId,
-            projectName: selectedProject?.name,
-            amount: parseFloat(amount),
-            currency,
-            exchangeRate: parseFloat(exchangeRate),
-            status: 'Pendiente',
-        };
+      const requestData: FundRequest = {
+          id: requestId,
+          requesterId: user.uid,
+          requesterName: user.displayName || 'Usuario Anónimo',
+          date: date.toISOString(),
+          category: category as FundRequest['category'],
+          projectId: projectId,
+          projectName: selectedProject?.name,
+          amount: parseFloat(amount),
+          currency,
+          exchangeRate: parseFloat(exchangeRate),
+          status: 'Pendiente',
+      };
 
-        await setDoc(requestRef, requestData);
-
-        toast({
-            title: 'Solicitud Enviada',
-            description: 'Tu solicitud de fondos ha sido registrada y está pendiente de aprobación.',
+      setDoc(requestRef, requestData)
+        .then(() => {
+            toast({
+                title: 'Solicitud Enviada',
+                description: 'Tu solicitud de fondos ha sido registrada y está pendiente de aprobación.',
+            });
+            resetForm();
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: requestRef.path,
+                operation: 'create',
+                requestResourceData: requestData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo enviar la solicitud. Es posible que no tengas permisos.",
+            });
         });
-        resetForm();
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error saving fund request:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al guardar",
-          description: error.message || "No se pudo enviar la solicitud.",
-        });
-      }
     });
   };
 

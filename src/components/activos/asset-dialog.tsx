@@ -36,6 +36,8 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { setDoc, collection, doc } from "firebase/firestore";
 import { Textarea } from "../ui/textarea";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 const assetCategories = ["Vehículo", "Maquinaria", "Inmueble", "Equipo Informático", "Herramientas", "Otro"];
 
@@ -77,7 +79,7 @@ export function AssetDialog({
     }
   }, [open, asset]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
@@ -87,38 +89,43 @@ export function AssetDialog({
       return;
     }
 
-    startTransition(async () => {
-      try {
-        const assetsCollection = collection(firestore, 'assets');
-        const assetRef = isEditMode ? doc(assetsCollection, asset.id) : doc(assetsCollection);
-        const assetId = assetRef.id;
+    startTransition(() => {
+      const assetsCollection = collection(firestore, 'assets');
+      const assetRef = isEditMode ? doc(assetsCollection, asset.id) : doc(assetsCollection);
+      const assetId = assetRef.id;
 
-        const assetData: Asset = {
-          id: assetId,
-          name,
-          category,
-          purchaseDate: purchaseDate.toISOString(),
-          purchaseValue: parseFloat(purchaseValue) || 0,
-          currency,
-          status,
-          description,
-        };
-        
-        await setDoc(assetRef, assetData, { merge: true });
-
-        toast({
-          title: isEditMode ? 'Activo Actualizado' : 'Activo Creado',
-          description: `El activo "${name}" ha sido guardado correctamente.`,
+      const assetData: Asset = {
+        id: assetId,
+        name,
+        category,
+        purchaseDate: purchaseDate.toISOString(),
+        purchaseValue: parseFloat(purchaseValue) || 0,
+        currency,
+        status,
+        description,
+      };
+      
+      setDoc(assetRef, assetData, { merge: true })
+        .then(() => {
+          toast({
+            title: isEditMode ? 'Activo Actualizado' : 'Activo Creado',
+            description: `El activo "${name}" ha sido guardado correctamente.`,
+          });
+          setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+              path: assetRef.path,
+              operation: isEditMode ? 'update' : 'create',
+              requestResourceData: assetData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: "destructive",
+              title: "Error al guardar",
+              description: "No se pudo guardar el activo. Es posible que no tengas permisos.",
+            });
         });
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error saving asset:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al guardar",
-          description: error.message || "No se pudo guardar el activo.",
-        });
-      }
     });
   };
 

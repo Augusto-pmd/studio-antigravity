@@ -10,6 +10,7 @@ import {
   CollectionReference,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -84,13 +85,15 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // The original Firebase error is more stable and contains enough info.
         setError(error);
         setData(null);
         setIsLoading(false);
 
-        // trigger global error propagation with the original error
-        errorEmitter.emit('permission-error', error);
+        const permissionError = new FirestorePermissionError({
+          path: (targetRefOrQuery as any).path || 'unknown path',
+          operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
       }
     );
 

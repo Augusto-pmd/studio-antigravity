@@ -27,6 +27,8 @@ import { useCollection } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { UserProfile, Project, TaskRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 
 export function NewRequestDialog() {
@@ -48,58 +50,63 @@ export function NewRequestDialog() {
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects') : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !user || !title || !assigneeId) {
         toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'El título y el usuario asignado son obligatorios.' });
         return;
     }
     
-    startTransition(async () => {
-      try {
-        const tasksCollection = collection(firestore, 'taskRequests');
-        const taskRef = doc(tasksCollection);
-        const taskId = taskRef.id;
+    startTransition(() => {
+      const tasksCollection = collection(firestore, 'taskRequests');
+      const taskRef = doc(tasksCollection);
+      const taskId = taskRef.id;
 
-        const selectedAssignee = users?.find(u => u.id === assigneeId);
+      const selectedAssignee = users?.find(u => u.id === assigneeId);
 
-        if (!selectedAssignee) {
-            toast({ variant: 'destructive', title: 'Error', description: 'El usuario asignado no es válido.' });
-            return;
-        }
-
-        const taskData: TaskRequest = {
-            id: taskId,
-            title,
-            description,
-            requesterId: user.uid,
-            requesterName: user.displayName || 'Usuario Anónimo',
-            assigneeId: selectedAssignee.id,
-            assigneeName: selectedAssignee.fullName,
-            status: 'Pendiente',
-            createdAt: new Date().toISOString(),
-            projectId: projectId || undefined,
-        };
-
-        await setDoc(taskRef, taskData, { merge: true });
-
-        toast({
-            title: 'Pedido Creado',
-            description: `Se ha asignado la tarea a ${selectedAssignee.fullName}.`,
-        });
-        setOpen(false);
-        // Reset form
-        setTitle('');
-        setDescription('');
-        setAssigneeId('');
-        setProjectId(undefined);
-      } catch (error: any) {
-        console.error("Error creating new request:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al crear",
-          description: error.message || "No se pudo crear el pedido.",
-        });
+      if (!selectedAssignee) {
+          toast({ variant: 'destructive', title: 'Error', description: 'El usuario asignado no es válido.' });
+          return;
       }
+
+      const taskData: TaskRequest = {
+          id: taskId,
+          title,
+          description,
+          requesterId: user.uid,
+          requesterName: user.displayName || 'Usuario Anónimo',
+          assigneeId: selectedAssignee.id,
+          assigneeName: selectedAssignee.fullName,
+          status: 'Pendiente',
+          createdAt: new Date().toISOString(),
+          projectId: projectId || undefined,
+      };
+
+      setDoc(taskRef, taskData, { merge: true })
+        .then(() => {
+            toast({
+                title: 'Pedido Creado',
+                description: `Se ha asignado la tarea a ${selectedAssignee.fullName}.`,
+            });
+            setOpen(false);
+            // Reset form
+            setTitle('');
+            setDescription('');
+            setAssigneeId('');
+            setProjectId(undefined);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: taskRef.path,
+                operation: 'create',
+                requestResourceData: taskData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              variant: "destructive",
+              title: "Error al crear",
+              description: "No se pudo crear el pedido. Es posible que no tengas permisos.",
+            });
+        });
     });
   };
 

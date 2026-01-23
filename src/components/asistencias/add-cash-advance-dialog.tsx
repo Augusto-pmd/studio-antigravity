@@ -35,6 +35,8 @@ import { useUser, useCollection } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
   const [open, setOpen] = useState(false);
@@ -72,7 +74,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
     }
   }, [open]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !currentWeek) {
         toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
         return;
@@ -82,47 +84,52 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
         return;
     }
 
-    startTransition(async () => {
-      try {
-        const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
-        const selectedProject = projects?.find(p => p.id === selectedProjectId);
+    startTransition(() => {
+      const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
+      const selectedProject = projects?.find(p => p.id === selectedProjectId);
 
-        if (!selectedEmployee) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
-            return;
-        }
-
-        const advancesCollection = collection(firestore, 'cashAdvances');
-        const advanceRef = doc(advancesCollection);
-        const advanceId = advanceRef.id;
-
-        const newAdvance: CashAdvance = {
-            id: advanceId,
-            payrollWeekId: currentWeek.id,
-            employeeId: selectedEmployee.id,
-            employeeName: selectedEmployee.name,
-            projectId: selectedProject?.id,
-            projectName: selectedProject?.name,
-            date: date.toISOString(),
-            amount: parseFloat(amount) || 0,
-            reason: reason || undefined,
-        };
-
-        await setDoc(advanceRef, newAdvance, { merge: false });
-
-        toast({
-            title: 'Adelanto Registrado',
-            description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
-        });
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error saving cash advance:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al guardar",
-          description: error.message || "No se pudo registrar el adelanto.",
-        });
+      if (!selectedEmployee) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
+          return;
       }
+
+      const advancesCollection = collection(firestore, 'cashAdvances');
+      const advanceRef = doc(advancesCollection);
+      const advanceId = advanceRef.id;
+
+      const newAdvance: CashAdvance = {
+          id: advanceId,
+          payrollWeekId: currentWeek.id,
+          employeeId: selectedEmployee.id,
+          employeeName: selectedEmployee.name,
+          projectId: selectedProject?.id,
+          projectName: selectedProject?.name,
+          date: date.toISOString(),
+          amount: parseFloat(amount) || 0,
+          reason: reason || undefined,
+      };
+
+      setDoc(advanceRef, newAdvance, { merge: false })
+        .then(() => {
+            toast({
+                title: 'Adelanto Registrado',
+                description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
+            });
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: advanceRef.path,
+                operation: 'create',
+                requestResourceData: newAdvance,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo registrar el adelanto. Es posible que no tengas permisos.",
+            });
+        });
     });
   };
 

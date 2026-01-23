@@ -41,6 +41,8 @@ import { collection, doc, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "../ui/separator";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddExpenseDialog() {
   const { user, permissions } = useUser();
@@ -141,7 +143,7 @@ export function AddExpenseDialog() {
     };
   };
 
-  const handleSaveExpense = async () => {
+  const handleSaveExpense = () => {
     if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
       toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
       return;
@@ -158,55 +160,61 @@ export function AddExpenseDialog() {
       return;
     }
 
-    try {
-      const projectsCollection = collection(firestore, 'projects');
-      const projectRef = doc(projectsCollection, selectedProject);
-      const expensesColRef = collection(projectRef, 'expenses');
-      const newExpenseRef = doc(expensesColRef);
+    startTransition(async () => {
+        try {
+            const projectsCollection = collection(firestore, 'projects');
+            const projectRef = doc(projectsCollection, selectedProject);
+            const expensesColRef = collection(projectRef, 'expenses');
+            const newExpenseRef = doc(expensesColRef);
 
-      let receiptUrl = '';
-      if (file && documentType === 'Factura') {
-        const storage = getStorage();
-        const filePath = `receipts/${selectedProject}/${newExpenseRef.id}/${file.name}`;
-        const fileRef = ref(storage, filePath);
-        
-        await uploadBytes(fileRef, file);
-        receiptUrl = await getDownloadURL(fileRef);
-      }
+            let receiptUrl = '';
+            if (file && documentType === 'Factura') {
+                const storage = getStorage();
+                const filePath = `receipts/${selectedProject}/${newExpenseRef.id}/${file.name}`;
+                const fileRef = ref(storage, filePath);
+                
+                await uploadBytes(fileRef, file);
+                receiptUrl = await getDownloadURL(fileRef);
+            }
 
-      const newExpense: Expense = {
-        id: newExpenseRef.id,
-        projectId: selectedProject,
-        date: date.toISOString(),
-        supplierId: selectedSupplier,
-        categoryId: selectedCategory,
-        documentType,
-        invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
-        paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : '',
-        amount: parseFloat(amount),
-        iva: iva ? parseFloat(iva) : 0,
-        iibb: iibb ? parseFloat(iibb) : 0,
-        iibbJurisdiction: documentType === 'Factura' ? iibbJurisdiction : 'No Aplica',
-        currency,
-        exchangeRate: parseFloat(exchangeRate),
-        receiptUrl,
-        retencionGanancias: retencionGanancias ? parseFloat(retencionGanancias) : 0,
-        retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
-        retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
-        retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
-      };
+            const newExpense: Expense = {
+                id: newExpenseRef.id,
+                projectId: selectedProject,
+                date: date.toISOString(),
+                supplierId: selectedSupplier,
+                categoryId: selectedCategory,
+                documentType,
+                invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
+                paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : '',
+                amount: parseFloat(amount),
+                iva: iva ? parseFloat(iva) : 0,
+                iibb: iibb ? parseFloat(iibb) : 0,
+                iibbJurisdiction: documentType === 'Factura' ? iibbJurisdiction : 'No Aplica',
+                currency,
+                exchangeRate: parseFloat(exchangeRate),
+                receiptUrl,
+                retencionGanancias: retencionGanancias ? parseFloat(retencionGanancias) : 0,
+                retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
+                retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
+                retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
+            };
 
-      await setDoc(newExpenseRef, newExpense, {});
-      
-      toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
-      setOpen(false);
-      // Here you would typically reset the form state
-    } catch (error: any) {
-      console.error("Error saving expense:", error);
-      toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || 'No se pudo registrar el gasto.' });
-    } finally {
-      setIsSaving(false);
-    }
+            await setDoc(newExpenseRef, newExpense, {});
+            
+            toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
+            setOpen(false);
+        } catch (error: any) {
+            const permissionError = new FirestorePermissionError({
+              path: `/projects/${selectedProject}/expenses`,
+              operation: 'create',
+              requestResourceData: { amount, selectedProject },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
+        } finally {
+            setIsSaving(false);
+        }
+    });
   };
 
   const isSubmitDisabled = isPending || isExtracting || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));

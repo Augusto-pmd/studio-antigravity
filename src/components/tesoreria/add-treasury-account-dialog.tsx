@@ -19,6 +19,8 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc } from "firebase/firestore";
 import type { TreasuryAccount } from "@/lib/types";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddTreasuryAccountDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -40,30 +42,36 @@ export function AddTreasuryAccountDialog({ children }: { children: React.ReactNo
     setCbu('');
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) return toast({ variant: 'destructive', title: 'Error de conexión.' });
     if (!name || !initialBalance) return toast({ variant: 'destructive', title: 'Nombre y Saldo Inicial son obligatorios.' });
 
-    startTransition(async () => {
-      try {
-        const accountRef = doc(collection(firestore, 'treasuryAccounts'));
-        const newAccount: TreasuryAccount = {
-            id: accountRef.id,
-            name,
-            currency,
-            accountType,
-            balance: parseFloat(initialBalance) || 0,
-            cbu: accountType === 'Banco' ? cbu : undefined
-        };
+    startTransition(() => {
+      const accountRef = doc(collection(firestore, 'treasuryAccounts'));
+      const newAccount: TreasuryAccount = {
+          id: accountRef.id,
+          name,
+          currency,
+          accountType,
+          balance: parseFloat(initialBalance) || 0,
+          cbu: accountType === 'Banco' ? cbu : undefined
+      };
 
-        await setDoc(accountRef, newAccount, { merge: false });
-        toast({ title: 'Cuenta Creada', description: `La cuenta de tesorería "${name}" ha sido creada.` });
-        resetForm();
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error saving treasury account:", error);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: error.message || 'No se pudo crear la cuenta.' });
-      }
+      setDoc(accountRef, newAccount, { merge: false })
+        .then(() => {
+            toast({ title: 'Cuenta Creada', description: `La cuenta de tesorería "${name}" ha sido creada.` });
+            resetForm();
+            setOpen(false);
+        })
+        .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+                path: accountRef.path,
+                operation: 'create',
+                requestResourceData: newAccount,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo crear la cuenta. Es posible que no tengas permisos.' });
+        });
     });
   }
 

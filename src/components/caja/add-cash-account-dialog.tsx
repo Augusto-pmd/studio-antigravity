@@ -18,6 +18,8 @@ import { useUser } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddCashAccountDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -27,7 +29,7 @@ export function AddCashAccountDialog({ children }: { children: React.ReactNode }
   
   const [name, setName] = useState('');
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore || !user) {
       toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
       return;
@@ -37,31 +39,36 @@ export function AddCashAccountDialog({ children }: { children: React.ReactNode }
       return;
     }
 
-    startTransition(async () => {
-      try {
-        const accountRef = doc(collection(firestore, `users/${user.uid}/cashAccounts`));
-        
-        const newAccount: CashAccount = {
-            id: accountRef.id,
-            userId: user.uid,
-            name: name.trim(),
-            currency: 'ARS',
-            balance: 0,
-        };
+    startTransition(() => {
+      const accountRef = doc(collection(firestore, `users/${user.uid}/cashAccounts`));
+      
+      const newAccount: CashAccount = {
+          id: accountRef.id,
+          userId: user.uid,
+          name: name.trim(),
+          currency: 'ARS',
+          balance: 0,
+      };
 
-        await setDoc(accountRef, newAccount, {});
-        
-        toast({ title: 'Caja Creada', description: `La caja "${name.trim()}" ha sido creada.` });
-        setName('');
-        setOpen(false);
-      } catch (error: any) {
-        console.error("Error saving cash account:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al crear la caja",
-          description: error.message || "No se pudo crear la caja.",
+      setDoc(accountRef, newAccount, {})
+        .then(() => {
+          toast({ title: 'Caja Creada', description: `La caja "${name.trim()}" ha sido creada.` });
+          setName('');
+          setOpen(false);
+        })
+        .catch((error) => {
+          const permissionError = new FirestorePermissionError({
+            path: accountRef.path,
+            operation: 'create',
+            requestResourceData: newAccount,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          toast({
+            variant: "destructive",
+            title: "Error al crear la caja",
+            description: "No se pudo crear la caja. Es posible que no tengas permisos.",
+          });
         });
-      }
     });
   };
 

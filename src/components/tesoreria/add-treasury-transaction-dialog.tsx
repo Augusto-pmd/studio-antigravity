@@ -11,6 +11,8 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 
 export function AddTreasuryTransactionDialog({ account, children }: { account: TreasuryAccount, children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -30,7 +32,7 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
     setDescription('');
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!firestore) return toast({ variant: 'destructive', title: 'Error de conexión.' });
     if (!amount || !category || !description) return toast({ variant: 'destructive', title: 'Todos los campos son obligatorios.' });
 
@@ -39,35 +41,42 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
       return toast({ variant: 'destructive', title: 'Saldo insuficiente en la cuenta.' });
     }
 
-    startTransition(async () => {
-        try {
-            const batch = writeBatch(firestore);
+    startTransition(() => {
+        const batch = writeBatch(firestore);
 
-            // 1. Create transaction document
-            const transactionRef = doc(collection(firestore, `treasuryAccounts/${account.id}/transactions`));
-            const newTransaction: Omit<TreasuryTransaction, 'id'> = {
-                treasuryAccountId: account.id,
-                date: new Date().toISOString(),
-                type,
-                amount: transactionAmount,
-                currency: account.currency,
-                category,
-                description,
-            };
-            batch.set(transactionRef, newTransaction);
+        // 1. Create transaction document
+        const transactionRef = doc(collection(firestore, `treasuryAccounts/${account.id}/transactions`));
+        const newTransaction: Omit<TreasuryTransaction, 'id'> = {
+            treasuryAccountId: account.id,
+            date: new Date().toISOString(),
+            type,
+            amount: transactionAmount,
+            currency: account.currency,
+            category,
+            description,
+        };
+        batch.set(transactionRef, newTransaction);
 
-            // 2. Update account balance
-            const accountRef = doc(firestore, 'treasuryAccounts', account.id);
-            const newBalance = type === 'Ingreso' ? account.balance + transactionAmount : account.balance - transactionAmount;
-            batch.update(accountRef, { balance: newBalance });
-        
-            await batch.commit();
-            toast({ title: 'Movimiento Registrado', description: 'El movimiento ha sido guardado y el saldo actualizado.' });
-            resetForm();
-            setOpen(false);
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error al guardar', description: error.message });
-        }
+        // 2. Update account balance
+        const accountRef = doc(firestore, 'treasuryAccounts', account.id);
+        const newBalance = type === 'Ingreso' ? account.balance + transactionAmount : account.balance - transactionAmount;
+        batch.update(accountRef, { balance: newBalance });
+    
+        batch.commit()
+            .then(() => {
+                toast({ title: 'Movimiento Registrado', description: 'El movimiento ha sido guardado y el saldo actualizado.' });
+                resetForm();
+                setOpen(false);
+            })
+            .catch((error) => {
+                const permissionError = new FirestorePermissionError({
+                    path: `/treasuryAccounts/${account.id} (batch)`,
+                    operation: 'update',
+                    requestResourceData: { amount: transactionAmount, description, type }
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar el movimiento. Es posible que no tengas permisos." });
+            });
     });
   }
 
