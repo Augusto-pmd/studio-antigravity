@@ -12,11 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowDownCircle, ArrowUpCircle, Landmark, PlusCircle, Wallet } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet } from 'lucide-react';
 import { FundTransferDialog } from '../cajas/fund-transfer-dialog';
 import { Button } from '../ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { AddCashAccountDialog } from './add-cash-account-dialog';
+import { EditCashAccountDialog } from './edit-cash-account-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -141,13 +142,18 @@ export function MyCashView() {
                 <Card key={account.id}>
                     <AccordionItem value={account.id} className="border-b-0">
                         <AccordionTrigger className="p-6 hover:no-underline">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 flex-grow">
                                 <Wallet className="h-8 w-8 text-muted-foreground" />
                                 <div>
-                                    <h3 className="text-lg font-semibold">{account.name}</h3>
+                                    <h3 className="text-lg font-semibold text-left">{account.name}</h3>
                                     <p className="text-2xl font-bold font-mono text-left">{formatCurrency(account.balance, 'ARS')}</p>
                                 </div>
                             </div>
+                            <EditCashAccountDialog cashAccount={account}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted rounded-md shrink-0 mr-2">
+                                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </EditCashAccountDialog>
                         </AccordionTrigger>
                         <AccordionContent className="p-6 pt-0">
                             <div className="flex items-center justify-end gap-2 mb-4 border-t pt-4">
