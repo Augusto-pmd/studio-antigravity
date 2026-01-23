@@ -1,28 +1,9 @@
-'use client';
+// This file is the single entrypoint for all Firebase-related functionality.
+// It re-exports hooks and providers from other files for easy access.
+// IMPORTANT: This file should NOT contain any Firebase initialization logic
+// to ensure it can be safely imported in both client and server environments.
 
-import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { firebaseConfig } from './config';
-
-let firebaseApp: FirebaseApp;
-let auth: Auth;
-let firestore: Firestore;
-
-// This check prevents re-initializing the app on hot reloads.
-if (!getApps().length) {
-  firebaseApp = initializeApp(firebaseConfig);
-} else {
-  firebaseApp = getApp();
-}
-
-auth = getAuth(firebaseApp);
-firestore = getFirestore(firebaseApp);
-
-export { firebaseApp, auth, firestore };
-
-export { FirebaseProvider } from './provider';
+export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore, useUser } from './provider';
 export { FirebaseClientProvider } from './client-provider';
 export { useCollection } from './firestore/use-collection';
 export { useDoc } from './firestore/use-doc';
-export { useUser, useFirebase, useFirebaseApp, useAuth, useFirestore } from './provider';
