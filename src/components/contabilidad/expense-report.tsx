@@ -35,13 +35,58 @@ const formatDate = (dateString?: string) => {
 };
 
 const projectConverter = {
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+    toFirestore(project: Project): DocumentData {
+        const { id, ...data } = project;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Project {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            name: data.name,
+            client: data.client,
+            address: data.address,
+            currency: data.currency,
+            projectType: data.projectType,
+            status: data.status,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            supervisor: data.supervisor,
+            budget: data.budget,
+            balance: data.balance,
+            progress: data.progress,
+            description: data.description,
+        };
+    }
 };
 
 const supplierConverter = {
-    toFirestore: (data: Supplier): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
+    toFirestore(supplier: Supplier): DocumentData {
+        const { id, ...data } = supplier;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Supplier {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            name: data.name,
+            cuit: data.cuit,
+            status: data.status,
+            type: data.type,
+            email: data.email,
+            phone: data.phone,
+            contactPerson: data.contactPerson,
+            address: data.address,
+            fiscalCondition: data.fiscalCondition,
+            notes: data.notes,
+        };
+    }
 };
 
 export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; isLoading: boolean }) {

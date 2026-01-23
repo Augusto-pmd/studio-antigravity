@@ -50,7 +50,7 @@ export default function PagoSemanalPage() {
         return null;
       }, [firestore, user, isAdmin]);
 
-    const { data: requests, isLoading } = useCollection(fundRequestsQuery);
+    const { data: requests, isLoading } = useCollection<FundRequest>(fundRequestsQuery);
 
   return (
     <div className="flex flex-col gap-6">

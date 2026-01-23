@@ -33,13 +33,41 @@ const formatDate = (dateString?: string) => {
 };
 
 const payrollWeekConverter = {
-    toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
+    toFirestore(week: PayrollWeek): DocumentData {
+        const { id, ...data } = week;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            status: data.status,
+            generatedAt: data.generatedAt,
+        };
+    }
 };
 
 const cashAdvanceConverter = {
-    toFirestore: (data: CashAdvance): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance)
+    toFirestore(advance: CashAdvance): DocumentData {
+        const { id, ...data } = advance;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            employeeId: data.employeeId,
+            employeeName: data.employeeName,
+            projectId: data.projectId,
+            projectName: data.projectName,
+            date: data.date,
+            amount: data.amount,
+            reason: data.reason,
+            payrollWeekId: data.payrollWeekId,
+        };
+    }
 };
 
 export function CashAdvances() {

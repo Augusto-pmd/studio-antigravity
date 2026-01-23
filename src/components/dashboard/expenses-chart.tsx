@@ -29,8 +29,38 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const expenseConverter = {
-    toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+    toFirestore(expense: Expense): DocumentData {
+        const { id, ...data } = expense;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Expense {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            projectId: data.projectId,
+            date: data.date,
+            supplierId: data.supplierId,
+            categoryId: data.categoryId,
+            documentType: data.documentType,
+            invoiceNumber: data.invoiceNumber,
+            paymentMethod: data.paymentMethod,
+            amount: data.amount,
+            iva: data.iva,
+            iibb: data.iibb,
+            iibbJurisdiction: data.iibbJurisdiction,
+            currency: data.currency,
+            exchangeRate: data.exchangeRate,
+            receiptUrl: data.receiptUrl,
+            description: data.description,
+            retencionGanancias: data.retencionGanancias,
+            retencionIVA: data.retencionIVA,
+            retencionIIBB: data.retencionIIBB,
+            retencionSUSS: data.retencionSUSS,
+        };
+    }
 };
 
 export function ExpensesChart() {
