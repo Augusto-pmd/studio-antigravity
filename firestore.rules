@@ -238,7 +238,7 @@ service cloud.firestore {
       allow read, create, update: if isSignedIn() && request.auth.uid == request.resource.data.userId;
       allow list: if isSuperAdmin();
       // Allow user to query their own time logs
-      allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
       allow delete: if isSuperAdmin() || (isExistingDoc() && resource.data.userId == request.auth.uid);
     }
 
@@ -255,10 +255,7 @@ service cloud.firestore {
     }
     
     match /fundRequests/{fundRequestId} {
-      allow get: if isSignedIn() && (isAdmin() || resource.data.requesterId == request.auth.uid);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      allow update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /payrollWeeks/{payrollWeekId} {
@@ -266,9 +263,7 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      allow read, update: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
     
     match /cashAdvances/{cashAdvanceId} {
