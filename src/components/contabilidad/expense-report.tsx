@@ -54,11 +54,11 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
   const projectsMap = useMemo(() => {
-    return projects?.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {}) || {};
+    return projects?.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {};
   }, [projects]);
 
   const suppliersMap = useMemo(() => {
-    return suppliers?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {}) || {};
+    return suppliers?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
   }, [suppliers]);
   
   const handleExportCSV = () => {
