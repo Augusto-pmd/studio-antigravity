@@ -2,27 +2,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import type { Employee, Contractor, TechnicalOfficeEmployee } from '@/lib/types';
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-
-async function findPersonnel({ name }: { name: string }) {
-  // NOTE: Firebase queries have been temporarily disabled in this server-side tool
-  // to resolve a critical stability issue caused by using the client SDK in a server environment.
-  // This function will return a message indicating the feature is disabled.
-  return {
-    results: [
-      {
-        name: `Búsqueda para "${name}"`,
-        type: 'Sistema',
-        details: {
-          Aviso:
-            'La búsqueda de personal está temporalmente desactivada para resolver un problema de estabilidad de la aplicación. Esta función será restaurada pronto.',
-        },
-      },
-    ],
-  };
-}
 
 export const getPersonnelInfoTool = ai.defineTool(
   {
@@ -40,6 +19,19 @@ export const getPersonnelInfoTool = ai.defineTool(
     }),
   },
   async ({ name }) => {
-    return await findPersonnel({ name });
+    // This tool is temporarily disabled to ensure application stability.
+    // It will be restored in a future update.
+    return {
+      results: [
+        {
+          name: `Búsqueda para "${name}"`,
+          type: 'Sistema',
+          details: {
+            Aviso:
+              'La búsqueda de personal está temporalmente desactivada para resolver un problema de estabilidad de la aplicación. Esta función será restaurada pronto.',
+          },
+        },
+      ],
+    };
   }
 );
