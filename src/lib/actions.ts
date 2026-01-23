@@ -3,9 +3,9 @@ import { extractInvoiceData } from '@/ai/flows/extract-invoice-data';
 import { generateDashboardSummary } from '@/ai/flows/generate-dashboard-summary';
 import { DashboardSummaryOutput } from '@/ai/schemas';
 import { extractBankStatement } from '@/ai/flows/extract-bank-statement';
-import { getFirestore, collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, where, limit, collectionGroup } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
-import type { Project, TaskRequest } from './types';
+import type { Project, TaskRequest, Expense } from './types';
 
 
 export async function extractInvoiceDataAction(dataUri: string, fileSize: number) {
@@ -31,25 +31,68 @@ export async function extractInvoiceDataAction(dataUri: string, fileSize: number
 export async function generateDashboardSummaryAction(): Promise<DashboardSummaryOutput> {
   const { firestore } = initializeFirebase();
 
-  // Fetch active projects
-  const projectsQuery = query(collection(firestore, 'projects'), where('status', '==', 'En Curso'), limit(5));
-  const projectsSnap = await getDocs(projectsQuery);
-  const activeProjects = projectsSnap.docs.map(doc => doc.data() as Project);
+  // 1. Fetch all projects to calculate stats
+  const projectsCol = collection(firestore, 'projects');
+  const projectsSnap = await getDocs(projectsCol);
+  const allProjects = projectsSnap.docs.map(doc => doc.data() as Project);
+  
+  const activeProjects = allProjects.filter(p => p.status === 'En Curso');
+
+  // 2. Fetch all expenses using a collection group query
+  const expensesQuery = query(collectionGroup(firestore, 'expenses'));
+  const expensesSnap = await getDocs(expensesQuery);
+  const allExpenses = expensesSnap.docs.map(doc => doc.data() as Expense);
+
+  // 3. Calculate stats
+  const obrasEnCurso = activeProjects.length;
+  
+  const saldoContratos = allProjects.reduce((sum, p) => {
+    // For this summary, we will assume ARS projects give a good enough overview.
+    // A more complex implementation would fetch live exchange rates.
+    if (p.currency === 'ARS') {
+      return sum + p.balance;
+    }
+    return sum;
+  }, 0);
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const gastosMes = allExpenses
+    .filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfMonth && expenseDate <= endOfMonth;
+    })
+    .reduce((sum, expense) => {
+      if (expense.currency === 'ARS') {
+        return sum + expense.amount;
+      }
+      if (expense.currency === 'USD') {
+        return sum + (expense.amount * expense.exchangeRate);
+      }
+      return sum;
+    }, 0);
+
+  const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('es-AR', {
+          style: 'currency',
+          currency: 'ARS',
+          maximumFractionDigits: 0,
+      }).format(value);
+  }
+
+  const stats = {
+      obrasEnCurso: obrasEnCurso.toString(),
+      saldoContratos: formatCurrency(saldoContratos),
+      gastosMes: formatCurrency(gastosMes),
+  };
   
   // Fetch pending tasks is removed because server-side actions are not authenticated
   // and cannot satisfy security rules that depend on request.auth
-  const pendingTasks: TaskRequest[] = [];
   
-  // Using hardcoded stats from the stats-card component for now
-  // We can derive obrasEnCurso from the fetched data.
-  const stats = {
-      obrasEnCurso: activeProjects.length.toString(),
-      saldoContratos: "$1,500,000",
-      gastosMes: "$125,300",
-  };
-
   const result = await generateDashboardSummary({ 
-      activeProjects: activeProjects.map(p => ({ name: p.name, status: p.status, progress: p.progress, supervisor: p.supervisor })), 
+      activeProjects: activeProjects.slice(0, 5).map(p => ({ name: p.name, status: p.status, progress: p.progress, supervisor: p.supervisor })), 
       pendingTasks: [], // Pass an empty array
       stats 
     });
