@@ -44,6 +44,8 @@ import {
   HardHat,
   User as UserIcon,
   BookText,
+  Briefcase,
+  Clock,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -60,6 +62,7 @@ const menuItems = [
   { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
   { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign },
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
+  { href: "/mis-horas", label: "Mis Horas", icon: Clock },
   { href: "/caja", label: "Mi Caja", icon: Wallet },
   {
     href: "/cajas",
@@ -70,6 +73,12 @@ const menuItems = [
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/contratos", label: "Contratos", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  {
+    href: "/recursos-humanos",
+    label: "Recursos Humanos",
+    icon: Briefcase,
+    role: ["Dirección"],
+  },
 ];
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
@@ -162,5 +171,3 @@ export function AppSidebar() {
     </>
   );
 }
-
-    

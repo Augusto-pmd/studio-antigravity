@@ -781,6 +781,87 @@
         "amount",
         "payrollWeekId"
       ]
+    },
+    "TechnicalOfficeEmployee": {
+      "title": "Technical Office Employee",
+      "type": "object",
+      "description": "Represents an employee from the technical office with salary information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier, same as the user's auth UID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Denormalized full name of the user."
+        },
+        "position": {
+          "type": "string",
+          "description": "Job title or position in the company."
+        },
+        "monthlySalary": {
+          "type": "number",
+          "description": "The gross monthly salary in ARS."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ],
+          "description": "Current status of the employee."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "fullName",
+        "position",
+        "monthlySalary",
+        "status"
+      ]
+    },
+    "TimeLog": {
+      "title": "Time Log",
+      "type": "object",
+      "description": "Represents a log of hours a user has spent on a specific project on a given day.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user who is logging the hours."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date for which the hours are logged (YYYY-MM-DD)."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The project to which the hours are attributed."
+        },
+        "hours": {
+          "type": "number",
+          "description": "Number of hours dedicated to the project on that day."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional notes about the logged hours."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "projectId",
+        "hours"
+      ]
     }
   },
   "auth": {
@@ -934,6 +1015,38 @@
             {
               "name": "employeeId",
               "description": "The unique identifier for the employee."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/technicalOfficeEmployees/{employeeId}",
+        "definition": {
+          "entityName": "TechnicalOfficeEmployee",
+          "schema": {
+            "$ref": "#/backend/entities/TechnicalOfficeEmployee"
+          },
+          "description": "Stores sensitive HR data for technical office staff. Only accessible by 'Dirección' role.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee, matches their user ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/timeLogs/{logId}",
+        "definition": {
+          "entityName": "TimeLog",
+          "schema": {
+            "$ref": "#/backend/entities/TimeLog"
+          },
+          "description": "Stores daily time logs for users against projects. Users can only write their own logs.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for the time log entry."
             }
           ]
         }

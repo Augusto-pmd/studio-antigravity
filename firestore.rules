@@ -219,6 +219,19 @@ service cloud.firestore {
     match /employees/{employeeId} {
       allow read, write: if isSignedIn();
     }
+    
+    match /technicalOfficeEmployees/{employeeId} {
+      allow read: if isAdmin();
+      allow write: if isRoleAdmin(); // Only role admins can write/update salaries
+    }
+    
+    match /timeLogs/{logId} {
+      allow read, create, update: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow list: if isSuperAdmin();
+      // Allow user to query their own time logs
+      allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
 
     match /contractors/{contractorId} {
       allow read, write: if isSignedIn();

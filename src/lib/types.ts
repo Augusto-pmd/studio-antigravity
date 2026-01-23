@@ -161,8 +161,8 @@ export type CashAdvance = {
 export type CashAccount = {
   id: string;
   userId: string;
-  name: string; // e.g., 'Caja Principal ARS', 'Caja USD'
-  currency: 'ARS' | 'USD';
+  name: string; // e.g., 'Caja Principal ARS'
+  currency: 'ARS';
   balance: number;
 };
 
@@ -172,7 +172,7 @@ export type CashTransaction = {
   date: string;
   type: 'Ingreso' | 'Egreso' | 'Refuerzo' | 'Transferencia';
   amount: number;
-  currency: 'ARS' | 'USD';
+  currency: 'ARS';
   description: string;
   relatedExpenseId?: string;
   relatedProjectId?: string;
@@ -181,4 +181,20 @@ export type CashTransaction = {
   operatorName?: string; // Denormalized
 };
 
-    
+export type TechnicalOfficeEmployee = {
+  id: string; // Corresponds to the User ID (auth.uid)
+  userId: string;
+  fullName: string;
+  position: string; // e.g., "Arquitecto Proyectista", "Jefe de Compras"
+  monthlySalary: number;
+  status: 'Activo' | 'Inactivo';
+};
+
+export type TimeLog = {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  projectId: string;
+  hours: number;
+  description?: string;
+};
