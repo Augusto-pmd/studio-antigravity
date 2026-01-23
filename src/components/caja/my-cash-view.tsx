@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/context/user-context';
 import { useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc, query, orderBy } from 'firebase/firestore';
-import type { CashAccount, CashTransaction } from '@/lib/types';
+import type { CashAccount, CashTransaction, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,7 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Landmark } from 'lucide-react';
+import { FundTransferDialog } from '../cajas/fund-transfer-dialog';
+import { Button } from '../ui/button';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -87,7 +89,7 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
 
 
 export function MyCashView() {
-  const { user, firestore, isUserLoading } = useUser();
+  const { user, firestore, isUserLoading, role } = useUser();
   const { toast } = useToast();
 
   const accountsQuery = useMemoFirebase(
@@ -100,6 +102,17 @@ export function MyCashView() {
   const usdAccount = useMemo(() => accounts?.find(a => a.currency === 'USD'), [accounts]);
   
   const isLoading = isUserLoading || isLoadingAccounts;
+
+  const userProfile: UserProfile | null = useMemo(() => {
+    if (!user) return null;
+    return {
+      id: user.uid,
+      email: user.email || '',
+      fullName: user.displayName || 'Usuario Anónimo',
+      photoURL: user.photoURL || undefined,
+      role,
+    };
+  }, [user, role]);
 
   useEffect(() => {
     if (isLoading || !firestore || !user || accounts === null) return;
@@ -134,9 +147,19 @@ export function MyCashView() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-3xl font-headline">Mi Caja</h1>
-        <QuickExpenseDialog arsAccount={arsAccount} usdAccount={usdAccount} />
+        <div className="flex items-center gap-2">
+          {userProfile && (
+            <FundTransferDialog profile={userProfile} arsAccount={arsAccount} usdAccount={usdAccount}>
+              <Button variant="outline">
+                <Landmark className="mr-2 h-4 w-4" />
+                Añadir Fondos
+              </Button>
+            </FundTransferDialog>
+          )}
+          <QuickExpenseDialog arsAccount={arsAccount} usdAccount={usdAccount} />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

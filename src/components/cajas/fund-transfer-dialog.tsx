@@ -32,6 +32,8 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
 
+  const isSelf = operator?.uid === profile.id;
+
   const resetForm = () => {
     setType('Refuerzo');
     setCurrency('ARS');
@@ -101,9 +103,9 @@ export function FundTransferDialog({ profile, arsAccount, usdAccount, children }
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Añadir Fondos a {profile.fullName}</DialogTitle>
+          <DialogTitle>{isSelf ? "Añadir Fondos a Mi Caja" : `Añadir Fondos a ${profile.fullName}`}</DialogTitle>
           <DialogDescription>
-            Realice un ingreso o refuerzo a la caja del usuario.
+            {isSelf ? "Realice un ingreso o refuerzo a su caja personal." : "Realice un ingreso o refuerzo a la caja del usuario."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
