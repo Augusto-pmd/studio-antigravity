@@ -63,14 +63,13 @@ export function AddTreasuryAccountDialog({ children }: { children: React.ReactNo
             resetForm();
             setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: accountRef.path,
                 operation: 'create',
                 requestResourceData: newAccount,
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo crear la cuenta. Es posible que no tengas permisos.' });
         });
     });
   }

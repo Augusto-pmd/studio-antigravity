@@ -68,18 +68,13 @@ export function EditUserDialog({
             });
             setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: userRef.path,
                 operation: 'update',
                 requestResourceData: updatedData,
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-              variant: "destructive",
-              title: "Error al actualizar",
-              description: "No se pudo actualizar el rol. Es posible que no tengas permisos.",
-            });
         });
     });
   };

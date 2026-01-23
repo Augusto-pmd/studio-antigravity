@@ -111,18 +111,13 @@ export function SupplierDialog({
             });
             setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: supplierRef.path,
                 operation: isEditMode ? 'update' : 'create',
                 requestResourceData: supplierData,
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-              variant: "destructive",
-              title: "Error al guardar",
-              description: "No se pudo guardar el proveedor. Es posible que no tengas permisos.",
-            });
         });
     });
   };

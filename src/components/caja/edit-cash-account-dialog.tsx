@@ -54,18 +54,13 @@ export function EditCashAccountDialog({ children, cashAccount }: { children: Rea
           toast({ title: 'Caja Actualizada', description: `La caja ha sido renombrada a "${name.trim()}".` });
           setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
             path: accountRef.path,
             operation: 'update',
             requestResourceData: updatedData,
           });
           errorEmitter.emit('permission-error', permissionError);
-          toast({
-            variant: "destructive",
-            title: "Error al actualizar",
-            description: "No se pudo actualizar el nombre de la caja. Es posible que no tengas permisos.",
-          });
         });
     });
   };

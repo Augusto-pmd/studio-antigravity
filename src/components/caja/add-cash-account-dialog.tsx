@@ -56,18 +56,13 @@ export function AddCashAccountDialog({ children }: { children: React.ReactNode }
           setName('');
           setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
             path: accountRef.path,
             operation: 'create',
             requestResourceData: newAccount,
           });
           errorEmitter.emit('permission-error', permissionError);
-          toast({
-            variant: "destructive",
-            title: "Error al crear la caja",
-            description: "No se pudo crear la caja. Es posible que no tengas permisos.",
-          });
         });
     });
   };

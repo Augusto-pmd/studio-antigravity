@@ -113,18 +113,13 @@ export function AssetDialog({
           });
           setOpen(false);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
               path: assetRef.path,
               operation: isEditMode ? 'update' : 'create',
               requestResourceData: assetData,
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-              variant: "destructive",
-              title: "Error al guardar",
-              description: "No se pudo guardar el activo. Es posible que no tengas permisos.",
-            });
         });
     });
   };

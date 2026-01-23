@@ -4,9 +4,6 @@
 // This file is intentionally left as a valid but empty component to satisfy the build process.
 import React from 'react';
 
-// This is a valid, empty React component.
-function FundTransferDialog() {
+export default function FundTransferDialog() {
   return null;
 }
-
-export default FundTransferDialog;

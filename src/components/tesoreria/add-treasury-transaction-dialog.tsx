@@ -68,14 +68,13 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
                 resetForm();
                 setOpen(false);
             })
-            .catch((error) => {
+            .catch(async (serverError) => {
                 const permissionError = new FirestorePermissionError({
                     path: `/treasuryAccounts/${account.id} (batch)`,
                     operation: 'update',
                     requestResourceData: { amount: transactionAmount, description, type }
                 });
                 errorEmitter.emit('permission-error', permissionError);
-                toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar el movimiento. Es posible que no tengas permisos." });
             });
     });
   }

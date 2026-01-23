@@ -106,14 +106,13 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
             resetForm();
             setOpen(false);
           })
-          .catch((error) => {
+          .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: `/users/${profile.id}/cashAccounts (batch)`,
                 operation: 'update',
                 requestResourceData: { amount: transferAmount, description }
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({ variant: 'destructive', title: 'Error al transferir', description: 'No se pudo registrar el movimiento. Es posible que no tengas permisos.' });
           });
     });
   }

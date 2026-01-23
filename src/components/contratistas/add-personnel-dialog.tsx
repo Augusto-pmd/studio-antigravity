@@ -76,18 +76,13 @@ export function AddPersonnelDialog({
             setName('');
             setArtExpiryDate(undefined);
         })
-        .catch((error) => {
+        .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
                 path: personnelRef.path,
                 operation: 'create',
                 requestResourceData: newPersonnel,
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: "destructive",
-                title: "Error al guardar",
-                description: "No se pudo agregar al personal. Es posible que no tengas permisos.",
-            });
         });
     });
   };
