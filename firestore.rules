@@ -69,27 +69,26 @@ service cloud.firestore {
     }
     
     /**
-     * Checks for the hardcoded super admin email. Safe for list queries.
+     * Checks if the user has the 'Dirección' role.
+     * WARNING: This function uses a get() operation. This will be evaluated
+     * for every document in a list query, which can impact performance and cost.
+     * It is used here to grant the Director role full access as requested.
      */
-    function isSuperAdmin() {
-      return isSignedIn() && request.auth.token.email == 'info@pmdarquitectura.com';
-    }
-
-    /**
-     * Checks for role-based admin. USES GET() - NOT safe for list queries.
-     */
-    function isRoleAdmin() {
+    function isDirector() {
       return isSignedIn() &&
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración']);
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Dirección';
     }
     
     /**
-     * Combined admin check. NOT safe for list queries.
-     * Use isSuperAdmin() or isRoleAdmin() appropriately based on context (list vs single-doc).
+     * Checks if the user is an admin. An admin is a user with the 'Dirección'
+     * or 'Administración' role.
+     * WARNING: This uses get() and can impact performance on list queries.
      */
     function isAdmin() {
-      return isSuperAdmin() || isRoleAdmin();
+      return isSignedIn() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración'];
     }
 
     // ----------------------------------------------------------------------
@@ -102,11 +101,11 @@ service cloud.firestore {
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isSuperAdmin();
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isSignedIn();
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isSuperAdmin();
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isDirector();
       
       /**
        * @description Manages a user's cash accounts and their transactions.
@@ -114,14 +113,14 @@ service cloud.firestore {
        * @path /users/{userId}/cashAccounts/{cashAccountId}
        */
       match /cashAccounts/{cashAccountId} {
-        allow get, list, write: if isOwner(userId) || isSuperAdmin();
+        allow read, write: if isOwner(userId) || isAdmin();
 
         /**
         * @description Manages transactions within a specific cash account.
         * @path /users/{userId}/cashAccounts/{cashAccountId}/transactions/{transactionId}
         */
         match /transactions/{transactionId} {
-          allow read, write: if isOwner(userId) || isSuperAdmin();
+          allow read, write: if isOwner(userId) || isAdmin();
         }
       }
     }
@@ -145,17 +144,16 @@ service cloud.firestore {
     }
     
     match /technicalOfficeEmployees/{employeeId} {
-      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdmin();
       match /salaryHistory/{salaryHistoryId} {
-        allow read, write: if isSuperAdmin();
+        allow read, write: if isAdmin();
       }
     }
     
     match /timeLogs/{logId} {
       allow read, create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow list: if isSuperAdmin();
-      allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
-      allow delete: if isSuperAdmin() || (isExistingDoc() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin() || (isSignedIn() && request.query.where[0][2] == request.auth.uid);
+      allow delete: if isAdmin() || (isExistingDoc() && resource.data.userId == request.auth.uid);
     }
 
     match /contractors/{contractorId} {
@@ -186,9 +184,9 @@ service cloud.firestore {
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
-      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdmin();
       match /transactions/{transactionId} {
-        allow read, write: if isSuperAdmin();
+        allow read, write: if isAdmin();
       }
     }
 
