@@ -4,6 +4,7 @@ export type Permissions = {
   isSuperAdmin: boolean;
   canValidate: boolean;
   canLoadExpenses: boolean;
+  canManageProjects: boolean;
 };
 
 export type UserProfile = {

@@ -15,7 +15,7 @@ import type { Project } from "@/lib/types";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { AddProjectDialog } from "./add-project-dialog";
-import { useCollection } from "@/firebase";
+import { useCollection, useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
@@ -44,6 +44,7 @@ const projectConverter = {
 };
 
 export function ProjectsTable() {
+  const { permissions } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -148,40 +149,42 @@ export function ProjectsTable() {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex items-center justify-end">
-                    <AddProjectDialog project={project}>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
-                    </AddProjectDialog>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Eliminar</span>
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará permanentemente la obra
-                                <span className="font-semibold"> {project.name}</span> y todos sus gastos asociados.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => handleDelete(project.id, project.name)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                                Eliminar
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
+                {permissions.canManageProjects && (
+                  <div className="flex items-center justify-end">
+                      <AddProjectDialog project={project}>
+                        <Button variant="ghost" size="icon">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      </AddProjectDialog>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Eliminar</span>
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                              <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Se eliminará permanentemente la obra
+                                  <span className="font-semibold"> {project.name}</span> y todos sus gastos asociados.
+                              </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                  onClick={() => handleDelete(project.id, project.name)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                  Eliminar
+                              </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           ))}

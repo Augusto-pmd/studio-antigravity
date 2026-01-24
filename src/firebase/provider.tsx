@@ -34,12 +34,13 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
 
   const permissions = useMemo<Permissions>(() => {
     if (!role) {
-      return { isSuperAdmin: false, canValidate: false, canLoadExpenses: false };
+      return { isSuperAdmin: false, canValidate: false, canLoadExpenses: false, canManageProjects: false };
     }
     const isSuperAdmin = role === 'Dirección';
     const canValidate = role === 'Dirección' || role === 'Administración';
-    const canLoadExpenses = role === 'Dirección' || role === 'Administración' || role === 'Supervisor';
-    return { isSuperAdmin, canValidate, canLoadExpenses };
+    const canLoadExpenses = role === 'Dirección' || role === 'Administración' || role === 'Supervisor' || role === 'Operador';
+    const canManageProjects = role === 'Dirección' || role === 'Administración' || role === 'Supervisor' || role === 'Operador';
+    return { isSuperAdmin, canValidate, canLoadExpenses, canManageProjects };
   }, [role]);
 
   const value: FirebaseContextValue = {

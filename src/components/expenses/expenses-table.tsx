@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Expense, Project, Supplier } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
-import { useFirestore, useCollection } from "@/firebase";
+import { useFirestore, useCollection, useUser } from "@/firebase";
 import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { expenseCategories } from "@/lib/data";
@@ -50,6 +50,7 @@ const supplierConverter = {
 export function ExpensesTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { permissions } = useUser();
 
   const expensesQuery = useMemo(() => (
     firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null
@@ -154,39 +155,41 @@ export function ExpensesTable() {
                   <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end">
-                      <AddExpenseDialog expense={expense}>
-                        <Button variant="ghost" size="icon">
-                          <Pencil className="h-4 w-4" />
-                          <span className="sr-only">Editar</span>
-                        </Button>
-                      </AddExpenseDialog>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Eliminar</span>
+                    {permissions.canLoadExpenses && (
+                      <div className="flex items-center justify-end">
+                        <AddExpenseDialog expense={expense}>
+                          <Button variant="ghost" size="icon">
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción no se puede deshacer. Se eliminará permanentemente este gasto.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(expense)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                        </AddExpenseDialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Eliminar</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Se eliminará permanentemente este gasto.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(expense)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
