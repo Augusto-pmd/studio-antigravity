@@ -3,9 +3,12 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -32,7 +35,9 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -43,11 +48,47 @@ export default function LoginPage() {
   const handleSignIn = async () => {
     const auth = getAuth();
     const provider = new GoogleAuthProvider();
+
+    if (!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Error de conexión",
+        description: "No se pudo conectar a la base de datos.",
+      });
+      return;
+    }
+
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const authUser = result.user;
+
+      const userDocRef = doc(firestore, 'users', authUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // This is a new user, create their profile document
+        const newUserProfile: UserProfile = {
+          id: authUser.uid,
+          email: authUser.email!,
+          fullName: authUser.displayName!,
+          photoURL: authUser.photoURL || undefined,
+          role: authUser.email === 'info@pmdarquitectura.com' ? 'Dirección' : 'Operador',
+        };
+        await setDoc(userDocRef, newUserProfile);
+        toast({
+            title: "¡Bienvenido!",
+            description: `Se ha creado tu perfil como ${newUserProfile.role}.`,
+        });
+      }
+
       router.push('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google', error);
+      toast({
+        variant: "destructive",
+        title: "Error al iniciar sesión",
+        description: error.message || "Ocurrió un error inesperado.",
+      });
     }
   };
 
