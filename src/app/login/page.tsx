@@ -64,6 +64,7 @@ export default function LoginPage() {
 
       const userDocRef = doc(firestore, 'users', authUser.uid);
       const userDoc = await getDoc(userDocRef);
+      const isDirector = authUser.email === 'info@pmdarquitectura.com';
 
       if (!userDoc.exists()) {
         // This is a new user, create their profile document
@@ -72,13 +73,22 @@ export default function LoginPage() {
           email: authUser.email!,
           fullName: authUser.displayName!,
           photoURL: authUser.photoURL || undefined,
-          role: authUser.email === 'info@pmdarquitectura.com' ? 'Dirección' : 'Operador',
+          role: isDirector ? 'Dirección' : 'Operador',
         };
         await setDoc(userDocRef, newUserProfile);
         toast({
             title: "¡Bienvenido!",
             description: `Se ha creado tu perfil como ${newUserProfile.role}.`,
         });
+      } else {
+        // Existing user, enforce director role if email matches
+        if (isDirector && userDoc.data()?.role !== 'Dirección') {
+            await setDoc(userDocRef, { role: 'Dirección' }, { merge: true });
+            toast({
+                title: "Rol de Director Verificado",
+                description: 'Tu rol ha sido actualizado a "Dirección".',
+            });
+        }
       }
 
       router.push('/');
