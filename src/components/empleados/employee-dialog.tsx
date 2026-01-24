@@ -20,6 +20,13 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -186,6 +193,21 @@ export function EmployeeDialog({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="status" className="text-right">
+              Estado
+            </Label>
+            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+                <SelectTrigger id="status" className="col-span-3">
+                  <SelectValue placeholder="Seleccione un estado" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Activo">Activo</SelectItem>
+                    <SelectItem value="Inactivo">Inactivo</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
 
         </div>

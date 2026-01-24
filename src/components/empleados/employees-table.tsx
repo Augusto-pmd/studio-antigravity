@@ -13,13 +13,26 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
-import { TriangleAlert, Pencil } from "lucide-react";
+import { TriangleAlert, Pencil, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { EmployeeDialog } from "./employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast";
+
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';
@@ -38,6 +51,7 @@ const employeeConverter = {
 
 export function EmployeesTable() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading } = useCollection<Employee>(employeesQuery);
 
@@ -56,6 +70,26 @@ export function EmployeesTable() {
         return { variant: 'warning', message: `Vence en ${daysLeft} días`, daysLeft };
     }
     return null;
+  };
+  
+  const handleDelete = (employeeId: string, employeeName: string) => {
+    if (!firestore) return;
+    const employeeRef = doc(firestore, 'employees', employeeId);
+    deleteDoc(employeeRef)
+        .then(() => {
+            toast({
+                title: "Empleado Eliminado",
+                description: `El empleado "${employeeName}" ha sido eliminado.`,
+            });
+        })
+        .catch((error) => {
+            console.error("Error deleting employee: ", error);
+            toast({
+                variant: "destructive",
+                title: "Error al eliminar",
+                description: "No se pudo eliminar el empleado. Es posible que no tengas permisos.",
+            });
+        });
   };
 
   const renderSkeleton = () => (
@@ -129,12 +163,40 @@ export function EmployeesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <EmployeeDialog employee={employee}>
-                        <Button variant="ghost" size="icon">
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                        </Button>
-                    </EmployeeDialog>
+                    <div className="flex items-center justify-end gap-1">
+                        <EmployeeDialog employee={employee}>
+                            <Button variant="ghost" size="icon">
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Editar</span>
+                            </Button>
+                        </EmployeeDialog>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Eliminar</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Se eliminará permanentemente al empleado
+                                    <span className="font-semibold"> {employee.name}</span> del sistema.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={() => handleDelete(employee.id, employee.name)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Eliminar
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               )})}
