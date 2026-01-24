@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
 import { collection, query, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { CashAccount, CashTransaction } from '@/lib/types';
+import type { CashAccount, CashTransaction, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { QuickExpenseDialog } from './quick-expense-dialog';
@@ -99,7 +99,7 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
 }
 
 export function MyCashView() {
-  const { user, firestore, isUserLoading, role } = useUser();
+  const { user, firestore, isUserLoading, userProfile } = useUser();
 
   const accountsQuery = useMemo(
     () => (firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts`).withConverter(cashAccountConverter)) : null),
@@ -108,17 +108,6 @@ export function MyCashView() {
   const { data: accounts, isLoading: isLoadingAccounts } = useCollection<CashAccount>(accountsQuery);
   
   const isLoading = isUserLoading || isLoadingAccounts;
-
-  const userProfile = useMemo(() => {
-    if (!user) return null;
-    return {
-      id: user.uid,
-      email: user.email || '',
-      fullName: user.displayName || 'Usuario Anónimo',
-      photoURL: user.photoURL || undefined,
-      role,
-    };
-  }, [user, role]);
 
   if (isLoading) {
     return (
