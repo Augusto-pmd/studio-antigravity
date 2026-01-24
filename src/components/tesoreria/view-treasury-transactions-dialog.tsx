@@ -55,6 +55,8 @@ const transactionConverter = {
             category: data.category,
             relatedDocumentId: data.relatedDocumentId,
             relatedDocumentType: data.relatedDocumentType,
+            projectId: data.projectId,
+            projectName: data.projectName,
         };
     }
 };
@@ -106,6 +108,9 @@ export function ViewTreasuryTransactionsDialog({ account, children }: { account:
                                         <div>
                                             <p className="font-medium">{tx.category}</p>
                                             <p className="text-xs text-muted-foreground">{tx.description}</p>
+                                            {tx.projectName && (
+                                                <p className="text-xs text-muted-foreground font-medium mt-1">Obra: {tx.projectName}</p>
+                                            )}
                                         </div>
                                     </div>
                                 </TableCell>

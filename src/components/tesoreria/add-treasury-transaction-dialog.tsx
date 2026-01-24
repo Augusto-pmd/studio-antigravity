@@ -1,33 +1,44 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useUser, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, writeBatch } from "firebase/firestore";
-import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
+import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import type { TreasuryAccount, TreasuryTransaction, Project } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
 
 export function AddTreasuryTransactionDialog({ account, children }: { account: TreasuryAccount, children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const firestore = useFirestore();
+  const { firestore } = useUser();
   const { toast } = useToast();
 
   const [type, setType] = useState<'Ingreso' | 'Egreso'>('Egreso');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [projectId, setProjectId] = useState<string | undefined>();
+
+  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const resetForm = () => {
     setType('Egreso');
     setAmount('');
     setCategory('');
     setDescription('');
+    setProjectId(undefined);
   };
 
   const handleSave = () => {
@@ -40,6 +51,7 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
     }
 
     startTransition(() => {
+        const selectedProject = projects?.find(p => p.id === projectId);
         const batch = writeBatch(firestore);
 
         // 1. Create transaction document
@@ -52,6 +64,8 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
             currency: account.currency,
             category,
             description,
+            projectId: selectedProject?.id,
+            projectName: selectedProject?.name,
         };
         batch.set(transactionRef, newTransaction);
 
@@ -104,6 +118,22 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
             <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Detalle del movimiento" />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="project">Obra (Opcional)</Label>
+            <Select onValueChange={(v) => setProjectId(v === 'none' ? undefined : v)} value={projectId} disabled={isLoadingProjects}>
+              <SelectTrigger id="project">
+                <SelectValue placeholder="Asociar a una obra" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Ninguna</SelectItem>
+                {projects?.filter(p => p.status === 'En Curso').map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

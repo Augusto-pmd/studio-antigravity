@@ -226,4 +226,6 @@ export interface TreasuryTransaction {
     category: string;
     relatedDocumentId?: string;
     relatedDocumentType?: string;
+    projectId?: string;
+    projectName?: string;
 }

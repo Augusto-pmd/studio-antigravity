@@ -975,6 +975,14 @@
         "relatedDocumentType": {
           "type": "string",
           "description": "Type of the related document, e.g., 'Expense', 'UserCashReinforcement'."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Optional reference to a project if the transaction is project-related."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Denormalized project name for display purposes."
         }
       },
       "required": [
