@@ -12,10 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import type { Expense, Project, Supplier } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { useFirestore, useCollection } from "@/firebase";
-import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { expenseCategories } from "@/lib/data";
 import { useMemo } from "react";
+import { Button } from "../ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import { AddExpenseDialog } from "./add-expense-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -44,6 +49,7 @@ const supplierConverter = {
 
 export function ExpensesTable() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const expensesQuery = useMemo(() => (
     firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null
@@ -77,12 +83,33 @@ export function ExpensesTable() {
 
   const isLoading = isLoadingExpenses || isLoadingProjects || isLoadingSuppliers;
 
+  const handleDelete = (expense: Expense) => {
+    if (!firestore) return;
+    const expenseRef = doc(firestore, `projects/${expense.projectId}/expenses/${expense.id}`);
+    deleteDoc(expenseRef)
+      .then(() => {
+        toast({
+          title: "Gasto Eliminado",
+          description: `El gasto ha sido eliminado permanentemente.`,
+        });
+      })
+      .catch((error) => {
+        console.error("Error deleting expense: ", error);
+        toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar el gasto. Es posible que no tengas permisos.",
+        });
+      });
+  };
+
   const renderSkeleton = () => (
     <TableRow>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+      <TableCell className="text-right"><Skeleton className="h-10 w-20 ml-auto" /></TableCell>
     </TableRow>
   );
 
@@ -95,6 +122,7 @@ export function ExpensesTable() {
                 <TableHead className="hidden md:table-cell">Proveedor</TableHead>
                 <TableHead className="hidden md:table-cell">Fecha</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="text-right w-[100px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -107,7 +135,7 @@ export function ExpensesTable() {
               )}
               {!isLoading && expenses?.length === 0 && (
                  <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     No hay gastos registrados. Comience creando uno nuevo.
                   </TableCell>
                 </TableRow>
@@ -125,6 +153,41 @@ export function ExpensesTable() {
                   <TableCell className="hidden md:table-cell">{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
                   <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end">
+                      <AddExpenseDialog expense={expense}>
+                        <Button variant="ghost" size="icon">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      </AddExpenseDialog>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Eliminar</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Se eliminará permanentemente este gasto.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(expense)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

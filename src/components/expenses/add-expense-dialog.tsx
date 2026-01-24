@@ -30,8 +30,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert, Link as LinkIcon } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
@@ -40,6 +40,7 @@ import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot,
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "../ui/separator";
+import Link from "next/link";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -51,11 +52,20 @@ const supplierConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
 };
 
-export function AddExpenseDialog() {
+const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
+
+export function AddExpenseDialog({
+  expense,
+  children,
+}: {
+  expense?: Expense;
+  children?: React.ReactNode;
+}) {
   const { user, permissions, firestore, firebaseApp } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const isEditMode = !!expense;
   
   const [isClient, setIsClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -90,17 +100,63 @@ export function AddExpenseDialog() {
   const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
-
   const project = useMemo(() => projects?.find(p => p.id === selectedProject), [selectedProject, projects]);
   const isContractBlocked = project?.balance === 0;
   const isSupplierBlocked = false; 
-  
-  const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
+
+  const resetForm = () => {
+    setSelectedProject(expense?.projectId || '');
+    setSelectedSupplier(expense?.supplierId || '');
+    setSelectedCategory(expense?.categoryId || '');
+    setDate(expense?.date ? parseISO(expense.date) : new Date());
+    setCurrency(expense?.currency || 'ARS');
+    setDocumentType(expense?.documentType || 'Factura');
+    setInvoiceNumber(expense?.invoiceNumber || '');
+    setFile(null);
+    setAmount(expense?.amount?.toString() || '');
+    setIva(expense?.iva?.toString() || '');
+    setIibb(expense?.iibb?.toString() || '');
+    setIibbJurisdiction(expense?.iibbJurisdiction || 'No Aplica');
+    setExchangeRate(expense?.exchangeRate?.toString() || '');
+    
+    const pm = expense?.paymentMethod || '';
+    if (paymentMethods.includes(pm)) {
+        setPaymentMethod(pm);
+        setPaymentMethodOther('');
+    } else if (pm) {
+        setPaymentMethod('Otros');
+        setPaymentMethodOther(pm);
+    } else {
+        setPaymentMethod('');
+        setPaymentMethodOther('');
+    }
+
+    setRetencionGanancias(expense?.retencionGanancias?.toString() || '');
+    setRetencionIVA(expense?.retencionIVA?.toString() || '');
+    setRetencionIIBB(expense?.retencionIIBB?.toString() || '');
+    setRetencionSUSS(expense?.retencionSUSS?.toString() || '');
+  };
+
+  useEffect(() => {
+    if (open) {
+        resetForm();
+    }
+  }, [open, expense]);
+
+  useEffect(() => {
+    if(!open) {
+      setTimeout(() => {
+        resetForm();
+      }, 500);
+    }
+  }, [open]);
 
   useEffect(() => {
     setIsClient(true);
-    setDate(new Date());
-  }, []);
+    if (!expense) {
+        setDate(new Date());
+    }
+  }, [expense]);
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -114,11 +170,11 @@ export function AddExpenseDialog() {
       toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
       return;
     }
-    if (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther))) {
-      toast({ variant: 'destructive', title: 'Campos de Factura incompletos', description: 'Para facturas, debe adjuntar el comprobante y completar el número y medio de pago.' });
-      return;
+    if (documentType === 'Factura' && !invoiceNumber) {
+        toast({ variant: 'destructive', title: 'Nº de Factura requerido', description: 'El número de factura es obligatorio para documentos tipo Factura.' });
+        return;
     }
-
+    
     if (!firestore || !user || !firebaseApp) {
       toast({variant: 'destructive', title: 'Error', description: "Firebase no está disponible."});
       return;
@@ -127,24 +183,24 @@ export function AddExpenseDialog() {
     startTransition(() => {
       setIsSaving(true);
       const saveData = async () => {
-        const projectsCollection = collection(firestore, 'projects');
-        const projectRef = doc(projectsCollection, selectedProject);
-        const expensesColRef = collection(projectRef, 'expenses');
-        const newExpenseRef = doc(expensesColRef);
+        const projectId = isEditMode ? expense.projectId : selectedProject;
+        const expenseRef = isEditMode
+          ? doc(firestore, 'projects', projectId, 'expenses', expense.id)
+          : doc(collection(firestore, 'projects', projectId, 'expenses'));
 
-        let receiptUrl = '';
+        let receiptUrl = expense?.receiptUrl || '';
         if (file && documentType === 'Factura') {
             const storage = getStorage(firebaseApp);
-            const filePath = `receipts/${selectedProject}/${newExpenseRef.id}/${file.name}`;
+            const filePath = `receipts/${projectId}/${expenseRef.id}/${file.name}`;
             const fileRef = ref(storage, filePath);
             
             await uploadBytes(fileRef, file);
             receiptUrl = await getDownloadURL(fileRef);
         }
 
-        const newExpense: Expense = {
-            id: newExpenseRef.id,
-            projectId: selectedProject,
+        const expenseData: Expense = {
+            id: expenseRef.id,
+            projectId: projectId,
             date: date.toISOString(),
             supplierId: selectedSupplier,
             categoryId: selectedCategory,
@@ -164,12 +220,12 @@ export function AddExpenseDialog() {
             retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
         };
 
-        return setDoc(newExpenseRef, newExpense);
+        return setDoc(expenseRef, expenseData, { merge: true });
       };
 
       saveData()
         .then(() => {
-            toast({ title: 'Gasto guardado', description: 'El nuevo gasto ha sido registrado correctamente.' });
+            toast({ title: isEditMode ? 'Gasto Actualizado' : 'Gasto Guardado', description: 'El gasto ha sido guardado correctamente.' });
             setOpen(false);
         })
         .catch((error) => {
@@ -182,26 +238,28 @@ export function AddExpenseDialog() {
     });
   };
 
-  const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && (!file || !invoiceNumber || !paymentMethod || (paymentMethod === 'Otros' && !paymentMethodOther.trim())));
+  const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && !invoiceNumber);
   
   if (!permissions.canLoadExpenses) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Cargar Gasto
-        </Button>
+        {children || (
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Cargar Gasto
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cargar Nuevo Gasto</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Gasto' : 'Cargar Nuevo Gasto'}</DialogTitle>
           <DialogDescription>
-            Complete los campos para registrar un nuevo gasto en el sistema.
+            {isEditMode ? 'Modifique los detalles del gasto.' : 'Complete los campos para registrar un nuevo gasto en el sistema.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[75vh] overflow-y-auto pr-2">
+        <div className="grid gap-4 py-4 max-h-[75vh] overflow-y-auto pr-4">
           {isContractBlocked && (
             <Alert variant="destructive">
               <TriangleAlert className="h-4 w-4" />
@@ -223,7 +281,7 @@ export function AddExpenseDialog() {
 
           <div className="space-y-2">
             <Label htmlFor="project">Obra</Label>
-            <Select onValueChange={setSelectedProject} value={selectedProject}>
+            <Select onValueChange={setSelectedProject} value={selectedProject} disabled={isEditMode || isLoadingProjects}>
               <SelectTrigger id="project">
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
@@ -265,7 +323,7 @@ export function AddExpenseDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="supplier">Proveedor</Label>
-            <Select onValueChange={setSelectedSupplier} value={selectedSupplier}>
+            <Select onValueChange={setSelectedSupplier} value={selectedSupplier} disabled={isLoadingSuppliers}>
               <SelectTrigger id="supplier">
                 <SelectValue placeholder="Seleccione un proveedor" />
               </SelectTrigger>
@@ -298,7 +356,7 @@ export function AddExpenseDialog() {
              <RadioGroup
               value={documentType}
               onValueChange={(value: 'Factura' | 'Recibo Común') => setDocumentType(value)}
-              className="flex items-center gap-6"
+              className="flex items-center gap-6 pt-1"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="Factura" id="factura" />
@@ -317,6 +375,11 @@ export function AddExpenseDialog() {
                 <Label htmlFor="receipt">Comprobante</Label>
                 <div className="flex items-center gap-2">
                   <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
+                   {isEditMode && expense?.receiptUrl && (
+                    <Button asChild variant="outline" size="icon">
+                        <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"><LinkIcon className="h-4 w-4" /></a>
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -360,7 +423,7 @@ export function AddExpenseDialog() {
             <RadioGroup
               value={currency}
               onValueChange={(value: 'ARS' | 'USD') => setCurrency(value)}
-              className="flex items-center gap-6"
+              className="flex items-center gap-6 pt-1"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="ARS" id="ars" />
@@ -460,7 +523,7 @@ export function AddExpenseDialog() {
         <DialogFooter>
           <Button type="button" onClick={handleSaveExpense} disabled={isSubmitDisabled}>
             {(isPending || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar Gasto
+            {isEditMode ? 'Guardar Cambios' : 'Guardar Gasto'}
           </Button>
         </DialogFooter>
       </DialogContent>
