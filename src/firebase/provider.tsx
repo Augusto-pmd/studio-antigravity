@@ -35,7 +35,7 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
   const role = userProfile?.role || simulatedRole;
 
   const permissions = useMemo<Permissions>(() => {
-    const isSuperAdmin = role === 'Dirección';
+    const isSuperAdmin = role === 'Dirección' || role === 'Administración';
     const canValidate = role === 'Dirección' || role === 'Administración';
     // Simplified logic, in a real app this might be more complex
     const canLoadExpenses = role === 'Dirección' || role === 'Administración' || role === 'Supervisor';

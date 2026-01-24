@@ -61,6 +61,7 @@ const menuItems = [
   { href: "/proveedores", label: "Proveedores", icon: Users },
   { href: "/empleados", label: "Empleados", icon: Contact },
   { href: "/contratistas", label: "Contratistas", icon: HardHat },
+  { href: "/activos", label: "Activos", icon: Archive },
   { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
   { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign },
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
