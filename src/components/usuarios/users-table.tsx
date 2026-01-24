@@ -94,6 +94,9 @@ export function UsersTable() {
                         <div>
                             <div className="font-medium">{user.fullName}</div>
                             <div className="text-sm text-muted-foreground">{user.email}</div>
+                            <div className="text-sm text-muted-foreground md:hidden mt-2">
+                                <span className="font-medium text-foreground">Rol:</span> {user.role}
+                            </div>
                         </div>
                     </div>
                   </TableCell>

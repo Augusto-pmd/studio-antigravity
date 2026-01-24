@@ -121,8 +121,13 @@ export function MyCashView() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-3xl font-headline">Mis Cajas</h1>
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-headline">Mis Cajas</h1>
+          <p className="mt-1 text-muted-foreground">
+            Gestiona tus cajas de efectivo en ARS. Puedes tener hasta 3 cajas diferentes.
+          </p>
+        </div>
         <AddCashAccountDialog>
             <Button disabled={(accounts?.length ?? 0) >= 3}>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -130,10 +135,6 @@ export function MyCashView() {
             </Button>
         </AddCashAccountDialog>
       </div>
-
-      <p className="text-muted-foreground">
-        Gestiona tus cajas de efectivo en ARS. Puedes tener hasta 3 cajas diferentes.
-      </p>
 
       {accounts && accounts.length > 0 ? (
         <Accordion type="single" collapsible className="w-full space-y-4">
@@ -155,10 +156,10 @@ export function MyCashView() {
                             </EditCashAccountDialog>
                         </AccordionTrigger>
                         <AccordionContent className="p-6 pt-0">
-                            <div className="flex items-center justify-end gap-2 mb-4 border-t pt-4">
+                            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 mb-4 border-t pt-4">
                                 {userProfile && (
                                     <FundTransferDialog profile={userProfile} cashAccounts={[account]}>
-                                        <Button variant="outline">
+                                        <Button variant="outline" className="w-full sm:w-auto">
                                             <Landmark className="mr-2 h-4 w-4" />
                                             Añadir Fondos
                                         </Button>

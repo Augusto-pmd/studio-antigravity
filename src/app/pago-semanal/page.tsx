@@ -54,13 +54,15 @@ export default function PagoSemanalPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-headline">Solicitudes de Fondos</h1>
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-headline">Solicitudes de Fondos</h1>
+          <p className="mt-1 text-muted-foreground">
+            Cree y supervise las solicitudes de dinero para gastos de la semana.
+          </p>
+        </div>
         <RequestFundDialog />
       </div>
-      <p className="text-muted-foreground">
-        Cree y supervise las solicitudes de dinero para gastos de la semana.
-      </p>
       <FundRequestsTable requests={requests} isLoading={isLoading} />
     </div>
   );

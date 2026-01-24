@@ -61,7 +61,7 @@ export function ProjectsOverview() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="font-headline">Obras Activas</CardTitle>
           <CardDescription>

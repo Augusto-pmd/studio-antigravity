@@ -86,15 +86,15 @@ export function TreasuryAccounts() {
                         <CardContent>
                             <p className="text-3xl font-bold font-mono">{formatCurrency(account.balance, account.currency)}</p>
                         </CardContent>
-                        <CardFooter className="flex gap-2">
+                        <CardFooter className="flex flex-col sm:flex-row gap-2">
                             <AddTreasuryTransactionDialog account={account}>
-                                <Button className="flex-1">
+                                <Button className="w-full sm:w-auto flex-1">
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Nuevo Movimiento
                                 </Button>
                             </AddTreasuryTransactionDialog>
                             <ViewTreasuryTransactionsDialog account={account}>
-                                <Button variant="outline" className="flex-1">
+                                <Button variant="outline" className="w-full sm:w-auto flex-1">
                                     <View className="mr-2 h-4 w-4" />
                                     Ver Movimientos
                                 </Button>
