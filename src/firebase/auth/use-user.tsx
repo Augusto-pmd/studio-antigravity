@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, type Firestore, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { doc, onSnapshot, type Firestore, type DocumentData, type DocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { UserProfile, Role } from '@/lib/types';
 import type { Auth } from 'firebase/auth';
 
