@@ -19,11 +19,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { useUser } from "@/firebase";
 import {
@@ -96,13 +93,10 @@ const menuItems = [
   },
 ];
 
-const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
-
-
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, role, setRole, permissions, auth } = useUser();
+  const { user, role, permissions, auth } = useUser();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
   const handleLogout = async () => {
@@ -168,15 +162,6 @@ export function AppSidebar() {
                       <UserIcon className="mr-2 h-4 w-4"/>
                       <span>Editar Perfil</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Cambiar Rol (Simulación)</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup value={role} onValueChange={(value) => setRole(value as Role)}>
-                      {roles.map((r) => (
-                        <DropdownMenuRadioItem key={r} value={r}>
-                          {r}
-                        </DropdownMenuRadioItem>
-                      ))}
-                  </DropdownMenuRadioGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4"/>

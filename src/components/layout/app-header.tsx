@@ -1,27 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
-import type { Role } from "@/lib/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronsUpDown, Moon, Sun } from "lucide-react";
-
-const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
+import { Moon, Sun } from "lucide-react";
 
 export function AppHeader() {
-  const { user, role, setRole } = useUser();
+  const { user } = useUser();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
@@ -78,29 +64,7 @@ export function AppHeader() {
         {/* Placeholder for potential breadcrumbs or page titles */}
       </div>
       <div className="flex items-center gap-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:bg-muted">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'Avatar'} />
-                <AvatarFallback>{user?.displayName?.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span className="hidden md:inline">{role}</span>
-              <ChevronsUpDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Cambiar Rol (Simulación)</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup value={role} onValueChange={(value) => setRole(value as Role)}>
-              {roles.map((r) => (
-                <DropdownMenuRadioItem key={r} value={r}>
-                  {r}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* User menu is now only in the sidebar footer */}
       </div>
     </header>
   );

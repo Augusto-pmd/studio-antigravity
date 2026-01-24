@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Role, UserProfile, Permissions } from '@/lib/types';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth, User } from 'firebase/auth';
@@ -14,8 +14,7 @@ interface FirebaseContextValue {
   user: User | null;
   userProfile: UserProfile | null;
   isUserLoading: boolean;
-  role: Role;
-  setRole: (role: Role) => void;
+  role: Role | null;
   permissions: Permissions;
 }
 
@@ -30,14 +29,15 @@ interface FirebaseProviderProps {
 
 export function FirebaseProvider({ children, firebaseApp, auth, firestore }: FirebaseProviderProps) {
   const { user, userProfile, isLoading } = useAuthUserHook(auth, firestore);
-  const [simulatedRole, setSimulatedRole] = useState<Role>('Dirección');
 
-  const role = userProfile?.role || simulatedRole;
+  const role = userProfile?.role || null;
 
   const permissions = useMemo<Permissions>(() => {
-    const isSuperAdmin = role === 'Dirección' || role === 'Administración';
+    if (!role) {
+      return { isSuperAdmin: false, canValidate: false, canLoadExpenses: false };
+    }
+    const isSuperAdmin = role === 'Dirección';
     const canValidate = role === 'Dirección' || role === 'Administración';
-    // Simplified logic, in a real app this might be more complex
     const canLoadExpenses = role === 'Dirección' || role === 'Administración' || role === 'Supervisor';
     return { isSuperAdmin, canValidate, canLoadExpenses };
   }, [role]);
@@ -50,7 +50,6 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
     userProfile,
     isUserLoading: isLoading,
     role,
-    setRole: setSimulatedRole,
     permissions,
   };
 
