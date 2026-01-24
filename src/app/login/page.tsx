@@ -81,13 +81,25 @@ export default function LoginPage() {
             description: `Se ha creado tu perfil como ${newUserProfile.role}.`,
         });
       } else {
-        // Existing user, enforce director role if email matches
+        // Existing user. Ensure profile info is up-to-date and enforce Director role.
+        const updates: Partial<UserProfile> = {
+          fullName: authUser.displayName!,
+          photoURL: authUser.photoURL || undefined,
+          email: authUser.email!,
+        };
+
+        if (isDirector) {
+          updates.role = 'Dirección';
+        }
+
+        await setDoc(userDocRef, updates, { merge: true });
+
+        // Only show toast if the role was incorrect and has now been fixed.
         if (isDirector && userDoc.data()?.role !== 'Dirección') {
-            await setDoc(userDocRef, { role: 'Dirección' }, { merge: true });
-            toast({
-                title: "Rol de Director Verificado",
-                description: 'Tu rol ha sido actualizado a "Dirección".',
-            });
+          toast({
+            title: "Rol de Director Verificado",
+            description: 'Tu rol ha sido actualizado a "Dirección".',
+          });
         }
       }
 
