@@ -12,14 +12,27 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/types";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { AddProjectDialog } from "./add-project-dialog";
 import { useCollection } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(amount);
@@ -32,12 +45,33 @@ const projectConverter = {
 
 export function ProjectsTable() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const projectsQuery = useMemo(
     () => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null),
     [firestore]
   );
   const { data: projects, isLoading } = useCollection<Project>(projectsQuery);
+
+  const handleDelete = (projectId: string, projectName: string) => {
+    if (!firestore) return;
+    const projectRef = doc(firestore, 'projects', projectId);
+    deleteDoc(projectRef)
+      .then(() => {
+        toast({
+          title: "Obra Eliminada",
+          description: `La obra "${projectName}" ha sido eliminada permanentemente.`,
+        });
+      })
+      .catch((error) => {
+        console.error("Error deleting project: ", error);
+        toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar la obra. Es posible que no tengas permisos.",
+        });
+      });
+  };
 
   return (
     <div className="rounded-lg border">
@@ -114,12 +148,40 @@ export function ProjectsTable() {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <AddProjectDialog project={project}>
-                  <Button variant="ghost" size="icon">
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Editar</span>
-                  </Button>
-                </AddProjectDialog>
+                <div className="flex items-center justify-end">
+                    <AddProjectDialog project={project}>
+                      <Button variant="ghost" size="icon">
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Editar</span>
+                      </Button>
+                    </AddProjectDialog>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Eliminar</span>
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Se eliminará permanentemente la obra
+                                <span className="font-semibold"> {project.name}</span> y todos sus gastos asociados.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => handleDelete(project.id, project.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                                Eliminar
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
               </TableCell>
             </TableRow>
           ))}
