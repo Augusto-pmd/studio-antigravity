@@ -78,7 +78,13 @@ const supplierConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
 };
 
-export function ExpensesTable() {
+interface ExpensesTableProps {
+  projectId?: string;
+  supplierId?: string;
+  categoryId?: string;
+}
+
+export function ExpensesTable({ projectId, supplierId, categoryId }: ExpensesTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { permissions } = useUser();
@@ -87,7 +93,7 @@ export function ExpensesTable() {
     firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null
   ), [firestore]);
   
-  const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
+  const { data: allExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
 
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -110,6 +116,16 @@ export function ExpensesTable() {
       return acc;
     }, {} as Record<string, string>);
   }, [suppliers]);
+
+  const filteredExpenses = useMemo(() => {
+    if (!allExpenses) return [];
+    return allExpenses.filter(expense => {
+      const projectMatch = !projectId || expense.projectId === projectId;
+      const supplierMatch = !supplierId || expense.supplierId === supplierId;
+      const categoryMatch = !categoryId || expense.categoryId === categoryId;
+      return projectMatch && supplierMatch && categoryMatch;
+    });
+  }, [allExpenses, projectId, supplierId, categoryId]);
 
   const getCategoryName = (categoryId: string) => expenseCategories.find(c => c.id === categoryId)?.name || categoryId;
 
@@ -140,6 +156,7 @@ export function ExpensesTable() {
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
       <TableCell className="text-right"><Skeleton className="h-10 w-20 ml-auto" /></TableCell>
     </TableRow>
@@ -166,14 +183,14 @@ export function ExpensesTable() {
                   {renderSkeleton()}
                 </>
               )}
-              {!isLoading && expenses?.length === 0 && (
+              {!isLoading && filteredExpenses.length === 0 && (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    No hay gastos registrados. Comience creando uno nuevo.
+                    {allExpenses && allExpenses.length > 0 ? "No hay gastos que coincidan con los filtros seleccionados." : "No hay gastos registrados. Comience creando uno nuevo."}
                   </TableCell>
                 </TableRow>
               )}
-              {expenses?.map((expense: Expense) => (
+              {!isLoading && filteredExpenses.map((expense: Expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>
                     <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
