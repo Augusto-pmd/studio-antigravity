@@ -1,0 +1,215 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useDoc, useCollection, useFirestore } from '@/firebase';
+import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import type { PayrollWeek, Employee, Attendance, CashAdvance } from '@/lib/types';
+import { eachDayOfInterval, format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { Printer, Loader2 } from 'lucide-react';
+import { Logo } from '@/components/icons/logo';
+
+// Converters
+const payrollWeekConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
+const employeeConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
+const attendanceConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
+const cashAdvanceConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
+
+const formatCurrency = (amount: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
+
+interface ReceiptData {
+  employee: Employee;
+  week: PayrollWeek;
+  attendance: Attendance[];
+  advances: CashAdvance[];
+  summary: {
+    daysPresent: number;
+    daysAbsent: number;
+    totalLateHours: number;
+    grossPay: number;
+    totalAdvances: number;
+    netPay: number;
+  };
+}
+
+export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'employees' | 'contractors' }) {
+  const firestore = useFirestore();
+
+  // Data fetching
+  const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
+  const { data: week, isLoading: isLoadingWeek } = useDoc<PayrollWeek>(weekDocRef);
+
+  const employeesQuery = useMemo(() => firestore ? query(collection(firestore, 'employees').withConverter(employeeConverter), where('status', '==', 'Activo')) : null, [firestore]);
+  const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
+
+  const attendanceQuery = useMemo(() => firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
+  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
+  
+  const advancesQuery = useMemo(() => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
+  const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
+
+  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances;
+
+  const receiptsData = useMemo<ReceiptData[]>(() => {
+    if (isLoading || !week || !employees || !attendances || !advances) return [];
+
+    return employees.map(employee => {
+      const employeeAttendances = attendances.filter(a => a.employeeId === employee.id);
+      const employeeAdvances = advances.filter(a => a.employeeId === employee.id);
+
+      const daysPresent = employeeAttendances.filter(a => a.status === 'presente').length;
+      const daysAbsent = employeeAttendances.filter(a => a.status === 'ausente').length;
+      const totalLateHours = employeeAttendances.reduce((sum, a) => sum + (a.lateHours || 0), 0);
+      
+      const grossPay = daysPresent * employee.dailyWage;
+      const totalAdvances = employeeAdvances.reduce((sum, ad) => sum + ad.amount, 0);
+      const netPay = grossPay - totalAdvances;
+
+      return {
+        employee,
+        week,
+        attendance: employeeAttendances,
+        advances: employeeAdvances,
+        summary: {
+          daysPresent,
+          daysAbsent,
+          totalLateHours,
+          grossPay,
+          totalAdvances,
+          netPay,
+        }
+      };
+    });
+  }, [isLoading, week, employees, attendances, advances]);
+
+  const weekDays = useMemo(() => {
+    if (!week) return [];
+    const start = parseISO(week.startDate);
+    const end = parseISO(week.endDate);
+    return eachDayOfInterval({ start, end });
+  }, [week]);
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Cargando datos de la planilla...</span></div>;
+  }
+  
+  if (!week) {
+    return <div className="flex h-screen items-center justify-center"><p>No se encontró la semana de pago.</p></div>;
+  }
+
+  if (type === 'contractors') {
+    return (
+        <div className="p-8">
+            <div className="flex justify-between items-center mb-8 no-print">
+                <h1 className="text-2xl font-bold">Recibos de Pago (Contratistas)</h1>
+                <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
+            </div>
+            <div className="flex h-96 items-center justify-center rounded-md border border-dashed bg-white shadow-sm">
+                <p className="text-muted-foreground">La generación de recibos para contratistas está en construcción.</p>
+            </div>
+        </div>
+    )
+  }
+
+  return (
+    <div className="p-4 sm:p-8">
+      <div className="flex justify-between items-center mb-8 no-print">
+        <h1 className="text-2xl font-bold">Recibos de Pago (Empleados)</h1>
+        <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
+      </div>
+
+      <div className="space-y-8">
+        {receiptsData.map(data => (
+          <div key={data.employee.id} className="p-8 bg-white rounded-lg shadow-md break-after-page">
+            <header className="flex justify-between items-start border-b pb-4">
+              <div>
+                <Logo className="h-10 w-auto" />
+                <p className="text-sm text-gray-500 mt-2">PMD Arquitectura</p>
+              </div>
+              <div className="text-right">
+                <h2 className="text-xl font-semibold">Recibo de Sueldo</h2>
+                <p className="text-sm text-gray-500">
+                  Semana del {format(parseISO(data.week.startDate), 'dd/MM/yyyy')} al {format(parseISO(data.week.endDate), 'dd/MM/yyyy')}
+                </p>
+              </div>
+            </header>
+
+            <section className="mt-6">
+              <h3 className="font-semibold">Empleado: {data.employee.name}</h3>
+              <p className="text-sm text-gray-500">Categoría: {data.employee.category}</p>
+            </section>
+            
+            <section className="mt-6">
+              <h4 className="font-medium mb-2">Detalle de Asistencias</h4>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {weekDays.map(day => (
+                        <th key={day.toString()} className="p-2 font-medium text-center">{format(day, 'E dd', { locale: es })}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t">
+                      {weekDays.map(day => {
+                        const attendanceRecord = data.attendance.find(a => format(parseISO(a.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
+                        return (
+                          <td key={day.toString()} className="p-2 text-center capitalize">
+                            {attendanceRecord ? attendanceRecord.status : '-'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="mt-6 grid grid-cols-2 gap-8">
+              <div>
+                <h4 className="font-medium mb-2">Liquidación</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span>Días Trabajados:</span><span>{data.summary.daysPresent}</span></div>
+                  <div className="flex justify-between"><span>Jornal Diario:</span><span>{formatCurrency(data.employee.dailyWage)}</span></div>
+                  <div className="flex justify-between font-semibold border-t pt-1 mt-1"><span>Sueldo Bruto:</span><span>{formatCurrency(data.summary.grossPay)}</span></div>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2">Adelantos y Deducciones</h4>
+                 <div className="space-y-1 text-sm">
+                    {data.advances.length > 0 ? data.advances.map(adv => (
+                       <div key={adv.id} className="flex justify-between">
+                         <span>Adelanto ({format(parseISO(adv.date), 'dd/MM')}):</span>
+                         <span>({formatCurrency(adv.amount)})</span>
+                       </div>
+                    )) : <p className="text-gray-500">Sin adelantos</p>}
+                    <div className="flex justify-between font-semibold border-t pt-1 mt-1"><span>Total Deducido:</span><span>({formatCurrency(data.summary.totalAdvances)})</span></div>
+                 </div>
+              </div>
+            </section>
+            
+            <section className="mt-8 border-t-2 border-dashed pt-4">
+              <div className="flex justify-between items-center text-lg font-bold">
+                <span>NETO A COBRAR:</span>
+                <span>{formatCurrency(data.summary.netPay)}</span>
+              </div>
+            </section>
+            
+            <footer className="mt-16 flex justify-between items-end">
+              <div className="w-1/2">
+                <div className="border-t pt-2 text-center text-sm">
+                  Firma del Empleado
+                </div>
+              </div>
+              <div className="w-1/2 text-right text-xs text-gray-400">
+                Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
+              </div>
+            </footer>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

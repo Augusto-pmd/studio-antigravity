@@ -46,6 +46,7 @@ import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
@@ -217,9 +218,17 @@ export function WeeklySummary() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             )}
-                            <Button disabled={isPending}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Exportar Planilla
+                            <Button asChild variant="outline" disabled={!currentWeek}>
+                                <Link href={`/imprimir-recibos?weekId=${currentWeek?.id}&type=contractors`} target="_blank">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Recibos (Contratistas)
+                                </Link>
+                            </Button>
+                            <Button asChild disabled={!currentWeek}>
+                                <Link href={`/imprimir-recibos?weekId=${currentWeek?.id}&type=employees`} target="_blank">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Recibos (Empleados)
+                                </Link>
                             </Button>
                         </div>
                     </CardFooter>
