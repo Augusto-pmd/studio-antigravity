@@ -37,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 interface TimeLogEntry {
   id: string; // Temp ID for React key
   projectId: string;
-  hours: number;
+  hours: number | string;
 }
 
 const projectConverter = {
@@ -107,7 +107,7 @@ export function UserTimeLog() {
     setTimeLogEntries(timeLogEntries.filter(entry => entry.id !== id));
   };
   
-  const updateEntry = (id: string, field: 'projectId' | 'hours', value: string | number) => {
+  const updateEntry = (id: string, field: 'projectId' | 'hours', value: string) => {
     setTimeLogEntries(timeLogEntries.map(entry => entry.id === id ? { ...entry, [field]: value } : entry));
   };
 
@@ -116,7 +116,7 @@ export function UserTimeLog() {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos o la fecha no es válida.' });
         return;
     }
-    if (timeLogEntries.some(entry => !entry.projectId || entry.hours <= 0)) {
+    if (timeLogEntries.some(entry => !entry.projectId || Number(entry.hours) <= 0)) {
         toast({ variant: 'destructive', title: 'Datos Incompletos', description: 'Asegúrese de seleccionar una obra y asignar horas a cada entrada.' });
         return;
     }
