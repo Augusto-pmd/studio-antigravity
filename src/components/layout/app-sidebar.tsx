@@ -130,6 +130,11 @@ export function AppSidebar() {
               if (item.adminOnly && !permissions.isSuperAdmin) {
                 return null;
               }
+
+              if (item.href === '/ventas' && !permissions.canValidate) {
+                return null;
+              }
+              
               // This logic for role-based visibility is now secondary to the adminOnly flag
               // if (item.role && !item.role.includes(role)) {
               //   return null;
