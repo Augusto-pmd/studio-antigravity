@@ -53,6 +53,9 @@ export interface Expense {
   retencionIVA?: number;
   retencionIIBB?: number;
   retencionSUSS?: number;
+  status: 'Pendiente de Pago' | 'Pagado';
+  paidDate?: string;
+  treasuryAccountId?: string;
 }
 
 export interface Supplier {

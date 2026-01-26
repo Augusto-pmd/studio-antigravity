@@ -10,6 +10,7 @@ import { IibbSummary } from './iibb-summary';
 import { ExpenseReport } from './expense-report';
 import { Skeleton } from '../ui/skeleton';
 import { RetencionesSummary } from './retenciones-summary';
+import { AccountsPayable } from './accounts-payable';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
@@ -92,6 +93,7 @@ export function AccountingDashboard() {
 
   return (
     <div className="space-y-6">
+      <AccountsPayable />
       <div className="grid gap-6 md:grid-cols-2">
         <IvaSummary ivaCredit={ivaCredit} ivaDebit={ivaDebit} />
         <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />

@@ -53,8 +53,6 @@ const supplierConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
 };
 
-const paymentMethods = ["Transferencia", "Efectivo", "Tarjeta", "Cheque", "Mercado Pago", "Otros"];
-
 export function AddExpenseDialog({
   expense,
   children,
@@ -87,8 +85,6 @@ export function AddExpenseDialog({
   const [iibb, setIibb] = useState('');
   const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
   const [exchangeRate, setExchangeRate] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentMethodOther, setPaymentMethodOther] = useState('');
 
   // Retenciones
   const [retencionGanancias, setRetencionGanancias] = useState('');
@@ -121,19 +117,6 @@ export function AddExpenseDialog({
     setIibb(expense?.iibb?.toString() || '');
     setIibbJurisdiction(expense?.iibbJurisdiction || 'No Aplica');
     setExchangeRate(expense?.exchangeRate?.toString() || '');
-    
-    const pm = expense?.paymentMethod || '';
-    if (paymentMethods.includes(pm)) {
-        setPaymentMethod(pm);
-        setPaymentMethodOther('');
-    } else if (pm) {
-        setPaymentMethod('Otros');
-        setPaymentMethodOther(pm);
-    } else {
-        setPaymentMethod('');
-        setPaymentMethodOther('');
-    }
-
     setRetencionGanancias(expense?.retencionGanancias?.toString() || '');
     setRetencionIVA(expense?.retencionIVA?.toString() || '');
     setRetencionIIBB(expense?.retencionIIBB?.toString() || '');
@@ -232,7 +215,7 @@ export function AddExpenseDialog({
 
 
   const handleSaveExpense = () => {
-    if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate || !paymentMethod) {
+    if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
       toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
       return;
     }
@@ -272,7 +255,6 @@ export function AddExpenseDialog({
             categoryId: selectedCategory,
             documentType,
             invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
-            paymentMethod: paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod,
             amount: parseFloat(amount),
             iva: iva ? parseFloat(iva) : 0,
             iibb: iibb ? parseFloat(iibb) : 0,
@@ -284,6 +266,10 @@ export function AddExpenseDialog({
             retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
             retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
             retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
+            status: isEditMode ? expense.status : 'Pendiente de Pago',
+            paymentMethod: isEditMode ? expense.paymentMethod : undefined,
+            paidDate: isEditMode ? expense.paidDate : undefined,
+            treasuryAccountId: isEditMode ? expense.treasuryAccountId : undefined,
         };
 
         return setDoc(expenseRef, expenseData, { merge: true });
@@ -444,34 +430,6 @@ export function AddExpenseDialog({
             </RadioGroup>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Medio de Pago</Label>
-            <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod}>
-                <SelectTrigger id="paymentMethod">
-                    <SelectValue placeholder="Seleccione un medio" />
-                </SelectTrigger>
-                <SelectContent>
-                    {paymentMethods.map((method) => (
-                        <SelectItem key={method} value={method}>
-                            {method}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-          </div>
-
-          {paymentMethod === 'Otros' && (
-              <div className="space-y-2">
-                  <Label htmlFor="paymentMethodOther">Especificar Medio de Pago</Label>
-                  <Input
-                      id="paymentMethodOther"
-                      value={paymentMethodOther}
-                      onChange={(e) => setPaymentMethodOther(e.target.value)}
-                      placeholder="Especifique el medio de pago"
-                  />
-              </div>
-          )}
-
           {documentType === 'Factura' && (
             <>
               <div className="space-y-2">

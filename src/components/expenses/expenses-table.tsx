@@ -21,6 +21,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { AddExpenseDialog } from "./add-expense-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -34,7 +35,7 @@ const formatDate = (dateString?: string) => {
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(), id: snapshot.id } as Expense)
 };
 
 const projectConverter = {
@@ -122,6 +123,7 @@ export function ExpensesTable() {
                 <TableHead>Obra</TableHead>
                 <TableHead className="hidden md:table-cell">Proveedor</TableHead>
                 <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                <TableHead className="hidden lg:table-cell">Estado</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
                 <TableHead className="text-right w-[100px]">Acciones</TableHead>
               </TableRow>
@@ -136,7 +138,7 @@ export function ExpensesTable() {
               )}
               {!isLoading && expenses?.length === 0 && (
                  <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No hay gastos registrados. Comience creando uno nuevo.
                   </TableCell>
                 </TableRow>
@@ -146,13 +148,29 @@ export function ExpensesTable() {
                   <TableCell>
                     <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
                     <div className="text-sm text-muted-foreground">{getCategoryName(expense.categoryId)}</div>
-                    <div className="text-sm text-muted-foreground md:hidden mt-2">
+                    <div className="text-sm text-muted-foreground md:hidden mt-2 space-y-1">
                       <p>{suppliersMap[expense.supplierId] || expense.supplierId}</p>
                       <p>{formatDate(expense.date)}</p>
+                      <Badge variant={expense.status === 'Pagado' ? 'default' : 'secondary'} className={cn(
+                          'capitalize',
+                          expense.status === 'Pagado' && "bg-green-900/40 text-green-300 border-green-700",
+                          expense.status === 'Pendiente de Pago' && "bg-yellow-900/40 text-yellow-300 border-yellow-700",
+                      )}>
+                        {expense.status}
+                      </Badge>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
                   <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                     <Badge variant={expense.status === 'Pagado' ? 'default' : 'secondary'} className={cn(
+                          'capitalize',
+                          expense.status === 'Pagado' && "bg-green-900/40 text-green-300 border-green-700",
+                          expense.status === 'Pendiente de Pago' && "bg-yellow-900/40 text-yellow-300 border-yellow-700",
+                      )}>
+                        {expense.status}
+                      </Badge>
+                  </TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                   <TableCell className="text-right">
                     {permissions.canLoadExpenses && (

@@ -124,6 +124,8 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
             description: `Gasto rápido: ${description}`,
             receiptUrl: receiptUrl,
+            status: 'Pagado',
+            paidDate: expenseDate.toISOString(),
         };
         batch.set(expenseRef, newExpense);
         

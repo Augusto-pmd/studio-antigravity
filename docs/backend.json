@@ -153,20 +153,24 @@
           ]
         },
         "invoiceNumber": {
-          "type": "string"
+          "type": "string",
+          "description": "The invoice number, required if documentType is 'Factura'."
         },
         "paymentMethod": {
-          "type": "string"
+          "type": "string",
+          "description": "The method used for payment (e.g., 'Transferencia', 'Efectivo'). Set when payment is registered."
         },
         "amount": {
           "type": "number",
-          "description": "The amount of the expense."
+          "description": "The total amount of the expense document."
         },
         "iva": {
-          "type": "number"
+          "type": "number",
+          "description": "The VAT amount discriminated in the document."
         },
         "iibb": {
-          "type": "number"
+          "type": "number",
+          "description": "The Gross Income tax perception amount discriminated in the document."
         },
         "iibbJurisdiction": {
           "type": "string",
@@ -184,7 +188,8 @@
           ]
         },
         "exchangeRate": {
-          "type": "number"
+          "type": "number",
+          "description": "The exchange rate applied if currency is not ARS."
         },
         "receiptUrl": {
           "type": "string",
@@ -205,6 +210,23 @@
         "retencionSUSS": {
           "type": "number",
           "description": "Retención de SUSS (Seguridad Social) aplicada al pago."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente de Pago",
+            "Pagado"
+          ],
+          "description": "Payment status of the expense."
+        },
+        "paidDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the expense was paid."
+        },
+        "treasuryAccountId": {
+          "type": "string",
+          "description": "Reference to the TreasuryAccount used for payment."
         }
       },
       "required": [
@@ -216,7 +238,8 @@
         "amount",
         "currency",
         "exchangeRate",
-        "documentType"
+        "documentType",
+        "status"
       ]
     },
     "CashAccount": {
