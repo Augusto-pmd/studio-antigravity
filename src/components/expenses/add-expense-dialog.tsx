@@ -42,6 +42,7 @@ import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { extractInvoiceData } from "@/ai/flows/extract-invoice-data";
+import { Textarea } from "@/components/ui/textarea";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -75,6 +76,7 @@ export function AddExpenseDialog({
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [description, setDescription] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común' | 'Nota de Crédito'>('Factura');
@@ -107,6 +109,7 @@ export function AddExpenseDialog({
     setSelectedProject(expense?.projectId || '');
     setSelectedSupplier(expense?.supplierId || '');
     setSelectedCategory(expense?.categoryId || '');
+    setDescription(expense?.description || '');
     setDate(expense?.date ? parseISO(expense.date) : new Date());
     setCurrency(expense?.currency || 'ARS');
     setDocumentType(expense?.documentType || 'Factura');
@@ -242,19 +245,20 @@ export function AddExpenseDialog({
             date: date.toISOString(),
             supplierId: selectedSupplier,
             categoryId: selectedCategory,
+            description: description || undefined,
             documentType,
             invoiceNumber: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? invoiceNumber : '',
-            amount: parseFloat(amount),
-            iva: iva ? parseFloat(iva) : 0,
-            iibb: iibb ? parseFloat(iibb) : 0,
+            amount: parseFloat(amount) || 0,
+            iva: parseFloat(iva) || 0,
+            iibb: parseFloat(iibb) || 0,
             iibbJurisdiction: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? iibbJurisdiction : 'No Aplica',
             currency,
-            exchangeRate: parseFloat(exchangeRate),
+            exchangeRate: parseFloat(exchangeRate) || 0,
             receiptUrl,
-            retencionGanancias: retencionGanancias ? parseFloat(retencionGanancias) : 0,
-            retencionIVA: retencionIVA ? parseFloat(retencionIVA) : 0,
-            retencionIIBB: retencionIIBB ? parseFloat(retencionIIBB) : 0,
-            retencionSUSS: retencionSUSS ? parseFloat(retencionSUSS) : 0,
+            retencionGanancias: parseFloat(retencionGanancias) || 0,
+            retencionIVA: parseFloat(retencionIVA) || 0,
+            retencionIIBB: parseFloat(retencionIIBB) || 0,
+            retencionSUSS: parseFloat(retencionSUSS) || 0,
             status: isEditMode ? expense.status : 'Pendiente de Pago',
             paymentMethod: isEditMode ? expense.paymentMethod : undefined,
             paidDate: isEditMode ? expense.paidDate : undefined,
@@ -419,6 +423,15 @@ export function AddExpenseDialog({
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción (Opcional)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Añada un detalle sobre el gasto"
+            />
+          </div>
            <div className="space-y-2">
             <Label>Tipo Comprobante</Label>
              <RadioGroup
@@ -530,31 +543,31 @@ export function AddExpenseDialog({
                   </RadioGroup>
                 </div>
               </div>
+              <Separator />
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Retenciones Aplicadas al Pago</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="retencionGanancias">Ret. Ganancias</Label>
+                    <Input id="retencionGanancias" type="number" placeholder="0.00" value={retencionGanancias} onChange={e => setRetencionGanancias(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="retencionIVA">Ret. IVA</Label>
+                    <Input id="retencionIVA" type="number" placeholder="0.00" value={retencionIVA} onChange={e => setRetencionIVA(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="retencionIIBB">Ret. IIBB</Label>
+                    <Input id="retencionIIBB" type="number" placeholder="0.00" value={retencionIIBB} onChange={e => setRetencionIIBB(e.target.value)} />
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="retencionSUSS">Ret. SUSS</Label>
+                    <Input id="retencionSUSS" type="number" placeholder="0.00" value={retencionSUSS} onChange={e => setRetencionSUSS(e.target.value)} />
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
-          <Separator />
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">Retenciones Aplicadas al Pago</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="retencionGanancias">Ret. Ganancias</Label>
-                <Input id="retencionGanancias" type="number" placeholder="0.00" value={retencionGanancias} onChange={e => setRetencionGanancias(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="retencionIVA">Ret. IVA</Label>
-                <Input id="retencionIVA" type="number" placeholder="0.00" value={retencionIVA} onChange={e => setRetencionIVA(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="retencionIIBB">Ret. IIBB</Label>
-                <Input id="retencionIIBB" type="number" placeholder="0.00" value={retencionIIBB} onChange={e => setRetencionIIBB(e.target.value)} />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="retencionSUSS">Ret. SUSS</Label>
-                <Input id="retencionSUSS" type="number" placeholder="0.00" value={retencionSUSS} onChange={e => setRetencionSUSS(e.target.value)} />
-              </div>
-            </div>
-          </div>
           <Separator />
 
           <div className="space-y-2">
