@@ -44,7 +44,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
 
   const attendanceQuery = useMemo(() => firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
-  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
+  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
   
   const advancesQuery = useMemo(() => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
