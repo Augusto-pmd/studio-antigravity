@@ -81,7 +81,6 @@ const menuItems = [
     href: "/gastos-recurrentes",
     label: "Gastos Recurrentes",
     icon: Repeat,
-    adminOnly: true,
     pañoleroHidden: true,
   },
   {
@@ -146,7 +145,7 @@ export function AppSidebar() {
                 return null;
               }
 
-              const adminValidationRoutes = ['/contabilidad', '/activos', '/calendario-pagos', '/ventas'];
+              const adminValidationRoutes = ['/contabilidad', '/activos', '/calendario-pagos', '/ventas', '/gastos-recurrentes'];
               if (adminValidationRoutes.includes(item.href) && !permissions.canValidate) {
                 return null;
               }
