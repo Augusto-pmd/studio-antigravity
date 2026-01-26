@@ -1170,6 +1170,70 @@
         "nextDueDate",
         "status"
       ]
+    },
+    "Moratoria": {
+      "title": "Moratoria",
+      "type": "object",
+      "description": "Represents a tax payment plan (moratoria).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Descriptive name of the payment plan, e.g., 'Plan Facilidades IVA'."
+        },
+        "tax": {
+          "type": "string",
+          "description": "The tax being paid (e.g., IVA, Ganancias, Aportes)."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total consolidated debt amount of the plan."
+        },
+        "paidAmount": {
+          "type": "number",
+          "description": "The total amount paid to date."
+        },
+        "installments": {
+          "type": "number",
+          "description": "The total number of installments."
+        },
+        "paidInstallments": {
+          "type": "number",
+          "description": "Number of installments already paid."
+        },
+        "installmentAmount": {
+          "type": "number",
+          "description": "The amount of each monthly installment."
+        },
+        "nextDueDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Due date for the next installment."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activa",
+            "Finalizada",
+            "Incumplida"
+          ],
+          "description": "Current status of the plan."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "tax",
+        "totalAmount",
+        "installments",
+        "installmentAmount",
+        "nextDueDate",
+        "status",
+        "paidAmount",
+        "paidInstallments"
+      ]
     }
   },
   "auth": {
@@ -1562,9 +1626,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/moratorias/{moratoriaId}",
+        "definition": {
+          "entityName": "Moratoria",
+          "schema": {
+            "$ref": "#/backend/entities/Moratoria"
+          },
+          "description": "Stores tax payment plans (moratorias). Accessible by admins.",
+          "params": [
+            {
+              "name": "moratoriaId",
+              "description": "The unique ID for the payment plan."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, sales) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
   }
 }
-    

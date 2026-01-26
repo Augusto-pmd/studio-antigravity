@@ -46,6 +46,7 @@ import {
   Scale,
   UserCog,
   Repeat,
+  CalendarClock,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -68,6 +69,12 @@ const menuItems = [
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/ventas", label: "Ventas", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  {
+    href: "/planes-de-pago",
+    label: "Planes de Pago",
+    icon: CalendarClock,
+    adminOnly: true,
+  },
   {
     href: "/gastos-recurrentes",
     label: "Gastos Recurrentes",
@@ -182,4 +189,3 @@ export function AppSidebar() {
     </>
   );
 }
-    

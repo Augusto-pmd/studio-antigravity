@@ -279,4 +279,15 @@ export interface RecurringExpense {
   status: 'Activo' | 'Pausado';
 }
 
-    
+export interface Moratoria {
+  id: string;
+  name: string;
+  tax: string;
+  totalAmount: number;
+  paidAmount: number;
+  installments: number;
+  paidInstallments: number;
+  installmentAmount: number;
+  nextDueDate: string; // YYYY-MM-DD
+  status: 'Activa' | 'Finalizada' | 'Incumplida';
+}

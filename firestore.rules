@@ -198,9 +198,12 @@ service cloud.firestore {
         allow read, write: if isAdmin();
     }
 
+    match /moratorias/{moratoriaId} {
+      allow read, write: if isAdmin();
+    }
+
     match /{path=**}/expenses/{expenseId} {
       allow get, list: if isSignedIn();
     }
   }
 }
-    
