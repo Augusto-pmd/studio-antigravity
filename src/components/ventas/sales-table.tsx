@@ -13,12 +13,12 @@ import type { Sale, Project } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { useFirestore, useCollection, useUser } from "@/firebase";
 import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Link as LinkIcon } from "lucide-react";
 import { SaleDialog } from "./sale-dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +58,10 @@ export function SalesTable() {
   
   const projectsMap = useMemo(() => {
     if (!projects) return {};
-    return projects.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>);
+    return projects.reduce((acc, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {} as Record<string, string>);
   }, [projects]);
 
   const isLoading = isLoadingSales || isLoadingProjects;
@@ -189,5 +192,3 @@ export function SalesTable() {
       </div>
   );
 }
-
-    

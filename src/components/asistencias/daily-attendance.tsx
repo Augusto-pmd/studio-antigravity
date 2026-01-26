@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
