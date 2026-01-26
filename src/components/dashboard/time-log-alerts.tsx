@@ -12,12 +12,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const techOfficeEmployeeConverter = {
     toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
-    toFirestore: (data: any) => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
 };
 
 const timeLogConverter = {
     toFirestore: (data: TimeLog): DocumentData => data,
-    toFirestore: (data: any) => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
 };
 
 export function TimeLogAlerts() {
