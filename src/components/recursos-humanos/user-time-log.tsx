@@ -30,9 +30,12 @@ import { collection, doc, query, where, writeBatch, type DocumentData, type Quer
 import type { Project, TimeLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save, PlusCircle, Trash2, Loader2 } from 'lucide-react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 interface TimeLogEntry {
   id: string; // Temp ID for React key
@@ -70,12 +73,58 @@ export function UserTimeLog() {
   );
   const { data: existingLogs, isLoading: isLoadingExistingLogs } = useCollection<TimeLog>(timeLogsQuery);
 
+  // --- Monthly Summary Data ---
+  const { monthStart, monthEnd } = useMemo(() => {
+    const now = new Date();
+    return {
+        monthStart: format(startOfMonth(now), 'yyyy-MM-dd'),
+        monthEnd: format(endOfMonth(now), 'yyyy-MM-dd'),
+    }
+  }, []);
+
+  const monthlyLogsQuery = useMemo(
+      () => (user && firestore ? query(
+          collection(firestore, 'timeLogs').withConverter(timeLogConverter), 
+          where('userId', '==', user.uid),
+          where('date', '>=', monthStart),
+          where('date', '<=', monthEnd)
+      ) : null),
+      [user, firestore, monthStart, monthEnd]
+  );
+
+  const { data: monthlyLogs, isLoading: isLoadingMonthlyLogs } = useCollection<TimeLog>(monthlyLogsQuery);
+
+  const monthlySummary = useMemo(() => {
+    if (!monthlyLogs || !projects) return [];
+
+    const summary = new Map<string, number>();
+    monthlyLogs.forEach(log => {
+        const currentHours = summary.get(log.projectId) || 0;
+        summary.set(log.projectId, currentHours + log.hours);
+    });
+
+    return Array.from(summary.entries()).map(([projectId, hours]) => {
+        const project = projects.find(p => p.id === projectId);
+        return {
+            projectId,
+            projectName: project?.name || 'Obra Desconocida',
+            totalHours: hours,
+        };
+    }).sort((a, b) => b.totalHours - a.totalHours);
+
+  }, [monthlyLogs, projects]);
+  // --- End Monthly Summary Data ---
+
   useEffect(() => {
     setIsClient(true);
     setSelectedDate(new Date());
   }, []);
   
   useEffect(() => {
+    if (isLoadingExistingLogs) {
+        // While loading, don't change the entries to avoid flicker
+        return;
+    }
     if (existingLogs) {
       if (existingLogs.length > 0) {
         const entries = existingLogs.map(log => ({
@@ -88,7 +137,7 @@ export function UserTimeLog() {
         setTimeLogEntries([{ id: `temp-${Date.now()}`, projectId: '', hours: 8 }]);
       }
     }
-  }, [existingLogs]);
+  }, [existingLogs, isLoadingExistingLogs]);
 
 
   const weekDays = useMemo(() => {
@@ -219,7 +268,11 @@ export function UserTimeLog() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {(isLoadingExistingLogs) && <p>Cargando horas...</p>}
+                    {(isLoadingExistingLogs) && 
+                        <div className="space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    }
                     {!isLoadingExistingLogs && timeLogEntries.map((entry, index) => (
                         <div key={entry.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 p-3 rounded-md border">
                             <div>
@@ -264,6 +317,50 @@ export function UserTimeLog() {
                     Guardar Horas
                 </Button>
             </CardFooter>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Resumen Mensual de Horas</CardTitle>
+                <CardDescription>Total de horas cargadas por proyecto en el mes actual.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Proyecto</TableHead>
+                            <TableHead className="text-right">Horas Totales</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {(isLoadingMonthlyLogs || isLoadingProjects) && (
+                            <>
+                                <TableRow>
+                                    <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                                </TableRow>
+                            </>
+                        )}
+                        {!isLoadingMonthlyLogs && !isLoadingProjects && monthlySummary.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={2} className="h-24 text-center">
+                                    No hay horas registradas para este mes.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {!isLoadingMonthlyLogs && !isLoadingProjects && monthlySummary.map(summary => (
+                            <TableRow key={summary.projectId}>
+                                <TableCell className="font-medium">{summary.projectName}</TableCell>
+                                <TableCell className="text-right font-mono">{summary.totalHours}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
         </Card>
     </div>
   );
