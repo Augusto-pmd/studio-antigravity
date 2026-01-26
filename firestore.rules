@@ -223,9 +223,5 @@ service cloud.firestore {
         allow read, write: if isSignedIn();
       }
     }
-
-    match /{path=**}/expenses/{expenseId} {
-      allow get, list: if isSignedIn();
-    }
   }
 }
