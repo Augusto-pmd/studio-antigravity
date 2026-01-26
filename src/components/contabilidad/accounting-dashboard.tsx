@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection } from '@/firebase';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Expense, Sale } from '@/lib/types';
 import { useMemo } from 'react';

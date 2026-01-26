@@ -14,7 +14,7 @@ import { parseISO, format as formatDateFns } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Project, Supplier } from '@/lib/types';
 import { Button } from '@/components/ui/button';

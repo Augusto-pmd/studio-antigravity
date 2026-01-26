@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { ContractorEmployee } from "@/lib/types";

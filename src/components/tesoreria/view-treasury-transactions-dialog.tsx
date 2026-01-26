@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection } from "@/firebase";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/firebase";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
 import { collection, query, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
