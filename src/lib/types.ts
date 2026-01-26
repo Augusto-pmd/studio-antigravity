@@ -184,7 +184,7 @@ export interface Attendance {
     status: 'presente' | 'ausente';
     lateHours: number;
     notes: string;
-    projectId?: string;
+    projectId?: string | null;
     payrollWeekId: string;
 }
 

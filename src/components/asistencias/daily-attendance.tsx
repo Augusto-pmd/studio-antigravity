@@ -307,7 +307,7 @@ export function DailyAttendance() {
               status: employeeAttendance.status,
               lateHours: Number(employeeAttendance.lateHours) || 0,
               notes: employeeAttendance.notes || '',
-              projectId: employeeAttendance.projectId || undefined,
+              projectId: employeeAttendance.projectId,
           };
           batch.set(docRef, dataToSave, { merge: true });
       }
