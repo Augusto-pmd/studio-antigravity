@@ -52,7 +52,7 @@ export function AddTreasuryAccountDialog({ children }: { children: React.ReactNo
           currency,
           accountType,
           balance: parseFloat(initialBalance) || 0,
-          cbu: accountType === 'Banco' ? cbu : undefined
+          ...(accountType === 'Banco' && { cbu: cbu })
       };
 
       setDoc(accountRef, newAccount, { merge: false })
