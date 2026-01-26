@@ -198,7 +198,9 @@ service cloud.firestore {
     }
 
     match /attendances/{attendanceId} {
-      allow read, write: if isSignedIn();
+      // TEMPORARY DEBUGGING RULE: Allow all writes to diagnose the issue.
+      allow read: if isSignedIn();
+      allow write: if true; 
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
