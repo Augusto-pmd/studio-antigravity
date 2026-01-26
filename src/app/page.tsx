@@ -6,6 +6,7 @@ import { ProjectsOverview } from "@/components/dashboard/projects-overview";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { WelcomeGuide } from '@/components/dashboard/welcome-guide';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TimeLogAlerts } from '@/components/dashboard/time-log-alerts';
 
 export default function DashboardPage() {
     const { role, isUserLoading } = useUser();
@@ -28,6 +29,7 @@ export default function DashboardPage() {
         return (
             <div className="flex flex-col gap-8">
                 <h1 className="text-3xl font-headline">Dashboard</h1>
+                <TimeLogAlerts />
                 <StatsCards />
                 <ProjectsOverview />
                 <ExpensesChart />
