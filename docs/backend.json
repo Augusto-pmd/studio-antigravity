@@ -470,6 +470,14 @@
         "artExpiryDate": {
           "type": "string",
           "format": "date-time"
+        },
+        "accidentInsuranceUrl": {
+          "type": "string",
+          "description": "URL of the uploaded personal accident insurance PDF/image."
+        },
+        "criminalRecordUrl": {
+          "type": "string",
+          "description": "URL of the uploaded criminal record PDF/image."
         }
       },
       "required": [
@@ -521,6 +529,14 @@
         "artExpiryDate": {
           "type": "string",
           "format": "date-time"
+        },
+        "accidentInsuranceUrl": {
+          "type": "string",
+          "description": "URL of the uploaded personal accident insurance PDF/image."
+        },
+        "criminalRecordUrl": {
+          "type": "string",
+          "description": "URL of the uploaded criminal record PDF/image."
         }
       },
       "required": [

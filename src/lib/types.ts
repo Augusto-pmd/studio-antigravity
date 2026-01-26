@@ -96,6 +96,8 @@ export interface ContractorEmployee {
     name: string;
     contractorId: string;
     artExpiryDate?: string;
+    accidentInsuranceUrl?: string;
+    criminalRecordUrl?: string;
 }
 
 export interface Employee {
@@ -108,6 +110,8 @@ export interface Employee {
     category: string;
     dailyWage: number;
     artExpiryDate?: string;
+    accidentInsuranceUrl?: string;
+    criminalRecordUrl?: string;
 }
 
 export interface Asset {

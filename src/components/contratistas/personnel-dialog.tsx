@@ -26,13 +26,14 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { PlusCircle, TriangleAlert } from "lucide-react";
+import { PlusCircle, TriangleAlert, FileText } from "lucide-react";
 import type { Contractor, ContractorEmployee } from "@/lib/types";
 import { differenceInDays, isBefore, parseISO, format as formatDateFns } from "date-fns";
 import { AddPersonnelDialog } from "@/components/contratistas/add-personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PersonnelFileDialog } from "./personnel-file-dialog";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -96,12 +97,13 @@ export function PersonnelDialog({
                     <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead className="text-right">Vencimiento ART</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {isLoading && (
                       <TableRow>
-                        <TableCell colSpan={2}>
+                        <TableCell colSpan={3}>
                           <div className="flex flex-col gap-2">
                              <Skeleton className="h-5 w-full" />
                              <Skeleton className="h-5 w-full" />
@@ -111,7 +113,7 @@ export function PersonnelDialog({
                     )}
                     {!isLoading && (!personnel || personnel.length === 0) ? (
                       <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center">
+                        <TableCell colSpan={3} className="h-24 text-center">
                           No hay personal registrado para este contratista.
                         </TableCell>
                       </TableRow>
@@ -140,6 +142,14 @@ export function PersonnelDialog({
                                     </Tooltip>
                                     )}
                                 </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <PersonnelFileDialog contractorId={contractor.id} personnel={person}>
+                                    <Button variant="ghost" size="icon">
+                                        <FileText className="h-4 w-4" />
+                                        <span className="sr-only">Legajo</span>
+                                    </Button>
+                                </PersonnelFileDialog>
                             </TableCell>
                         </TableRow>
                         );

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
-import { TriangleAlert, Pencil, Trash2 } from "lucide-react";
+import { TriangleAlert, Pencil, Trash2, FileText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmployeeDialog } from "@/components/empleados/employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast";
+import { EmployeeFileDialog } from "./employee-file-dialog";
 
 
 const formatCurrency = (amount: number) => {
@@ -64,6 +65,8 @@ const employeeConverter = {
             category: data.category || '',
             dailyWage: data.dailyWage || 0,
             artExpiryDate: data.artExpiryDate || undefined,
+            accidentInsuranceUrl: data.accidentInsuranceUrl,
+            criminalRecordUrl: data.criminalRecordUrl,
         };
     }
 };
@@ -187,6 +190,12 @@ export function EmployeesTable() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                        <EmployeeFileDialog employee={employee}>
+                            <Button variant="ghost" size="icon">
+                                <FileText className="h-4 w-4" />
+                                <span className="sr-only">Legajo</span>
+                            </Button>
+                        </EmployeeFileDialog>
                         <EmployeeDialog employee={employee}>
                             <Button variant="ghost" size="icon">
                                 <Pencil className="h-4 w-4" />
