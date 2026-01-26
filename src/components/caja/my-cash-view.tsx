@@ -19,6 +19,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { AddCashAccountDialog } from '@/components/caja/add-cash-account-dialog';
 import { EditCashAccountDialog } from '@/components/caja/edit-cash-account-dialog';
 import { DeleteCashAccountDialog } from '@/components/caja/delete-cash-account-dialog';
+import { DeleteTransactionDialog } from '@/components/caja/delete-transaction-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -38,11 +39,11 @@ const cashAccountConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => ({ ...snapshot.data(options), id: snapshot.id } as CashAccount)
 };
 
-function MyTransactionsTable({ accountId }: { accountId: string }) {
+function MyTransactionsTable({ account }: { account: CashAccount }) {
     const { user, firestore } = useUser();
     const transactionsQuery = useMemo(
-        () => firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts/${accountId}/transactions`).withConverter(cashTransactionConverter), orderBy('date', 'desc')) : null,
-        [firestore, user, accountId]
+        () => firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts/${account.id}/transactions`).withConverter(cashTransactionConverter), orderBy('date', 'desc')) : null,
+        [firestore, user, account.id]
     );
     const { data: transactions, isLoading } = useCollection<CashTransaction>(transactionsQuery);
 
@@ -63,12 +64,13 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
                         <TableHead>Fecha</TableHead>
                         <TableHead>Descripción</TableHead>
                         <TableHead className="text-right">Monto</TableHead>
+                        <TableHead className="w-[50px] text-right">Acción</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {!isLoading && transactions?.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center">
+                            <TableCell colSpan={4} className="h-24 text-center">
                                 No hay movimientos en esta caja.
                             </TableCell>
                         </TableRow>
@@ -89,6 +91,11 @@ function MyTransactionsTable({ accountId }: { accountId: string }) {
                                 </TableCell>
                                 <TableCell className={cn("text-right font-mono", isIncome ? 'text-green-500' : 'text-destructive')}>
                                     {isIncome ? '+' : '-'} {formatCurrency(tx.amount, tx.currency)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {tx.type === 'Egreso' && tx.relatedExpenseId && (
+                                    <DeleteTransactionDialog transaction={tx} cashAccount={account} />
+                                  )}
                                 </TableCell>
                             </TableRow>
                         )
@@ -167,7 +174,7 @@ export function MyCashView() {
                             <div className="flex flex-col sm:flex-row items-center justify-end gap-2 mb-4 border-t pt-4">
                                 {userProfile && (
                                     <FundTransferDialog profile={userProfile} cashAccounts={[account]}>
-                                        <Button variant="outline" className="w-full sm:w-auto">
+                                        <Button className="w-full sm:w-auto">
                                             <Landmark className="mr-2 h-4 w-4" />
                                             Añadir Fondos
                                         </Button>
@@ -175,7 +182,7 @@ export function MyCashView() {
                                 )}
                                 <QuickExpenseDialog cashAccount={account} />
                             </div>
-                            <MyTransactionsTable accountId={account.id} />
+                            <MyTransactionsTable account={account} />
                         </AccordionContent>
                     </AccordionItem>
                 </Card>
