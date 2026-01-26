@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TechnicalOfficeEmployee } from "@/lib/types";
 import { Pencil, FilePlus } from "lucide-react";
-import { TechnicalOfficeEmployeeDialog } from "./technical-office-employee-dialog";
+import { TechnicalOfficeEmployeeDialog } from "@/components/recursos-humanos/technical-office-employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";

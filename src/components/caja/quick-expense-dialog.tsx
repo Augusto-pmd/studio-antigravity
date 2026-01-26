@@ -1,7 +1,6 @@
 'use client';
+
 import { parseISO } from 'date-fns';
-
-
 import { useState, useTransition, ChangeEvent, useMemo, useRef } from "react";
 import {
   Dialog,
@@ -114,7 +113,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 if (extractedData.supplierName) {
                     toast({
                         title: 'Datos Extraídos con IA',
-                        description: `Proveedor detectado: ${extractedData.supplierName}. Por favor, verifique y seleccione el proveedor de la lista.`,
+                        description: `Proveedor detectado: ${'\'\'\''}${extractedData.supplierName}. Por favor, verifique y seleccione el proveedor de la lista.`
                     });
                 } else {
                      toast({
@@ -302,4 +301,3 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
     </Dialog>
   );
 }
-

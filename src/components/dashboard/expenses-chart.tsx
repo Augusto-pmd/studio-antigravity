@@ -43,7 +43,6 @@ const expenseConverter = {
             projectId: data.projectId,
             date: data.date,
             status: data.status,
-            status: data.status,
             supplierId: data.supplierId,
             categoryId: data.categoryId,
             documentType: data.documentType,
