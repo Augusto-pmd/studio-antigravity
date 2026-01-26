@@ -52,8 +52,25 @@ interface AttendanceRecord {
 }
 
 const employeeConverter = {
-    toFirestore: (data: Employee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee)
+    toFirestore(employee: Employee): DocumentData {
+        const { id, ...data } = employee;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Employee {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            name: data.name,
+            status: data.status,
+            paymentType: data.paymentType,
+            category: data.category,
+            dailyWage: data.dailyWage,
+            artExpiryDate: data.artExpiryDate,
+        };
+    }
 };
 
 const projectConverter = {
