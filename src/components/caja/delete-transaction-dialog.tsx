@@ -26,12 +26,17 @@ export function DeleteTransactionDialog({ transaction, cashAccount }: { transact
   const { toast } = useToast();
 
   const handleDelete = () => {
-    if (!firestore || !transaction.relatedExpenseId || !transaction.relatedProjectId) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se puede eliminar esta transacción.' });
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error de conexión.' });
       return;
     }
 
     startTransition(() => {
+      if (!transaction.relatedExpenseId || !transaction.relatedProjectId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se puede eliminar esta transacción porque no está vinculada a un gasto de obra.' });
+        return;
+      }
+      
       const batch = writeBatch(firestore);
 
       // 1. Re-add amount to cash account balance
