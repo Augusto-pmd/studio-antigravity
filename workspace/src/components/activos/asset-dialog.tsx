@@ -35,7 +35,7 @@ import type { Asset } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { setDoc, collection, doc } from "firebase/firestore";
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 
 const assetCategories = ["Vehículo", "Maquinaria", "Inmueble", "Equipo Informático", "Herramientas", "Otro"];
 
