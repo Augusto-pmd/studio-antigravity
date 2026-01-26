@@ -12,12 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet, Trash2 } from 'lucide-react';
 import { FundTransferDialog } from '@/components/cajas/fund-transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AddCashAccountDialog } from '@/components/caja/add-cash-account-dialog';
 import { EditCashAccountDialog } from '@/components/caja/edit-cash-account-dialog';
+import { DeleteCashAccountDialog } from '@/components/caja/delete-cash-account-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -149,11 +150,18 @@ export function MyCashView() {
                                     <p className="text-2xl font-bold font-mono text-left">{formatCurrency(account.balance, 'ARS')}</p>
                                 </div>
                             </div>
-                            <EditCashAccountDialog cashAccount={account}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted rounded-md shrink-0 mr-2">
-                                    <Pencil className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                            </EditCashAccountDialog>
+                            <div className="flex items-center shrink-0">
+                                <EditCashAccountDialog cashAccount={account}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted rounded-md">
+                                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                </EditCashAccountDialog>
+                                <DeleteCashAccountDialog cashAccount={account}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 rounded-md">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </DeleteCashAccountDialog>
+                            </div>
                         </AccordionTrigger>
                         <AccordionContent className="p-6 pt-0">
                             <div className="flex flex-col sm:flex-row items-center justify-end gap-2 mb-4 border-t pt-4">
