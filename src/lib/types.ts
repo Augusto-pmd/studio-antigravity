@@ -306,3 +306,17 @@ export interface StockItem {
   reorderPoint?: number;
   lastUpdated: string;
 }
+
+export interface StockMovement {
+  id: string;
+  itemId: string;
+  type: 'Ingreso' | 'Egreso';
+  quantity: number;
+  date: string;
+  userId: string; // User who performed the action
+  assigneeId?: string;
+  assigneeName?: string;
+  projectId?: string;
+  projectName?: string;
+  notes?: string;
+}

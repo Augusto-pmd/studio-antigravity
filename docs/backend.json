@@ -1295,6 +1295,69 @@
         "unit",
         "lastUpdated"
       ]
+    },
+    "StockMovement": {
+      "title": "Stock Movement",
+      "type": "object",
+      "description": "Represents a single movement (check-in/check-out) of a stock item.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Reference to the StockItem."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Ingreso",
+            "Egreso"
+          ],
+          "description": "The type of movement."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The number of items moved."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the movement."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user who registered the movement."
+        },
+        "assigneeId": {
+          "type": "string",
+          "description": "The user to whom the item was assigned (for Egreso)."
+        },
+        "assigneeName": {
+          "type": "string",
+          "description": "Denormalized name of the assignee."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The project the item was assigned to (for Egreso)."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Denormalized name of the project."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the movement."
+        }
+      },
+      "required": [
+        "id",
+        "itemId",
+        "type",
+        "quantity",
+        "date",
+        "userId"
+      ]
     }
   },
   "auth": {
@@ -1716,6 +1779,26 @@
             {
               "name": "itemId",
               "description": "The unique identifier for the stock item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stockItems/{itemId}/movements/{movementId}",
+        "definition": {
+          "entityName": "StockMovement",
+          "schema": {
+            "$ref": "#/backend/entities/StockMovement"
+          },
+          "description": "Stores the check-in/check-out history for a specific stock item. Writable by Pañolero and Admins.",
+          "params": [
+            {
+              "name": "itemId",
+              "description": "The unique identifier for the stock item."
+            },
+            {
+              "name": "movementId",
+              "description": "The unique identifier for the stock movement."
             }
           ]
         }

@@ -12,12 +12,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pencil } from "lucide-react";
+import { Pencil, MoreVertical, History, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { StockItemDialog } from './stock-item-dialog';
+import { StockMovementDialog } from './stock-movement-dialog';
+import { StockMovementHistoryDialog } from './stock-movement-history-dialog';
 import { cn } from '@/lib/utils';
+import { parseISO, formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const stockItemConverter = {
     toFirestore: (data: StockItem): DocumentData => data,
@@ -49,7 +61,7 @@ export function StockTable() {
             <TableHead>Ítem</TableHead>
             <TableHead>Categoría</TableHead>
             <TableHead>Cantidad</TableHead>
-            <TableHead>Punto de Pedido</TableHead>
+            <TableHead>Últ. Actualización</TableHead>
             {permissions.canManageStock && <TableHead className="text-right">Acciones</TableHead>}
           </TableRow>
         </TableHeader>
@@ -73,15 +85,51 @@ export function StockTable() {
                   <div className={cn("font-mono", isLowStock && "font-bold text-destructive")}>
                     {item.quantity} {item.unit}
                   </div>
+                   {isLowStock && <div className="text-xs text-destructive">Bajo stock</div>}
                 </TableCell>
-                <TableCell>{item.reorderPoint ?? 'N/A'}</TableCell>
+                <TableCell>
+                    <div className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(parseISO(item.lastUpdated), { addSuffix: true, locale: es })}
+                    </div>
+                </TableCell>
                 {permissions.canManageStock && (
                   <TableCell className="text-right">
-                    <StockItemDialog item={item}>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </StockItemDialog>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Abrir menú</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <StockMovementDialog item={item} movementType="Egreso">
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <ArrowUpCircle className="mr-2 h-4 w-4 text-destructive" />
+                            <span>Registrar Salida</span>
+                          </DropdownMenuItem>
+                        </StockMovementDialog>
+                        <StockMovementDialog item={item} movementType="Ingreso">
+                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <ArrowDownCircle className="mr-2 h-4 w-4 text-green-500" />
+                            <span>Registrar Entrada</span>
+                          </DropdownMenuItem>
+                        </StockMovementDialog>
+                         <DropdownMenuSeparator />
+                        <StockMovementHistoryDialog item={item}>
+                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <History className="mr-2 h-4 w-4" />
+                            <span>Ver Historial</span>
+                          </DropdownMenuItem>
+                        </StockMovementHistoryDialog>
+                        <StockItemDialog item={item}>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            <span>Editar Ítem</span>
+                          </DropdownMenuItem>
+                        </StockItemDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 )}
               </TableRow>
