@@ -16,9 +16,9 @@ import { Pencil, FilePlus } from "lucide-react";
 import { TechnicalOfficeEmployeeDialog } from "./technical-office-employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
-import { SettleSalaryDialog } from "./settle-salary-dialog";
+import { SettleSalaryDialog } from "@/components/recursos-humanos/settle-salary-dialog";
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';
