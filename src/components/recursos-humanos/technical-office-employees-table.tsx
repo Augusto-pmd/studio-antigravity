@@ -48,8 +48,8 @@ export function TechnicalOfficeEmployeesTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="hidden md:table-cell">Cargo</TableHead>
+                <TableHead>Empleado</TableHead>
+                <TableHead className="hidden md:table-cell">Salario / Contratación</TableHead>
                 <TableHead className="hidden md:table-cell">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -72,9 +72,10 @@ export function TechnicalOfficeEmployeesTable() {
                 <TableRow key={employee.id}>
                   <TableCell>
                       <div className="font-medium">{employee.fullName}</div>
-                      <div className="text-sm text-muted-foreground md:hidden">{employee.position}</div>
+                      <div className="text-sm text-muted-foreground">{employee.position}</div>
                       <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <p><span className='font-medium text-foreground'>Salario:</span> <span className='font-mono'>{formatCurrency(employee.monthlySalary)}</span></p>
+                        <div><Badge variant="outline">{employee.employmentType}</Badge></div>
                         <div>
                              <Badge
                                 variant={employee.status === 'Activo' ? 'default' : 'secondary'}
@@ -89,7 +90,10 @@ export function TechnicalOfficeEmployeesTable() {
                         </div>
                       </div>
                   </TableCell>
-                  <TableCell className='hidden md:table-cell'>{employee.position}</TableCell>
+                  <TableCell className='hidden md:table-cell'>
+                    <div className="font-mono">{formatCurrency(employee.monthlySalary)}</div>
+                    <div className="text-xs text-muted-foreground">{employee.employmentType}</div>
+                  </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <Badge
                       variant={employee.status === 'Activo' ? 'default' : 'secondary'}

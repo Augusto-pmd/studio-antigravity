@@ -52,6 +52,7 @@ export function TechnicalOfficeEmployeeDialog({
   // Form State
   const [userId, setUserId] = useState('');
   const [position, setPosition] = useState('');
+  const [employmentType, setEmploymentType] = useState<'Relación de Dependencia' | 'Monotributo'>('Relación de Dependencia');
   const [monthlySalary, setMonthlySalary] = useState('');
   const [status, setStatus] = useState<'Activo' | 'Inactivo'>('Activo');
 
@@ -67,6 +68,7 @@ export function TechnicalOfficeEmployeeDialog({
   const resetForm = () => {
     setUserId(employee?.userId || '');
     setPosition(employee?.position || '');
+    setEmploymentType(employee?.employmentType || 'Relación de Dependencia');
     setMonthlySalary(employee?.monthlySalary?.toString() || '');
     setStatus(employee?.status || 'Activo');
   };
@@ -82,8 +84,8 @@ export function TechnicalOfficeEmployeeDialog({
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
-    if (!userId || !position || !monthlySalary) {
-      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Empleado, Cargo y Salario son obligatorios.' });
+    if (!userId || !position || !monthlySalary || !employmentType) {
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Empleado, Cargo, Tipo de Contratación y Salario son obligatorios.' });
       return;
     }
 
@@ -103,6 +105,7 @@ export function TechnicalOfficeEmployeeDialog({
         userId,
         fullName: selectedUser.fullName,
         position,
+        employmentType,
         monthlySalary: newSalary,
         status,
       };
@@ -162,7 +165,21 @@ export function TechnicalOfficeEmployeeDialog({
             <Input id="position" value={position} onChange={e => setPosition(e.target.value)} placeholder="Ej. Proyectista, Jefe de Compras" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="monthlySalary">Salario Mensual (ARS)</Label>
+            <Label htmlFor="employmentType">Tipo de Contratación</Label>
+            <Select value={employmentType} onValueChange={(v: any) => setEmploymentType(v)}>
+                <SelectTrigger id="employmentType">
+                <SelectValue placeholder="Seleccione un tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Relación de Dependencia">Relación de Dependencia</SelectItem>
+                    <SelectItem value="Monotributo">Monotributo</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="monthlySalary">
+                {employmentType === 'Relación de Dependencia' ? 'Salario Mensual Bruto (ARS)' : 'Honorarios Mensuales (ARS)'}
+            </Label>
             <Input id="monthlySalary" type="number" value={monthlySalary} onChange={e => setMonthlySalary(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">

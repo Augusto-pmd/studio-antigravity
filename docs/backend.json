@@ -876,9 +876,17 @@
           "type": "string",
           "description": "Job title or position in the company."
         },
+        "employmentType": {
+          "type": "string",
+          "enum": [
+            "Relación de Dependencia",
+            "Monotributo"
+          ],
+          "description": "The type of employment contract."
+        },
         "monthlySalary": {
           "type": "number",
-          "description": "The gross monthly salary in ARS."
+          "description": "The gross monthly salary in ARS for 'Relación de Dependencia' or the monthly fee for 'Monotributo'."
         },
         "status": {
           "type": "string",
@@ -894,6 +902,7 @@
         "userId",
         "fullName",
         "position",
+        "employmentType",
         "monthlySalary",
         "status"
       ]

@@ -192,6 +192,7 @@ export interface TechnicalOfficeEmployee {
     userId: string;
     fullName: string;
     position: string;
+    employmentType: 'Relación de Dependencia' | 'Monotributo';
     monthlySalary: number;
     status: 'Activo' | 'Inactivo';
 }
