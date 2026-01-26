@@ -56,12 +56,12 @@ export function BankStatementAnalyzer({ currentContext }: { currentContext: stri
               title: 'Análisis Completo',
               description: 'Se ha analizado el documento con éxito.',
             });
-          } catch (error) {
+          } catch (error: any) {
             console.error(error);
             toast({
               variant: 'destructive',
               title: 'Error en el Análisis',
-              description: 'No se pudo analizar el documento. Inténtelo de nuevo.',
+              description: error.message || 'No se pudo analizar el documento. Inténtelo de nuevo.',
             });
           }
         };
@@ -117,29 +117,31 @@ export function BankStatementAnalyzer({ currentContext }: { currentContext: stri
                 <FileText className="mr-2 h-5 w-5 text-primary" />
                 Resumen del Análisis
               </h3>
-              <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
+              <p className="text-sm text-muted-foreground">{analysisResult.summary || "No se pudo generar un resumen."}</p>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="flex items-center text-lg font-semibold">
-                <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-                Métricas Clave Extraídas
-              </h3>
-              <ul className="list-disc space-y-2 pl-5 text-sm">
-                {analysisResult.keyMetrics.map((item) => (
-                  <li key={item.metric}>
-                    <span className="font-semibold">{item.metric}:</span> {item.value}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {analysisResult.keyMetrics && analysisResult.keyMetrics.length > 0 && (
+                <div className="space-y-4">
+                <h3 className="flex items-center text-lg font-semibold">
+                    <TrendingUp className="mr-2 h-5 w-5 text-primary" />
+                    Métricas Clave Extraídas
+                </h3>
+                <ul className="list-disc space-y-2 pl-5 text-sm">
+                    {analysisResult.keyMetrics.map((item) => (
+                    <li key={item.metric}>
+                        <span className="font-semibold">{item.metric}:</span> {item.value}
+                    </li>
+                    ))}
+                </ul>
+                </div>
+            )}
 
             <div className="space-y-2">
               <h3 className="flex items-center text-lg font-semibold">
                 <Lightbulb className="mr-2 h-5 w-5 text-primary" />
                 Recomendaciones
               </h3>
-              <p className="text-sm text-muted-foreground">{analysisResult.recommendations}</p>
+              <p className="text-sm text-muted-foreground">{analysisResult.recommendations || "No se pudieron generar recomendaciones."}</p>
             </div>
           </div>
         )}

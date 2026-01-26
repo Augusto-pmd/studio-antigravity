@@ -7,12 +7,12 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 export const AnalyzedStatementSchema = z.object({
-  summary: z.string().describe('A high-level summary of the key findings from the financial statement.'),
-  recommendations: z.string().describe('Actionable recommendations for preparing the next balance sheet based on the analysis and current company status.'),
+  summary: z.string().optional().describe('A high-level summary of the key findings from the financial statement.'),
+  recommendations: z.string().optional().describe('Actionable recommendations for preparing the next balance sheet based on the analysis and current company status.'),
   keyMetrics: z.array(z.object({
     metric: z.string().describe('The name of the key metric identified (e.g., Total Assets, Net Income).'),
     value: z.string().describe('The value of the metric.'),
-  })).describe('A list of key financial metrics extracted from the document.'),
+  })).optional().describe('A list of key financial metrics extracted from the document.'),
 });
 
 export type AnalyzedStatement = z.infer<typeof AnalyzedStatementSchema>;
@@ -58,6 +58,9 @@ const analyzeStatementFlow = ai.defineFlow(
   },
   async (input) => {
     const {output} = await analysisPrompt(input);
-    return output!;
+    if (!output) {
+        throw new Error("The AI model did not return a valid analysis.");
+    }
+    return output;
   }
 );
