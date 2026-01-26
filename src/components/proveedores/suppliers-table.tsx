@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Supplier } from "@/lib/types";
 import { Pencil } from "lucide-react";
-import { SupplierDialog } from "./supplier-dialog";
+import { SupplierDialog } from "@/components/proveedores/supplier-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -13,7 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
-import { AiAssistant } from "./ai-assistant";
+import { AiAssistant } from "@/components/dashboard/ai-assistant";
 
 const guideItems = [
   {

@@ -8,7 +8,7 @@ import { startOfToday, endOfToday, addDays, isBefore, parseISO, endOfMonth } fro
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScheduleItem } from './schedule-item';
+import { ScheduleItem } from '@/components/calendario-pagos/schedule-item';
 
 // --- Converters ---
 const recurringExpenseConverter = { toFirestore: (data: RecurringExpense): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): RecurringExpense => ({ ...snapshot.data(options), id: snapshot.id } as RecurringExpense) };

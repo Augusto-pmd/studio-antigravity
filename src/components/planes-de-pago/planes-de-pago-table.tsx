@@ -18,8 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, CreditCard } from "lucide-react";
 import { parseISO, format as formatDateFns, differenceInDays, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { PlanDePagoDialog } from './plan-de-pago-dialog';
-import { PayInstallmentDialog } from './pay-installment-dialog';
+import { PlanDePagoDialog } from '@/components/planes-de-pago/plan-de-pago-dialog';
+import { PayInstallmentDialog } from '@/components/planes-de-pago/pay-installment-dialog';
 import { Progress } from '@/components/ui/progress';
 
 const moratoriaConverter = {

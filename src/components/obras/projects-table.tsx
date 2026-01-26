@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/types";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AddProjectDialog } from "./add-project-dialog";
+import { AddProjectDialog } from "@/components/obras/add-project-dialog";
 import { useCollection, useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";

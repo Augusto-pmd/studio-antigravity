@@ -15,7 +15,7 @@ import { useFirestore, useCollection } from "@/firebase";
 import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EditUserDialog } from "./edit-user-dialog";
+import { EditUserDialog } from "@/components/usuarios/edit-user-dialog";
 import { useMemo } from "react";
 
 const userProfileConverter = {

@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Banknote, Landmark, MoreVertical, PlusCircle, View } from 'lucide-react';
-import { AddTreasuryAccountDialog } from './add-treasury-account-dialog';
-import { AddTreasuryTransactionDialog } from './add-treasury-transaction-dialog';
-import { ViewTreasuryTransactionsDialog } from './view-treasury-transactions-dialog';
+import { AddTreasuryAccountDialog } from '@/components/tesoreria/add-treasury-account-dialog';
+import { AddTreasuryTransactionDialog } from '@/components/tesoreria/add-treasury-transaction-dialog';
+import { ViewTreasuryTransactionsDialog } from '@/components/tesoreria/view-treasury-transactions-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);

@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { PlusCircle, TriangleAlert } from "lucide-react";
 import type { Contractor, ContractorEmployee } from "@/lib/types";
 import { differenceInDays, isBefore, parseISO, format as formatDateFns } from "date-fns";
-import { AddPersonnelDialog } from "./add-personnel-dialog";
+import { AddPersonnelDialog } from "@/components/contratistas/add-personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";

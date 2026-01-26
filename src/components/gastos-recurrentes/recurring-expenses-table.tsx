@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil } from "lucide-react";
 import { parseISO, format as formatDateFns, differenceInDays, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { RecurringExpenseDialog } from './recurring-expense-dialog';
+import { RecurringExpenseDialog } from '@/components/gastos-recurrentes/recurring-expense-dialog';
 
 const recurringExpenseConverter = {
     toFirestore: (data: RecurringExpense): DocumentData => data,

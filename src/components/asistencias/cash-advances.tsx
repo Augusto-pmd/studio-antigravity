@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AddCashAdvanceDialog } from "./add-cash-advance-dialog";
+import { AddCashAdvanceDialog } from "@/components/asistencias/add-cash-advance-dialog";
 import { useUser, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { CashAdvance, PayrollWeek } from '@/lib/types';

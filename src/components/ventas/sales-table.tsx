@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Link as LinkIcon } from "lucide-react";
-import { SaleDialog } from "./sale-dialog";
+import { SaleDialog } from "@/components/ventas/sale-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
