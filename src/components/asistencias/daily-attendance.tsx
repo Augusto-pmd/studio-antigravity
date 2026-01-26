@@ -47,6 +47,8 @@ import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
@@ -197,6 +199,51 @@ export function DailyAttendance() {
   }, [selectedDate]);
 
 
+  const getEmployeeAttendance = (employeeId: string): AttendanceRecord => {
+    return attendance[employeeId] || { 
+        status: 'presente', 
+        lateHours: 0, 
+        notes: '', 
+        projectId: lastProjectByEmployee[employeeId] || null 
+    };
+  };
+  
+  const groupedEmployees = useMemo(() => {
+    if (!activeEmployees || !projects) return {};
+
+    const initialGroups: Record<string, { name: string, employees: Employee[] }> = {
+      'unassigned': { name: 'Sin Asignar a Obra', employees: [] }
+    };
+    
+    projects.forEach(p => {
+        if (p.status === 'En Curso') {
+            initialGroups[p.id] = { name: p.name, employees: [] };
+        }
+    });
+
+    activeEmployees.forEach(employee => {
+        const employeeAttendance = getEmployeeAttendance(employee.id);
+        const projectId = employeeAttendance?.projectId;
+
+        if (projectId && initialGroups[projectId]) {
+            initialGroups[projectId].employees.push(employee);
+        } else {
+            initialGroups['unassigned'].employees.push(employee);
+        }
+    });
+
+    const sortedGroupEntries = Object.entries(initialGroups)
+        .filter(([_, groupData]) => groupData.employees.length > 0)
+        .sort(([idA], [idB]) => {
+            if (idA === 'unassigned') return -1;
+            if (idB === 'unassigned') return 1;
+            return initialGroups[idA].name.localeCompare(initialGroups[idB].name);
+        });
+
+    return Object.fromEntries(sortedGroupEntries);
+
+}, [activeEmployees, projects, attendance, getEmployeeAttendance]);
+
   const handleAttendanceChange = (
     employeeId: string,
     field: keyof AttendanceRecord,
@@ -232,15 +279,6 @@ export function DailyAttendance() {
         [employeeId]: newRecord,
       };
     });
-  };
-
-  const getEmployeeAttendance = (employeeId: string): AttendanceRecord => {
-    return attendance[employeeId] || { 
-        status: 'presente', 
-        lateHours: 0, 
-        notes: '', 
-        projectId: lastProjectByEmployee[employeeId] || null 
-    };
   };
 
   const handleSaveAttendance = () => {
@@ -414,132 +452,138 @@ export function DailyAttendance() {
         <CardHeader>
           <CardTitle>Planilla de Asistencia Diaria</CardTitle>
           <CardDescription>
-            Marque el estado de cada empleado y asigne la obra correspondiente para la fecha seleccionada.
+            Marque el estado de cada empleado y asigne la obra correspondiente para la fecha seleccionada. Los empleados están agrupados por obra.
           </CardDescription>
         </CardHeader>
         <CardContent>
-           {/* Mobile View */}
-           <div className="md:hidden flex flex-col gap-4">
-             {isLoadingEmployees ? (
-                Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-lg" />)
-             ) : activeEmployees.length > 0 ? (
-                activeEmployees.map((employee) => (
-                    <Card key={employee.id}>
-                        <CardHeader>
-                            <CardTitle>{employee.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-4">
-                            {renderAttendanceControls(employee)}
-                        </CardContent>
-                    </Card>
-                ))
-             ) : (
+            {isLoadingEmployees || isLoadingProjects ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                </div>
+            ) : Object.keys(groupedEmployees).length > 0 ? (
+                <Accordion type="multiple" defaultValue={['unassigned']} className="w-full space-y-4">
+                {Object.entries(groupedEmployees).map(([projectId, groupData]) => {
+                    if (groupData.employees.length === 0) return null;
+                    
+                    return (
+                        <AccordionItem value={projectId} key={projectId} className="border rounded-lg bg-background">
+                            <AccordionTrigger className="px-4 hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold">{groupData.name}</span>
+                                    <Badge variant="secondary">{groupData.employees.length}</Badge>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-0 md:p-4">
+                                {/* Mobile View */}
+                                <div className="md:hidden flex flex-col gap-4 p-4">
+                                    {groupData.employees.map((employee) => (
+                                        <Card key={employee.id}>
+                                            <CardHeader>
+                                                <CardTitle>{employee.name}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="grid gap-4">
+                                                {renderAttendanceControls(employee)}
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                                {/* Desktop View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-[200px]">Empleado</TableHead>
+                                            <TableHead className="w-[200px]">Estado</TableHead>
+                                            <TableHead className="w-[250px]">Obra</TableHead>
+                                            <TableHead className="w-[150px]">Horas Tarde</TableHead>
+                                            <TableHead>Observaciones</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {groupData.employees.map((employee) => {
+                                            const employeeAttendance = getEmployeeAttendance(employee.id);
+                                            const isPresent = employeeAttendance.status === 'presente';
+
+                                            return (
+                                            <TableRow key={employee.id}>
+                                                <TableCell className="font-medium">{employee.name}</TableCell>
+                                                <TableCell>
+                                                <RadioGroup
+                                                    value={employeeAttendance.status}
+                                                    onValueChange={(value) =>
+                                                    handleAttendanceChange(employee.id, 'status', value as AttendanceStatus)
+                                                    }
+                                                    className="flex gap-4"
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                    <RadioGroupItem value="presente" id={`${projectId}-${employee.id}-presente`} />
+                                                    <Label htmlFor={`${projectId}-${employee.id}-presente`}>Presente</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                    <RadioGroupItem value="ausente" id={`${projectId}-${employee.id}-ausente`} />
+                                                    <Label htmlFor={`${projectId}-${employee.id}-ausente`}>Ausente</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                                </TableCell>
+                                                <TableCell>
+                                                <Select
+                                                    value={employeeAttendance.projectId ?? ''}
+                                                    onValueChange={(value) => handleAttendanceChange(employee.id, 'projectId', value)}
+                                                    disabled={!isPresent || isLoadingProjects}
+                                                >
+                                                    <SelectTrigger>
+                                                    <SelectValue placeholder="Asignar Obra" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                    {projects
+                                                        ?.filter((p: Project) => p.status === 'En Curso')
+                                                        .map((p: Project) => (
+                                                        <SelectItem key={p.id} value={p.id}>
+                                                            {p.name}
+                                                        </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                </TableCell>
+                                                <TableCell>
+                                                <Input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-24"
+                                                    value={employeeAttendance.lateHours}
+                                                    onChange={(e) =>
+                                                    handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)
+                                                    }
+                                                    disabled={!isPresent}
+                                                />
+                                                </TableCell>
+                                                <TableCell>
+                                                <Input
+                                                    type="text"
+                                                    placeholder="Añadir nota..."
+                                                    value={employeeAttendance.notes}
+                                                    onChange={(e) =>
+                                                    handleAttendanceChange(employee.id, 'notes', e.target.value)
+                                                    }
+                                                />
+                                                </TableCell>
+                                            </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                    </Table>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )
+                })}
+                </Accordion>
+            ) : (
                 <div className="text-center text-muted-foreground py-10">
                     No hay empleados activos en el sistema.
                 </div>
-             )}
-           </div>
-
-          {/* Desktop View */}
-          <div className="hidden md:block overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Empleado</TableHead>
-                  <TableHead className="w-[200px]">Estado</TableHead>
-                  <TableHead className="w-[250px]">Obra</TableHead>
-                  <TableHead className="w-[150px]">Horas Tarde</TableHead>
-                  <TableHead>Observaciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingEmployees ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      Cargando empleados...
-                    </TableCell>
-                  </TableRow>
-                ) : activeEmployees.length > 0 ? (
-                  activeEmployees.map((employee) => {
-                    const employeeAttendance = getEmployeeAttendance(employee.id);
-                    const isPresent = employeeAttendance.status === 'presente';
-
-                    return (
-                      <TableRow key={employee.id}>
-                        <TableCell className="font-medium">{employee.name}</TableCell>
-                        <TableCell>
-                          <RadioGroup
-                            value={employeeAttendance.status}
-                            onValueChange={(value) =>
-                              handleAttendanceChange(employee.id, 'status', value as AttendanceStatus)
-                            }
-                            className="flex gap-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="presente" id={`${employee.id}-presente`} />
-                              <Label htmlFor={`${employee.id}-presente`}>Presente</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="ausente" id={`${employee.id}-ausente`} />
-                              <Label htmlFor={`${employee.id}-ausente`}>Ausente</Label>
-                            </div>
-                          </RadioGroup>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={employeeAttendance.projectId ?? ''}
-                            onValueChange={(value) => handleAttendanceChange(employee.id, 'projectId', value)}
-                            disabled={!isPresent || isLoadingProjects}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Asignar Obra" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {projects
-                                ?.filter((p: Project) => p.status === 'En Curso')
-                                .map((p: Project) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    {p.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            className="w-24"
-                            value={employeeAttendance.lateHours}
-                            onChange={(e) =>
-                              handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)
-                            }
-                            disabled={!isPresent}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            placeholder="Añadir nota..."
-                            value={employeeAttendance.notes}
-                            onChange={(e) =>
-                              handleAttendanceChange(employee.id, 'notes', e.target.value)
-                            }
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No hay empleados activos en el sistema.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+            )}
         </CardContent>
         <CardFooter className="justify-end">
             <Button disabled={isSaving || !currentWeek} onClick={handleSaveAttendance}>
