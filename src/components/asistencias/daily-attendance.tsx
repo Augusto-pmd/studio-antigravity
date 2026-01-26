@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useTransition } from 'react';
+import { useState, useMemo, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -199,14 +199,14 @@ export function DailyAttendance() {
   }, [selectedDate]);
 
 
-  const getEmployeeAttendance = (employeeId: string): AttendanceRecord => {
+  const getEmployeeAttendance = useCallback((employeeId: string): AttendanceRecord => {
     return attendance[employeeId] || { 
         status: 'presente', 
         lateHours: 0, 
         notes: '', 
         projectId: lastProjectByEmployee[employeeId] || null 
     };
-  };
+  }, [attendance, lastProjectByEmployee]);
   
   const groupedEmployees = useMemo(() => {
     if (!activeEmployees || !projects) return {};
@@ -234,7 +234,7 @@ export function DailyAttendance() {
 
     const sortedGroupEntries = Object.entries(initialGroups)
         .filter(([_, groupData]) => groupData.employees.length > 0)
-        .sort(([idA], [idB]) => {
+        .sort(([idA, idB]) => {
             if (idA === 'unassigned') return -1;
             if (idB === 'unassigned') return 1;
             return initialGroups[idA].name.localeCompare(initialGroups[idB].name);
@@ -305,8 +305,8 @@ export function DailyAttendance() {
               date: dateStr,
               payrollWeekId: currentWeek.id,
               status: employeeAttendance.status,
-              lateHours: employeeAttendance.lateHours || undefined,
-              notes: employeeAttendance.notes || undefined,
+              lateHours: employeeAttendance.lateHours,
+              notes: employeeAttendance.notes,
               projectId: employeeAttendance.projectId || undefined,
           };
           batch.set(docRef, dataToSave, { merge: true });
