@@ -21,7 +21,9 @@ export function IvaSummary({ ivaCredit }: { ivaCredit: number }) {
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="font-headline">Resumen de IVA</CardTitle>
-            <CardDescription>Crédito y Débito Fiscal del período.</CardDescription>
+            <CardDescription>
+              Crédito Fiscal acumulado a partir de los gastos registrados.
+            </CardDescription>
           </div>
           <Landmark className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -38,8 +40,8 @@ export function IvaSummary({ ivaCredit }: { ivaCredit: number }) {
         <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground">Débito Fiscal (IVA Ventas)</p>
-            <p className="text-lg font-mono text-muted-foreground/70">
-              Próximamente
+            <p className="text-sm font-mono text-muted-foreground/70">
+              No disponible (requiere módulo de ventas).
             </p>
           </div>
         </div>

@@ -35,9 +35,9 @@ export function RetencionesSummary({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="font-headline">Retenciones Practicadas</CardTitle>
+            <CardTitle className="font-headline">Retenciones y Cargas Sociales</CardTitle>
             <CardDescription>
-              Total de retenciones aplicadas a proveedores pendientes de depósito.
+              Fondos retenidos en pagos a proveedores, pendientes de depósito en AFIP y otros organismos.
             </CardDescription>
           </div>
           <ClipboardMinus className="h-8 w-8 text-muted-foreground" />
@@ -45,25 +45,25 @@ export function RetencionesSummary({
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="rounded-lg border bg-background p-4">
-          <p className="text-sm font-medium text-muted-foreground">Total Retenido</p>
+          <p className="text-sm font-medium text-muted-foreground">Total Retenido y Aportes a Pagar</p>
           <p className="text-2xl font-bold font-mono text-destructive">
             {formatCurrency(totalRetenciones)}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div className="flex justify-between border-b pb-1">
-              <span className="text-muted-foreground">Ganancias:</span>
+              <span className="text-muted-foreground">Ret. Ganancias:</span>
               <span className="font-mono">{formatCurrency(retGanancias)}</span>
             </div>
             <div className="flex justify-between border-b pb-1">
-              <span className="text-muted-foreground">IVA:</span>
+              <span className="text-muted-foreground">Ret. IVA:</span>
               <span className="font-mono">{formatCurrency(retIva)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">IIBB:</span>
+              <span className="text-muted-foreground">Ret. IIBB:</span>
               <span className="font-mono">{formatCurrency(retIibb)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">SUSS:</span>
+              <span className="text-muted-foreground">Ret. SUSS:</span>
               <span className="font-mono">{formatCurrency(retSuss)}</span>
             </div>
           </div>
