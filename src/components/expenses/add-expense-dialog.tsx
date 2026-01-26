@@ -54,6 +54,15 @@ const supplierConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
 };
 
+const parseOptionalFloat = (value: string): number | undefined => {
+    if (value === null || value.trim() === '') {
+        return undefined;
+    }
+    const num = parseFloat(value);
+    return isNaN(num) ? undefined : num;
+};
+
+
 export function AddExpenseDialog({
   expense,
   children,
@@ -239,7 +248,7 @@ export function AddExpenseDialog({
             receiptUrl = await getDownloadURL(fileRef);
         }
 
-        const expenseData: Expense = {
+        const expenseData: Omit<Expense, 'id'> & { id: string } = {
             id: expenseRef.id,
             projectId: projectId,
             date: date.toISOString(),
@@ -247,18 +256,18 @@ export function AddExpenseDialog({
             categoryId: selectedCategory,
             description: description || undefined,
             documentType,
-            invoiceNumber: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? invoiceNumber : '',
+            invoiceNumber: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? invoiceNumber : undefined,
             amount: parseFloat(amount) || 0,
-            iva: parseFloat(iva) || 0,
-            iibb: parseFloat(iibb) || 0,
+            iva: parseOptionalFloat(iva),
+            iibb: parseOptionalFloat(iibb),
             iibbJurisdiction: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? iibbJurisdiction : 'No Aplica',
             currency,
             exchangeRate: parseFloat(exchangeRate) || 0,
-            receiptUrl,
-            retencionGanancias: parseFloat(retencionGanancias) || 0,
-            retencionIVA: parseFloat(retencionIVA) || 0,
-            retencionIIBB: parseFloat(retencionIIBB) || 0,
-            retencionSUSS: parseFloat(retencionSUSS) || 0,
+            receiptUrl: receiptUrl || undefined,
+            retencionGanancias: parseOptionalFloat(retencionGanancias),
+            retencionIVA: parseOptionalFloat(retencionIVA),
+            retencionIIBB: parseOptionalFloat(retencionIIBB),
+            retencionSUSS: parseOptionalFloat(retencionSUSS),
             status: isEditMode ? expense.status : 'Pendiente de Pago',
             paymentMethod: isEditMode ? expense.paymentMethod : undefined,
             paidDate: isEditMode ? expense.paidDate : undefined,
