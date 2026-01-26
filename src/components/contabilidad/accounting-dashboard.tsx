@@ -14,6 +14,11 @@ import { AccountsPayable } from './accounts-payable';
 import { AccountsReceivable } from './accounts-receivable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { SalaryPayables } from './salary-payables';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { PlanDePagoDialog } from '../planes-de-pago/plan-de-pago-dialog';
+import { Button } from '../ui/button';
+import { PlusCircle } from 'lucide-react';
+import { PlanesDePagoTable } from '../planes-de-pago/planes-de-pago-table';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
@@ -99,9 +104,10 @@ export function AccountingDashboard() {
   return (
     <div className="space-y-6">
        <Tabs defaultValue="suppliers">
-          <TabsList className="grid w-full grid-cols-2 lg:w-fit">
-            <TabsTrigger value="suppliers">Cuentas por Pagar (Proveedores)</TabsTrigger>
-            <TabsTrigger value="salaries">Cuentas por Pagar (Salarios)</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 lg:w-fit">
+            <TabsTrigger value="suppliers">Proveedores/Clientes</TabsTrigger>
+            <TabsTrigger value="salaries">Salarios</TabsTrigger>
+            <TabsTrigger value="moratorias">Planes de Pago</TabsTrigger>
           </TabsList>
           <TabsContent value="suppliers">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -111,6 +117,25 @@ export function AccountingDashboard() {
           </TabsContent>
           <TabsContent value="salaries">
             <SalaryPayables />
+          </TabsContent>
+          <TabsContent value="moratorias">
+            <Card>
+              <CardHeader className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Planes de Pago (Moratorias)</CardTitle>
+                  <CardDescription>Gestione los planes de facilidades de pago de impuestos con AFIP.</CardDescription>
+                </div>
+                <PlanDePagoDialog>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Nuevo Plan de Pago
+                    </Button>
+                </PlanDePagoDialog>
+              </CardHeader>
+              <CardContent>
+                <PlanesDePagoTable />
+              </CardContent>
+            </Card>
           </TabsContent>
        </Tabs>
 

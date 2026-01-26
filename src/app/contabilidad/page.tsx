@@ -7,7 +7,7 @@ export default function ContabilidadPage() {
         <h1 className="text-3xl font-headline">Módulo de Contabilidad</h1>
       </div>
        <p className="text-muted-foreground">
-        Visualice resúmenes de IVA, IIBB, retenciones y acceda a reportes detallados de gastos.
+        Gestione las cuentas por pagar/cobrar, planes de pago, y visualice resúmenes de impuestos y reportes.
       </p>
       <AccountingDashboard />
     </div>

@@ -46,7 +46,6 @@ import {
   Scale,
   UserCog,
   Repeat,
-  CalendarClock,
   CalendarDays,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
@@ -74,12 +73,6 @@ const menuItems = [
     href: "/calendario-pagos",
     label: "Calendario de Pagos",
     icon: CalendarDays,
-  },
-  {
-    href: "/planes-de-pago",
-    label: "Planes de Pago",
-    icon: CalendarClock,
-    adminOnly: true,
   },
   {
     href: "/gastos-recurrentes",
