@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition, useMemo, useEffect } from "react";
@@ -25,7 +24,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { useUser, useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, doc, writeBatch, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { StockItem, StockMovement, UserProfile, Project } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TriangleAlert } from "lucide-react";
