@@ -7,6 +7,7 @@ import { StatsCards } from "@/components/dashboard/stats-cards";
 import { WelcomeGuide } from '@/components/dashboard/welcome-guide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimeLogAlerts } from '@/components/dashboard/time-log-alerts';
+import { MyTimeLogReminder } from '@/components/dashboard/my-time-log-reminder';
 
 export default function DashboardPage() {
     const { role, isUserLoading } = useUser();
@@ -37,6 +38,11 @@ export default function DashboardPage() {
         );
     }
 
-    // Show welcome guide for all other roles
-    return <WelcomeGuide />;
+    // Show welcome guide and reminder for all other roles
+    return (
+        <>
+            <MyTimeLogReminder />
+            <WelcomeGuide />
+        </>
+    );
 }
