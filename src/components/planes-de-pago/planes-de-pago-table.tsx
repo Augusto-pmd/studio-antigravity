@@ -20,7 +20,7 @@ import { parseISO, format as formatDateFns, differenceInDays, isBefore } from 'd
 import { cn } from '@/lib/utils';
 import { PlanDePagoDialog } from './plan-de-pago-dialog';
 import { PayInstallmentDialog } from './pay-installment-dialog';
-import { Progress } from '../ui/progress';
+import { Progress } from '@/components/ui/progress';
 
 const moratoriaConverter = {
     toFirestore: (data: Moratoria): DocumentData => data,

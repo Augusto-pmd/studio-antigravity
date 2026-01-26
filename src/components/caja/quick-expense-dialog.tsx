@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, ChangeEvent, useMemo } from "react";
+import { useState, useTransition, ChangeEvent, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,14 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
 import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
+import { extractInvoiceData } from "@/ai/flows/extract-invoice-data";
+import { Separator } from "@/components/ui/separator";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -40,12 +42,18 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form State
   const [projectId, setProjectId] = useState<string | undefined>();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [iva, setIva] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [date, setDate] = useState<Date | undefined>(new Date());
+
 
   // Data fetching
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
@@ -56,6 +64,9 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
     setAmount('');
     setDescription('');
     setReceiptFile(null);
+    setIva('');
+    setInvoiceNumber('');
+    setDate(new Date());
   }
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -67,6 +78,67 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+  };
+
+  const handleAiScan = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelectedForAi = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsExtracting(true);
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            const imageDataUri = reader.result as string;
+            
+            try {
+                const extractedData = await extractInvoiceData(imageDataUri);
+
+                if (extractedData.amount) setAmount(extractedData.amount.toString());
+                if (extractedData.iva) setIva(extractedData.iva.toString());
+                if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
+                if (extractedData.date) {
+                    try {
+                        setDate(parseISO(extractedData.date));
+                    } catch {
+                        setDate(new Date());
+                        toast({ variant: 'destructive', title: 'Fecha no reconocida', description: 'No se pudo interpretar la fecha del recibo.' });
+                    }
+                }
+
+                if (extractedData.supplierName) {
+                    toast({
+                        title: 'Datos Extraídos con IA',
+                        description: `Proveedor detectado: ${extractedData.supplierName}. Por favor, verifique y seleccione el proveedor de la lista.`,
+                    });
+                } else {
+                     toast({
+                        title: 'Datos Extraídos con IA',
+                        description: `Por favor, revise los campos y complete la información faltante.`,
+                    });
+                }
+            } catch (aiError) {
+                console.error(aiError);
+                toast({ variant: 'destructive', title: 'Error de Extracción de IA', description: 'No se pudieron extraer los datos del recibo.' });
+            } finally {
+                setIsExtracting(false);
+            }
+        };
+        reader.onerror = () => {
+             toast({ variant: 'destructive', title: 'Error de Lectura', description: 'No se pudo leer el archivo de imagen.' });
+             setIsExtracting(false);
+        }
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Error de Archivo', description: 'Ocurrió un error al procesar el archivo.' });
+        setIsExtracting(false);
+    } finally {
+        if(e.target) e.target.value = '';
+    }
   };
   
 
@@ -108,7 +180,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             receiptUrl = await getDownloadURL(fileRef);
         }
 
-        const expenseDate = new Date();
+        const expenseDate = date || new Date();
 
         // 2. Create Expense document
         const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
@@ -183,6 +255,14 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+            <Input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelectedForAi} accept="image/*" />
+            <div className="flex justify-center">
+                <Button variant="outline" onClick={handleAiScan} disabled={isExtracting || isPending}>
+                    {isExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                    Escanear Comprobante con IA
+                </Button>
+            </div>
+            <Separator />
           <div className="space-y-2">
             <Label htmlFor="project">Obra</Label>
             <Select onValueChange={setProjectId} value={projectId} disabled={isLoadingProjects}>
@@ -221,3 +301,4 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
     </Dialog>
   );
 }
+
