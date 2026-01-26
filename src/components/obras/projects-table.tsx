@@ -60,7 +60,7 @@ export function ProjectsTable() {
       .then(() => {
         toast({
           title: "Obra Eliminada",
-          description: `La obra "${projectName}" ha sido eliminada permanentemente.`,
+          description: `La obra "${projectName}" ha sido eliminada permanentemente.`, || "",
         });
       })
       .catch((error) => {
@@ -68,7 +68,7 @@ export function ProjectsTable() {
         toast({
           variant: "destructive",
           title: "Error al eliminar",
-          description: "No se pudo eliminar la obra. Es posible que no tengas permisos.",
+          description: "No se pudo eliminar la obra. Es posible que no tengas permisos.", || "",
         });
       });
   };
