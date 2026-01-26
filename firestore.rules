@@ -156,14 +156,14 @@ service cloud.firestore {
     }
     
     match /technicalOfficeEmployees/{employeeId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isDirector();
       match /salaryHistory/{salaryHistoryId} {
-        allow read, write: if isAdmin();
+        allow read, write: if isDirector();
       }
     }
 
     match /monthlySalaries/{salaryId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isDirector();
     }
     
     match /timeLogs/{logId} {
@@ -202,9 +202,9 @@ service cloud.firestore {
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isDirector();
       match /transactions/{transactionId} {
-        allow read, write: if isAdmin();
+        allow read, write: if isDirector();
       }
     }
     
