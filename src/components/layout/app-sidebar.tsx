@@ -131,14 +131,11 @@ export function AppSidebar() {
                 return null;
               }
 
-              if (item.href === '/ventas' && !permissions.canValidate) {
+              const adminValidationRoutes = ['/contabilidad', '/activos', '/calendario-pagos', '/ventas'];
+              if (adminValidationRoutes.includes(item.href) && !permissions.canValidate) {
                 return null;
               }
               
-              // This logic for role-based visibility is now secondary to the adminOnly flag
-              // if (item.role && !item.role.includes(role)) {
-              //   return null;
-              // }
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
