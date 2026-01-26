@@ -66,7 +66,10 @@ export function StockItemDialog({
   }, [open, item]);
 
   const handleSave = () => {
-    if (!firestore) return;
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+      return;
+    }
     if (!name || !category || !quantity || !unit) {
       toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Nombre, categoría, cantidad y unidad son obligatorios.' });
       return;
