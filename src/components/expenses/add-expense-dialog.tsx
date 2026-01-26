@@ -30,7 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert, Link as LinkIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert, Link as LinkIcon, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +41,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { extractInvoiceData } from "@/ai/flows/extract-invoice-data";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -67,6 +68,8 @@ export function AddExpenseDialog({
   
   const [isClient, setIsClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [selectedProject, setSelectedProject] = useState('');
@@ -148,6 +151,58 @@ export function AddExpenseDialog({
     }
   };
 
+  const handleFileScan = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsExtracting(true);
+    toast({ title: 'Analizando comprobante...', description: 'La IA está leyendo los datos. Esto puede tardar unos segundos.' });
+
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            const imageDataUri = reader.result as string;
+            
+            setFile(file);
+
+            const extractedData = await extractInvoiceData(imageDataUri);
+            
+            toast.dismiss();
+            toast({ title: 'Datos Extraídos', description: 'Revisa la información precargada en el formulario.' });
+
+            if (extractedData.amount) setAmount(extractedData.amount.toString());
+            if (extractedData.iva) setIva(extractedData.iva.toString());
+            if (extractedData.iibb) setIibb(extractedData.iibb.toString());
+            if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
+            if (extractedData.date) {
+                const utcDate = new Date(`${extractedData.date}T00:00:00`);
+                setDate(utcDate);
+            }
+
+            if (extractedData.supplierCuit && suppliers) {
+                const matchedSupplier = suppliers.find(s => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
+                if (matchedSupplier) {
+                    setSelectedSupplier(matchedSupplier.id);
+                    toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
+                }
+            } else if (extractedData.supplierName && suppliers) {
+                 const matchedSupplier = suppliers.find(s => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
+                 if (matchedSupplier) {
+                     setSelectedSupplier(matchedSupplier.id);
+                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
+                 }
+            }
+        };
+    } catch (error) {
+        console.error("Error extracting invoice data:", error);
+        toast.dismiss();
+        toast({ variant: 'destructive', title: 'Error de IA', description: 'No se pudieron extraer los datos del comprobante.' });
+    } finally {
+        setIsExtracting(false);
+    }
+  };
+
   const handleSaveExpense = () => {
     if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
       toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
@@ -172,7 +227,7 @@ export function AddExpenseDialog({
           : doc(collection(firestore, 'projects', projectId, 'expenses'));
 
         let receiptUrl = expense?.receiptUrl || '';
-        if (file && (documentType === 'Factura' || documentType === 'Nota de Crédito')) {
+        if (file) {
             const storage = getStorage(firebaseApp);
             const filePath = `receipts/${projectId}/${expenseRef.id}/${file.name}`;
             const fileRef = ref(storage, filePath);
@@ -242,12 +297,37 @@ export function AddExpenseDialog({
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Editar Documento' : 'Registrar Documento de Compra'}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? 'Modifique los detalles del documento.' : 'Complete los campos para registrar un nuevo documento en el sistema.'}
+            {isEditMode ? 'Modifique los detalles del documento.' : 'Escanee un comprobante o complete los campos para registrar un nuevo documento.'}
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4 max-h-[75vh] overflow-y-auto pr-4">
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isExtracting || isPending}
+            >
+              {isExtracting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Escanear Comprobante con IA
+            </Button>
+            <Input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,.pdf"
+              onChange={handleFileScan}
+            />
+            <p className="text-xs text-center text-muted-foreground">O cargue los datos manualmente</p>
+          </div>
           <Separator />
+
           {isContractBlocked && (
             <Alert variant="destructive">
               <TriangleAlert className="h-4 w-4" />
