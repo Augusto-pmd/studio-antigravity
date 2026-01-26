@@ -138,8 +138,7 @@ service cloud.firestore {
     }
 
     match /projects/{projectId} {
-      allow read: if isSignedIn();
-      allow write: if isSupervisorOrAdmin();
+      allow read, write: if isSignedIn();
       match /expenses/{expenseId} {
         allow read, write: if isSignedIn();
       }
@@ -168,11 +167,7 @@ service cloud.firestore {
     }
     
     match /timeLogs/{logId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isAdmin() || (isSignedIn() && request.query.where[0][2] == request.auth.uid);
-      allow delete: if isAdmin() || (isExistingDoc() && resource.data.userId == request.auth.uid);
+      allow read, write: if isSignedIn();
     }
 
     match /contractors/{contractorId} {
@@ -222,12 +217,10 @@ service cloud.firestore {
     }
 
     match /stockItems/{itemId} {
-      allow read: if isSignedIn();
-      allow write: if isPañoleroOrAdmin();
+      allow read, write: if isSignedIn();
       
       match /movements/{movementId} {
-        allow read: if isSignedIn();
-        allow write: if isPañoleroOrAdmin();
+        allow read, write: if isSignedIn();
       }
     }
 
