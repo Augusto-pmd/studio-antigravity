@@ -36,7 +36,7 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [q ? (q as any)._query.canonicalId : 'null']);
+  }, [q]);
 
   return { data, isLoading, error };
 }
