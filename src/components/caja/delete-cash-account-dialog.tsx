@@ -19,6 +19,10 @@ import { doc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashAccount } from "@/lib/types";
 
+const formatCurrency = (amount: number, currency: string = 'ARS') => {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+};
+
 export function DeleteCashAccountDialog({ children, cashAccount }: { children: React.ReactNode, cashAccount: CashAccount }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -29,11 +33,6 @@ export function DeleteCashAccountDialog({ children, cashAccount }: { children: R
     if (!firestore || !user) {
       toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado.' });
       return;
-    }
-    if (cashAccount.balance > 0) {
-        toast({ variant: 'destructive', title: 'Caja con Saldo', description: 'No se puede eliminar una caja con saldo. Transfiera los fondos primero.' });
-        setOpen(false);
-        return;
     }
 
     startTransition(() => {
@@ -65,7 +64,12 @@ export function DeleteCashAccountDialog({ children, cashAccount }: { children: R
           <AlertDialogTitle>¿Está seguro que desea eliminar la caja?</AlertDialogTitle>
           <AlertDialogDescription>
             Esta acción no se puede deshacer. Se eliminará permanentemente la caja{" "}
-            <span className="font-semibold">{cashAccount.name}</span>. Solo puede eliminar cajas con saldo cero.
+            <span className="font-semibold">{cashAccount.name}</span> y todos sus movimientos.
+            {cashAccount.balance > 0 && (
+              <span className="mt-2 block font-bold text-destructive">
+                ¡Atención! Esta caja tiene un saldo de {formatCurrency(cashAccount.balance, cashAccount.currency)} que se perderá.
+              </span>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
