@@ -77,7 +77,7 @@ export function AddExpenseDialog({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
-  const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común'>('Factura');
+  const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común' | 'Nota de Crédito'>('Factura');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [amount, setAmount] = useState('');
@@ -219,8 +219,8 @@ export function AddExpenseDialog({
       toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
       return;
     }
-    if (documentType === 'Factura' && !invoiceNumber) {
-        toast({ variant: 'destructive', title: 'Nº de Factura requerido', description: 'El número de factura es obligatorio para documentos tipo Factura.' });
+    if ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber) {
+        toast({ variant: 'destructive', title: 'Nº de Comprobante requerido', description: 'El número de factura o nota de crédito es obligatorio.' });
         return;
     }
     
@@ -238,7 +238,7 @@ export function AddExpenseDialog({
           : doc(collection(firestore, 'projects', projectId, 'expenses'));
 
         let receiptUrl = expense?.receiptUrl || '';
-        if (file && documentType === 'Factura') {
+        if (file && (documentType === 'Factura' || documentType === 'Nota de Crédito')) {
             const storage = getStorage(firebaseApp);
             const filePath = `receipts/${projectId}/${expenseRef.id}/${file.name}`;
             const fileRef = ref(storage, filePath);
@@ -254,11 +254,11 @@ export function AddExpenseDialog({
             supplierId: selectedSupplier,
             categoryId: selectedCategory,
             documentType,
-            invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
+            invoiceNumber: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? invoiceNumber : '',
             amount: parseFloat(amount),
             iva: iva ? parseFloat(iva) : 0,
             iibb: iibb ? parseFloat(iibb) : 0,
-            iibbJurisdiction: documentType === 'Factura' ? iibbJurisdiction : 'No Aplica',
+            iibbJurisdiction: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? iibbJurisdiction : 'No Aplica',
             currency,
             exchangeRate: parseFloat(exchangeRate),
             receiptUrl,
@@ -277,12 +277,12 @@ export function AddExpenseDialog({
 
       saveData()
         .then(() => {
-            toast({ title: isEditMode ? 'Gasto Actualizado' : 'Gasto Guardado', description: 'El gasto ha sido guardado correctamente.' });
+            toast({ title: isEditMode ? 'Documento Actualizado' : 'Documento Guardado', description: 'El documento ha sido guardado correctamente.' });
             setOpen(false);
         })
         .catch((error) => {
             console.error("Error writing to Firestore:", error);
-            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el gasto. Es posible que no tengas permisos.' });
+            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el documento. Es posible que no tengas permisos.' });
         })
         .finally(() => {
             setIsSaving(false);
@@ -290,7 +290,7 @@ export function AddExpenseDialog({
     });
   };
 
-  const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || (documentType === 'Factura' && !invoiceNumber);
+  const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber);
   
   if (!permissions.canLoadExpenses) return null;
 
@@ -306,9 +306,9 @@ export function AddExpenseDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar Gasto' : 'Cargar Nuevo Gasto'}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Documento' : 'Registrar Documento de Compra'}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? 'Modifique los detalles del gasto.' : 'Complete los campos para registrar un nuevo gasto en el sistema.'}
+            {isEditMode ? 'Modifique los detalles del documento.' : 'Complete los campos para registrar un nuevo documento en el sistema.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -317,7 +317,7 @@ export function AddExpenseDialog({
           <div className="flex justify-center">
               <Button variant="outline" onClick={handleAiScan} disabled={isExtracting || isSaving}>
                   {isExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                  Escanear Recibo con IA
+                  Escanear Comprobante con IA
               </Button>
           </div>
           <Separator />
@@ -416,8 +416,8 @@ export function AddExpenseDialog({
             <Label>Tipo Comprobante</Label>
              <RadioGroup
               value={documentType}
-              onValueChange={(value: 'Factura' | 'Recibo Común') => setDocumentType(value)}
-              className="flex items-center gap-6 pt-1"
+              onValueChange={(value: 'Factura' | 'Recibo Común' | 'Nota de Crédito') => setDocumentType(value)}
+              className="flex items-center flex-wrap gap-x-6 gap-y-2 pt-1"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="Factura" id="factura" />
@@ -427,10 +427,14 @@ export function AddExpenseDialog({
                 <RadioGroupItem value="Recibo Común" id="recibo" />
                 <Label htmlFor="recibo">Recibo Común</Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Nota de Crédito" id="nota-credito" />
+                <Label htmlFor="nota-credito">Nota de Crédito</Label>
+              </div>
             </RadioGroup>
           </div>
           
-          {documentType === 'Factura' && (
+          {(documentType === 'Factura' || documentType === 'Nota de Crédito') && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="receipt">Comprobante</Label>
@@ -444,9 +448,9 @@ export function AddExpenseDialog({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="invoiceNumber">Nº Factura</Label>
+                <Label htmlFor="invoiceNumber">Nº Comprobante</Label>
                 <div className="relative">
-                    <Input id="invoiceNumber" type="text" placeholder="Nº de la factura" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+                    <Input id="invoiceNumber" type="text" placeholder="Nº de la factura o nota de crédito" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
                 </div>
               </div>
             </>
@@ -480,7 +484,7 @@ export function AddExpenseDialog({
             />
           </div>
           
-          {documentType === 'Factura' && (
+          {(documentType === 'Factura' || documentType === 'Nota de Crédito') && (
             <>
               <Separator />
               <div className="space-y-4">
@@ -557,7 +561,7 @@ export function AddExpenseDialog({
         <DialogFooter>
           <Button type="button" onClick={handleSaveExpense} disabled={isSubmitDisabled}>
             {(isPending || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditMode ? 'Guardar Cambios' : 'Guardar Gasto'}
+            {isEditMode ? 'Guardar Cambios' : 'Guardar Documento'}
           </Button>
         </DialogFooter>
       </DialogContent>

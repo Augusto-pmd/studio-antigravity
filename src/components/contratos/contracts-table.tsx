@@ -68,14 +68,14 @@ export function SalesTable() {
     const saleRef = doc(firestore, `projects/${sale.projectId}/sales/${sale.id}`);
     deleteDoc(saleRef)
       .then(() => {
-        toast({ title: "Venta Eliminada", description: `La venta ha sido eliminada.` });
+        toast({ title: "Documento Eliminado", description: `El documento de venta ha sido eliminado.` });
       })
       .catch((error) => {
         console.error("Error deleting sale: ", error);
         toast({
           variant: "destructive",
           title: "Error al eliminar",
-          description: "No se pudo eliminar la venta. Es posible que no tengas permisos.",
+          description: "No se pudo eliminar el documento. Es posible que no tengas permisos.",
         });
       });
   };
@@ -121,6 +121,7 @@ export function SalesTable() {
                 <TableRow key={sale.id}>
                   <TableCell>
                     <div className="font-medium">{projectsMap[sale.projectId] || sale.projectId}</div>
+                    <div className="text-sm text-muted-foreground">{sale.documentType}</div>
                      <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <p>{sale.description}</p>
                         <p>{formatDate(sale.date)}</p>
@@ -164,7 +165,7 @@ export function SalesTable() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Se eliminará permanentemente esta venta.
+                                    Esta acción no se puede deshacer. Se eliminará permanentemente este documento de venta.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

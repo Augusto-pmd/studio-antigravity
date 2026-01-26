@@ -41,7 +41,11 @@ export function AccountsPayable() {
   const { permissions } = useUser();
 
   const pendingExpensesQuery = useMemo(() => (
-    firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter), where('status', '==', 'Pendiente de Pago')) : null
+    firestore ? query(
+        collectionGroup(firestore, 'expenses').withConverter(expenseConverter), 
+        where('status', '==', 'Pendiente de Pago'),
+        where('documentType', '!=', 'Nota de Crédito')
+    ) : null
   ), [firestore]);
 
   const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(pendingExpensesQuery);

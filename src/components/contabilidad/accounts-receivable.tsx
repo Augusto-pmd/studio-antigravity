@@ -31,7 +31,11 @@ export function AccountsReceivable() {
   const { permissions } = useUser();
 
   const pendingSalesQuery = useMemo(() => (
-    firestore ? query(collectionGroup(firestore, 'sales').withConverter(saleConverter), where('status', '==', 'Pendiente de Cobro')) : null
+    firestore ? query(
+        collectionGroup(firestore, 'sales').withConverter(saleConverter), 
+        where('status', '==', 'Pendiente de Cobro'),
+        where('documentType', '==', 'Factura de Venta')
+    ) : null
   ), [firestore]);
 
   const { data: sales, isLoading: isLoadingSales } = useCollection<Sale>(pendingSalesQuery);

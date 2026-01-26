@@ -38,7 +38,7 @@ export interface Expense {
   date: string;
   supplierId: string;
   categoryId: string;
-  documentType: 'Factura' | 'Recibo Común';
+  documentType: 'Factura' | 'Recibo Común' | 'Nota de Crédito';
   invoiceNumber?: string;
   paymentMethod?: string;
   amount: number;
@@ -254,6 +254,7 @@ export interface Sale {
   projectId: string;
   date: string;
   description: string;
+  documentType: 'Factura de Venta' | 'Nota de Crédito';
   netAmount: number;
   ivaAmount: number;
   totalAmount: number;

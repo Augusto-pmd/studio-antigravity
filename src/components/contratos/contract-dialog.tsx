@@ -26,6 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, Link as LinkIcon } from "lucide-react";
@@ -62,6 +63,7 @@ export function SaleDialog({
   // Form State
   const [projectId, setProjectId] = useState('');
   const [date, setDate] = useState<Date | undefined>();
+  const [documentType, setDocumentType] = useState<'Factura de Venta' | 'Nota de Crédito'>('Factura de Venta');
   const [description, setDescription] = useState('');
   const [netAmount, setNetAmount] = useState('');
   const [ivaAmount, setIvaAmount] = useState('');
@@ -77,6 +79,7 @@ export function SaleDialog({
   const resetForm = () => {
     setProjectId(sale?.projectId || '');
     setDate(sale?.date ? parseISO(sale.date) : new Date());
+    setDocumentType(sale?.documentType || 'Factura de Venta');
     setDescription(sale?.description || '');
     setNetAmount(sale?.netAmount?.toString() || '');
     setIvaAmount(sale?.ivaAmount?.toString() || '');
@@ -120,6 +123,7 @@ export function SaleDialog({
             projectId,
             date: date.toISOString(),
             description,
+            documentType,
             netAmount: parseFloat(netAmount) || 0,
             ivaAmount: parseFloat(ivaAmount) || 0,
             totalAmount: parseFloat(totalAmount) || 0,
@@ -133,14 +137,14 @@ export function SaleDialog({
       saveData()
         .then(() => {
             toast({
-                title: isEditMode ? 'Venta Actualizada' : 'Venta Registrada',
-                description: `La venta ha sido guardada correctamente.`,
+                title: isEditMode ? 'Documento Actualizado' : 'Documento Registrado',
+                description: `El documento de venta ha sido guardado correctamente.`,
             });
             setOpen(false);
         })
         .catch((error) => {
             console.error("Error writing to Firestore:", error);
-            toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar la venta. Es posible que no tengas permisos." });
+            toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar el documento. Es posible que no tengas permisos." });
         });
     });
   };
@@ -150,9 +154,9 @@ export function SaleDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar Venta' : 'Registrar Nueva Venta'}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Documento de Venta' : 'Registrar Nuevo Documento de Venta'}</DialogTitle>
           <DialogDescription>
-            Complete la información de la factura de venta. Los montos aquí registrados impactarán en el cálculo de IVA Débito Fiscal.
+            Complete la información del documento. Los montos aquí registrados impactarán en el cálculo de IVA Débito Fiscal.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
@@ -171,7 +175,7 @@ export function SaleDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Fecha de la Factura</Label>
+            <Label htmlFor="date">Fecha del Documento</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
@@ -182,6 +186,20 @@ export function SaleDialog({
               <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} locale={es} /></PopoverContent>
             </Popover>
           </div>
+          
+          <div className="space-y-2">
+            <Label>Tipo de Documento</Label>
+            <RadioGroup value={documentType} onValueChange={(v: any) => setDocumentType(v)} className="flex pt-1 gap-6">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Factura de Venta" id="factura-venta" />
+                <Label htmlFor="factura-venta">Factura de Venta</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Nota de Crédito" id="nota-credito-venta" />
+                <Label htmlFor="nota-credito-venta">Nota de Crédito</Label>
+              </div>
+            </RadioGroup>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
@@ -189,7 +207,7 @@ export function SaleDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="invoiceFile">Adjuntar Factura</Label>
+            <Label htmlFor="invoiceFile">Adjuntar Comprobante</Label>
             <div className="flex items-center gap-2">
                 <Input id="invoiceFile" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png"/>
                 {isEditMode && sale?.invoiceUrl && (
@@ -235,7 +253,7 @@ export function SaleDialog({
         <DialogFooter>
           <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditMode ? 'Guardar Cambios' : 'Guardar Venta'}
+            {isEditMode ? 'Guardar Cambios' : 'Guardar Documento'}
           </Button>
         </DialogFooter>
       </DialogContent>

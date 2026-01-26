@@ -54,11 +54,12 @@ export function AccountingDashboard() {
     
     const expenseSummary = formalExpenses.reduce(
       (acc, expense) => {
-        acc.ivaCredit += expense.iva || 0;
+        const sign = expense.documentType === 'Nota de Crédito' ? -1 : 1;
+        acc.ivaCredit += (expense.iva || 0) * sign;
         if (expense.iibbJurisdiction === 'CABA') {
-          acc.iibbCABA += expense.iibb || 0;
+          acc.iibbCABA += (expense.iibb || 0) * sign;
         } else if (expense.iibbJurisdiction === 'Provincia') {
-          acc.iibbProvincia += expense.iibb || 0;
+          acc.iibbProvincia += (expense.iibb || 0) * sign;
         }
         acc.retGanancias += expense.retencionGanancias || 0;
         acc.retIva += expense.retencionIVA || 0;
@@ -71,7 +72,8 @@ export function AccountingDashboard() {
     
     const ivaDebit = sales.reduce((acc, sale) => {
       if (!['Cancelado', 'Borrador'].includes(sale.status)) {
-        return acc + (sale.ivaAmount || 0);
+        const sign = sale.documentType === 'Nota de Crédito' ? -1 : 1;
+        return acc + (sale.ivaAmount || 0) * sign;
       }
       return acc;
     }, 0);

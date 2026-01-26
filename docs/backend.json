@@ -149,7 +149,8 @@
           "type": "string",
           "enum": [
             "Factura",
-            "Recibo Común"
+            "Recibo Común",
+            "Nota de Crédito"
           ]
         },
         "invoiceNumber": {
@@ -540,6 +541,11 @@
           "format": "date-time",
           "description": "The date the invoice was issued."
         },
+        "documentType": {
+          "type": "string",
+          "enum": ["Factura de Venta", "Nota de Crédito"],
+          "description": "The type of sales document."
+        },
         "description": {
           "type": "string",
           "description": "A description of the sale."
@@ -596,6 +602,7 @@
         "id",
         "projectId",
         "date",
+        "documentType",
         "description",
         "netAmount",
         "ivaAmount",

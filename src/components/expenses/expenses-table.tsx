@@ -148,6 +148,7 @@ export function ExpensesTable() {
                   <TableCell>
                     <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
                     <div className="text-sm text-muted-foreground">{getCategoryName(expense.categoryId)}</div>
+                    <div className="text-sm text-muted-foreground">{expense.documentType}</div>
                     <div className="text-sm text-muted-foreground md:hidden mt-2 space-y-1">
                       <p>{suppliersMap[expense.supplierId] || expense.supplierId}</p>
                       <p>{formatDate(expense.date)}</p>
