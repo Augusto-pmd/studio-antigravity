@@ -32,7 +32,6 @@ import {
     query,
     where,
     doc,
-    getDocs,
     writeBatch,
     limit,
     type DocumentData,
@@ -148,42 +147,37 @@ export function DailyAttendance() {
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
+  const formattedDate = useMemo(() => selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, [selectedDate]);
+
+  const attendanceForDayQuery = useMemo(
+    () => (firestore && formattedDate ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '==', formattedDate)) : null),
+    [firestore, formattedDate]
+  );
+  const { data: dayAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceForDayQuery);
+
   useEffect(() => {
     setIsClient(true);
     setSelectedDate(new Date());
   }, []);
 
   useEffect(() => {
-    if (!selectedDate || !firestore || isLoadingWeeks) {
-      setAttendance({});
-      return;
-    };
-    
-    const fetchAttendance = async () => {
-        setAttendance({}); 
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        const q = query(
-            collection(firestore, 'attendances'),
-            where('date', '==', dateStr)
-        );
-        const snapshot = await getDocs(q.withConverter(attendanceConverter));
-        
+    if (isLoadingAttendances) return;
+
+    if (dayAttendances) {
         const newAttendanceState: Record<string, AttendanceRecord> = {};
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            newAttendanceState[data.employeeId] = {
-                status: data.status,
-                lateHours: data.lateHours || 0,
-                notes: data.notes || '',
-                projectId: data.projectId || null
-            }
+        dayAttendances.forEach(att => {
+            newAttendanceState[att.employeeId] = {
+                status: att.status,
+                lateHours: att.lateHours || 0,
+                notes: att.notes || '',
+                projectId: att.projectId || null
+            };
         });
         setAttendance(newAttendanceState);
+    } else {
+        setAttendance({});
     }
-    
-    fetchAttendance();
-
-  }, [selectedDate, firestore, isLoadingWeeks]);
+  }, [dayAttendances, isLoadingAttendances]);
 
   const activeEmployees = useMemo(() => {
     if (!employees) return [];
@@ -294,9 +288,7 @@ export function DailyAttendance() {
       const batch = writeBatch(firestore);
       const dateStr = format(dateToSave, 'yyyy-MM-dd');
       
-      const attendanceQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
-      const existingDocsSnap = await getDocs(attendanceQuery);
-      const existingDocsMap = new Map(existingDocsSnap.docs.map(d => [d.data().employeeId, d.id]));
+      const existingDocsMap = new Map(dayAttendances?.map(d => [d.employeeId, d.id]));
 
       for (const employee of activeEmployees) {
           const employeeAttendance = getEmployeeAttendance(employee.id);
@@ -310,7 +302,7 @@ export function DailyAttendance() {
               status: employeeAttendance.status,
               lateHours: Number(employeeAttendance.lateHours) || 0,
               notes: employeeAttendance.notes,
-              projectId: employeeAttendance.projectId,
+              projectId: employeeAttendance.status === 'ausente' ? null : (employeeAttendance.projectId || null),
           };
           batch.set(docRef, dataToSave, { merge: true });
       }
