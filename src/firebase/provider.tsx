@@ -46,7 +46,7 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
     return { isSuperAdmin, canValidate, canLoadExpenses, canManageProjects, canSupervise, canManageStock, canManageSales };
   }, [role]);
 
-  const value: FirebaseContextValue = {
+  const value: FirebaseContextValue = useMemo(() => ({
     firebaseApp,
     auth,
     firestore,
@@ -55,7 +55,7 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
     isUserLoading: isLoading,
     role,
     permissions,
-  };
+  }), [firebaseApp, auth, firestore, user, userProfile, isLoading, role, permissions]);
 
   return (
     <FirebaseContext.Provider value={value}>
