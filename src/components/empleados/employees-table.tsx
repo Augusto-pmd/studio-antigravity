@@ -15,7 +15,7 @@ import type { Employee } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
 import { TriangleAlert, Pencil, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { EmployeeDialog } from "./employee-dialog";
+import { EmployeeDialog } from "@/components/empleados/employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";

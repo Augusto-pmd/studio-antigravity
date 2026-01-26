@@ -15,8 +15,8 @@ import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'd
 import { TriangleAlert, Pencil, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { ContractorDialog } from "./contractor-dialog";
-import { PersonnelDialog } from "./personnel-dialog";
+import { ContractorDialog } from "@/components/contratistas/contractor-dialog";
+import { PersonnelDialog } from "@/components/contratistas/personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";

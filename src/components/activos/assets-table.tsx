@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { Asset } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
 import { Pencil } from "lucide-react";
-import { AssetDialog } from "./asset-dialog";
+import { AssetDialog } from "@/components/activos/asset-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -18,7 +18,7 @@ import { expenseCategories } from "@/lib/data";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
-import { AddExpenseDialog } from "./add-expense-dialog";
+import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -34,8 +34,38 @@ const formatDate = (dateString?: string) => {
 }
 
 const expenseConverter = {
-    toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(), id: snapshot.id } as Expense)
+    toFirestore: (data: Expense): DocumentData => {
+      const { id, ...rest } = data;
+      return rest;
+    },
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            projectId: data.projectId,
+            date: data.date,
+            supplierId: data.supplierId,
+            categoryId: data.categoryId,
+            documentType: data.documentType,
+            invoiceNumber: data.invoiceNumber,
+            paymentMethod: data.paymentMethod,
+            amount: data.amount,
+            iva: data.iva,
+            iibb: data.iibb,
+            iibbJurisdiction: data.iibbJurisdiction,
+            currency: data.currency,
+            exchangeRate: data.exchangeRate,
+            receiptUrl: data.receiptUrl,
+            description: data.description,
+            retencionGanancias: data.retencionGanancias,
+            retencionIVA: data.retencionIVA,
+            retencionIIBB: data.retencionIIBB,
+            retencionSUSS: data.retencionSUSS,
+            status: data.status,
+            paidDate: data.paidDate,
+            treasuryAccountId: data.treasuryAccountId,
+        };
+    }
 };
 
 const projectConverter = {
