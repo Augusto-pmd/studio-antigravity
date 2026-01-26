@@ -16,7 +16,7 @@ import { Pencil } from "lucide-react";
 import { SupplierDialog } from "./supplier-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 
 const supplierConverter = {

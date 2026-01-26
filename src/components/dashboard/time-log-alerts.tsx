@@ -8,7 +8,7 @@ import { startOfWeek, endOfWeek, subWeeks, format, eachDayOfInterval } from 'dat
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertCircle, CheckCircle } from 'lucide-react';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const techOfficeEmployeeConverter = {
     toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,

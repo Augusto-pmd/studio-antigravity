@@ -19,7 +19,7 @@ import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, 
 import type { Expense } from "@/lib/types";
 import { parseISO, getMonth, getYear, type Month } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig = {
   total: {
