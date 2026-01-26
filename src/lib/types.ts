@@ -231,3 +231,14 @@ export interface TreasuryTransaction {
     projectId?: string;
     projectName?: string;
 }
+
+export interface Contract {
+  id: string;
+  projectId: string;
+  date: string;
+  description: string;
+  netAmount: number;
+  ivaAmount: number;
+  totalAmount: number;
+  status: 'Borrador' | 'Activo' | 'Finalizado' | 'Cancelado';
+}

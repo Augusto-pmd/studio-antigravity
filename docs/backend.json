@@ -500,10 +500,9 @@
       ]
     },
     "Contract": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Contract",
       "type": "object",
-      "description": "Represents a contract associated with a project.",
+      "description": "Represents a sales contract with a client for a specific project.",
       "properties": {
         "id": {
           "type": "string",
@@ -513,25 +512,47 @@
           "type": "string",
           "description": "Reference to Project. (Relationship: Project 1:N Contract)"
         },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the contract was signed or issued."
+        },
         "description": {
           "type": "string",
           "description": "A description of the contract."
         },
+        "netAmount": {
+          "type": "number",
+          "description": "The net value of the contract before taxes."
+        },
+        "ivaAmount": {
+          "type": "number",
+          "description": "The total IVA amount for the contract."
+        },
         "totalAmount": {
           "type": "number",
-          "description": "The total amount of the contract."
+          "description": "The gross value of the contract (net + IVA)."
         },
-        "remainingAmount": {
-          "type": "number",
-          "description": "The remaining amount on the contract."
+        "status": {
+          "type": "string",
+          "enum": [
+            "Borrador",
+            "Activo",
+            "Finalizado",
+            "Cancelado"
+          ],
+          "description": "The current status of the contract."
         }
       },
       "required": [
         "id",
         "projectId",
+        "date",
         "description",
+        "netAmount",
+        "ivaAmount",
         "totalAmount",
-        "remainingAmount"
+        "status"
       ]
     },
     "Asset": {
