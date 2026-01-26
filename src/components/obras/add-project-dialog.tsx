@@ -110,14 +110,14 @@ export function AddProjectDialog({
           address,
           projectType,
           currency,
-          description: description || "",
+          description: description
           status,
           supervisor,
           budget: parseFloat(budget) || 0,
           progress: parseInt(progress) || 0,
           balance: isEditMode && project ? project.balance : parseFloat(budget) || 0,
-          startDate: startDate?.toISOString(),
-          endDate: endDate?.toISOString(),
+          startDate: startDate || null?.toISOString(),
+          endDate: endDate || null?.toISOString(),
       };
 
       setDoc(projectRef, projectData, { merge: true })
