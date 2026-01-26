@@ -47,6 +47,7 @@ import {
   UserCog,
   Repeat,
   CalendarDays,
+  Warehouse,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -56,52 +57,59 @@ import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/obras", label: "Obras", icon: Building2 },
-  { href: "/proveedores", label: "Proveedores", icon: Users },
-  { href: "/empleados", label: "Empleados", icon: Contact },
-  { href: "/contratistas", label: "Contratistas", icon: HardHat },
-  { href: "/activos", label: "Activos", icon: Archive },
-  { href: "/asistencias", label: "Asistencias", icon: CalendarCheck },
-  { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign },
+  { href: "/obras", label: "Obras", icon: Building2, pañoleroHidden: true },
+  { href: "/proveedores", label: "Proveedores", icon: Users, pañoleroHidden: true },
+  { href: "/empleados", label: "Empleados", icon: Contact, pañoleroHidden: true },
+  { href: "/contratistas", label: "Contratistas", icon: HardHat, pañoleroHidden: true },
+  { href: "/activos", label: "Activos", icon: Archive, pañoleroHidden: true },
+  { href: "/stock", label: "Stock Pañol", icon: Warehouse },
+  { href: "/asistencias", label: "Asistencias", icon: CalendarCheck, pañoleroHidden: true },
+  { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign, pañoleroHidden: true },
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
-  { href: "/mis-horas", label: "Mis Horas", icon: Clock },
-  { href: "/caja", label: "Mi Caja", icon: Wallet },
-  { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
-  { href: "/ventas", label: "Ventas", icon: FileText },
-  { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  { href: "/mis-horas", label: "Mis Horas", icon: Clock, pañoleroHidden: true },
+  { href: "/caja", label: "Mi Caja", icon: Wallet, pañoleroHidden: true },
+  { href: "/gastos", label: "Gastos por Obra", icon: Receipt, pañoleroHidden: true },
+  { href: "/ventas", label: "Ventas", icon: FileText, pañoleroHidden: true },
+  { href: "/contabilidad", label: "Contabilidad", icon: BookText, pañoleroHidden: true },
   {
     href: "/calendario-pagos",
     label: "Calendario de Pagos",
     icon: CalendarDays,
+    pañoleroHidden: true,
   },
   {
     href: "/gastos-recurrentes",
     label: "Gastos Recurrentes",
     icon: Repeat,
     adminOnly: true,
+    pañoleroHidden: true,
   },
   {
     href: "/recursos-humanos",
     label: "Recursos Humanos",
     icon: Briefcase,
     adminOnly: true,
+    pañoleroHidden: true,
   },
   {
     href: "/tesoreria",
     label: "Tesorería",
     icon: Scale,
     adminOnly: true,
+    pañoleroHidden: true,
   },
   {
     href: "/cajas",
     label: "Gestión de Cajas",
     icon: Landmark,
+    pañoleroHidden: true,
   },
   {
     href: "/usuarios",
     label: "Usuarios",
     icon: UserCog,
     adminOnly: true,
+    pañoleroHidden: true,
   },
 ];
 
@@ -126,6 +134,10 @@ export function AppSidebar() {
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item) => {
+              if (role === 'Pañolero' && item.pañoleroHidden) {
+                return null;
+              }
+
               if (item.adminOnly && !permissions.isSuperAdmin) {
                 return null;
               }

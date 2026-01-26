@@ -1,4 +1,4 @@
-export type Role = "Dirección" | "Supervisor" | "Administración" | "Operador";
+export type Role = "Dirección" | "Supervisor" | "Administración" | "Operador" | "Pañolero";
 
 export type Permissions = {
   isSuperAdmin: boolean;
@@ -6,6 +6,7 @@ export type Permissions = {
   canLoadExpenses: boolean;
   canManageProjects: boolean;
   canSupervise: boolean;
+  canManageStock: boolean;
 };
 
 export type UserProfile = {
@@ -293,4 +294,15 @@ export interface Moratoria {
   installmentAmount: number;
   nextDueDate: string; // YYYY-MM-DD
   status: 'Activa' | 'Finalizada' | 'Incumplida';
+}
+
+export interface StockItem {
+  id: string;
+  name: string;
+  description?: string;
+  category: 'Herramienta' | 'Consumible' | 'Insumo';
+  quantity: number;
+  unit: string;
+  reorderPoint?: number;
+  lastUpdated: string;
 }

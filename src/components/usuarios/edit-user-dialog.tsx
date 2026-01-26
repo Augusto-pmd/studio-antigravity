@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, updateDoc } from "firebase/firestore";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
+const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador", "Pañolero"];
 
 export function EditUserDialog({
   userProfile,

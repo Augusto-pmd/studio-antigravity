@@ -11,7 +11,7 @@
         },
         "role": {
           "type": "string",
-          "description": "The role of the user within the system (e.g., Direction, Supervisor, Administration, Operator)."
+          "description": "The role of the user within the system (e.g., Direction, Supervisor, Administration, Operator, Pañolero)."
         },
         "fullName": {
           "type": "string",
@@ -1243,6 +1243,58 @@
         "paidAmount",
         "paidInstallments"
       ]
+    },
+    "StockItem": {
+      "title": "Stock Item",
+      "type": "object",
+      "description": "Represents an item in the company's inventory, such as tools or consumables.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the stock item."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the item."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Herramienta",
+            "Consumible",
+            "Insumo"
+          ],
+          "description": "The category of the item."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The current quantity in stock."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measurement for the quantity (e.g., 'unidades', 'metros', 'cajas')."
+        },
+        "reorderPoint": {
+          "type": "number",
+          "description": "The quantity at which a reorder is needed."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the last update."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "quantity",
+        "unit",
+        "lastUpdated"
+      ]
     }
   },
   "auth": {
@@ -1648,6 +1700,22 @@
             {
               "name": "moratoriaId",
               "description": "The unique ID for the payment plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stockItems/{itemId}",
+        "definition": {
+          "entityName": "StockItem",
+          "schema": {
+            "$ref": "#/backend/entities/StockItem"
+          },
+          "description": "Stores company inventory items. Writable by Pañolero and Admins.",
+          "params": [
+            {
+              "name": "itemId",
+              "description": "The unique identifier for the stock item."
             }
           ]
         }
