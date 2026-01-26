@@ -10,10 +10,16 @@ import { IibbSummary } from './iibb-summary';
 import { ExpenseReport } from './expense-report';
 import { Skeleton } from '../ui/skeleton';
 import { RetencionesSummary } from './retenciones-summary';
+import { BankStatementAnalyzer } from './bank-statement-analyzer';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+};
+
+const formatCurrency = (amount: number) => {
+  if (typeof amount !== 'number') return '$0';
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
 export function AccountingDashboard() {
@@ -46,6 +52,17 @@ export function AccountingDashboard() {
       { ivaCredit: 0, iibbCABA: 0, iibbProvincia: 0, retGanancias: 0, retIva: 0, retIibb: 0, retSuss: 0 }
     );
   }, [expenses]);
+  
+  const currentContextForAI = useMemo(() => {
+    return `
+      - Crédito Fiscal IVA actual: ${formatCurrency(ivaCredit)}.
+      - Percepciones IIBB CABA: ${formatCurrency(iibbCABA)}.
+      - Percepciones IIBB Provincia: ${formatCurrency(iibbProvincia)}.
+      - Retenciones (Ganancias: ${formatCurrency(retGanancias)}, IVA: ${formatCurrency(retIva)}, IIBB: ${formatCurrency(retIibb)}, SUSS: ${formatCurrency(retSuss)}).
+      - Total de gastos registrados: ${expenses?.length || 0}.
+    `;
+  }, [expenses, ivaCredit, iibbCABA, iibbProvincia, retGanancias, retIva, retIibb, retSuss]);
+
 
   if (isLoadingExpenses) {
     return (
@@ -62,6 +79,7 @@ export function AccountingDashboard() {
 
   return (
     <div className="space-y-6">
+      <BankStatementAnalyzer currentContext={currentContextForAI} />
       <div className="grid gap-6 md:grid-cols-2">
         <IvaSummary ivaCredit={ivaCredit} />
         <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />
