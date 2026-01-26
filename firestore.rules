@@ -5,10 +5,6 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
     
     function isDirector() {
       return isSignedIn() &&
@@ -23,46 +19,38 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if true;
+      allow read, write: if true;
       
       match /cashAccounts/{cashAccountId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if true;
+        allow read, write: if true;
 
         match /transactions/{transactionId} {
-            allow read: if isOwner(userId) || isAdmin();
-            allow write: if true;
+            allow read, write: if true;
         }
       }
     }
 
     match /projects/{projectId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
 
-      match /expenses/{expenseId} {
-        allow read: if isSignedIn();
-        allow write: if true;
-      }
       match /sales/{saleId} {
-        allow read: if isSignedIn();
-        allow write: if true;
+        allow read, write: if true;
       }
       match /contracts/{contractId} {
-        allow read: if isSignedIn();
-        allow write: if true;
+        allow read, write: if true;
       }
+    }
+
+    match /projects/{projectId}/expenses/{expenseId} {
+        allow read, write: if true;
     }
 
     match /suppliers/{supplierId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
     
     match /employees/{employeeId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
     
     match /technicalOfficeEmployees/{employeeId} {
@@ -77,48 +65,39 @@ service cloud.firestore {
     }
     
     match /timeLogs/{logId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
 
     match /contractors/{contractorId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
 
       match /personnel/{personnelId} {
-        allow read: if isSignedIn();
-        allow write: if true;
+        allow read, write: if true;
       }
     }
     
     match /assets/{assetId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
     
     match /fundRequests/{fundRequestId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
 
     match /payrollWeeks/{payrollWeekId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
 
     match /taskRequests/{taskRequestId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
     
     match /cashAdvances/{cashAdvanceId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
 
     match /attendances/{attendanceId} {
-      allow read: if isSignedIn();
-      allow write: if true; 
+      allow read, write: if true; 
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
@@ -129,22 +108,18 @@ service cloud.firestore {
     }
     
     match /recurringExpenses/{expenseId} {
-        allow read: if isSignedIn();
-        allow write: if true;
+        allow read, write: if true;
     }
 
     match /moratorias/{moratoriaId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
     }
 
     match /stockItems/{itemId} {
-      allow read: if isSignedIn();
-      allow write: if true;
+      allow read, write: if true;
       
       match /movements/{movementId} {
-        allow read: if isSignedIn();
-        allow write: if true;
+        allow read, write: if true;
       }
     }
   }
