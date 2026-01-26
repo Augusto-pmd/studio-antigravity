@@ -96,7 +96,6 @@ const menuItems = [
     href: "/cajas",
     label: "Gestión de Cajas",
     icon: Landmark,
-    adminOnly: true,
   },
   {
     href: "/usuarios",
@@ -128,6 +127,10 @@ export function AppSidebar() {
           <SidebarMenu>
             {menuItems.map((item) => {
               if (item.adminOnly && !permissions.isSuperAdmin) {
+                return null;
+              }
+
+              if (item.href === '/cajas' && !permissions.canSupervise) {
                 return null;
               }
 

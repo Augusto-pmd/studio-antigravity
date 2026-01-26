@@ -5,6 +5,7 @@ export type Permissions = {
   canValidate: boolean;
   canLoadExpenses: boolean;
   canManageProjects: boolean;
+  canSupervise: boolean;
 };
 
 export type UserProfile = {
