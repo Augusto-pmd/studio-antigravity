@@ -7,6 +7,7 @@ export type Permissions = {
   canManageProjects: boolean;
   canSupervise: boolean;
   canManageStock: boolean;
+  canManageSales: boolean;
 };
 
 export type UserProfile = {

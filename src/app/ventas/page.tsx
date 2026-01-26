@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function VentasPage() {
   const { permissions } = useUser();
 
-  if (!permissions.canValidate) {
+  if (!permissions.canManageSales) {
     return (
       <Card>
           <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
@@ -30,7 +30,7 @@ export default function VentasPage() {
             Registre las facturas de venta para llevar un control del IVA Débito Fiscal y la facturación.
           </p>
         </div>
-        {permissions.canValidate && (
+        {permissions.canManageSales && (
           <SaleDialog>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
