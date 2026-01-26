@@ -39,9 +39,9 @@ import { Badge } from "@/components/ui/badge";
 import { Download, PlusCircle, FilePenLine, Eye, Loader2 } from "lucide-react";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
-import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, writeBatch, where, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { PayrollWeek } from "@/lib/types";
+import type { PayrollWeek, Employee, Attendance, CashAdvance, Expense } from "@/lib/types";
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +51,55 @@ import Link from "next/link";
 const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
+};
+
+const employeeConverter = {
+    toFirestore: (data: Employee): DocumentData => {
+        const { id, ...rest } = data;
+        return rest;
+    },
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee)
+};
+
+const attendanceConverter = {
+  toFirestore(attendance: Attendance): DocumentData {
+      const { id, ...data } = attendance;
+      return data;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
+      const data = snapshot.data(options)!;
+      return {
+          id: snapshot.id,
+          employeeId: data.employeeId,
+          date: data.date,
+          status: data.status,
+          lateHours: data.lateHours,
+          notes: data.notes,
+          projectId: data.projectId,
+          payrollWeekId: data.payrollWeekId
+      };
+  }
+};
+
+const cashAdvanceConverter = {
+    toFirestore(advance: CashAdvance): DocumentData {
+        const { id, ...data } = advance;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            employeeId: data.employeeId,
+            employeeName: data.employeeName,
+            projectId: data.projectId,
+            projectName: data.projectName,
+            date: data.date,
+            amount: data.amount,
+            reason: data.reason,
+            payrollWeekId: data.payrollWeekId,
+        };
+    }
 };
 
 export function WeeklySummary() {
@@ -130,21 +179,107 @@ export function WeeklySummary() {
     });
   };
   
-  const handleCloseWeek = (weekId: string) => {
+  const handleCloseWeek = (weekId: string, weekStartDate: string, weekEndDate: string) => {
       if (!firestore) return;
-      startTransition(() => {
-        const weekRef = doc(firestore, 'payrollWeeks', weekId);
-        updateDoc(weekRef, { status: 'Cerrada' })
-            .then(() => {
-                toast({
-                    title: "Semana Cerrada",
-                    description: "La semana ha sido cerrada y pasada al historial."
+      
+      startTransition(async () => {
+        toast({ title: "Cerrando semana...", description: "Calculando costos y generando gastos. Esto puede tardar un momento." });
+
+        try {
+            const batch = writeBatch(firestore);
+
+            // Ensure 'Personal Propio' supplier exists
+            const supplierId = 'personal-propio';
+            const supplierRef = doc(firestore, 'suppliers', supplierId);
+            const supplierSnap = await getDoc(supplierRef);
+
+            if (!supplierSnap.exists()) {
+                batch.set(supplierRef, {
+                    id: supplierId,
+                    name: 'Personal Propio',
+                    cuit: '00-00000000-0',
+                    status: 'Aprobado',
+                    type: 'Servicios'
                 });
-            })
-            .catch((error) => {
-                console.error("Error writing to Firestore:", error);
-                toast({ variant: 'destructive', title: "Error al cerrar", description: "No se pudo cerrar la semana. Es posible que no tengas permisos." });
+            }
+            
+            // 1. Fetch all necessary data for the week
+            const employeesQuery = query(collection(firestore, 'employees').withConverter(employeeConverter));
+            const attendanceQuery = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
+            const advancesQuery = query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId));
+
+            const [employeesSnap, attendanceSnap, advancesSnap] = await Promise.all([
+                getDocs(employeesQuery),
+                getDocs(attendanceQuery),
+                getDocs(advancesQuery),
+            ]);
+
+            const employeesData = employeesSnap.docs.map(d => d.data());
+            const attendancesData = attendanceSnap.docs.map(d => d.data());
+            const advancesData = advancesSnap.docs.map(d => d.data());
+
+            // 2. Process and aggregate costs by project
+            const employeeWages = new Map(employeesData.map(e => [e.id, e.dailyWage]));
+            const costsByProject = new Map<string, { wages: number, advances: number }>();
+
+            for (const attendance of attendancesData) {
+                if (attendance.status === 'presente' && attendance.projectId) {
+                    const wage = employeeWages.get(attendance.employeeId) || 0;
+                    const projectCost = costsByProject.get(attendance.projectId) || { wages: 0, advances: 0 };
+                    projectCost.wages += wage;
+                    costsByProject.set(attendance.projectId, projectCost);
+                }
+            }
+
+            for (const advance of advancesData) {
+                if (advance.projectId) {
+                    const projectCost = costsByProject.get(advance.projectId) || { wages: 0, advances: 0 };
+                    projectCost.advances += advance.amount;
+                    costsByProject.set(advance.projectId, projectCost);
+                }
+            }
+
+            // 4. Add expense documents to the batch for each project
+            const weekEndDateISO = parseISO(weekEndDate).toISOString();
+            const weekRange = formatDateRange(weekStartDate, weekEndDate);
+
+            for (const [projectId, costs] of costsByProject.entries()) {
+                const totalCost = costs.wages + costs.advances;
+                if (totalCost > 0) {
+                    const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
+                    const newExpense: Omit<Expense, 'id'> = {
+                        projectId: projectId,
+                        date: weekEndDateISO,
+                        supplierId: supplierId,
+                        categoryId: 'CAT-02', // Mano de Obra
+                        documentType: 'Recibo Común',
+                        description: `Costo de personal y adelantos - Semana ${weekRange}`,
+                        amount: totalCost,
+                        currency: 'ARS',
+                        exchangeRate: 1,
+                        status: 'Pagado',
+                        paymentMethod: 'Planilla Semanal',
+                        paidDate: new Date().toISOString(),
+                    };
+                    batch.set(expenseRef, newExpense);
+                }
+            }
+
+            // 5. Update the payroll week status to 'Cerrada'
+            const weekRef = doc(firestore, 'payrollWeeks', weekId);
+            batch.update(weekRef, { status: 'Cerrada' });
+
+            // 6. Commit the batch
+            await batch.commit();
+
+            toast({
+                title: "Semana Cerrada Exitosamente",
+                description: "Se han imputado los costos de personal a cada obra correspondiente."
             });
+        } catch (error) {
+            console.error("Error closing week:", error);
+            toast({ variant: 'destructive', title: "Error al cerrar", description: "No se pudo cerrar la semana y generar los gastos. Es posible que no tengas permisos." });
+        }
       });
   };
 
@@ -207,13 +342,13 @@ export function WeeklySummary() {
                                         <AlertDialogHeader>
                                         <AlertDialogTitle>¿Está seguro que desea cerrar la semana?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Esta acción es irreversible. Una vez cerrada, no se podrán registrar más asistencias
-                                            ni adelantos para este período. Solo un administrador podrá editarla.
+                                            Esta acción es irreversible y generará los gastos de mano de obra en cada obra. Una vez cerrada, no se podrán registrar más asistencias
+                                            ni adelantos para este período.
                                         </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleCloseWeek(currentWeek.id)}>Confirmar Cierre</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handleCloseWeek(currentWeek.id, currentWeek.startDate, currentWeek.endDate)}>Confirmar Cierre</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
