@@ -234,10 +234,10 @@ export function DailyAttendance() {
 
     const sortedGroupEntries = Object.entries(initialGroups)
         .filter(([_, groupData]) => groupData.employees.length > 0)
-        .sort(([idA, idB]) => {
+        .sort(([idA, groupDataA], [idB, groupDataB]) => {
             if (idA === 'unassigned') return -1;
             if (idB === 'unassigned') return 1;
-            return initialGroups[idA].name.localeCompare(initialGroups[idB].name);
+            return groupDataA.name.localeCompare(groupDataB.name);
         });
 
     return Object.fromEntries(sortedGroupEntries);
@@ -305,8 +305,8 @@ export function DailyAttendance() {
               date: dateStr,
               payrollWeekId: currentWeek.id,
               status: employeeAttendance.status,
-              lateHours: employeeAttendance.lateHours,
-              notes: employeeAttendance.notes,
+              lateHours: Number(employeeAttendance.lateHours) || 0,
+              notes: employeeAttendance.notes || '',
               projectId: employeeAttendance.projectId || undefined,
           };
           batch.set(docRef, dataToSave, { merge: true });
