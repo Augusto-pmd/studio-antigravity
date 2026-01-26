@@ -212,6 +212,19 @@ export interface SalaryHistory {
     effectiveDate: string;
 }
 
+export interface MonthlySalary {
+    id: string;
+    employeeId: string;
+    employeeName: string;
+    period: string; // YYYY-MM
+    grossSalary: number;
+    deductions: number;
+    netSalary: number;
+    status: 'Pendiente de Pago' | 'Pagado';
+    paidDate?: string;
+    treasuryAccountId?: string;
+}
+
 export interface TreasuryAccount {
     id: string;
     name: string;

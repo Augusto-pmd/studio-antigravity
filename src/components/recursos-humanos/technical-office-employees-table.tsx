@@ -12,12 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TechnicalOfficeEmployee } from "@/lib/types";
-import { Pencil } from "lucide-react";
+import { Pencil, FilePlus } from "lucide-react";
 import { TechnicalOfficeEmployeeDialog } from "./technical-office-employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
+import { SettleSalaryDialog } from "./settle-salary-dialog";
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';
@@ -39,7 +40,7 @@ export function TechnicalOfficeEmployeesTable() {
       <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-      <TableCell className="text-right"><Skeleton className="h-10 w-10 rounded-md ml-auto" /></TableCell>
+      <TableCell className="text-right"><Skeleton className="h-10 w-24 rounded-md ml-auto" /></TableCell>
     </TableRow>
   );
 
@@ -107,12 +108,22 @@ export function TechnicalOfficeEmployeesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <TechnicalOfficeEmployeeDialog employee={employee}>
-                        <Button variant="ghost" size="icon">
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                        </Button>
-                    </TechnicalOfficeEmployeeDialog>
+                    <div className="flex justify-end items-center">
+                      {employee.employmentType === 'Relación de Dependencia' && (
+                        <SettleSalaryDialog employee={employee}>
+                          <Button variant="ghost" size="icon">
+                            <FilePlus className="h-4 w-4" />
+                            <span className="sr-only">Liquidar Sueldo</span>
+                          </Button>
+                        </SettleSalaryDialog>
+                      )}
+                      <TechnicalOfficeEmployeeDialog employee={employee}>
+                          <Button variant="ghost" size="icon">
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                          </Button>
+                      </TechnicalOfficeEmployeeDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

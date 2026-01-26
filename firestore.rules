@@ -149,6 +149,10 @@ service cloud.firestore {
         allow read, write: if isAdmin();
       }
     }
+
+    match /monthlySalaries/{salaryId} {
+      allow read, write: if isAdmin();
+    }
     
     match /timeLogs/{logId} {
       allow read, create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;

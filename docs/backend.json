@@ -969,6 +969,24 @@
         "effectiveDate"
       ]
     },
+    "MonthlySalary": {
+      "title": "Monthly Salary",
+      "type": "object",
+      "description": "Represents a monthly salary settlement for a technical office employee.",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string", "description": "Reference to TechnicalOfficeEmployee" },
+        "employeeName": { "type": "string", "description": "Denormalized employee name" },
+        "period": { "type": "string", "description": "The settlement period, e.g., '2024-05'" },
+        "grossSalary": { "type": "number" },
+        "deductions": { "type": "number" },
+        "netSalary": { "type": "number", "description": "The net amount to be paid (gross - deductions)" },
+        "status": { "type": "string", "enum": ["Pendiente de Pago", "Pagado"] },
+        "paidDate": { "type": "string", "format": "date-time" },
+        "treasuryAccountId": { "type": "string", "description": "Reference to TreasuryAccount used for payment" }
+      },
+      "required": ["id", "employeeId", "employeeName", "period", "grossSalary", "deductions", "netSalary", "status"]
+    },
     "TreasuryAccount": {
       "title": "Treasury Account",
       "type": "object",
@@ -1266,6 +1284,22 @@
             {
               "name": "salaryHistoryId",
               "description": "The unique identifier for the salary history record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/monthlySalaries/{salaryId}",
+        "definition": {
+          "entityName": "MonthlySalary",
+          "schema": {
+            "$ref": "#/backend/entities/MonthlySalary"
+          },
+          "description": "Stores monthly salary settlements. Only accessible by admins.",
+          "params": [
+            {
+              "name": "salaryId",
+              "description": "The unique identifier for the salary settlement."
             }
           ]
         }

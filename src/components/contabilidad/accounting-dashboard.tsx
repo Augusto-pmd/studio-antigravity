@@ -12,6 +12,8 @@ import { Skeleton } from '../ui/skeleton';
 import { RetencionesSummary } from './retenciones-summary';
 import { AccountsPayable } from './accounts-payable';
 import { AccountsReceivable } from './accounts-receivable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { SalaryPayables } from './salary-payables';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
@@ -94,10 +96,22 @@ export function AccountingDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <AccountsPayable />
-        <AccountsReceivable />
-      </div>
+       <Tabs defaultValue="suppliers">
+          <TabsList className="grid w-full grid-cols-2 lg:w-fit">
+            <TabsTrigger value="suppliers">Cuentas por Pagar (Proveedores)</TabsTrigger>
+            <TabsTrigger value="salaries">Cuentas por Pagar (Salarios)</TabsTrigger>
+          </TabsList>
+          <TabsContent value="suppliers">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <AccountsPayable />
+                <AccountsReceivable />
+            </div>
+          </TabsContent>
+          <TabsContent value="salaries">
+            <SalaryPayables />
+          </TabsContent>
+       </Tabs>
+
       <div className="grid gap-6 md:grid-cols-2">
         <IvaSummary ivaCredit={ivaCredit} ivaDebit={ivaDebit} />
         <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />
