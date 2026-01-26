@@ -47,6 +47,7 @@ import {
   UserCog,
   Repeat,
   CalendarClock,
+  CalendarDays,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -69,6 +70,11 @@ const menuItems = [
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
   { href: "/ventas", label: "Ventas", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  {
+    href: "/calendario-pagos",
+    label: "Calendario de Pagos",
+    icon: CalendarDays,
+  },
   {
     href: "/planes-de-pago",
     label: "Planes de Pago",
