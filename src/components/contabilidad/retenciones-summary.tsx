@@ -51,7 +51,7 @@ export function RetencionesSummary({
           </p>
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div className="flex justify-between border-b pb-1">
-              <span className="text-muted-foreground">Ret. Ganancias:</span>
+              <span className="text-muted-foreground">Ret. Ganancias (a Prov.):</span>
               <span className="font-mono">{formatCurrency(retGanancias)}</span>
             </div>
             <div className="flex justify-between border-b pb-1">
