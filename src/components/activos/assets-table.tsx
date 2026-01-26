@@ -17,7 +17,7 @@ import { Pencil } from "lucide-react";
 import { AssetDialog } from "./asset-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 
 const formatCurrency = (amount: number, currency: string) => {

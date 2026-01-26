@@ -44,7 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PayrollWeek } from "@/lib/types";
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const payrollWeekConverter = {

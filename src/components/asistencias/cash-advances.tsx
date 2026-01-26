@@ -20,7 +20,7 @@ import { AddCashAdvanceDialog } from "./add-cash-advance-dialog";
 import { useUser, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { CashAdvance, PayrollWeek } from '@/lib/types';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { parseISO, format } from 'date-fns';
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => {
