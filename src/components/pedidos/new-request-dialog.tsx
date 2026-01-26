@@ -168,7 +168,7 @@ export function NewRequestDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Ninguna</SelectItem>
-                {projects?.filter(p => p.status === 'En Curso').map((p) => (
+                {(projects || []).filter(p => p.status === 'En Curso').map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>

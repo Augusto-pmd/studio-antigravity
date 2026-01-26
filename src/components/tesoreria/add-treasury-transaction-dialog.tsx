@@ -127,7 +127,7 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Ninguna</SelectItem>
-                {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
+                {(projects || []).filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>

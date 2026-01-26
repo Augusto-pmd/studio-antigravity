@@ -198,7 +198,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
               <SelectContent>
-                {projects?.filter(p => p.status === 'En Curso').map((p) => (
+                {(projects || []).filter(p => p.status === 'En Curso').map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
