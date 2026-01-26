@@ -285,37 +285,45 @@ export function DailyAttendance() {
     const dateToSave = selectedDate;
 
     startTransition(async () => {
-      const batch = writeBatch(firestore);
-      const dateStr = format(dateToSave, 'yyyy-MM-dd');
-      
-      const existingDocsMap = new Map(dayAttendances?.map(d => [d.employeeId, d.id]));
+        const batch = writeBatch(firestore);
+        const dateStr = format(dateToSave, 'yyyy-MM-dd');
+        
+        const existingDocsMap = new Map(dayAttendances?.map(d => [d.employeeId, d.id]));
 
-      for (const employee of activeEmployees) {
-          const employeeAttendance = getEmployeeAttendance(employee.id);
-          const docId = existingDocsMap.get(employee.id);
-          const docRef = docId ? doc(firestore, 'attendances', docId) : doc(collection(firestore, 'attendances'));
+        // Only process employees whose attendance has been explicitly set/changed in the UI
+        for (const employeeId of Object.keys(attendance)) {
+            const employeeAttendance = attendance[employeeId];
 
-          const dataToSave: Omit<Attendance, 'id'> = {
-              employeeId: employee.id,
-              date: dateStr,
-              payrollWeekId: weekToSave.id,
-              status: employeeAttendance.status,
-              lateHours: Number(employeeAttendance.lateHours) || 0,
-              notes: employeeAttendance.notes,
-              projectId: employeeAttendance.status === 'ausente' ? null : (employeeAttendance.projectId || null),
-          };
-          batch.set(docRef, dataToSave, { merge: true });
-      }
+            if (!employeeAttendance) continue; // Should not happen, but a safeguard
 
-      try {
-        await batch.commit();
-        toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(dateToSave, 'dd/MM/yyyy')}` });
-      } catch (error) {
-        console.error("Error saving attendance: ", error);
-        toast({ variant: 'destructive', title: "Error al guardar", description: "No se pudieron guardar las asistencias. Es posible que no tengas permisos." });
-      }
+            const docId = existingDocsMap.get(employeeId);
+            const docRef = docId ? doc(firestore, 'attendances', docId) : doc(collection(firestore, 'attendances'));
+
+            const dataToSave: Omit<Attendance, 'id'> = {
+                employeeId: employeeId,
+                date: dateStr,
+                payrollWeekId: weekToSave.id,
+                status: employeeAttendance.status,
+                lateHours: Number(employeeAttendance.lateHours) || 0,
+                notes: employeeAttendance.notes,
+                projectId: employeeAttendance.status === 'ausente' ? null : (employeeAttendance.projectId || null),
+            };
+            batch.set(docRef, dataToSave, { merge: true });
+        }
+
+        try {
+            if (Object.keys(attendance).length === 0) {
+                toast({ variant: 'default', title: 'Nada que guardar', description: 'No se ha modificado ninguna asistencia.' });
+                return;
+            }
+            await batch.commit();
+            toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(dateToSave, 'dd/MM/yyyy')}` });
+        } catch (error) {
+            console.error("Error saving attendance: ", error);
+            toast({ variant: 'destructive', title: "Error al guardar", description: "No se pudieron guardar las asistencias. Es posible que no tengas permisos." });
+        }
     });
-  }
+  };
 
   const renderAttendanceControls = (employee: Employee) => {
     const employeeAttendance = getEmployeeAttendance(employee.id);
