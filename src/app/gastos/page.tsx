@@ -1,8 +1,10 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
 import { ExpensesTable } from "@/components/expenses/expenses-table";
+import { ProjectExpenseSummary } from "@/components/expenses/project-expense-summary";
 import { useUser, useCollection, useFirestore } from "@/firebase";
 import {
   Select,
@@ -13,8 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import type { Project, Supplier } from '@/lib/types';
+import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import type { Project, Supplier, Expense, TimeLog, TechnicalOfficeEmployee } from '@/lib/types';
 import { expenseCategories } from '@/lib/data';
 
 const projectConverter = {
@@ -25,6 +27,21 @@ const projectConverter = {
 const supplierConverter = {
     toFirestore: (data: Supplier): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
+};
+
+const expenseConverter = {
+    toFirestore: (data: Expense): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+};
+
+const timeLogConverter = {
+    toFirestore: (data: TimeLog): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
+};
+
+const techOfficeEmployeeConverter = {
+    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
 };
 
 export default function GastosPage() {
@@ -40,6 +57,56 @@ export default function GastosPage() {
 
   const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
+
+  // Data for summary
+  const allExpensesQuery = useMemo(() => (firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null), [firestore]);
+  const { data: allExpenses, isLoading: isLoadingAllExpenses } = useCollection<Expense>(allExpensesQuery);
+
+  const allTimeLogsQuery = useMemo(() => (firestore ? collection(firestore, 'timeLogs').withConverter(timeLogConverter) : null), [firestore]);
+  const { data: allTimeLogs, isLoading: isLoadingAllTimeLogs } = useCollection<TimeLog>(allTimeLogsQuery);
+
+  const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
+  const { data: techOfficeEmployees, isLoading: isLoadingTechOffice } = useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
+
+  const { summary, isLoading: isLoadingSummary } = useMemo(() => {
+    const isLoading = isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice;
+
+    if (!selectedProject || !allExpenses || !allTimeLogs || !techOfficeEmployees) {
+      return { summary: null, isLoading };
+    }
+
+    const projectExpenses = allExpenses.filter(e => e.projectId === selectedProject);
+
+    const materialesCost = projectExpenses
+      .filter(e => e.categoryId === 'CAT-01')
+      .reduce((sum, e) => sum + (e.currency === 'USD' && e.exchangeRate ? e.amount * e.exchangeRate : e.amount), 0);
+
+    const manoDeObraCost = projectExpenses
+      .filter(e => e.categoryId === 'CAT-02')
+      .reduce((sum, e) => sum + (e.currency === 'USD' && e.exchangeRate ? e.amount * e.exchangeRate : e.amount), 0);
+      
+    const employeeSalaryMap = new Map(techOfficeEmployees.map(e => [e.userId, e.monthlySalary]));
+    const projectTimeLogs = allTimeLogs.filter(log => log.projectId === selectedProject);
+
+    const horasOficinaTecnicaCost = projectTimeLogs.reduce((total, log) => {
+        const salary = employeeSalaryMap.get(log.userId);
+        if (!salary) return total;
+        // Assume 160 working hours in a month. This is a reasonable assumption for a prototype.
+        const hourlyRate = salary / 160;
+        return total + (log.hours * hourlyRate);
+    }, 0);
+
+    return { 
+        summary: {
+            materialesCost,
+            manoDeObraCost,
+            horasOficinaTecnicaCost,
+        },
+        isLoading: false
+    };
+
+  }, [selectedProject, allExpenses, allTimeLogs, techOfficeEmployees, isLoadingAllExpenses, isLoadingAllTimeLogs, isLoadingTechOffice]);
+
 
   const resetFilters = () => {
     setSelectedProject(undefined);
@@ -60,6 +127,10 @@ export default function GastosPage() {
         </div>
         {permissions.canLoadExpenses && <AddExpenseDialog />}
       </div>
+
+      {selectedProject && (
+        <ProjectExpenseSummary summary={summary} isLoading={isLoadingSummary} />
+      )}
       
       <div className="flex flex-col gap-4 rounded-lg border p-4 md:flex-row">
         <h3 className="hidden shrink-0 font-semibold tracking-tight md:block mt-2">Filtros:</h3>
