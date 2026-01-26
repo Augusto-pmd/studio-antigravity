@@ -43,6 +43,7 @@ export function SupplierDialog({
 
   // Form State
   const [name, setName] = useState('');
+  const [alias, setAlias] = useState('');
   const [cuit, setCuit] = useState('');
   const [address, setAddress] = useState('');
   const [fiscalCondition, setFiscalCondition] = useState('');
@@ -55,6 +56,7 @@ export function SupplierDialog({
 
   const resetForm = () => {
     setName(supplier?.name || '');
+    setAlias(supplier?.alias || '');
     setCuit(supplier?.cuit || '');
     setAddress(supplier?.address || '');
     setFiscalCondition(supplier?.fiscalCondition || '');
@@ -90,6 +92,7 @@ export function SupplierDialog({
       const supplierData: Supplier = {
         id: supplierId,
         name,
+        alias: alias || undefined,
         cuit,
         address,
         fiscalCondition,
@@ -138,6 +141,10 @@ export function SupplierDialog({
               <div className="space-y-2">
                 <Label htmlFor="name">Razón Social *</Label>
                 <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre o Razón Social" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="alias">Alias</Label>
+                <Input id="alias" value={alias} onChange={e => setAlias(e.target.value)} placeholder="Ej. Corralón Fernández" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cuit">CUIT *</Label>

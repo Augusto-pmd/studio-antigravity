@@ -321,6 +321,10 @@
         "name": {
           "type": "string"
         },
+        "alias": {
+          "type": "string",
+          "description": "An optional alias or nickname for the supplier."
+        },
         "cuit": {
           "type": "string"
         },

@@ -58,6 +58,7 @@ export interface Expense {
 export interface Supplier {
   id: string;
   name: string;
+  alias?: string;
   cuit: string;
   email?: string;
   phone?: string;

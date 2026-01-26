@@ -66,6 +66,7 @@ export function SuppliersTable() {
                 <TableRow key={supplier.id}>
                   <TableCell>
                     <div className="font-medium">{supplier.name}</div>
+                    {supplier.alias && <div className="text-sm text-muted-foreground font-light">{supplier.alias}</div>}
                     <div className="text-sm text-muted-foreground">{supplier.cuit}</div>
                     <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <div>
