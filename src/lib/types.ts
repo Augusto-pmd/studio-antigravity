@@ -243,6 +243,11 @@ export interface Sale {
   netAmount: number;
   ivaAmount: number;
   totalAmount: number;
-  status: 'Borrador' | 'Activo' | 'Finalizado' | 'Cancelado';
+  status: 'Borrador' | 'Pendiente de Cobro' | 'Cobrado' | 'Cancelado';
   invoiceUrl?: string;
+  collectedDate?: string;
+  treasuryAccountId?: string;
+  retencionGanancias?: number;
+  retencionIVA?: number;
+  retencionIIBB?: number;
 }

@@ -132,10 +132,10 @@ export function SalesTable() {
                   <TableCell>
                      <Badge variant="outline" className={cn(
                         'capitalize text-xs',
-                        sale.status === 'Activo' && 'text-green-500 border-green-500',
-                        sale.status === 'Finalizado' && 'text-blue-500 border-blue-500',
-                        sale.status === 'Borrador' && 'text-yellow-500 border-yellow-500',
-                        sale.status === 'Cancelado' && 'text-red-500 border-red-500',
+                        sale.status === 'Pendiente de Cobro' && 'text-yellow-500 border-yellow-500',
+                        sale.status === 'Cobrado' && 'text-green-500 border-green-500',
+                        sale.status === 'Borrador' && 'text-gray-500 border-gray-500',
+                        sale.status === 'Cancelado' && 'text-destructive border-destructive',
                      )}>{sale.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono hidden md:table-cell">{formatCurrency(sale.totalAmount)}</TableCell>

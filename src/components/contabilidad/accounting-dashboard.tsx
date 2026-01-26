@@ -11,6 +11,7 @@ import { ExpenseReport } from './expense-report';
 import { Skeleton } from '../ui/skeleton';
 import { RetencionesSummary } from './retenciones-summary';
 import { AccountsPayable } from './accounts-payable';
+import { AccountsReceivable } from './accounts-receivable';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
@@ -67,7 +68,7 @@ export function AccountingDashboard() {
     );
     
     const ivaDebit = sales.reduce((acc, sale) => {
-      if (sale.status !== 'Cancelado') {
+      if (!['Cancelado', 'Borrador'].includes(sale.status)) {
         return acc + (sale.ivaAmount || 0);
       }
       return acc;
@@ -93,7 +94,10 @@ export function AccountingDashboard() {
 
   return (
     <div className="space-y-6">
-      <AccountsPayable />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <AccountsPayable />
+        <AccountsReceivable />
+      </div>
       <div className="grid gap-6 md:grid-cols-2">
         <IvaSummary ivaCredit={ivaCredit} ivaDebit={ivaDebit} />
         <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />

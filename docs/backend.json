@@ -560,8 +560,8 @@
           "type": "string",
           "enum": [
             "Borrador",
-            "Activo",
-            "Finalizado",
+            "Pendiente de Cobro",
+            "Cobrado",
             "Cancelado"
           ],
           "description": "The current status of the sale."
@@ -569,6 +569,27 @@
         "invoiceUrl": {
           "type": "string",
           "description": "URL of the uploaded sales invoice PDF/image."
+        },
+        "collectedDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the sale was collected."
+        },
+        "treasuryAccountId": {
+          "type": "string",
+          "description": "Reference to the TreasuryAccount where the funds were deposited."
+        },
+        "retencionGanancias": {
+          "type": "number",
+          "description": "Retención de Ganancias sufrida en el cobro."
+        },
+        "retencionIVA": {
+          "type": "number",
+          "description": "Retención de IVA sufrida en el cobro."
+        },
+        "retencionIIBB": {
+          "type": "number",
+          "description": "Retención de Ingresos Brutos sufrida en el cobro."
         }
       },
       "required": [

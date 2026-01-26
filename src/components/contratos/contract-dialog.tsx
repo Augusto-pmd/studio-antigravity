@@ -65,7 +65,7 @@ export function SaleDialog({
   const [description, setDescription] = useState('');
   const [netAmount, setNetAmount] = useState('');
   const [ivaAmount, setIvaAmount] = useState('');
-  const [status, setStatus] = useState<'Borrador' | 'Activo' | 'Finalizado' | 'Cancelado'>('Activo');
+  const [status, setStatus] = useState<'Borrador' | 'Pendiente de Cobro' | 'Cobrado' | 'Cancelado'>('Pendiente de Cobro');
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
 
   const totalAmount = useMemo(() => {
@@ -80,7 +80,7 @@ export function SaleDialog({
     setDescription(sale?.description || '');
     setNetAmount(sale?.netAmount?.toString() || '');
     setIvaAmount(sale?.ivaAmount?.toString() || '');
-    setStatus(sale?.status || 'Activo');
+    setStatus(sale?.status || 'Pendiente de Cobro');
     setInvoiceFile(null);
   };
 
@@ -224,8 +224,8 @@ export function SaleDialog({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="Borrador">Borrador</SelectItem>
-                    <SelectItem value="Activo">Activo</SelectItem>
-                    <SelectItem value="Finalizado">Finalizado</SelectItem>
+                    <SelectItem value="Pendiente de Cobro">Pendiente de Cobro</SelectItem>
+                    <SelectItem value="Cobrado">Cobrado</SelectItem>
                     <SelectItem value="Cancelado">Cancelado</SelectItem>
                 </SelectContent>
             </Select>
