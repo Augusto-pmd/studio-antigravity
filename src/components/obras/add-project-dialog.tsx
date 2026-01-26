@@ -110,7 +110,7 @@ export function AddProjectDialog({
           address,
           projectType,
           currency,
-          description: description || undefined,
+          description: description || "",
           status,
           supervisor,
           budget: parseFloat(budget) || 0,
