@@ -232,7 +232,7 @@ export function AddExpenseDialog({
 
 
   const handleSaveExpense = () => {
-    if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
+    if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate || !paymentMethod) {
       toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
       return;
     }
@@ -272,7 +272,7 @@ export function AddExpenseDialog({
             categoryId: selectedCategory,
             documentType,
             invoiceNumber: documentType === 'Factura' ? invoiceNumber : '',
-            paymentMethod: documentType === 'Factura' ? (paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod) : '',
+            paymentMethod: paymentMethod === 'Otros' ? paymentMethodOther : paymentMethod,
             amount: parseFloat(amount),
             iva: iva ? parseFloat(iva) : 0,
             iibb: iibb ? parseFloat(iibb) : 0,
@@ -443,6 +443,34 @@ export function AddExpenseDialog({
               </div>
             </RadioGroup>
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Medio de Pago</Label>
+            <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod}>
+                <SelectTrigger id="paymentMethod">
+                    <SelectValue placeholder="Seleccione un medio" />
+                </SelectTrigger>
+                <SelectContent>
+                    {paymentMethods.map((method) => (
+                        <SelectItem key={method} value={method}>
+                            {method}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+          </div>
+
+          {paymentMethod === 'Otros' && (
+              <div className="space-y-2">
+                  <Label htmlFor="paymentMethodOther">Especificar Medio de Pago</Label>
+                  <Input
+                      id="paymentMethodOther"
+                      value={paymentMethodOther}
+                      onChange={(e) => setPaymentMethodOther(e.target.value)}
+                      placeholder="Especifique el medio de pago"
+                  />
+              </div>
+          )}
 
           {documentType === 'Factura' && (
             <>
@@ -463,33 +491,6 @@ export function AddExpenseDialog({
                     <Input id="invoiceNumber" type="text" placeholder="Nº de la factura" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Medio de Pago</Label>
-                <Select onValueChange={(value) => setPaymentMethod(value)} value={paymentMethod}>
-                    <SelectTrigger id="paymentMethod">
-                        <SelectValue placeholder="Seleccione un medio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {paymentMethods.map((method) => (
-                            <SelectItem key={method} value={method}>
-                                {method}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-              </div>
-
-              {paymentMethod === 'Otros' && (
-                  <div className="space-y-2">
-                      <Label htmlFor="paymentMethodOther">Especificar Medio de Pago</Label>
-                      <Input
-                          id="paymentMethodOther"
-                          value={paymentMethodOther}
-                          onChange={(e) => setPaymentMethodOther(e.target.value)}
-                          placeholder="Especifique el medio de pago"
-                      />
-                  </div>
-              )}
             </>
           )}
 

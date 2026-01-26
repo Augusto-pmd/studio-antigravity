@@ -28,20 +28,27 @@ export function AccountingDashboard() {
     () => (firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null),
     [firestore]
   );
-  const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
+  const { data: allExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
 
   const salesQuery = useMemo(
     () => (firestore ? query(collectionGroup(firestore, 'sales').withConverter(saleConverter)) : null),
     [firestore]
   );
   const { data: sales, isLoading: isLoadingSales } = useCollection<Sale>(salesQuery);
+  
+  const formalExpenses = useMemo(() => {
+    if (!allExpenses) return [];
+    // Exclude expenses paid with "Efectivo" from formal accounting
+    return allExpenses.filter(e => e.paymentMethod !== 'Efectivo');
+  }, [allExpenses]);
+
 
   const { ivaCredit, ivaDebit, iibbCABA, iibbProvincia, retGanancias, retIva, retIibb, retSuss } = useMemo(() => {
-    if (!expenses || !sales) {
+    if (!formalExpenses || !sales) {
       return { ivaCredit: 0, ivaDebit: 0, iibbCABA: 0, iibbProvincia: 0, retGanancias: 0, retIva: 0, retIibb: 0, retSuss: 0 };
     }
     
-    const expenseSummary = expenses.reduce(
+    const expenseSummary = formalExpenses.reduce(
       (acc, expense) => {
         acc.ivaCredit += expense.iva || 0;
         if (expense.iibbJurisdiction === 'CABA') {
@@ -67,7 +74,7 @@ export function AccountingDashboard() {
 
     return { ...expenseSummary, ivaDebit };
 
-  }, [expenses, sales]);
+  }, [formalExpenses, sales]);
   
 
   if (isLoadingExpenses || isLoadingSales) {
@@ -90,7 +97,7 @@ export function AccountingDashboard() {
         <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />
       </div>
       <RetencionesSummary retGanancias={retGanancias} retIva={retIva} retIibb={retIibb} retSuss={retSuss} />
-      <ExpenseReport expenses={expenses || []} isLoading={isLoadingExpenses} />
+      <ExpenseReport expenses={formalExpenses || []} isLoading={isLoadingExpenses} />
     </div>
   );
 }

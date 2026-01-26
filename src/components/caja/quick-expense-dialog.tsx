@@ -118,6 +118,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             supplierId: 'logistica-vial', // Generic supplier for these expenses
             categoryId: 'CAT-04', // Transporte y Logística
             documentType: 'Recibo Común',
+            paymentMethod: 'Efectivo',
             amount: expenseAmount,
             currency: 'ARS',
             exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
