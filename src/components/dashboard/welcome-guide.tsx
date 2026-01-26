@@ -13,7 +13,6 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
-import { AiAssistant } from "@/components/dashboard/ai-assistant";
 
 const guideItems = [
   {
@@ -63,31 +62,24 @@ export function WelcomeGuide() {
           Una guía rápida de las herramientas a tu disposición.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {guideItems.map((item) => (
-                <Link href={item.href} key={item.href} className="flex">
-                    <Card className="flex w-full flex-col transition-all hover:bg-muted/50 hover:shadow-lg">
-                    <CardHeader className="flex-row items-start gap-4">
-                        <div className="rounded-lg bg-primary/10 p-3">
-                        <item.icon className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                        <CardTitle>{item.title}</CardTitle>
-                        <CardDescription className="mt-1">
-                            {item.description}
-                        </CardDescription>
-                        </div>
-                    </CardHeader>
-                    </Card>
-                </Link>
-                ))}
-            </div>
-        </div>
-        <div className="lg:col-span-1">
-            <AiAssistant />
-        </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {guideItems.map((item) => (
+          <Link href={item.href} key={item.href} className="flex">
+            <Card className="flex w-full flex-col transition-all hover:bg-muted/50 hover:shadow-lg">
+              <CardHeader className="flex-row items-start gap-4">
+                <div className="rounded-lg bg-primary/10 p-3">
+                  <item.icon className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>{item.title}</CardTitle>
+                  <CardDescription className="mt-1">
+                    {item.description}
+                  </CardDescription>
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   );
