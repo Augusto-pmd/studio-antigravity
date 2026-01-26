@@ -116,8 +116,8 @@ export function AddProjectDialog({
           budget: parseFloat(budget) || 0,
           progress: parseInt(progress) || 0,
           balance: isEditMode && project ? project.balance : parseFloat(budget) || 0,
-          startDate: startDate || null?.toISOString(),
-          endDate: endDate || null?.toISOString(),
+          startDate: startDate ? startDate.toISOString() : null,
+          endDate: endDate ? endDate.toISOString() : null,
       };
 
       setDoc(projectRef, projectData, { merge: true })
