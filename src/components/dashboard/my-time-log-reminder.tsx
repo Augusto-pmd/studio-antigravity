@@ -12,11 +12,11 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import Link from 'next/link';
 
 const techOfficeEmployeeConverter = {
-    fromFirestore: (snapshot: any): TechnicalOfficeEmployee => ({ ...snapshot.data(), id: snapshot.id })
+    toFirestore: (data: any) => data, fromFirestore: (snapshot: any): TechnicalOfficeEmployee => ({ ...snapshot.data(), id: snapshot.id })
 };
 
 const timeLogConverter = {
-    fromFirestore: (snapshot: any): TimeLog => ({ ...snapshot.data(), id: snapshot.id })
+    toFirestore: (data: any) => data, fromFirestore: (snapshot: any): TimeLog => ({ ...snapshot.data(), id: snapshot.id })
 };
 
 
