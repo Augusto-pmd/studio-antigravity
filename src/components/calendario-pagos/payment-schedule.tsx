@@ -121,10 +121,8 @@ export function PaymentSchedule() {
         acc.overdue.push(item);
       } else if (item.date >= todayStart && item.date <= todayEnd) {
         acc.today.push(item);
-      } else if (item.date > todayEnd && item.date <= sevenDaysFromNow) {
-        acc.next7Days.push(item);
       } else if (item.date > sevenDaysFromNow && item.date <= thirtyDaysFromNow) {
-        acc.next30Days.push(item);
+        acc.next7Days.push(item);
       } else {
         acc.later.push(item);
       }
@@ -167,7 +165,7 @@ export function PaymentSchedule() {
                     </AccordionTrigger>
                     <AccordionContent className="px-2 sm:px-4">
                         <div className="space-y-2">
-                            {group.items.map(item => (
+                            {group.items.map((item: any) => (
                                <ScheduleItem key={item.id} item={item} />
                             ))}
                         </div>
