@@ -138,9 +138,10 @@ service cloud.firestore {
     }
 
     match /projects/{projectId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isSupervisorOrAdmin();
       match /expenses/{expenseId} {
-        allow read, write: if isSupervisorOrAdmin();
+        allow read, write: if isSignedIn();
       }
       match /contracts/{contractId} {
         allow read, write: if isSignedIn();
