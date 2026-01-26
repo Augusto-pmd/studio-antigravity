@@ -38,9 +38,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 interface TimeLogEntry {
-  id: string; // Temp ID for React key
+  id: string; // Can be a real doc ID or a temp ID
   projectId: string;
-  hours: number | string;
+  hours: string; // Use string to align with input value type
 }
 
 const projectConverter = {
@@ -58,7 +58,7 @@ export function UserTimeLog() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeLogEntries, setTimeLogEntries] = useState<TimeLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
 
@@ -117,24 +117,22 @@ export function UserTimeLog() {
 
   useEffect(() => {
     setIsClient(true);
-    setSelectedDate(new Date());
   }, []);
   
   useEffect(() => {
-    if (isLoadingExistingLogs) {
-        // While loading, don't change the entries to avoid flicker
-        return;
-    }
-    if (existingLogs) {
+    // This effect now correctly populates the form based on the fetched data.
+    // It no longer bails out during loading, preventing stale state.
+    if (!isLoadingExistingLogs && existingLogs) {
       if (existingLogs.length > 0) {
-        const entries = existingLogs.map(log => ({
+        const entries: TimeLogEntry[] = existingLogs.map(log => ({
           id: log.id,
           projectId: log.projectId,
-          hours: log.hours,
+          hours: log.hours.toString(), // Convert number from DB to string for input
         }));
         setTimeLogEntries(entries);
       } else {
-        setTimeLogEntries([{ id: `temp-${Date.now()}`, projectId: '', hours: 8 }]);
+        // If no logs exist for the selected day, provide a default empty entry.
+        setTimeLogEntries([{ id: `temp-${Date.now()}`, projectId: '', hours: '8' }]);
       }
     }
   }, [existingLogs, isLoadingExistingLogs]);
@@ -149,7 +147,7 @@ export function UserTimeLog() {
   const totalHours = useMemo(() => timeLogEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0), [timeLogEntries]);
   
   const addEntry = () => {
-    setTimeLogEntries([...timeLogEntries, { id: `temp-${Date.now()}`, projectId: '', hours: 0 }]);
+    setTimeLogEntries([...timeLogEntries, { id: `temp-${Date.now()}`, projectId: '', hours: '0' }]);
   };
 
   const removeEntry = (id: string) => {
@@ -175,7 +173,7 @@ export function UserTimeLog() {
     startTransition(() => {
         const batch = writeBatch(firestore);
 
-        // Delete old logs for this day that are no longer in the entries
+        // Delete old logs for this day that are no longer in the entries list
         existingLogs?.forEach(oldLog => {
             if (!timeLogEntries.some(entry => entry.id === oldLog.id)) {
                 const docRef = doc(firestore, 'timeLogs', oldLog.id);
@@ -183,7 +181,7 @@ export function UserTimeLog() {
             }
         });
 
-        // Set/Update current entries
+        // Set/Update current entries from the form state
         timeLogEntries.forEach(entry => {
             const isNew = entry.id.startsWith('temp-');
             const docRef = isNew 
@@ -194,14 +192,11 @@ export function UserTimeLog() {
                 userId: user.uid,
                 date: currentFormattedDate,
                 projectId: entry.projectId,
-                hours: Number(entry.hours),
+                hours: Number(entry.hours) || 0, // Convert back to number for saving
             };
             
-            if (isNew) {
-                batch.set(docRef, logData);
-            } else {
-                batch.update(docRef, logData);
-            }
+            // Use set with merge true to handle both create and update elegantly
+            batch.set(docRef, logData, { merge: true });
         });
 
         batch.commit()
@@ -268,40 +263,42 @@ export function UserTimeLog() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {(isLoadingExistingLogs) && 
-                        <div className="space-y-4">
+                    {isLoadingExistingLogs ? (
+                        <div className="space-y-3">
+                            <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
                         </div>
-                    }
-                    {!isLoadingExistingLogs && timeLogEntries.map((entry, index) => (
-                        <div key={entry.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 p-3 rounded-md border">
-                            <div>
-                                <Label htmlFor={`project-${index}`} className="sr-only">Obra</Label>
-                                <Select value={entry.projectId} onValueChange={(val) => updateEntry(entry.id, 'projectId', val)} disabled={isLoadingProjects}>
-                                    <SelectTrigger id={`project-${index}`}>
-                                        <SelectValue placeholder="Seleccione una obra" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                    {projects?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                    ) : (
+                        timeLogEntries.map((entry, index) => (
+                            <div key={entry.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 p-3 rounded-md border">
+                                <div>
+                                    <Label htmlFor={`project-${index}`} className="sr-only">Obra</Label>
+                                    <Select value={entry.projectId} onValueChange={(val) => updateEntry(entry.id, 'projectId', val)} disabled={isLoadingProjects}>
+                                        <SelectTrigger id={`project-${index}`}>
+                                            <SelectValue placeholder="Seleccione una obra" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                        {projects?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label htmlFor={`hours-${index}`} className="sr-only">Horas</Label>
+                                    <Input 
+                                        id={`hours-${index}`} 
+                                        type="number"
+                                        value={entry.hours}
+                                        onChange={(e) => updateEntry(entry.id, 'hours', e.target.value)}
+                                        className="w-24 text-right"
+                                        placeholder="Horas"
+                                    />
+                                </div>
+                                 <Button variant="ghost" size="icon" onClick={() => removeEntry(entry.id)} className="text-muted-foreground hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </div>
-                            <div>
-                                <Label htmlFor={`hours-${index}`} className="sr-only">Horas</Label>
-                                <Input 
-                                    id={`hours-${index}`} 
-                                    type="number"
-                                    value={entry.hours}
-                                    onChange={(e) => updateEntry(entry.id, 'hours', e.target.value)}
-                                    className="w-24 text-right"
-                                    placeholder="Horas"
-                                />
-                            </div>
-                             <Button variant="ghost" size="icon" onClick={() => removeEntry(entry.id)} className="text-muted-foreground hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ))}
+                        ))
+                    )}
                      <Button variant="outline" onClick={addEntry} className="w-full" disabled={!selectedDate}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Añadir Otra Obra
@@ -312,7 +309,7 @@ export function UserTimeLog() {
                 <div className="text-lg">
                     Total de Horas: <span className="font-bold font-mono">{totalHours}</span>
                 </div>
-                <Button onClick={handleSaveLogs} disabled={isPending || timeLogEntries.length === 0}>
+                <Button onClick={handleSaveLogs} disabled={isPending || isLoadingExistingLogs || timeLogEntries.length === 0}>
                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Guardar Horas
                 </Button>
@@ -333,7 +330,7 @@ export function UserTimeLog() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(isLoadingMonthlyLogs || isLoadingProjects) && (
+                        {(isLoadingMonthlyLogs || isLoadingProjects) ? (
                             <>
                                 <TableRow>
                                     <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
@@ -344,20 +341,20 @@ export function UserTimeLog() {
                                     <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
                                 </TableRow>
                             </>
-                        )}
-                        {!isLoadingMonthlyLogs && !isLoadingProjects && monthlySummary.length === 0 && (
+                        ) : monthlySummary.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={2} className="h-24 text-center">
                                     No hay horas registradas para este mes.
                                 </TableCell>
                             </TableRow>
+                        ) : (
+                          monthlySummary.map(summary => (
+                              <TableRow key={summary.projectId}>
+                                  <TableCell className="font-medium">{summary.projectName}</TableCell>
+                                  <TableCell className="text-right font-mono">{summary.totalHours}</TableCell>
+                              </TableRow>
+                          ))
                         )}
-                        {!isLoadingMonthlyLogs && !isLoadingProjects && monthlySummary.map(summary => (
-                            <TableRow key={summary.projectId}>
-                                <TableCell className="font-medium">{summary.projectName}</TableCell>
-                                <TableCell className="text-right font-mono">{summary.totalHours}</TableCell>
-                            </TableRow>
-                        ))}
                     </TableBody>
                 </Table>
             </CardContent>
