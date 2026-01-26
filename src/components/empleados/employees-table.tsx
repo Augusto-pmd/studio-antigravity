@@ -56,14 +56,14 @@ const employeeConverter = {
         const data = snapshot.data(options)!;
         return {
             id: snapshot.id,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            status: data.status,
-            paymentType: data.paymentType,
-            category: data.category,
-            dailyWage: data.dailyWage,
-            artExpiryDate: data.artExpiryDate,
+            name: data.name || '',
+            email: data.email || undefined,
+            phone: data.phone || undefined,
+            status: data.status || 'Inactivo',
+            paymentType: data.paymentType || 'Semanal',
+            category: data.category || '',
+            dailyWage: data.dailyWage || 0,
+            artExpiryDate: data.artExpiryDate || undefined,
         };
     }
 };

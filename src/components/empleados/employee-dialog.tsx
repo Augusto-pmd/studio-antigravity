@@ -64,7 +64,7 @@ export function EmployeeDialog({
     setEmail(employee?.email || '');
     setPhone(employee?.phone || '');
     setCategory(employee?.category || '');
-    setDailyWage(employee?.dailyWage.toString() || '');
+    setDailyWage(employee?.dailyWage?.toString() || '');
     setPaymentType(employee?.paymentType || 'Semanal');
     setStatus(employee?.status || 'Activo');
     setArtExpiryDate(employee?.artExpiryDate ? parseISO(employee.artExpiryDate) : undefined);
