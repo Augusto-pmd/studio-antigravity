@@ -499,39 +499,39 @@
         "dailyWage"
       ]
     },
-    "Contract": {
-      "title": "Contract",
+    "Sale": {
+      "title": "Sale",
       "type": "object",
-      "description": "Represents a sales contract with a client for a specific project.",
+      "description": "Represents a sales invoice with a client for a specific project.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the contract entity."
+          "description": "Unique identifier for the sale entity."
         },
         "projectId": {
           "type": "string",
-          "description": "Reference to Project. (Relationship: Project 1:N Contract)"
+          "description": "Reference to Project. (Relationship: Project 1:N Sale)"
         },
         "date": {
           "type": "string",
           "format": "date-time",
-          "description": "The date the contract was signed or issued."
+          "description": "The date the invoice was issued."
         },
         "description": {
           "type": "string",
-          "description": "A description of the contract."
+          "description": "A description of the sale."
         },
         "netAmount": {
           "type": "number",
-          "description": "The net value of the contract before taxes."
+          "description": "The net value of the sale before taxes."
         },
         "ivaAmount": {
           "type": "number",
-          "description": "The total IVA amount for the contract."
+          "description": "The total IVA amount for the sale."
         },
         "totalAmount": {
           "type": "number",
-          "description": "The gross value of the contract (net + IVA)."
+          "description": "The gross value of the sale (net + IVA)."
         },
         "status": {
           "type": "string",
@@ -541,7 +541,11 @@
             "Finalizado",
             "Cancelado"
           ],
-          "description": "The current status of the contract."
+          "description": "The current status of the sale."
+        },
+        "invoiceUrl": {
+          "type": "string",
+          "description": "URL of the uploaded sales invoice PDF/image."
         }
       },
       "required": [
@@ -1142,21 +1146,21 @@
         }
       },
       {
-        "path": "/projects/{projectId}/contracts/{contractId}",
+        "path": "/projects/{projectId}/sales/{saleId}",
         "definition": {
-          "entityName": "Contract",
+          "entityName": "Sale",
           "schema": {
-            "$ref": "#/backend/entities/Contract"
+            "$ref": "#/backend/entities/Sale"
           },
-          "description": "Stores contracts associated with a project. Inherits authorization context (members) from the parent Project document for Authorization Independence.",
+          "description": "Stores sales invoices associated with a project. Inherits authorization context (members) from the parent Project document for Authorization Independence.",
           "params": [
             {
               "name": "projectId",
               "description": "The unique identifier for the project."
             },
             {
-              "name": "contractId",
-              "description": "The unique identifier for the contract."
+              "name": "saleId",
+              "description": "The unique identifier for the sale."
             }
           ]
         }
@@ -1382,6 +1386,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, contracts) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
+    "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, sales) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
   }
 }

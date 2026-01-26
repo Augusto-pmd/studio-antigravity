@@ -65,7 +65,7 @@ const menuItems = [
   { href: "/mis-horas", label: "Mis Horas", icon: Clock },
   { href: "/caja", label: "Mi Caja", icon: Wallet },
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
-  { href: "/contratos", label: "Contratos", icon: FileText },
+  { href: "/contratos", label: "Ventas", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
   {
     href: "/recursos-humanos",

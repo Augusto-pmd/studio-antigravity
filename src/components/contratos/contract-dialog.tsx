@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useMemo } from "react";
+import { useState, useEffect, useTransition, useMemo, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,30 +28,32 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Link as LinkIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Contract, Project } from "@/lib/types";
-import { useFirestore, useCollection } from "@/firebase";
+import type { Sale, Project } from "@/lib/types";
+import { useFirestore, useCollection, useFirebaseApp } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
 };
 
-export function ContractDialog({
-  contract,
+export function SaleDialog({
+  sale,
   children,
 }: {
-  contract?: Contract;
+  sale?: Sale;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const isEditMode = !!contract;
+  const isEditMode = !!sale;
   const [isPending, startTransition] = useTransition();
   const firestore = useFirestore();
+  const firebaseApp = useFirebaseApp();
   const { toast } = useToast();
 
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
@@ -64,6 +66,7 @@ export function ContractDialog({
   const [netAmount, setNetAmount] = useState('');
   const [ivaAmount, setIvaAmount] = useState('');
   const [status, setStatus] = useState<'Borrador' | 'Activo' | 'Finalizado' | 'Cancelado'>('Activo');
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
 
   const totalAmount = useMemo(() => {
     const net = parseFloat(netAmount) || 0;
@@ -72,30 +75,48 @@ export function ContractDialog({
   }, [netAmount, ivaAmount]);
 
   const resetForm = () => {
-    setProjectId(contract?.projectId || '');
-    setDate(contract?.date ? parseISO(contract.date) : new Date());
-    setDescription(contract?.description || '');
-    setNetAmount(contract?.netAmount?.toString() || '');
-    setIvaAmount(contract?.ivaAmount?.toString() || '');
-    setStatus(contract?.status || 'Activo');
+    setProjectId(sale?.projectId || '');
+    setDate(sale?.date ? parseISO(sale.date) : new Date());
+    setDescription(sale?.description || '');
+    setNetAmount(sale?.netAmount?.toString() || '');
+    setIvaAmount(sale?.ivaAmount?.toString() || '');
+    setStatus(sale?.status || 'Activo');
+    setInvoiceFile(null);
   };
 
   useEffect(() => {
     if (open) {
       resetForm();
     }
-  }, [open, contract]);
+  }, [open, sale]);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInvoiceFile(file);
+    }
+  };
 
   const handleSave = () => {
-    if (!firestore) return toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
+    if (!firestore || !firebaseApp) return toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
     if (!projectId || !date || !description || !netAmount || !ivaAmount) return toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Todos los campos son obligatorios.' });
 
     startTransition(() => {
-        const contractCollection = collection(firestore, `projects/${projectId}/contracts`);
-        const contractRef = isEditMode ? doc(contractCollection, contract.id) : doc(contractCollection);
+      const saveData = async () => {
+        const saleCollection = collection(firestore, `projects/${projectId}/sales`);
+        const saleRef = isEditMode ? doc(saleCollection, sale.id) : doc(saleCollection);
         
-        const contractData: Contract = {
-            id: contractRef.id,
+        let invoiceUrl = sale?.invoiceUrl || '';
+        if (invoiceFile) {
+            const storage = getStorage(firebaseApp);
+            const filePath = `sales_invoices/${projectId}/${saleRef.id}/${invoiceFile.name}`;
+            const fileRef = ref(storage, filePath);
+            await uploadBytes(fileRef, invoiceFile);
+            invoiceUrl = await getDownloadURL(fileRef);
+        }
+
+        const saleData: Sale = {
+            id: saleRef.id,
             projectId,
             date: date.toISOString(),
             description,
@@ -103,20 +124,24 @@ export function ContractDialog({
             ivaAmount: parseFloat(ivaAmount) || 0,
             totalAmount: parseFloat(totalAmount) || 0,
             status,
+            invoiceUrl: invoiceUrl || undefined,
         };
         
-        setDoc(contractRef, contractData, { merge: true })
-            .then(() => {
-                toast({
-                    title: isEditMode ? 'Contrato Actualizado' : 'Contrato Creado',
-                    description: `El contrato ha sido guardado correctamente.`,
-                });
-                setOpen(false);
-            })
-            .catch((error) => {
-                console.error("Error writing to Firestore:", error);
-                toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar el contrato. Es posible que no tengas permisos." });
+        return setDoc(saleRef, saleData, { merge: true });
+      };
+
+      saveData()
+        .then(() => {
+            toast({
+                title: isEditMode ? 'Venta Actualizada' : 'Venta Registrada',
+                description: `La venta ha sido guardada correctamente.`,
             });
+            setOpen(false);
+        })
+        .catch((error) => {
+            console.error("Error writing to Firestore:", error);
+            toast({ variant: 'destructive', title: 'Error al guardar', description: "No se pudo guardar la venta. Es posible que no tengas permisos." });
+        });
     });
   };
 
@@ -125,9 +150,9 @@ export function ContractDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar Contrato' : 'Nuevo Contrato de Venta'}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Venta' : 'Registrar Nueva Venta'}</DialogTitle>
           <DialogDescription>
-            Complete la información del contrato. Los montos aquí registrados impactarán en el cálculo de IVA Débito Fiscal.
+            Complete la información de la factura de venta. Los montos aquí registrados impactarán en el cálculo de IVA Débito Fiscal.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
@@ -146,7 +171,7 @@ export function ContractDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Fecha del Contrato</Label>
+            <Label htmlFor="date">Fecha de la Factura</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
@@ -160,7 +185,19 @@ export function ContractDialog({
 
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej. Contrato de construcción de vivienda unifamiliar." />
+            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej. Factura por avance de obra..." />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="invoiceFile">Adjuntar Factura</Label>
+            <div className="flex items-center gap-2">
+                <Input id="invoiceFile" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png"/>
+                {isEditMode && sale?.invoiceUrl && (
+                <Button asChild variant="outline" size="icon">
+                    <a href={sale.invoiceUrl} target="_blank" rel="noopener noreferrer"><LinkIcon className="h-4 w-4" /></a>
+                </Button>
+                )}
+            </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -198,7 +235,7 @@ export function ContractDialog({
         <DialogFooter>
           <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditMode ? 'Guardar Cambios' : 'Guardar Contrato'}
+            {isEditMode ? 'Guardar Cambios' : 'Guardar Venta'}
           </Button>
         </DialogFooter>
       </DialogContent>

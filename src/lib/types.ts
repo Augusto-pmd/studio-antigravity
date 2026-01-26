@@ -232,7 +232,7 @@ export interface TreasuryTransaction {
     projectName?: string;
 }
 
-export interface Contract {
+export interface Sale {
   id: string;
   projectId: string;
   date: string;
@@ -241,4 +241,5 @@ export interface Contract {
   ivaAmount: number;
   totalAmount: number;
   status: 'Borrador' | 'Activo' | 'Finalizado' | 'Cancelado';
+  invoiceUrl?: string;
 }

@@ -3,7 +3,7 @@
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { Expense, Contract } from '@/lib/types';
+import type { Expense, Sale } from '@/lib/types';
 import { useMemo } from 'react';
 import { IvaSummary } from './iva-summary';
 import { IibbSummary } from './iibb-summary';
@@ -16,9 +16,9 @@ const expenseConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
 };
 
-const contractConverter = {
-    toFirestore: (data: Contract): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contract => ({ ...snapshot.data(options), id: snapshot.id } as Contract)
+const saleConverter = {
+    toFirestore: (data: Sale): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => ({ ...snapshot.data(options), id: snapshot.id } as Sale)
 };
 
 export function AccountingDashboard() {
@@ -30,14 +30,14 @@ export function AccountingDashboard() {
   );
   const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
 
-  const contractsQuery = useMemo(
-    () => (firestore ? query(collectionGroup(firestore, 'contracts').withConverter(contractConverter)) : null),
+  const salesQuery = useMemo(
+    () => (firestore ? query(collectionGroup(firestore, 'sales').withConverter(saleConverter)) : null),
     [firestore]
   );
-  const { data: contracts, isLoading: isLoadingContracts } = useCollection<Contract>(contractsQuery);
+  const { data: sales, isLoading: isLoadingSales } = useCollection<Sale>(salesQuery);
 
   const { ivaCredit, ivaDebit, iibbCABA, iibbProvincia, retGanancias, retIva, retIibb, retSuss } = useMemo(() => {
-    if (!expenses || !contracts) {
+    if (!expenses || !sales) {
       return { ivaCredit: 0, ivaDebit: 0, iibbCABA: 0, iibbProvincia: 0, retGanancias: 0, retIva: 0, retIibb: 0, retSuss: 0 };
     }
     
@@ -58,19 +58,19 @@ export function AccountingDashboard() {
       { ivaCredit: 0, iibbCABA: 0, iibbProvincia: 0, retGanancias: 0, retIva: 0, retIibb: 0, retSuss: 0 }
     );
     
-    const ivaDebit = contracts.reduce((acc, contract) => {
-      if (contract.status !== 'Cancelado') {
-        return acc + (contract.ivaAmount || 0);
+    const ivaDebit = sales.reduce((acc, sale) => {
+      if (sale.status !== 'Cancelado') {
+        return acc + (sale.ivaAmount || 0);
       }
       return acc;
     }, 0);
 
     return { ...expenseSummary, ivaDebit };
 
-  }, [expenses, contracts]);
+  }, [expenses, sales]);
   
 
-  if (isLoadingExpenses || isLoadingContracts) {
+  if (isLoadingExpenses || isLoadingSales) {
     return (
         <div className='space-y-6'>
             <div className="grid gap-6 md:grid-cols-2">
