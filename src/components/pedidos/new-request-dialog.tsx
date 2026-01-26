@@ -75,17 +75,17 @@ export function NewRequestDialog() {
           return;
       }
 
-      const taskData: TaskRequest = {
+      const taskData = {
           id: taskId,
           title,
-          description,
+          description: description || '',
           requesterId: user.uid,
           requesterName: user.displayName || 'Usuario Anónimo',
           assigneeId: selectedAssignee.id,
           assigneeName: selectedAssignee.fullName,
-          status: 'Pendiente',
+          status: 'Pendiente' as const,
           createdAt: new Date().toISOString(),
-          projectId: projectId || undefined,
+          ...(projectId && { projectId }),
       };
 
       setDoc(taskRef, taskData, { merge: true })
