@@ -30,7 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert, Link as LinkIcon, Camera } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, PlusCircle, TriangleAlert, Link as LinkIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +41,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { extractInvoiceData } from "@/ai/flows/extract-invoice-data";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -68,8 +67,6 @@ export function AddExpenseDialog({
   
   const [isClient, setIsClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [selectedProject, setSelectedProject] = useState('');
@@ -150,69 +147,6 @@ export function AddExpenseDialog({
       setFile(selectedFile);
     }
   };
-
-  const handleAiScan = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelectedForAi = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsExtracting(true);
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const imageDataUri = reader.result as string;
-            
-            try {
-                const extractedData = await extractInvoiceData(imageDataUri);
-
-                if (extractedData.amount) setAmount(extractedData.amount.toString());
-                if (extractedData.iva) setIva(extractedData.iva.toString());
-                if (extractedData.iibb) setIibb(extractedData.iibb.toString());
-                if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
-                if (extractedData.date) {
-                    try {
-                        setDate(parseISO(extractedData.date));
-                    } catch {
-                        setDate(new Date());
-                        toast({ variant: 'destructive', title: 'Fecha no reconocida', description: 'No se pudo interpretar la fecha del recibo.' });
-                    }
-                }
-
-                if (extractedData.supplierName) {
-                    toast({
-                        title: 'Datos Extraídos con IA',
-                        description: `Proveedor detectado: ${extractedData.supplierName}. Por favor, verifique y seleccione el proveedor de la lista.`,
-                    });
-                } else {
-                     toast({
-                        title: 'Datos Extraídos con IA',
-                        description: `Por favor, revise los campos y complete la información faltante.`,
-                    });
-                }
-            } catch (aiError) {
-                console.error(aiError);
-                toast({ variant: 'destructive', title: 'Error de Extracción de IA', description: 'No se pudieron extraer los datos del recibo.' });
-            } finally {
-                setIsExtracting(false);
-            }
-        };
-        reader.onerror = () => {
-             toast({ variant: 'destructive', title: 'Error de Lectura', description: 'No se pudo leer el archivo de imagen.' });
-             setIsExtracting(false);
-        }
-    } catch (error) {
-        console.error(error);
-        toast({ variant: 'destructive', title: 'Error de Archivo', description: 'Ocurrió un error al procesar el archivo.' });
-        setIsExtracting(false);
-    } finally {
-        if(e.target) e.target.value = '';
-    }
-  };
-
 
   const handleSaveExpense = () => {
     if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
@@ -313,13 +247,6 @@ export function AddExpenseDialog({
         </DialogHeader>
         
         <div className="grid gap-4 py-4 max-h-[75vh] overflow-y-auto pr-4">
-          <Input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelectedForAi} accept="image/*" />
-          <div className="flex justify-center">
-              <Button variant="outline" onClick={handleAiScan} disabled={isExtracting || isSaving}>
-                  {isExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                  Escanear Comprobante con IA
-              </Button>
-          </div>
           <Separator />
           {isContractBlocked && (
             <Alert variant="destructive">
