@@ -91,6 +91,12 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración'];
     }
     
+    function isSupervisorOrAdmin() {
+      return isSignedIn() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración', 'Supervisor'];
+    }
+
     function isPañoleroOrAdmin() {
       return isSignedIn() &&
          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -191,6 +197,10 @@ service cloud.firestore {
     
     match /cashAdvances/{cashAdvanceId} {
       allow read, write: if isSignedIn();
+    }
+
+    match /attendances/{attendanceId} {
+      allow read, write: if isSupervisorOrAdmin();
     }
 
     match /treasuryAccounts/{treasuryAccountId} {

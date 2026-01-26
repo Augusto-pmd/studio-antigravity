@@ -177,6 +177,17 @@ export interface CashAdvance {
     payrollWeekId: string;
 }
 
+export interface Attendance {
+    id: string;
+    employeeId: string;
+    date: string; // YYYY-MM-DD
+    status: 'presente' | 'ausente';
+    lateHours?: number;
+    notes?: string;
+    projectId?: string;
+    payrollWeekId: string;
+}
+
 export interface TaskRequest {
     id: string;
     title: string;

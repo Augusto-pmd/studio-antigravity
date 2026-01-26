@@ -871,6 +871,49 @@
         "payrollWeekId"
       ]
     },
+    "Attendance": {
+      "title": "Attendance",
+      "type": "object",
+      "description": "Represents a daily attendance record for a site employee (jornal).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "employeeId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "presente",
+            "ausente"
+          ]
+        },
+        "lateHours": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "payrollWeekId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "employeeId",
+        "date",
+        "status",
+        "payrollWeekId"
+      ]
+    },
     "TechnicalOfficeEmployee": {
       "title": "Technical Office Employee",
       "type": "object",
@@ -1695,6 +1738,22 @@
             {
               "name": "cashAdvanceId",
               "description": "The unique identifier for the cash advance."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/attendances/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": {
+            "$ref": "#/backend/entities/Attendance"
+          },
+          "description": "Stores daily attendance for site employees. Writable by supervisors and admins.",
+          "params": [
+            {
+              "name": "attendanceId",
+              "description": "The unique identifier for the attendance record."
             }
           ]
         }

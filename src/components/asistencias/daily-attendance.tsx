@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,14 +18,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -35,13 +27,25 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUser, useCollection } from '@/firebase';
-import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { Project, Employee } from '@/lib/types';
+import {
+    collection,
+    query,
+    where,
+    doc,
+    getDocs,
+    writeBatch,
+    limit,
+    type DocumentData,
+    type QueryDocumentSnapshot,
+    type SnapshotOptions
+} from 'firebase/firestore';
+import type { Project, Employee, PayrollWeek, Attendance } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Calendar as CalendarIcon, Save } from 'lucide-react';
+import { Calendar as CalendarIcon, Save, Loader2 } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
@@ -80,13 +84,60 @@ const projectConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
 };
 
+const payrollWeekConverter = {
+    toFirestore(week: PayrollWeek): DocumentData {
+        const { id, ...data } = week;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            status: data.status,
+            generatedAt: data.generatedAt,
+        };
+    }
+};
+
+const attendanceConverter = {
+  toFirestore(attendance: Attendance): DocumentData {
+      const { id, ...data } = attendance;
+      return data;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
+      const data = snapshot.data(options)!;
+      return {
+          id: snapshot.id,
+          employeeId: data.employeeId,
+          date: data.date,
+          status: data.status,
+          lateHours: data.lateHours,
+          notes: data.notes,
+          projectId: data.projectId,
+          payrollWeekId: data.payrollWeekId
+      };
+  }
+};
+
+
 export function DailyAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [lastProjectByEmployee, setLastProjectByEmployee] = useState<Record<string, string>>({});
   const [isClient, setIsClient] = useState(false);
+  const [isSaving, startTransition] = useTransition();
+  const { toast } = useToast();
 
-  const { firestore } = useUser();
+  const { firestore, user } = useUser();
+
+  const payrollWeeksQuery = useMemo(
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null,
+    [firestore]
+  );
+  const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
+  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
   const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
@@ -100,10 +151,36 @@ export function DailyAttendance() {
   }, []);
 
   useEffect(() => {
-    // When the date changes, we should ideally load the attendance for that date.
-    // For now, let's just clear the current attendance state to simulate loading a new day.
-    setAttendance({});
-  }, [selectedDate]);
+    if (!selectedDate || !firestore || isLoadingWeeks) {
+      setAttendance({});
+      return;
+    };
+    
+    const fetchAttendance = async () => {
+        setAttendance({}); 
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        const q = query(
+            collection(firestore, 'attendances'),
+            where('date', '==', dateStr)
+        );
+        const snapshot = await getDocs(q.withConverter(attendanceConverter));
+        
+        const newAttendanceState: Record<string, AttendanceRecord> = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            newAttendanceState[data.employeeId] = {
+                status: data.status,
+                lateHours: data.lateHours || 0,
+                notes: data.notes || '',
+                projectId: data.projectId || null
+            }
+        });
+        setAttendance(newAttendanceState);
+    }
+    
+    fetchAttendance();
+
+  }, [selectedDate, firestore, isLoadingWeeks]);
 
   const activeEmployees = useMemo(() => {
     if (!employees) return [];
@@ -164,6 +241,47 @@ export function DailyAttendance() {
         projectId: lastProjectByEmployee[employeeId] || null 
     };
   };
+
+  const handleSaveAttendance = () => {
+    if (!firestore || !user || !currentWeek || !selectedDate) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se puede guardar. Falta información de la semana o fecha.' });
+        return;
+    }
+
+    startTransition(async () => {
+      const batch = writeBatch(firestore);
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      
+      const attendanceQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
+      const existingDocsSnap = await getDocs(attendanceQuery);
+      const existingDocsMap = new Map(existingDocsSnap.docs.map(d => [d.data().employeeId, d.id]));
+
+      for (const employee of activeEmployees) {
+          const employeeAttendance = getEmployeeAttendance(employee.id);
+          const docId = existingDocsMap.get(employee.id);
+          const docRef = docId ? doc(firestore, 'attendances', docId) : doc(collection(firestore, 'attendances'));
+
+          const dataToSave: Omit<Attendance, 'id'> = {
+              employeeId: employee.id,
+              date: dateStr,
+              payrollWeekId: currentWeek.id,
+              status: employeeAttendance.status,
+              lateHours: employeeAttendance.lateHours || undefined,
+              notes: employeeAttendance.notes || undefined,
+              projectId: employeeAttendance.projectId || undefined,
+          };
+          batch.set(docRef, dataToSave, { merge: true });
+      }
+
+      try {
+        await batch.commit();
+        toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(selectedDate, 'dd/MM/yyyy')}` });
+      } catch (error) {
+        console.error("Error saving attendance: ", error);
+        toast({ variant: 'destructive', title: "Error al guardar", description: "No se pudieron guardar las asistencias. Es posible que no tengas permisos." });
+      }
+    });
+  }
 
   const renderAttendanceControls = (employee: Employee) => {
     const employeeAttendance = getEmployeeAttendance(employee.id);
@@ -251,6 +369,7 @@ export function DailyAttendance() {
                     'w-full sm:w-[240px] justify-start text-left font-normal',
                     !selectedDate && 'text-muted-foreground'
                   )}
+                  disabled={isLoadingWeeks}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Seleccione una fecha</span>}
@@ -263,6 +382,7 @@ export function DailyAttendance() {
                   onSelect={setSelectedDate}
                   locale={es}
                   initialFocus
+                  disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
             </Popover>
@@ -281,6 +401,11 @@ export function DailyAttendance() {
               ))}
             </div>
           </div>
+          {!currentWeek && !isLoadingWeeks && (
+             <div className="text-center text-sm text-destructive p-2 rounded-md border border-destructive/50 bg-destructive/10">
+                No hay una semana de pagos abierta. No se puede guardar la asistencia.
+             </div>
+          )}
         </CardContent>
       </Card>
 
@@ -416,8 +541,8 @@ export function DailyAttendance() {
           </div>
         </CardContent>
         <CardFooter className="justify-end">
-            <Button disabled>
-                <Save className="mr-2 h-4 w-4" />
+            <Button disabled={isSaving || !currentWeek} onClick={handleSaveAttendance}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Guardar Asistencias
             </Button>
         </CardFooter>
