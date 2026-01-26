@@ -90,11 +90,11 @@ export function AddProjectDialog({
   
   const handleSave = () => {
     if (!firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' }); || "",
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
     if (!name || !client || !address || !supervisor || !budget || !status || !projectType) {
-        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Por favor, complete todos los campos obligatorios (*).' }); || "",
+        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Por favor, complete todos los campos obligatorios (*).' });
         return;
     }
     
@@ -110,7 +110,7 @@ export function AddProjectDialog({
           address,
           projectType,
           currency,
-          description: description || undefined, || "",
+          description: description || undefined,
           status,
           supervisor,
           budget: parseFloat(budget) || 0,
@@ -124,7 +124,7 @@ export function AddProjectDialog({
         .then(() => {
             toast({
                 title: isEditMode ? 'Obra Actualizada' : 'Obra Creada',
-                description: `La obra "${name}" ha sido guardada correctamente.`, || "",
+                description: `La obra "${name}" ha sido guardada correctamente.`,
             });
             setOpen(false);
         })
@@ -133,7 +133,7 @@ export function AddProjectDialog({
             toast({
                 variant: 'destructive',
                 title: 'Error al Guardar',
-                description: 'No se pudo guardar la obra. Es posible que no tengas permisos.' || "",
+                description: 'No se pudo guardar la obra. Es posible que no tengas permisos.'
             });
         });
     });
