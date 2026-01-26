@@ -202,7 +202,7 @@ service cloud.firestore {
     }
 
     match /attendances/{attendanceId} {
-      allow read, write: if isSupervisorOrAdmin();
+      allow read, write: if isSignedIn();
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
