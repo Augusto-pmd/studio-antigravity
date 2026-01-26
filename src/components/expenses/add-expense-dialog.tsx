@@ -39,7 +39,7 @@ import { useCollection } from "@/firebase";
 import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Supplier, Expense } from "@/lib/types";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { extractInvoiceData } from "@/ai/flows/extract-invoice-data";
 

@@ -31,12 +31,12 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
 import type { Project } from "@/lib/types";
 import { useFirestore } from "@/firebase/provider";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 
 
 export function AddProjectDialog({

@@ -19,7 +19,7 @@ import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
-import { SettleSalaryDialog } from "@/components/recursos-humanos/settle-salary-dialog";
+import { SettleSalaryDialog } from '@/components/recursos-humanos/settle-salary-dialog';
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';
