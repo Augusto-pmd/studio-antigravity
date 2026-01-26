@@ -30,6 +30,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { expenseCategories } from '@/lib/data';
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -44,6 +45,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   
   // Form State
   const [projectId, setProjectId] = useState<string | undefined>();
+  const [categoryId, setCategoryId] = useState<string | undefined>();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -58,6 +60,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
 
   const resetForm = () => {
     setProjectId(undefined);
+    setCategoryId(undefined);
     setAmount('');
     setDescription('');
     setReceiptFile(null);
@@ -82,8 +85,8 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
         return;
     }
-    if (!projectId || !amount || !description) {
-        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Obra, monto y descripción son obligatorios.' });
+    if (!projectId || !amount || !description || !categoryId) {
+        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Obra, categoría, monto y descripción son obligatorios.' });
         return;
     }
 
@@ -123,7 +126,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             projectId: projectId,
             date: expenseDate.toISOString(),
             supplierId: 'logistica-vial', // Generic supplier for these expenses
-            categoryId: 'CAT-04', // Transporte y Logística
+            categoryId: categoryId,
             documentType: 'Recibo Común',
             paymentMethod: 'Efectivo',
             amount: expenseAmount,
@@ -207,6 +210,21 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             </Select>
           </div>
           <div className="space-y-2">
+            <Label htmlFor="category">Categoría del Gasto</Label>
+            <Select onValueChange={setCategoryId} value={categoryId}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Seleccione una categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                {expenseCategories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="amount">Monto (ARS)</Label>
             <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
           </div>
@@ -220,7 +238,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} disabled={isPending || !projectId || !amount || !description}>
+          <Button onClick={handleSave} disabled={isPending || !projectId || !amount || !description || !categoryId}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Gasto
           </Button>
