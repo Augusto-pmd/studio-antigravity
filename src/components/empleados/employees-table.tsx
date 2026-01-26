@@ -57,6 +57,8 @@ const employeeConverter = {
         return {
             id: snapshot.id,
             name: data.name,
+            email: data.email,
+            phone: data.phone,
             status: data.status,
             paymentType: data.paymentType,
             category: data.category,
@@ -150,6 +152,8 @@ export function EmployeesTable() {
                   <TableCell>
                     <div className="font-medium">{employee.name}</div>
                     <div className="text-sm text-muted-foreground">{employee.category}</div>
+                    <div className="hidden md:block text-sm text-muted-foreground">{employee.email}</div>
+                    <div className="hidden md:block text-sm text-muted-foreground">{employee.phone}</div>
                      <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <div>
                            <Badge
@@ -163,6 +167,8 @@ export function EmployeesTable() {
                             {employee.status}
                             </Badge>
                         </div>
+                        {employee.email && <p>{employee.email}</p>}
+                        {employee.phone && <p>{employee.phone}</p>}
                         <p>Jornal: <span className="font-mono text-foreground">{formatCurrency(employee.dailyWage)}</span></p>
                         {artStatus && <div className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</div>}
                     </div>

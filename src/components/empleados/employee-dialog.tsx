@@ -51,6 +51,8 @@ export function EmployeeDialog({
 
   // Form State
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [category, setCategory] = useState('');
   const [dailyWage, setDailyWage] = useState('');
   const [paymentType, setPaymentType] = useState<'Diario' | 'Semanal'>('Semanal');
@@ -59,6 +61,8 @@ export function EmployeeDialog({
 
   const resetForm = () => {
     setName(employee?.name || '');
+    setEmail(employee?.email || '');
+    setPhone(employee?.phone || '');
     setCategory(employee?.category || '');
     setDailyWage(employee?.dailyWage.toString() || '');
     setPaymentType(employee?.paymentType || 'Semanal');
@@ -90,6 +94,8 @@ export function EmployeeDialog({
       const employeeData: Partial<Employee> = {
         id: employeeId,
         name,
+        email: email || undefined,
+        phone: phone || undefined,
         category,
         dailyWage: parseFloat(dailyWage) || 0,
         paymentType,
@@ -137,6 +143,19 @@ export function EmployeeDialog({
               Nombre
             </Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="email" className="text-right">
+              Email
+            </Label>
+            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@ejemplo.com (opcional)" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="phone" className="text-right">
+              Teléfono
+            </Label>
+            <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(Opcional)" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">

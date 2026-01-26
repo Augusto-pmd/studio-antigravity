@@ -101,6 +101,9 @@ export function ContractorsTable() {
                   <TableCell>
                     <div className="font-medium">{contractor.name}</div>
                     <div className="text-sm text-muted-foreground">{contractor.cuit}</div>
+                    <div className="hidden md:block text-sm text-muted-foreground">{contractor.contactPerson}</div>
+                    <div className="hidden md:block text-sm text-muted-foreground">{contractor.email}</div>
+                    <div className="hidden md:block text-sm text-muted-foreground">{contractor.phone}</div>
                     <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <div>
                             <Badge
@@ -115,6 +118,9 @@ export function ContractorsTable() {
                             {contractor.status}
                             </Badge>
                         </div>
+                        {contractor.contactPerson && <p>Contacto: {contractor.contactPerson}</p>}
+                        {contractor.email && <p>{contractor.email}</p>}
+                        {contractor.phone && <p>{contractor.phone}</p>}
                         {artStatus && <div className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</div>}
                         {insuranceStatus && <div className={cn(insuranceStatus.variant === 'destructive' && 'text-destructive', insuranceStatus.variant === 'warning' && 'text-yellow-500')}>Seguro: {insuranceStatus.message}</div>}
                     </div>
