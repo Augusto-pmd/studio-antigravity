@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
@@ -176,3 +177,4 @@ export function CollectSaleDialog({ sale, children }: { sale: Sale, children: Re
     </Dialog>
   );
 }
+    

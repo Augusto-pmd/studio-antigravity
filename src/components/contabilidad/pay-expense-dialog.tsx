@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
@@ -160,3 +161,4 @@ export function PayExpenseDialog({ expense, children }: { expense: Expense, chil
     </Dialog>
   );
 }
+    
