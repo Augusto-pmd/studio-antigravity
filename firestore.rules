@@ -140,7 +140,7 @@ service cloud.firestore {
     match /projects/{projectId} {
       allow read, write: if isSignedIn();
       match /expenses/{expenseId} {
-        allow read, write: if isSignedIn();
+        allow read, write: if isSupervisorOrAdmin();
       }
       match /contracts/{contractId} {
         allow read, write: if isSignedIn();
