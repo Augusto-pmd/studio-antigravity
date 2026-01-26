@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { parseISO, format } from 'date-fns';
-import { PayExpenseDialog } from './pay-expense-dialog';
+import { PayExpenseDialog } from '@/components/contabilidad/pay-expense-dialog';
 
 const expenseConverter = {
   toFirestore: (data: Expense): DocumentData => data,

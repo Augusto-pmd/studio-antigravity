@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { PaySalaryDialog } from './pay-salary-dialog';
+import { PaySalaryDialog } from '@/components/contabilidad/pay-salary-dialog';
 
 const salaryConverter = {
   toFirestore: (data: MonthlySalary): DocumentData => data,

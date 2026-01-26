@@ -5,20 +5,20 @@ import { useFirestore } from '@/firebase/provider';
 import { collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Expense, Sale } from '@/lib/types';
 import { useMemo } from 'react';
-import { IvaSummary } from './iva-summary';
-import { IibbSummary } from './iibb-summary';
-import { ExpenseReport } from './expense-report';
-import { Skeleton } from '../ui/skeleton';
-import { RetencionesSummary } from './retenciones-summary';
-import { AccountsPayable } from './accounts-payable';
-import { AccountsReceivable } from './accounts-receivable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { SalaryPayables } from './salary-payables';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { PlanDePagoDialog } from '../planes-de-pago/plan-de-pago-dialog';
-import { Button } from '../ui/button';
+import { IvaSummary } from '@/components/contabilidad/iva-summary';
+import { IibbSummary } from '@/components/contabilidad/iibb-summary';
+import { ExpenseReport } from '@/components/contabilidad/expense-report';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RetencionesSummary } from '@/components/contabilidad/retenciones-summary';
+import { AccountsPayable } from '@/components/contabilidad/accounts-payable';
+import { AccountsReceivable } from '@/components/contabilidad/accounts-receivable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SalaryPayables } from '@/components/contabilidad/salary-payables';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlanDePagoDialog } from '@/components/planes-de-pago/plan-de-pago-dialog';
+import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { PlanesDePagoTable } from '../planes-de-pago/planes-de-pago-table';
+import { PlanesDePagoTable } from '@/components/planes-de-pago/planes-de-pago-table';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,

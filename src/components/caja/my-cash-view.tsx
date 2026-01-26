@@ -7,17 +7,17 @@ import { collection, query, orderBy, type DocumentData, type QueryDocumentSnapsh
 import type { CashAccount, CashTransaction, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { QuickExpenseDialog } from './quick-expense-dialog';
+import { QuickExpenseDialog } from '@/components/caja/quick-expense-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet } from 'lucide-react';
 import { FundTransferDialog } from '@/components/cajas/fund-transfer-dialog';
-import { Button } from '../ui/button';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { AddCashAccountDialog } from './add-cash-account-dialog';
-import { EditCashAccountDialog } from './edit-cash-account-dialog';
+import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AddCashAccountDialog } from '@/components/caja/add-cash-account-dialog';
+import { EditCashAccountDialog } from '@/components/caja/edit-cash-account-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);

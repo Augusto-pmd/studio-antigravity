@@ -8,8 +8,8 @@ import type { UserProfile, CashAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { FundTransferDialog } from './fund-transfer-dialog';
-import { Button } from '../ui/button';
+import { FundTransferDialog } from '@/components/cajas/fund-transfer-dialog';
+import { Button } from '@/components/ui/button';
 import { Landmark, Wallet } from 'lucide-react';
 
 const formatCurrency = (amount: number, currency: string) => {

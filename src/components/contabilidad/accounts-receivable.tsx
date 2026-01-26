@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { parseISO, format } from 'date-fns';
-import { CollectSaleDialog } from './collect-sale-dialog';
+import { CollectSaleDialog } from '@/components/contabilidad/collect-sale-dialog';
 
 const saleConverter = {
   toFirestore: (data: Sale): DocumentData => data,
