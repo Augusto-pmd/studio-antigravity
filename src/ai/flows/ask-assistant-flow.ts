@@ -60,11 +60,7 @@ const assistantPrompt = ai.definePrompt(
     Historial de la Conversación:
     {{#if conversationHistory}}
       {{#each conversationHistory}}
-        {{#if (eq role 'user')}}
-          Usuario: {{{content}}}
-        {{else}}
-          Asistente: {{{content}}}
-        {{/if}}
+        **{{role}}**: {{{content}}}
       {{/each}}
     {{/if}}
 
