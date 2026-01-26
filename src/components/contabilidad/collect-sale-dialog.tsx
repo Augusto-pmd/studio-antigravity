@@ -176,4 +176,3 @@ export function CollectSaleDialog({ sale, children }: { sale: Sale, children: Re
     </Dialog>
   );
 }
-    
