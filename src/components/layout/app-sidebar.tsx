@@ -52,7 +52,7 @@ import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getAuth, signOut } from 'firebase/auth';
 import { useState } from "react";
-import { EditProfileDialog } from "../profile/edit-profile-dialog";
+import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
