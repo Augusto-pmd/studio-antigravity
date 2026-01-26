@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -233,4 +232,3 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
     </Card>
   );
 }
-    
