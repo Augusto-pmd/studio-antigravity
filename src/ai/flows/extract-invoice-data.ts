@@ -4,7 +4,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit/zod';
+import {z} from 'genkit';
 
 export const ExtractedInvoiceDataSchema = z.object({
     supplierName: z.string().optional().describe('The name of the supplier or vendor.'),
