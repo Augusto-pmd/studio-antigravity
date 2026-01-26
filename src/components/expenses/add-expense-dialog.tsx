@@ -61,7 +61,7 @@ export function AddExpenseDialog({
   children?: React.ReactNode;
 }) {
   const { user, permissions, firestore, firebaseApp } = useUser();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const isEditMode = !!expense;
@@ -168,7 +168,7 @@ export function AddExpenseDialog({
 
             const extractedData = await extractInvoiceData(imageDataUri);
             
-            toast.dismiss();
+            dismiss();
             toast({ title: 'Datos Extraídos', description: 'Revisa la información precargada en el formulario.' });
 
             if (extractedData.amount) setAmount(extractedData.amount.toString());
@@ -196,7 +196,7 @@ export function AddExpenseDialog({
         };
     } catch (error) {
         console.error("Error extracting invoice data:", error);
-        toast.dismiss();
+        dismiss();
         toast({ variant: 'destructive', title: 'Error de IA', description: 'No se pudieron extraer los datos del comprobante.' });
     } finally {
         setIsExtracting(false);
