@@ -54,7 +54,7 @@ export function StockItemDialog({
     setName(item?.name || '');
     setDescription(item?.description || '');
     setCategory(item?.category);
-    setQuantity(item?.quantity?.toString() || '');
+    setQuantity(item?.quantity?.toString() || (isEditMode ? '0' : ''));
     setUnit(item?.unit || '');
     setReorderPoint(item?.reorderPoint?.toString() || '');
   };
@@ -79,16 +79,26 @@ export function StockItemDialog({
       const collectionRef = collection(firestore, 'stockItems');
       const docRef = isEditMode ? doc(collectionRef, item.id) : doc(collectionRef);
       
-      const itemData: StockItem = {
+      if (!category) {
+          toast({ variant: 'destructive', title: 'Error Interno', description: 'La categoría no fue seleccionada.' });
+          return;
+      }
+      
+      const itemData: Omit<StockItem, 'reorderPoint' | 'description'> & { reorderPoint?: number, description?: string } = {
         id: docRef.id,
         name,
-        description: description || undefined,
         category,
         quantity: parseInt(quantity, 10) || 0,
         unit,
-        reorderPoint: reorderPoint ? parseInt(reorderPoint, 10) : undefined,
         lastUpdated: new Date().toISOString(),
       };
+      
+      if (description) {
+        itemData.description = description;
+      }
+      if (reorderPoint) {
+        itemData.reorderPoint = parseInt(reorderPoint, 10);
+      }
       
       setDoc(docRef, itemData, { merge: true })
         .then(() => {

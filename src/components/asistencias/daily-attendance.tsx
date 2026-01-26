@@ -287,9 +287,12 @@ export function DailyAttendance() {
         return;
     }
 
+    const weekToSave = currentWeek;
+    const dateToSave = selectedDate;
+
     startTransition(async () => {
       const batch = writeBatch(firestore);
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const dateStr = format(dateToSave, 'yyyy-MM-dd');
       
       const attendanceQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
       const existingDocsSnap = await getDocs(attendanceQuery);
@@ -303,10 +306,10 @@ export function DailyAttendance() {
           const dataToSave: Omit<Attendance, 'id'> = {
               employeeId: employee.id,
               date: dateStr,
-              payrollWeekId: currentWeek.id,
+              payrollWeekId: weekToSave.id,
               status: employeeAttendance.status,
               lateHours: Number(employeeAttendance.lateHours) || 0,
-              notes: employeeAttendance.notes || '',
+              notes: employeeAttendance.notes,
               projectId: employeeAttendance.projectId,
           };
           batch.set(docRef, dataToSave, { merge: true });
@@ -314,7 +317,7 @@ export function DailyAttendance() {
 
       try {
         await batch.commit();
-        toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(selectedDate, 'dd/MM/yyyy')}` });
+        toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(dateToSave, 'dd/MM/yyyy')}` });
       } catch (error) {
         console.error("Error saving attendance: ", error);
         toast({ variant: 'destructive', title: "Error al guardar", description: "No se pudieron guardar las asistencias. Es posible que no tengas permisos." });
