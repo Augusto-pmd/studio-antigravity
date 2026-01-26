@@ -8,7 +8,7 @@ import type { TreasuryAccount } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Banknote, Landmark, MoreVertical, PlusCircle, View } from 'lucide-react';
+import { Banknote, Landmark, PlusCircle, View } from 'lucide-react';
 import { AddTreasuryAccountDialog } from '@/components/tesoreria/add-treasury-account-dialog';
 import { AddTreasuryTransactionDialog } from '@/components/tesoreria/add-treasury-transaction-dialog';
 import { ViewTreasuryTransactionsDialog } from '@/components/tesoreria/view-treasury-transactions-dialog';
@@ -23,25 +23,13 @@ const treasuryAccountConverter = {
 };
 
 export function TreasuryAccounts() {
-    const { firestore, permissions } = useUser();
-    const canManage = permissions.isSuperAdmin;
+    const { firestore } = useUser();
 
     const accountsQuery = useMemo(
-        () => (firestore && canManage ? query(collection(firestore, 'treasuryAccounts').withConverter(treasuryAccountConverter)) : null),
-        [firestore, canManage]
+        () => (firestore ? query(collection(firestore, 'treasuryAccounts').withConverter(treasuryAccountConverter)) : null),
+        [firestore]
     );
     const { data: accounts, isLoading } = useCollection<TreasuryAccount>(accountsQuery);
-
-    if (!canManage) {
-        return (
-            <Card>
-                <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
-                    <p className="text-lg font-medium text-muted-foreground">Acceso Denegado</p>
-                    <p className="text-sm text-muted-foreground">No tienes permisos para acceder a esta sección.</p>
-                </CardContent>
-            </Card>
-        )
-    }
 
     if (isLoading) {
         return (
