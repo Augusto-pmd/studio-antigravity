@@ -1,7 +1,8 @@
 'use client';
 
-import { parseISO } from 'date-fns';
-import { useState, useTransition, ChangeEvent, useMemo, useRef } from "react";
+import { parseISO, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useState, useTransition, ChangeEvent, useMemo, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, PlusCircle } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
@@ -42,6 +50,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
   // Form State
   const [projectId, setProjectId] = useState<string | undefined>();
@@ -57,6 +66,10 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   // Data fetching
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const resetForm = () => {
     setProjectId(undefined);
@@ -85,8 +98,8 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
         return;
     }
-    if (!projectId || !amount || !description || !categoryId) {
-        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Obra, categoría, monto y descripción son obligatorios.' });
+    if (!projectId || !amount || !description || !categoryId || !date) {
+        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Obra, categoría, fecha, monto y descripción son obligatorios.' });
         return;
     }
 
@@ -225,6 +238,33 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             </Select>
           </div>
           <div className="space-y-2">
+            <Label htmlFor="date">Fecha del Gasto</Label>
+             <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  locale={es}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="amount">Monto (ARS)</Label>
             <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
           </div>
@@ -238,7 +278,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} disabled={isPending || !projectId || !amount || !description || !categoryId}>
+          <Button onClick={handleSave} disabled={isPending || !projectId || !amount || !description || !categoryId || !date}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Gasto
           </Button>
