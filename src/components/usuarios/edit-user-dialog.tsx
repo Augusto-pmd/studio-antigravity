@@ -24,7 +24,7 @@ import type { UserProfile, Role } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { doc, updateDoc } from "firebase/firestore";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const roles: Role[] = ["Dirección", "Supervisor", "Administración", "Operador"];
 

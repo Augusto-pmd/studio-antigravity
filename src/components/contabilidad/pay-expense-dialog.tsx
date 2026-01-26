@@ -34,7 +34,7 @@ export function PayExpenseDialog({ expense, children }: { expense: Expense, chil
   ), [firestore]);
   const { data: treasuryAccounts, isLoading } = useCollection<TreasuryAccount>(treasuryAccountsQuery);
 
-  const selectedAccount = useMemo(() => treasuryAccounts?.find(a => a.id === treasuryAccountId), [treasuryAccounts, treasuryAccountId]);
+  const selectedAccount = useMemo(() => treasuryAccounts?.find((a: TreasuryAccount) => a.id === treasuryAccountId), [treasuryAccounts, treasuryAccountId]);
   const hasSufficientFunds = selectedAccount && selectedAccount.balance >= expense.amount;
 
   const handlePayment = () => {
@@ -128,7 +128,7 @@ export function PayExpenseDialog({ expense, children }: { expense: Expense, chil
                 <SelectValue placeholder="Seleccione una cuenta de tesorería" />
               </SelectTrigger>
               <SelectContent>
-                {treasuryAccounts?.map(account => (
+                {treasuryAccounts?.map((account: TreasuryAccount) => (
                   <SelectItem key={account.id} value={account.id} disabled={account.currency !== expense.currency}>
                     {account.name} (Saldo: {new Intl.NumberFormat('es-AR', { style: 'currency', currency: account.currency }).format(account.balance)})
                   </SelectItem>
@@ -143,7 +143,7 @@ export function PayExpenseDialog({ expense, children }: { expense: Expense, chil
                 <SelectValue placeholder="Seleccione el medio de pago" />
               </SelectTrigger>
               <SelectContent>
-                {paymentMethods.map(method => (
+                {paymentMethods.map((method: string) => (
                   <SelectItem key={method} value={method}>{method}</SelectItem>
                 ))}
               </SelectContent>

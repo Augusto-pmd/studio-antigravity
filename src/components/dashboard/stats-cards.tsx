@@ -18,9 +18,15 @@ const formatCurrency = (amount: number, currency?: string) => {
     return new Intl.NumberFormat('es-AR', options).format(amount);
 };
 
+interface StatCard {
+    title: string;
+    value: string;
+    icon: React.ReactNode;
+    change: string;
+}
 
 export function StatsCards() {
-    const statCards = [
+    const statCards: StatCard[] = [
         {
           title: "Facturación Anual (Ejercicio 2024)",
           value: formatCurrency(240815813),
@@ -43,7 +49,7 @@ export function StatsCards() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {statCards.map((stat) => (
+      {statCards.map((stat: StatCard) => (
         <Card key={stat.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>

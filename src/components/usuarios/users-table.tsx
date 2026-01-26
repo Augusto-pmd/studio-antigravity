@@ -13,8 +13,8 @@ import type { UserProfile, Role } from "@/lib/types";
 import { Pencil } from "lucide-react";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EditUserDialog } from "./edit-user-dialog";
 import { useMemo } from "react";
 

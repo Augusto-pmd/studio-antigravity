@@ -169,7 +169,7 @@ export function PlanDePagoDialog({
             </div>
              <div className="space-y-2">
                 <Label htmlFor="status">Estado</Label>
-                <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+                <Select value={status} onValueChange={(v: Moratoria['status']) => setStatus(v)}>
                     <SelectTrigger id="status"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="Activa">Activa</SelectItem>

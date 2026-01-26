@@ -58,7 +58,7 @@ export function SalesTable() {
   
   const projectsMap = useMemo(() => {
     if (!projects) return {};
-    return projects.reduce((acc, p) => {
+    return projects.reduce((acc: Record<string, string>, p: Project) => {
       acc[p.id] = p.name;
       return acc;
     }, {} as Record<string, string>);

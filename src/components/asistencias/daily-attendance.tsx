@@ -180,8 +180,8 @@ export function DailyAttendance() {
                 </SelectTrigger>
                 <SelectContent>
                 {projects
-                    ?.filter((p) => p.status === 'En Curso')
-                    .map((p) => (
+                    ?.filter((p: Project) => p.status === 'En Curso')
+                    .map((p: Project) => (
                     <SelectItem key={p.id} value={p.id}>
                         {p.name}
                     </SelectItem>
@@ -351,8 +351,8 @@ export function DailyAttendance() {
                             </SelectTrigger>
                             <SelectContent>
                               {projects
-                                ?.filter((p) => p.status === 'En Curso')
-                                .map((p) => (
+                                ?.filter((p: Project) => p.status === 'En Curso')
+                                .map((p: Project) => (
                                   <SelectItem key={p.id} value={p.id}>
                                     {p.name}
                                   </SelectItem>

@@ -13,12 +13,12 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/types";
 import { Pencil, Trash2 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { AddProjectDialog } from "./add-project-dialog";
 import { useCollection, useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 import {
   AlertDialog,

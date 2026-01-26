@@ -32,7 +32,7 @@ import { differenceInDays, isBefore, parseISO, format as formatDateFns } from "d
 import { AddPersonnelDialog } from "./add-personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';

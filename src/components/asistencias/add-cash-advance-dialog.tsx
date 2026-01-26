@@ -202,7 +202,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                 <SelectValue placeholder="Seleccione un empleado" />
               </SelectTrigger>
               <SelectContent>
-                {employees?.filter(e => e.status === 'Activo').map((e) => (
+                {employees?.filter(e => e.status === 'Activo').map((e: Employee) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.name}
                   </SelectItem>
@@ -220,7 +220,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                 <SelectValue placeholder="Imputar a una obra (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                {projects?.filter(p => p.status === 'En Curso').map((p) => (
+                {projects?.filter(p => p.status === 'En Curso').map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -253,7 +253,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                   onSelect={setDate}
                   initialFocus
                   locale={es}
-                  disabled={(d) => currentWeek ? (d < parseISO(currentWeek.startDate) || d > parseISO(currentWeek.endDate)) : false}
+                  disabled={(d: Date) => currentWeek ? (d < parseISO(currentWeek.startDate) || d > parseISO(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
             </Popover>

@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { TriangleAlert } from 'lucide-react';
-import { Separator } from '../ui/separator';
+import { Separator } from '@/components/ui/separator';
 
 const treasuryAccountConverter = {
   toFirestore: (data: TreasuryAccount): DocumentData => data,
@@ -57,7 +57,7 @@ export function CollectSaleDialog({ sale, children }: { sale: Sale, children: Re
       const accountRef = doc(firestore, 'treasuryAccounts', treasuryAccountId);
       const transactionRef = doc(collection(firestore, `treasuryAccounts/${treasuryAccountId}/transactions`));
       
-      const selectedAccount = treasuryAccounts?.find(a => a.id === treasuryAccountId);
+      const selectedAccount = treasuryAccounts?.find((a: TreasuryAccount) => a.id === treasuryAccountId);
       if (!selectedAccount) return;
 
       const retenciones = {
@@ -138,7 +138,7 @@ export function CollectSaleDialog({ sale, children }: { sale: Sale, children: Re
                 <SelectValue placeholder="Seleccione una cuenta de tesorería" />
               </SelectTrigger>
               <SelectContent>
-                {treasuryAccounts?.filter(acc => acc.currency === 'ARS').map(account => (
+                {treasuryAccounts?.filter((acc: TreasuryAccount) => acc.currency === 'ARS').map((account: TreasuryAccount) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name} (Saldo: {formatCurrency(account.balance)})
                   </SelectItem>

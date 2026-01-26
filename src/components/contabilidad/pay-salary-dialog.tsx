@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { TriangleAlert } from 'lucide-react';
 
 const treasuryAccountConverter = {
@@ -31,7 +31,7 @@ export function PaySalaryDialog({ salary, children }: { salary: MonthlySalary, c
   ), [firestore]);
   const { data: treasuryAccounts, isLoading } = useCollection<TreasuryAccount>(treasuryAccountsQuery);
 
-  const selectedAccount = useMemo(() => treasuryAccounts?.find(a => a.id === treasuryAccountId), [treasuryAccounts, treasuryAccountId]);
+  const selectedAccount = useMemo(() => treasuryAccounts?.find((a: TreasuryAccount) => a.id === treasuryAccountId), [treasuryAccounts, treasuryAccountId]);
   const hasSufficientFunds = selectedAccount && selectedAccount.balance >= salary.netSalary;
 
   const handlePayment = () => {
@@ -127,7 +127,7 @@ export function PaySalaryDialog({ salary, children }: { salary: MonthlySalary, c
                 <SelectValue placeholder="Seleccione una cuenta de tesorería" />
               </SelectTrigger>
               <SelectContent>
-                {treasuryAccounts?.filter(acc => acc.currency === 'ARS').map(account => (
+                {treasuryAccounts?.filter((acc: TreasuryAccount) => acc.currency === 'ARS').map((account: TreasuryAccount) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name} (Saldo: {formatCurrency(account.balance)})
                   </SelectItem>

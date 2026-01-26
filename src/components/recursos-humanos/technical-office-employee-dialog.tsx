@@ -61,8 +61,8 @@ export function TechnicalOfficeEmployeeDialog({
   const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
   const { data: techOfficeEmployees } = useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
 
-  const availableUsers = users?.filter(u => 
-    !techOfficeEmployees?.some(toe => toe.userId === u.id) || (isEditMode && employee.userId === u.id)
+  const availableUsers = users?.filter((u: UserProfile) => 
+    !techOfficeEmployees?.some((toe: TechnicalOfficeEmployee) => toe.userId === u.id) || (isEditMode && employee.userId === u.id)
   ) || [];
 
   const resetForm = () => {
@@ -90,7 +90,7 @@ export function TechnicalOfficeEmployeeDialog({
     }
 
     startTransition(() => {
-      const selectedUser = users?.find(u => u.id === userId);
+      const selectedUser = users?.find((u: UserProfile) => u.id === userId);
       if (!selectedUser) {
         toast({ variant: 'destructive', title: 'Error', description: 'El usuario seleccionado no es válido.' });
         return;
@@ -154,7 +154,7 @@ export function TechnicalOfficeEmployeeDialog({
                 <SelectValue placeholder="Seleccione un usuario" />
               </SelectTrigger>
               <SelectContent>
-                {availableUsers.map((u) => (
+                {availableUsers.map((u: UserProfile) => (
                   <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                 ))}
               </SelectContent>
@@ -166,7 +166,7 @@ export function TechnicalOfficeEmployeeDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="employmentType">Tipo de Contratación</Label>
-            <Select value={employmentType} onValueChange={(v: any) => setEmploymentType(v)}>
+            <Select value={employmentType} onValueChange={(v: 'Relación de Dependencia' | 'Monotributo') => setEmploymentType(v)}>
                 <SelectTrigger id="employmentType">
                 <SelectValue placeholder="Seleccione un tipo" />
                 </SelectTrigger>
@@ -184,7 +184,7 @@ export function TechnicalOfficeEmployeeDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
-            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+            <Select value={status} onValueChange={(v: 'Activo' | 'Inactivo') => setStatus(v)}>
                 <SelectTrigger id="status">
                 <SelectValue placeholder="Seleccione un estado" />
                 </SelectTrigger>

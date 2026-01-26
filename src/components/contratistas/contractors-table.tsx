@@ -13,13 +13,13 @@ import { cn } from "@/lib/utils";
 import type { Contractor } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
 import { TriangleAlert, Pencil, Users } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { Button } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { ContractorDialog } from "./contractor-dialog";
 import { PersonnelDialog } from "./personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 
 const formatDate = (dateString?: string) => {

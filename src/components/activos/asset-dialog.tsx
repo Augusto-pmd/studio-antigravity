@@ -142,7 +142,7 @@ export function AssetDialog({
 
           <div className="space-y-2">
             <Label htmlFor="category">Categoría</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v)}>
+            <Select value={category} onValueChange={(v: string) => setCategory(v)}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
@@ -183,7 +183,7 @@ export function AssetDialog({
           
            <div className="space-y-2">
             <Label>Moneda</Label>
-             <RadioGroup value={currency} onValueChange={(v: any) => setCurrency(v)} className="flex items-center gap-6 pt-1">
+             <RadioGroup value={currency} onValueChange={(v: 'ARS' | 'USD') => setCurrency(v)} className="flex items-center gap-6 pt-1">
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="ARS" id="ars" />
                     <Label htmlFor="ars">ARS</Label>
@@ -197,7 +197,7 @@ export function AssetDialog({
 
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
-            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+            <Select value={status} onValueChange={(v: 'Activo' | 'Mantenimiento' | 'Vendido' | 'De Baja') => setStatus(v)}>
                 <SelectTrigger id="status">
                 <SelectValue placeholder="Seleccione un estado" />
                 </SelectTrigger>

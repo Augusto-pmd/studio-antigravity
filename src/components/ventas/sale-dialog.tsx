@@ -167,7 +167,7 @@ export function SaleDialog({
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
               <SelectContent>
-                {projects?.map((p) => (
+                {projects?.map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -189,7 +189,7 @@ export function SaleDialog({
           
           <div className="space-y-2">
             <Label>Tipo de Documento</Label>
-            <RadioGroup value={documentType} onValueChange={(v: any) => setDocumentType(v)} className="flex pt-1 gap-6">
+            <RadioGroup value={documentType} onValueChange={(v: 'Factura de Venta' | 'Nota de Crédito') => setDocumentType(v)} className="flex pt-1 gap-6">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="Factura de Venta" id="factura-venta" />
                 <Label htmlFor="factura-venta">Factura de Venta</Label>
@@ -236,7 +236,7 @@ export function SaleDialog({
 
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
-            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+            <Select value={status} onValueChange={(v: 'Borrador' | 'Pendiente de Cobro' | 'Cobrado' | 'Cancelado') => setStatus(v)}>
                 <SelectTrigger id="status">
                 <SelectValue placeholder="Seleccione un estado" />
                 </SelectTrigger>
@@ -260,5 +260,3 @@ export function SaleDialog({
     </Dialog>
   );
 }
-
-    

@@ -11,7 +11,7 @@ import { useFirestore, useUser, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { TreasuryAccount, TreasuryTransaction, Project } from "@/lib/types";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -51,7 +51,7 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
     }
 
     startTransition(() => {
-        const selectedProject = projects?.find(p => p.id === projectId);
+        const selectedProject = projects?.find((p: Project) => p.id === projectId);
         const batch = writeBatch(firestore);
 
         // 1. Create transaction document
@@ -102,7 +102,7 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>Tipo de Movimiento</Label>
-            <RadioGroup value={type} onValueChange={(v: any) => setType(v)} className="flex pt-2 gap-4">
+            <RadioGroup value={type} onValueChange={(v: 'Ingreso' | 'Egreso') => setType(v)} className="flex pt-2 gap-4">
               <div className="flex items-center space-x-2"><RadioGroupItem value="Ingreso" id="ingreso" /><Label htmlFor="ingreso">Ingreso</Label></div>
               <div className="flex items-center space-x-2"><RadioGroupItem value="Egreso" id="egreso" /><Label htmlFor="egreso">Egreso</Label></div>
             </RadioGroup>
@@ -121,13 +121,13 @@ export function AddTreasuryTransactionDialog({ account, children }: { account: T
           </div>
            <div className="space-y-2">
             <Label htmlFor="project">Obra (Opcional)</Label>
-            <Select onValueChange={(v) => setProjectId(v === 'none' ? undefined : v)} value={projectId} disabled={isLoadingProjects}>
-              <SelectTrigger id="project">
+            <Select onValueChange={(v) => setProjectId(v === 'none' ? undefined : v)} value={projectId}>
+              <SelectTrigger id="project" disabled={isLoadingProjects}>
                 <SelectValue placeholder="Asociar a una obra" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Ninguna</SelectItem>
-                {projects?.filter(p => p.status === 'En Curso').map((p) => (
+                {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>

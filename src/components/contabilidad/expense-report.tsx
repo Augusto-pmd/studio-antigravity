@@ -11,13 +11,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Expense } from '@/lib/types';
 import { parseISO, format as formatDateFns } from 'date-fns';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Project, Supplier } from '@/lib/types';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { expenseCategories } from '@/lib/data';
 
@@ -99,11 +99,11 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
   const projectsMap = useMemo(() => {
-    return projects?.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {};
+    return projects?.reduce((acc: Record<string, string>, p: Project) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {};
   }, [projects]);
 
   const suppliersMap = useMemo(() => {
-    return suppliers?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
+    return suppliers?.reduce((acc: Record<string, string>, s: Supplier) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
   }, [suppliers]);
   
   const handleExportCSV = () => {
@@ -126,7 +126,7 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
       "IVA", "IIBB", "Jurisdicción IIBB", "Ret. Ganancias", "Ret. IVA", "Ret. IIBB", "Ret. SUSS"
     ];
 
-    const rows = expenses.map(expense => [
+    const rows = expenses.map((expense: Expense) => [
       expense.id,
       formatDate(expense.date),
       expense.projectId,

@@ -24,7 +24,7 @@ import type { FundRequest } from "@/lib/types";
 import { parseISO, format } from "date-fns";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
