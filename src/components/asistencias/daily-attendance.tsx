@@ -53,7 +53,7 @@ import { Badge } from '@/components/ui/badge';
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
   status: AttendanceStatus;
-  lateHours: number;
+  lateHours: number | string;
   notes: string;
   projectId: string | null;
 }
@@ -370,8 +370,9 @@ export function DailyAttendance() {
             <Input
                 type="number"
                 min="0"
+                step="0.5"
                 value={employeeAttendance.lateHours}
-                onChange={(e) => handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)}
+                onChange={(e) => handleAttendanceChange(employee.id, 'lateHours', e.target.value)}
                 disabled={!isPresent}
             />
         </div>
@@ -550,10 +551,11 @@ export function DailyAttendance() {
                                                 <Input
                                                     type="number"
                                                     min="0"
+                                                    step="0.5"
                                                     className="w-24"
                                                     value={employeeAttendance.lateHours}
                                                     onChange={(e) =>
-                                                    handleAttendanceChange(employee.id, 'lateHours', parseInt(e.target.value) || 0)
+                                                    handleAttendanceChange(employee.id, 'lateHours', e.target.value)
                                                     }
                                                     disabled={!isPresent}
                                                 />
