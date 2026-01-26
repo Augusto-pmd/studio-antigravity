@@ -10,7 +10,6 @@ import { IibbSummary } from './iibb-summary';
 import { ExpenseReport } from './expense-report';
 import { Skeleton } from '../ui/skeleton';
 import { RetencionesSummary } from './retenciones-summary';
-import { BankStatementAnalyzer } from './bank-statement-analyzer';
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
@@ -20,11 +19,6 @@ const expenseConverter = {
 const contractConverter = {
     toFirestore: (data: Contract): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contract => ({ ...snapshot.data(options), id: snapshot.id } as Contract)
-};
-
-const formatCurrency = (amount: number) => {
-  if (typeof amount !== 'number') return '$0';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
 export function AccountingDashboard() {
@@ -75,18 +69,6 @@ export function AccountingDashboard() {
 
   }, [expenses, contracts]);
   
-  const currentContextForAI = useMemo(() => {
-    return `
-      - Crédito Fiscal IVA actual: ${formatCurrency(ivaCredit)}.
-      - Débito Fiscal IVA actual: ${formatCurrency(ivaDebit)}.
-      - Percepciones IIBB CABA: ${formatCurrency(iibbCABA)}.
-      - Percepciones IIBB Provincia: ${formatCurrency(iibbProvincia)}.
-      - Retenciones (Ganancias: ${formatCurrency(retGanancias)}, IVA: ${formatCurrency(retIva)}, IIBB: ${formatCurrency(retIibb)}, SUSS: ${formatCurrency(retSuss)}).
-      - Total de gastos registrados: ${expenses?.length || 0}.
-      - Total de contratos activos/finalizados: ${contracts?.filter(c => c.status !== 'Cancelado').length || 0}.
-    `;
-  }, [expenses, contracts, ivaCredit, ivaDebit, iibbCABA, iibbProvincia, retGanancias, retIva, retIibb, retSuss]);
-
 
   if (isLoadingExpenses || isLoadingContracts) {
     return (
@@ -103,7 +85,6 @@ export function AccountingDashboard() {
 
   return (
     <div className="space-y-6">
-      <BankStatementAnalyzer currentContext={currentContextForAI} />
       <div className="grid gap-6 md:grid-cols-2">
         <IvaSummary ivaCredit={ivaCredit} ivaDebit={ivaDebit} />
         <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />
