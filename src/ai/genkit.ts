@@ -1,2 +1,10 @@
-// This file is intentionally left empty to remove AI functionality and ensure build stability.
-export {};
+'use server';
+
+import {genkit} from 'genkit';
+import {googleAI} from '@genkit-ai/google-genai';
+
+export const ai = genkit({
+  plugins: [
+    googleAI(),
+  ],
+});
