@@ -193,9 +193,14 @@ service cloud.firestore {
         allow read, write: if isAdmin();
       }
     }
+    
+    match /recurringExpenses/{expenseId} {
+        allow read, write: if isAdmin();
+    }
 
     match /{path=**}/expenses/{expenseId} {
       allow get, list: if isSignedIn();
     }
   }
 }
+    

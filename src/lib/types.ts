@@ -266,3 +266,17 @@ export interface Sale {
   retencionIVA?: number;
   retencionIIBB?: number;
 }
+
+export interface RecurringExpense {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  currency: 'ARS' | 'USD';
+  period: 'Diario' | 'Semanal' | 'Mensual' | 'Bimestral' | 'Trimestral' | 'Semestral' | 'Anual';
+  paymentSource: 'Tesorería' | 'Caja Chica';
+  nextDueDate: string; // YYYY-MM-DD
+  status: 'Activo' | 'Pausado';
+}
+
+    

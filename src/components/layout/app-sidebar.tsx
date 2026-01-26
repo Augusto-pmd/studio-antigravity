@@ -45,6 +45,7 @@ import {
   Clock,
   Scale,
   UserCog,
+  Repeat,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -65,8 +66,14 @@ const menuItems = [
   { href: "/mis-horas", label: "Mis Horas", icon: Clock },
   { href: "/caja", label: "Mi Caja", icon: Wallet },
   { href: "/gastos", label: "Gastos por Obra", icon: Receipt },
-  { href: "/contratos", label: "Ventas", icon: FileText },
+  { href: "/ventas", label: "Ventas", icon: FileText },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText },
+  {
+    href: "/gastos-recurrentes",
+    label: "Gastos Recurrentes",
+    icon: Repeat,
+    adminOnly: true,
+  },
   {
     href: "/recursos-humanos",
     label: "Recursos Humanos",
@@ -175,3 +182,4 @@ export function AppSidebar() {
     </>
   );
 }
+    
