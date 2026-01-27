@@ -162,9 +162,9 @@ export function DailyAttendance() {
 
   useEffect(() => {
     if (isLoadingAttendances) return;
-
+    const newAttendanceState: Record<string, AttendanceRecord> = {};
+    const newLastProjectState: Record<string, string> = {};
     if (dayAttendances) {
-        const newAttendanceState: Record<string, AttendanceRecord> = {};
         dayAttendances.forEach(att => {
             newAttendanceState[att.employeeId] = {
                 status: att.status,
@@ -172,11 +172,13 @@ export function DailyAttendance() {
                 notes: att.notes || '',
                 projectId: att.projectId || null
             };
+            if (att.projectId) {
+              newLastProjectState[att.employeeId] = att.projectId;
+            }
         });
-        setAttendance(newAttendanceState);
-    } else {
-        setAttendance({});
     }
+    setAttendance(newAttendanceState);
+    setLastProjectByEmployee(newLastProjectState);
   }, [dayAttendances, isLoadingAttendances]);
 
   const activeEmployees = useMemo(() => {
