@@ -36,7 +36,8 @@ import {
     limit,
     type DocumentData,
     type QueryDocumentSnapshot,
-    type SnapshotOptions
+    type SnapshotOptions,
+    orderBy
 } from 'firebase/firestore';
 import type { Project, Employee, PayrollWeek, Attendance } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -135,7 +136,7 @@ export function DailyAttendance() {
   const { firestore, user } = useUser();
 
   const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null,
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), orderBy('startDate', 'desc'), limit(1)) : null,
     [firestore]
   );
   const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
@@ -162,24 +163,24 @@ export function DailyAttendance() {
 
   useEffect(() => {
     if (isLoadingAttendances) return;
-    const newAttendanceState: Record<string, AttendanceRecord> = {};
-    const newLastProjectState: Record<string, string> = {};
-    if (dayAttendances) {
-        dayAttendances.forEach(att => {
-            newAttendanceState[att.employeeId] = {
-                status: att.status,
-                lateHours: att.lateHours || 0,
-                notes: att.notes || '',
-                projectId: att.projectId || null
-            };
-            if (att.projectId) {
-              newLastProjectState[att.employeeId] = att.projectId;
-            }
-        });
+
+    if (dayAttendances && dayAttendances.length > 0) {
+      const newAttendanceState: Record<string, AttendanceRecord> = {};
+      dayAttendances.forEach(att => {
+          newAttendanceState[att.employeeId] = {
+              status: att.status,
+              lateHours: att.lateHours || 0,
+              notes: att.notes || '',
+              projectId: att.projectId || null
+          };
+      });
+      setAttendance(newAttendanceState);
+    } else {
+      // "Foja cero" - Start with a clean slate for the new day
+      setAttendance({});
     }
-    setAttendance(newAttendanceState);
-    setLastProjectByEmployee(newLastProjectState);
-  }, [dayAttendances, isLoadingAttendances]);
+  }, [dayAttendances, isLoadingAttendances, selectedDate]);
+
 
   const activeEmployees = useMemo(() => {
     if (!employees) return [];

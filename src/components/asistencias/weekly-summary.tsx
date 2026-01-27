@@ -130,21 +130,20 @@ export function WeeklySummary() {
   const { firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-
-  const openWeekQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), orderBy('startDate', 'desc'), limit(1)) : null,
+  
+  const allWeeksQuery = useMemo(() => 
+    firestore 
+      ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc')) 
+      : null,
     [firestore]
   );
-  const { data: openWeeks, isLoading: isLoadingOpenWeek } = useCollection<PayrollWeek>(openWeekQuery);
-  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
+  const { data: allWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(allWeeksQuery);
 
-  const historicalWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Cerrada'), orderBy('startDate', 'desc')) : null,
-    [firestore]
-  );
-  const { data: historicalWeeks, isLoading: isLoadingHistorical } = useCollection<PayrollWeek>(historicalWeeksQuery);
-
-  const isLoadingWeeks = isLoadingOpenWeek || isLoadingHistorical;
+  const { currentWeek, historicalWeeks } = useMemo(() => {
+    const open = allWeeks?.find(w => w.status === 'Abierta');
+    const closed = allWeeks?.filter(w => w.status === 'Cerrada') || [];
+    return { currentWeek: open, historicalWeeks: closed };
+  }, [allWeeks]);
 
   // Data for the summary
   const attendanceQuery = useMemo(
@@ -204,26 +203,26 @@ export function WeeklySummary() {
 
   const handleGenerateNewWeek = () => {
     if (!firestore) return;
-    if (openWeeks && openWeeks.length > 0) {
+    if (currentWeek) {
       toast({
         variant: "destructive",
         title: "Semana Abierta",
-        description: "Ya existe una semana abierta. Debe cerrarla antes de generar una nueva.",
+        description: `Ya existe una semana abierta (${formatDateRange(currentWeek.startDate, currentWeek.endDate)}). Debe cerrarla antes de generar una nueva.`,
       });
       return;
     }
 
     startTransition(() => {
       const generate = async () => {
-        const lastWeekQuery = query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc'), limit(1));
-        const lastWeekSnap = await getDocs(lastWeekQuery);
+        // The allWeeks query is already ordered by startDate desc
+        const lastWeek = allWeeks?.[0]; 
         
         let nextStartDate: Date;
 
-        if (lastWeekSnap.empty) {
+        if (!lastWeek) {
           nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
         } else {
-          const lastWeek = lastWeekSnap.docs[0].data();
+          // parseISO is crucial here to correctly handle the string from Firestore
           nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
         }
 
@@ -238,18 +237,17 @@ export function WeeklySummary() {
           generatedAt: new Date().toISOString(),
         };
 
-        return setDoc(newWeekRef, newWeek)
-          .then(() => {
-            toast({
-                title: "Nueva Semana Generada",
-                description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
-            });
-          });
+        await setDoc(newWeekRef, newWeek);
+        
+        toast({
+            title: "Nueva Semana Generada",
+            description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
+        });
       };
 
       generate().catch((error) => {
         console.error("Error writing to Firestore:", error);
-        toast({ variant: 'destructive', title: "Error al generar", description: "No se pudo generar la nueva semana. Es posible que no tengas permisos." });
+        toast({ variant: 'destructive', title: "Error al generar", description: `No se pudo generar la nueva semana. ${error.message}` });
       });
     });
   };
