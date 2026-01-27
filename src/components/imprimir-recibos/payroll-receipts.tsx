@@ -198,7 +198,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                         <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
                     </div>
                     <div className="text-right">
-                        <h2 className="text-base font-semibold">Recibo de Pago a Contratista</h2>
+                        <h2 className="text-sm font-semibold">Recibo Semanal</h2>
                         <p className="text-xs text-gray-500">
                         Semana del {format(parseISO(week.startDate), 'dd/MM/yy')} al {format(parseISO(week.endDate), 'dd/MM/yy')}
                         </p>
@@ -240,7 +240,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                 <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
               </div>
               <div className="text-right">
-                <h2 className="text-base font-semibold">Recibo de Sueldo</h2>
+                <h2 className="text-sm font-semibold">Recibo Semanal</h2>
                 <p className="text-xs text-gray-500">
                   Semana del {format(parseISO(data.week.startDate), 'dd/MM/yy')} al {format(parseISO(data.week.endDate), 'dd/MM/yy')}
                 </p>

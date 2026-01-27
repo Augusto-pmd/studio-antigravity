@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { AddCashAdvanceDialog } from "@/components/asistencias/add-cash-advance-dialog";
 import { useUser, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { CashAdvance, PayrollWeek } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { parseISO, format } from 'date-fns';
@@ -34,23 +34,6 @@ const formatCurrency = (amount: number, currency: string = 'ARS') => {
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     return format(parseISO(dateString), 'dd/MM/yyyy');
-};
-
-const payrollWeekConverter = {
-    toFirestore(week: PayrollWeek): DocumentData {
-        const { id, ...data } = week;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            status: data.status,
-            generatedAt: data.generatedAt,
-        };
-    }
 };
 
 const cashAdvanceConverter = {
@@ -74,15 +57,8 @@ const cashAdvanceConverter = {
     }
 };
 
-export function CashAdvances() {
+export function CashAdvances({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
   const { firestore } = useUser();
-
-  const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), orderBy('startDate', 'desc'), limit(1)) : null,
-    [firestore]
-  );
-  const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
-  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
   const cashAdvancesQuery = useMemo(
     () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
@@ -90,7 +66,7 @@ export function CashAdvances() {
   );
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(cashAdvancesQuery);
   
-  const isLoading = isLoadingWeeks || isLoadingAdvances;
+  const isLoading = isLoadingWeek || isLoadingAdvances;
 
   const renderSkeleton = () => (
     Array.from({ length: 2 }).map((_, i) => (
@@ -117,7 +93,7 @@ export function CashAdvances() {
         <AddCashAdvanceDialog currentWeek={currentWeek} />
       </CardHeader>
       <CardContent>
-        {!currentWeek && !isLoadingWeeks && (
+        {!currentWeek && !isLoadingWeek && (
             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
                 <p className="text-muted-foreground">No hay una semana de pagos abierta. Genere una para poder registrar adelantos.</p>
             </div>

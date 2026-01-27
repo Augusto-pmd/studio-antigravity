@@ -33,11 +33,9 @@ import {
     where,
     doc,
     writeBatch,
-    limit,
     type DocumentData,
     type QueryDocumentSnapshot,
     type SnapshotOptions,
-    orderBy
 } from 'firebase/firestore';
 import type { Project, Employee, PayrollWeek, Attendance } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -87,23 +85,6 @@ const projectConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
 };
 
-const payrollWeekConverter = {
-    toFirestore(week: PayrollWeek): DocumentData {
-        const { id, ...data } = week;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            status: data.status,
-            generatedAt: data.generatedAt,
-        };
-    }
-};
-
 const attendanceConverter = {
   toFirestore(attendance: Attendance): DocumentData {
       const { id, ...data } = attendance;
@@ -125,7 +106,7 @@ const attendanceConverter = {
 };
 
 
-export function DailyAttendance() {
+export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [isClient, setIsClient] = useState(false);
@@ -133,13 +114,6 @@ export function DailyAttendance() {
   const { toast } = useToast();
 
   const { firestore, user } = useUser();
-
-  const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), orderBy('startDate', 'desc'), limit(1)) : null,
-    [firestore]
-  );
-  const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
-  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
   const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
@@ -409,7 +383,7 @@ export function DailyAttendance() {
                     'w-full sm:w-[240px] justify-start text-left font-normal',
                     !selectedDate && 'text-muted-foreground'
                   )}
-                  disabled={isLoadingWeeks}
+                  disabled={isLoadingWeek}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Seleccione una fecha</span>}
@@ -441,7 +415,7 @@ export function DailyAttendance() {
               ))}
             </div>
           </div>
-          {!currentWeek && !isLoadingWeeks && (
+          {!currentWeek && !isLoadingWeek && (
              <div className="text-center text-sm text-destructive p-2 rounded-md border border-destructive/50 bg-destructive/10">
                 No hay una semana de pagos abierta. No se puede guardar la asistencia.
              </div>

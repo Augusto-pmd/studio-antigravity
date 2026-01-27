@@ -49,11 +49,6 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { HistoricalWeekViewDialog } from "./historical-week-view-dialog";
 
-const payrollWeekConverter = {
-    toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
-};
-
 const employeeConverter = {
     toFirestore(employee: Employee): DocumentData {
         const { id, ...data } = employee;
@@ -126,30 +121,11 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-export function WeeklySummary() {
+export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: { currentWeek?: PayrollWeek, historicalWeeks: PayrollWeek[], isLoadingWeeks: boolean }) {
   const { firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   
-  const openWeekQuery = useMemo(() =>
-    firestore
-      ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1))
-      : null,
-    [firestore]
-  );
-  const { data: openWeeks, isLoading: isLoadingOpenWeek } = useCollection<PayrollWeek>(openWeekQuery);
-  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
-
-  const historicalWeeksQuery = useMemo(() =>
-    firestore
-      ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Cerrada'), orderBy('startDate', 'desc'))
-      : null,
-    [firestore]
-  );
-  const { data: historicalWeeks, isLoading: isLoadingHistoricalWeeks } = useCollection<PayrollWeek>(historicalWeeksQuery);
-
-  const isLoadingWeeks = isLoadingOpenWeek || isLoadingHistoricalWeeks;
-
   // Data for the summary
   const attendanceQuery = useMemo(
       () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,

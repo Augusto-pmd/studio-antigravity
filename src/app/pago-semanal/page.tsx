@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
-import type { FundRequest } from '@/lib/types';
+import { collection, query, where, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData, limit, orderBy } from "firebase/firestore";
+import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
 import { CashAdvances } from '@/components/asistencias/cash-advances';
@@ -38,6 +38,12 @@ const fundRequestConverter = {
     }
 };
 
+const payrollWeekConverter = {
+    toFirestore: (data: PayrollWeek): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
+};
+
+
 export default function PagoSemanalPage() {
     const { user, firestore, permissions } = useUser();
     const isAdmin = permissions.canSupervise;
@@ -55,7 +61,25 @@ export default function PagoSemanalPage() {
         return null;
       }, [firestore, user, isAdmin]);
 
-    const { data: requests, isLoading } = useCollection<FundRequest>(fundRequestsQuery);
+    const { data: requests, isLoading: isLoadingRequests } = useCollection<FundRequest>(fundRequestsQuery);
+
+    const openWeekQuery = useMemo(() =>
+        firestore
+        ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1))
+        : null,
+        [firestore]
+    );
+    const { data: openWeeks, isLoading: isLoadingOpenWeek } = useCollection<PayrollWeek>(openWeekQuery);
+    const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
+
+    const historicalWeeksQuery = useMemo(() =>
+        firestore
+        ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Cerrada'), orderBy('startDate', 'desc'))
+        : null,
+        [firestore]
+    );
+    const { data: historicalWeeks, isLoading: isLoadingHistoricalWeeks } = useCollection<PayrollWeek>(historicalWeeksQuery);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,9 +97,19 @@ export default function PagoSemanalPage() {
             </TabsList>
             <TabsContent value="planilla" className="mt-6">
                 <div className="flex flex-col gap-6">
-                    <WeeklySummary />
-                    <CashAdvances />
-                    <DailyAttendance />
+                    <WeeklySummary 
+                        currentWeek={currentWeek}
+                        historicalWeeks={historicalWeeks || []}
+                        isLoadingWeeks={isLoadingOpenWeek || isLoadingHistoricalWeeks}
+                    />
+                    <CashAdvances 
+                        currentWeek={currentWeek} 
+                        isLoadingWeek={isLoadingOpenWeek} 
+                    />
+                    <DailyAttendance 
+                        currentWeek={currentWeek} 
+                        isLoadingWeek={isLoadingOpenWeek} 
+                    />
                 </div>
             </TabsContent>
             <TabsContent value="solicitudes" className="mt-6">
@@ -89,7 +123,7 @@ export default function PagoSemanalPage() {
                         </div>
                         <RequestFundDialog />
                     </div>
-                    <FundRequestsTable requests={requests} isLoading={isLoading} />
+                    <FundRequestsTable requests={requests} isLoading={isLoadingRequests} />
                 </div>
             </TabsContent>
         </Tabs>
