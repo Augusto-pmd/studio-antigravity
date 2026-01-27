@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useMemo } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance } from '@/lib/types';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, Project } from '@/lib/types';
 import { eachDayOfInterval, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -84,6 +83,12 @@ const cashAdvanceConverter = {
     }
 };
 
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
+
 const formatCurrency = (amount: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 
 interface ReceiptData {
@@ -118,7 +123,15 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   const advancesQuery = useMemo(() => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
 
-  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances;
+  const projectsQuery = useMemo(() => firestore ? query(collection(firestore, 'projects').withConverter(projectConverter)) : null, [firestore]);
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects;
+
+  const projectsMap = useMemo(() => {
+    if (!projects) return new Map<string, string>();
+    return new Map(projects.map(p => [p.id, p.name]));
+  }, [projects]);
 
   const receiptsData = useMemo<ReceiptData[]>(() => {
     if (isLoading || !week || !employees || !attendances || !advances) return [];
@@ -239,14 +252,14 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               <p className="text-gray-500">Categoría: {data.employee.category}</p>
             </section>
             
-            <section className="mt-2">
-              <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Detalle de Asistencias</h4>
-              <div className="border rounded-md overflow-hidden">
-                <table className="w-full text-xs">
+            <section className="mt-1">
+              <h4 className="font-medium text-[8px] mb-0.5 uppercase text-gray-500">Detalle de Asistencias</h4>
+              <div className="border rounded-sm overflow-hidden">
+                <table className="w-full text-[8px]">
                   <thead className="bg-gray-50">
                     <tr>
                       {weekDays.map(day => (
-                        <th key={day.toString()} className="p-1 font-medium text-center">{format(day, 'E dd', { locale: es })}</th>
+                        <th key={day.toString()} className="p-0.5 font-medium text-center">{format(day, 'E dd', { locale: es })}</th>
                       ))}
                     </tr>
                   </thead>
@@ -255,8 +268,15 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                       {weekDays.map(day => {
                         const attendanceRecord = data.attendance.find(a => format(parseISO(a.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
                         return (
-                          <td key={day.toString()} className="p-1 text-center capitalize">
-                            {attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}
+                          <td key={day.toString()} className="p-0.5 text-center leading-tight">
+                            <div className="font-semibold capitalize text-[9px]">{attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}</div>
+                            {attendanceRecord?.status === 'presente' && (
+                                <div className="text-[7px] text-gray-500 font-mono">
+                                    {attendanceRecord.projectId && projectsMap.get(attendanceRecord.projectId)
+                                        ? projectsMap.get(attendanceRecord.projectId)!.substring(0, 4).toUpperCase()
+                                        : '-'}
+                                </div>
+                            )}
                           </td>
                         );
                       })}
