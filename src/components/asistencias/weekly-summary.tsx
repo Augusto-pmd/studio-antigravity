@@ -108,10 +108,9 @@ const formatCurrency = (amount: number) => {
 };
 
 export function WeeklySummary() {
-  const { permissions, firestore } = useUser();
+  const { firestore } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const isAdmin = permissions.canValidate;
 
   const payrollWeeksQuery = useMemo(
     () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc')) : null,
@@ -339,13 +338,11 @@ export function WeeklySummary() {
                 <TabsTrigger value="actual">Semana Actual</TabsTrigger>
                 <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
-            {isAdmin && (
-                <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks}>
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Generar Nueva Semana
-                </Button>
-            )}
+            <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Generar Nueva Semana
+            </Button>
          </div>
         
         <TabsContent value="actual">
@@ -354,7 +351,7 @@ export function WeeklySummary() {
                  <Card>
                     <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
                         <p className="text-lg font-medium text-muted-foreground">No hay ninguna semana de pagos activa.</p>
-                        {isAdmin && <p className="text-sm text-muted-foreground">Utilice el botón "Generar Nueva Semana" para comenzar.</p>}
+                        <p className="text-sm text-muted-foreground">Utilice el botón "Generar Nueva Semana" para comenzar.</p>
                     </CardContent>
                  </Card>
             )}
@@ -412,7 +409,7 @@ export function WeeklySummary() {
                             </span>
                         </p>
                         <div className="flex gap-2 flex-wrap justify-end">
-                             {isAdmin && currentWeek.status === 'Abierta' && (
+                             {currentWeek.status === 'Abierta' && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="outline" disabled={isPending}>Cerrar y Contabilizar</Button>
@@ -454,7 +451,7 @@ export function WeeklySummary() {
                 <CardHeader>
                     <CardTitle>Historial de Planillas Semanales</CardTitle>
                     <CardDescription>
-                    Consulte las planillas de semanas anteriores. Las semanas cerradas solo pueden ser modificadas por un administrador.
+                    Consulte las planillas de semanas anteriores.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -482,8 +479,8 @@ export function WeeklySummary() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="outline" size="sm">
-                                                {isAdmin ? <FilePenLine className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                                                {isAdmin ? "Editar" : "Ver"}
+                                                <FilePenLine className="mr-2 h-4 w-4" />
+                                                Editar
                                             </Button>
                                         </TableCell>
                                     </TableRow>
