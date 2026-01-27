@@ -29,6 +29,7 @@ interface ReceiptData {
     totalLateHours: number;
     grossPay: number;
     totalAdvances: number;
+    lateHoursDeduction: number;
     netPay: number;
   };
 }
@@ -62,9 +63,12 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
       const daysAbsent = employeeAttendances.filter(a => a.status === 'ausente').length;
       const totalLateHours = employeeAttendances.reduce((sum, a) => sum + (a.lateHours || 0), 0);
       
+      const hourlyRate = (employee.dailyWage || 0) / 8; // Assuming 8-hour day
+      const lateHoursDeduction = totalLateHours * hourlyRate;
+      
       const grossPay = daysPresent * employee.dailyWage;
       const totalAdvances = employeeAdvances.reduce((sum, ad) => sum + ad.amount, 0);
-      const netPay = grossPay - totalAdvances;
+      const netPay = grossPay - totalAdvances - lateHoursDeduction;
 
       return {
         employee,
@@ -77,6 +81,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
           totalLateHours,
           grossPay,
           totalAdvances,
+          lateHoursDeduction,
           netPay,
         }
       };
@@ -179,13 +184,25 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               <div>
                 <h4 className="font-medium mb-2">Adelantos y Deducciones</h4>
                  <div className="space-y-1 text-sm">
-                    {data.advances.length > 0 ? data.advances.map(adv => (
+                    {data.advances.length > 0 && data.advances.map(adv => (
                        <div key={adv.id} className="flex justify-between">
                          <span>Adelanto ({format(parseISO(adv.date), 'dd/MM')}):</span>
                          <span>({formatCurrency(adv.amount)})</span>
                        </div>
-                    )) : <p className="text-gray-500">Sin adelantos</p>}
-                    <div className="flex justify-between font-semibold border-t pt-1 mt-1"><span>Total Deducido:</span><span>({formatCurrency(data.summary.totalAdvances)})</span></div>
+                    ))}
+                    {data.summary.lateHoursDeduction > 0 && (
+                        <div className="flex justify-between">
+                            <span>Horas Tarde ({data.summary.totalLateHours} hs):</span>
+                            <span>({formatCurrency(data.summary.lateHoursDeduction)})</span>
+                        </div>
+                    )}
+                    {data.advances.length === 0 && data.summary.lateHoursDeduction === 0 && (
+                        <p className="text-gray-500">Sin deducciones</p>
+                    )}
+                    <div className="flex justify-between font-semibold border-t pt-1 mt-1">
+                        <span>Total Deducido:</span>
+                        <span>({formatCurrency(data.summary.totalAdvances + data.summary.lateHoursDeduction)})</span>
+                    </div>
                  </div>
               </div>
             </section>

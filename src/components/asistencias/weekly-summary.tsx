@@ -145,10 +145,11 @@ export function WeeklySummary() {
   
   const weeklySummaryData = useMemo(() => {
       if (!weekAttendances || !employees || !weekAdvances) {
-          return { grossWages: 0, totalAdvances: 0, netPay: 0 };
+          return { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
       }
 
       const employeeWageMap = new Map(employees.map(e => [e.id, e.dailyWage]));
+      const employeeHourlyRateMap = new Map(employees.map(e => [e.id, (e.dailyWage || 0) / 8])); // Assuming 8-hour day
 
       const grossWages = weekAttendances.reduce((sum, attendance) => {
           if (attendance.status === 'presente') {
@@ -158,11 +159,19 @@ export function WeeklySummary() {
           return sum;
       }, 0);
 
+      const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
+        if (attendance.status === 'presente' && attendance.lateHours > 0) {
+            const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
+            return sum + (attendance.lateHours * hourlyRate);
+        }
+        return sum;
+      }, 0);
+
       const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
 
-      const netPay = grossWages - totalAdvances;
+      const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
 
-      return { grossWages, totalAdvances, netPay };
+      return { grossWages, totalAdvances, totalLateHoursDeduction, netPay };
 
   }, [weekAttendances, employees, weekAdvances]);
 
@@ -370,9 +379,21 @@ export function WeeklySummary() {
                                     <p className="text-sm font-medium text-muted-foreground">Sueldos Brutos (Asistencias)</p>
                                     <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.grossWages)}</p>
                                 </div>
-                                <div className="rounded-lg border p-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Adelantos Otorgados</p>
-                                    <p className="text-2xl font-bold text-destructive">{formatCurrency(weeklySummaryData.totalAdvances * -1)}</p>
+                                <div className="rounded-lg border p-4 space-y-2">
+                                    <p className="text-sm font-medium text-muted-foreground">Total Deducciones</p>
+                                    <p className="text-2xl font-bold text-destructive">
+                                        {formatCurrency((weeklySummaryData.totalAdvances + weeklySummaryData.totalLateHoursDeduction) * -1)}
+                                    </p>
+                                    <div className="text-xs text-muted-foreground pt-1">
+                                        <div className="flex justify-between">
+                                            <span>Adelantos:</span>
+                                            <span>{formatCurrency(weeklySummaryData.totalAdvances * -1)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Horas Tarde:</span>
+                                            <span>{formatCurrency(weeklySummaryData.totalLateHoursDeduction * -1)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="rounded-lg border bg-muted p-4">
                                     <p className="text-sm font-medium text-muted-foreground">Neto a Pagar</p>
