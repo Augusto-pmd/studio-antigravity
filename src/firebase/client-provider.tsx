@@ -25,11 +25,9 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const [instances, setInstances] = useState<FirebaseInstances | null>(null);
 
   useEffect(() => {
-    // This effect runs only on the client, after the initial render.
-    if (!instances) {
-        setInstances(initializeFirebase());
-    }
-  }, [instances]);
+    // This effect runs only on the client, after the initial render, ensuring a single initialization.
+    setInstances(initializeFirebase());
+  }, []);
 
   // While initializing, pass nulls. The hooks can handle this.
   return (
