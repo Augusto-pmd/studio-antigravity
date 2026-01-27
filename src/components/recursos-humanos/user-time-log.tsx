@@ -76,13 +76,13 @@ export function UserTimeLog() {
 
   // --- Monthly Summary Data ---
   const { monthStart, monthEnd, currentMonthName } = useMemo(() => {
-    const referenceDate = new Date(); // Always use the current date for the summary
+    const referenceDate = selectedDate || new Date();
     return {
         monthStart: format(startOfMonth(referenceDate), 'yyyy-MM-dd'),
         monthEnd: format(endOfMonth(referenceDate), 'yyyy-MM-dd'),
         currentMonthName: format(referenceDate, 'MMMM yyyy', { locale: es }),
     }
-  }, []); // Empty dependency array ensures this is calculated only once
+  }, [selectedDate]);
 
   const monthlyLogsQuery = useMemo(
       () => (user && firestore ? query(
@@ -265,9 +265,9 @@ export function UserTimeLog() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-1">
                  <CardHeader>
-                    <CardTitle>Total de Horas del Mes ({currentMonthName})</CardTitle>
+                    <CardTitle>Total de Horas del Mes <span className="capitalize">({currentMonthName})</span></CardTitle>
                     <CardDescription>
-                        Suma de todas las horas cargadas en el mes actual.
+                        Suma de todas las horas cargadas en el mes seleccionado.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -281,8 +281,8 @@ export function UserTimeLog() {
 
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Desglose por Proyecto ({currentMonthName})</CardTitle>
-                     <CardDescription>Total de horas por proyecto en el mes actual.</CardDescription>
+                    <CardTitle>Desglose por Proyecto <span className="capitalize">({currentMonthName})</span></CardTitle>
+                     <CardDescription>Total de horas por proyecto en el mes seleccionado.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
