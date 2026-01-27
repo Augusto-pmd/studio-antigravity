@@ -76,12 +76,12 @@ export function UserTimeLog() {
 
   // --- Monthly Summary Data ---
   const { monthStart, monthEnd } = useMemo(() => {
-    const now = new Date();
+    const referenceDate = selectedDate || new Date();
     return {
-        monthStart: format(startOfMonth(now), 'yyyy-MM-dd'),
-        monthEnd: format(endOfMonth(now), 'yyyy-MM-dd'),
+        monthStart: format(startOfMonth(referenceDate), 'yyyy-MM-dd'),
+        monthEnd: format(endOfMonth(referenceDate), 'yyyy-MM-dd'),
     }
-  }, []);
+  }, [selectedDate]);
 
   const monthlyLogsQuery = useMemo(
       () => (user && firestore ? query(
@@ -266,7 +266,7 @@ export function UserTimeLog() {
                  <CardHeader>
                     <CardTitle>Total de Horas del Mes</CardTitle>
                     <CardDescription>
-                        Suma de todas las horas cargadas en {format(startOfMonth(new Date()), 'MMMM', { locale: es })}.
+                        Suma de todas las horas cargadas en {format(startOfMonth(selectedDate || new Date()), 'MMMM yyyy', { locale: es })}.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -280,8 +280,8 @@ export function UserTimeLog() {
 
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Desglose por Proyecto (Mes Actual)</CardTitle>
-                     <CardDescription>Total de horas por proyecto en el mes.</CardDescription>
+                    <CardTitle>Desglose por Proyecto ({format(startOfMonth(selectedDate || new Date()), 'MMMM yyyy', { locale: es })})</CardTitle>
+                     <CardDescription>Total de horas por proyecto en el mes seleccionado.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
