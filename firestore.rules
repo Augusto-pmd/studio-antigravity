@@ -85,11 +85,11 @@ service cloud.firestore {
     }
 
     match /payrollWeeks/{payrollWeekId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
     match /taskRequests/{taskRequestId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
     
     match /cashAdvances/{cashAdvanceId} {

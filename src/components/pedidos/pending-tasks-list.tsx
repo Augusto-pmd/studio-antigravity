@@ -3,7 +3,7 @@
 import { useMemo, useTransition, useState } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
-import { collection, query, where, doc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,13 +31,14 @@ export function PendingTasksList() {
       const tasksCollection = collection(firestore, 'taskRequests').withConverter(taskRequestConverter);
 
       if (permissions.canSupervise) {
-        return query(tasksCollection, where('status', '==', 'Pendiente'));
+        return query(tasksCollection, where('status', '==', 'Pendiente'), orderBy('createdAt', 'desc'));
       }
       
       return query(
         tasksCollection,
         where('assigneeId', '==', user.uid),
-        where('status', '==', 'Pendiente')
+        where('status', '==', 'Pendiente'),
+        orderBy('createdAt', 'desc')
       );
     },
     [user, firestore, permissions.canSupervise]

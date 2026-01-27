@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
-import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,12 +27,13 @@ export function CreatedTasksList() {
       const tasksCollection = collection(firestore, 'taskRequests').withConverter(taskRequestConverter);
 
       if (permissions.canSupervise) {
-        return query(tasksCollection);
+        return query(tasksCollection, orderBy('createdAt', 'desc'));
       }
 
       return query(
         tasksCollection,
-        where('requesterId', '==', user.uid)
+        where('requesterId', '==', user.uid),
+        orderBy('createdAt', 'desc')
       );
     },
     [user, firestore, permissions.canSupervise]
