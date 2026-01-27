@@ -11,10 +11,77 @@ import { Printer, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 
 // Converters
-const payrollWeekConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
-const employeeConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
-const attendanceConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
-const cashAdvanceConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
+const payrollWeekConverter = { 
+    toFirestore: (data: PayrollWeek): DocumentData => data, 
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) 
+};
+
+const employeeConverter = {
+    toFirestore(employee: Employee): DocumentData {
+        const { id, ...data } = employee;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Employee {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            name: data.name || '',
+            email: data.email || undefined,
+            phone: data.phone || undefined,
+            status: data.status || 'Inactivo',
+            paymentType: data.paymentType || 'Semanal',
+            category: data.category || 'N/A',
+            dailyWage: data.dailyWage || 0,
+            artExpiryDate: data.artExpiryDate || undefined,
+            accidentInsuranceUrl: data.accidentInsuranceUrl || undefined,
+            criminalRecordUrl: data.criminalRecordUrl || undefined,
+        };
+    }
+};
+
+const attendanceConverter = {
+    toFirestore(attendance: Attendance): DocumentData {
+        const { id, ...data } = attendance;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            employeeId: data.employeeId,
+            date: data.date,
+            status: data.status,
+            lateHours: data.lateHours || 0,
+            notes: data.notes || '',
+            projectId: data.projectId || null,
+            payrollWeekId: data.payrollWeekId,
+        };
+    }
+};
+
+const cashAdvanceConverter = {
+    toFirestore(advance: CashAdvance): DocumentData {
+        const { id, ...data } = advance;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            employeeId: data.employeeId,
+            employeeName: data.employeeName,
+            projectId: data.projectId || undefined,
+            projectName: data.projectName || undefined,
+            date: data.date,
+            amount: data.amount || 0,
+            reason: data.reason || undefined,
+            payrollWeekId: data.payrollWeekId,
+        };
+    }
+};
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 
@@ -66,7 +133,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
       const hourlyRate = (employee.dailyWage || 0) / 8; // Assuming 8-hour day
       const lateHoursDeduction = totalLateHours * hourlyRate;
       
-      const grossPay = daysPresent * employee.dailyWage;
+      const grossPay = daysPresent * (employee.dailyWage || 0);
       const totalAdvances = employeeAdvances.reduce((sum, ad) => sum + ad.amount, 0);
       const netPay = grossPay - totalAdvances - lateHoursDeduction;
 
