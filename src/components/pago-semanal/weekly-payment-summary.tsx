@@ -63,63 +63,87 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
     const { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown } = useMemo(() => {
-        if (!attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
+        if (isLoadingData || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
             return { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
         }
 
-        const employeeMap = new Map(employees.map(e => [e.id, { wage: e.dailyWage, hourlyRate: e.dailyWage / 8 }]));
+        const employeeMap = new Map(employees.map(e => [e.id, { wage: e.dailyWage || 0, hourlyRate: (e.dailyWage || 0) / 8 }]));
+        
+        // --- 1. Calculate Grand Totals First ---
+        
+        const grossWages = attendances.reduce((sum, att) => {
+            if (att.status === 'presente') {
+                return sum + (employeeMap.get(att.employeeId)?.wage || 0);
+            }
+            return sum;
+        }, 0);
+
+        const lateHoursDeductions = attendances.reduce((sum, att) => {
+            if (att.status === 'presente' && att.lateHours > 0) {
+                return sum + ((att.lateHours || 0) * (employeeMap.get(att.employeeId)?.hourlyRate || 0));
+            }
+            return sum;
+        }, 0);
+
+        const totalAdvances = advances.reduce((sum, adv) => sum + adv.amount, 0);
+
+        const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
+
+        const totalContratistas = certifications.reduce((sum, cert) => sum + cert.amount, 0);
+
+        const totalSolicitudes = fundRequests.reduce((sum, req) => {
+            const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
+            return sum + amountInArs;
+        }, 0);
+
+        const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
+
+        // --- 2. Calculate Per-Project Breakdown ---
+        
         const projectMap = new Map<string, { name: string, personal: number, contratistas: number, solicitudes: number }>();
         projects.forEach(p => projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }));
         
-        // Calculate Personal Cost
-        const personalCostByProject = new Map<string, number>();
         attendances.forEach(att => {
             if (att.status === 'presente' && att.projectId) {
+                const projectEntry = projectMap.get(att.projectId);
                 const emp = employeeMap.get(att.employeeId);
-                if (emp) {
-                    const dailyCost = emp.wage - ((att.lateHours || 0) * emp.hourlyRate);
-                    personalCostByProject.set(att.projectId, (personalCostByProject.get(att.projectId) || 0) + dailyCost);
+                if (projectEntry && emp) {
+                     const dailyCost = emp.wage - ((att.lateHours || 0) * emp.hourlyRate);
+                     projectEntry.personal += dailyCost;
                 }
             }
         });
         advances.forEach(adv => {
-            if (adv.projectId) {
-                personalCostByProject.set(adv.projectId, (personalCostByProject.get(adv.projectId) || 0) - adv.amount);
+             if (adv.projectId) {
+                const projectEntry = projectMap.get(adv.projectId);
+                if (projectEntry) {
+                    projectEntry.personal -= adv.amount;
+                }
+             }
+        });
+
+        certifications.forEach(cert => {
+            const projectEntry = projectMap.get(cert.projectId);
+            if (projectEntry) {
+                projectEntry.contratistas += cert.amount;
             }
         });
-        
-        let totalPersonal = 0;
-        personalCostByProject.forEach((cost, projectId) => {
-            const projectEntry = projectMap.get(projectId);
-            if (projectEntry) projectEntry.personal += cost;
-            totalPersonal += cost;
-        });
 
-        // Calculate Contractor Cost
-        let totalContratistas = 0;
-        certifications.forEach(cert => {
-            totalContratistas += cert.amount;
-            const projectEntry = projectMap.get(cert.projectId);
-            if (projectEntry) projectEntry.contratistas += cert.amount;
-        });
-
-        // Calculate Fund Request Cost
-        let totalSolicitudes = 0;
         fundRequests.forEach(req => {
-            const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
-            totalSolicitudes += amountInArs;
             if (req.projectId) {
                 const projectEntry = projectMap.get(req.projectId);
-                if (projectEntry) projectEntry.solicitudes += amountInArs;
+                if (projectEntry) {
+                    const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
+                    projectEntry.solicitudes += amountInArs;
+                }
             }
         });
 
-        const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
         const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
 
-    }, [attendances, advances, fundRequests, certifications, employees, projects]);
+    }, [isLoadingData, attendances, advances, fundRequests, certifications, employees, projects]);
 
     if (isLoadingWeek) {
         return <Skeleton className="h-96 w-full" />
