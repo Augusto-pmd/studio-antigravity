@@ -113,6 +113,11 @@ export function UserTimeLog() {
     }).sort((a, b) => b.totalHours - a.totalHours);
 
   }, [monthlyLogs, projects]);
+  
+  const totalMonthlyHours = useMemo(() => {
+    if (!monthlyLogs) return 0;
+    return monthlyLogs.reduce((sum, log) => sum + log.hours, 0);
+  }, [monthlyLogs]);
   // --- End Monthly Summary Data ---
 
   useEffect(() => {
@@ -211,7 +216,7 @@ export function UserTimeLog() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
         <Card>
             <CardHeader>
                 <CardTitle>Selección de Fecha</CardTitle>
@@ -254,11 +259,73 @@ export function UserTimeLog() {
             </CardContent>
         </Card>
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1">
+                 <CardHeader>
+                    <CardTitle>Total de Horas del Mes</CardTitle>
+                    <CardDescription>
+                        Suma de todas las horas cargadas en {format(startOfMonth(new Date()), 'MMMM', { locale: es })}.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoadingMonthlyLogs ? (
+                        <Skeleton className="h-16 w-1/2" />
+                    ) : (
+                        <div className="text-5xl font-bold font-mono">{totalMonthlyHours} <span className="text-2xl text-muted-foreground font-sans">hs</span></div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>Desglose por Proyecto (Mes Actual)</CardTitle>
+                     <CardDescription>Total de horas por proyecto en el mes.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Proyecto</TableHead>
+                                <TableHead className="text-right">Horas Totales</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(isLoadingMonthlyLogs || isLoadingProjects) ? (
+                                <>
+                                    <TableRow>
+                                        <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                                    </TableRow>
+                                </>
+                            ) : monthlySummary.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="h-24 text-center">
+                                        No hay horas registradas para este mes.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                            monthlySummary.map(summary => (
+                                <TableRow key={summary.projectId}>
+                                    <TableCell className="font-medium">{summary.projectName}</TableCell>
+                                    <TableCell className="text-right font-mono">{summary.totalHours}</TableCell>
+                                </TableRow>
+                            ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+
         <Card>
             <CardHeader>
                 <CardTitle>Carga de Horas del Día</CardTitle>
                 <CardDescription>
-                    Distribuya sus horas de trabajo entre los distintos proyectos.
+                    Distribuya sus horas de trabajo del día seleccionado.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -314,50 +381,6 @@ export function UserTimeLog() {
                     Guardar Horas
                 </Button>
             </CardFooter>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Resumen Mensual de Horas</CardTitle>
-                <CardDescription>Total de horas cargadas por proyecto en el mes actual.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Proyecto</TableHead>
-                            <TableHead className="text-right">Horas Totales</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {(isLoadingMonthlyLogs || isLoadingProjects) ? (
-                            <>
-                                <TableRow>
-                                    <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-                                    <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
-                                    <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                                </TableRow>
-                            </>
-                        ) : monthlySummary.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={2} className="h-24 text-center">
-                                    No hay horas registradas para este mes.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                          monthlySummary.map(summary => (
-                              <TableRow key={summary.projectId}>
-                                  <TableCell className="font-medium">{summary.projectName}</TableCell>
-                                  <TableCell className="text-right font-mono">{summary.totalHours}</TableCell>
-                              </TableRow>
-                          ))
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
         </Card>
     </div>
   );
