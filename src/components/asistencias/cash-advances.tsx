@@ -78,14 +78,14 @@ export function CashAdvances() {
   const { firestore } = useUser();
 
   const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null,
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), orderBy('startDate', 'desc'), limit(1)) : null,
     [firestore]
   );
   const { data: openWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
   const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
   const cashAdvancesQuery = useMemo(
-    () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id), orderBy('date', 'desc')) : null,
+    () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
     [firestore, currentWeek]
   );
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(cashAdvancesQuery);
