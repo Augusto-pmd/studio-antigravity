@@ -13,16 +13,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
-  useEffect(() => {
-    if (!isUserLoading && !user && pathname !== '/login') {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, pathname, router]);
-
   // Don't show the main layout on the login or print pages
   if (pathname === '/login' || pathname === '/imprimir-recibos') {
     return <>{children}</>;
   }
+  
+  // The rest of the component is for authenticated pages.
+  // We can put the auth logic and loading states here.
+
+  useEffect(() => {
+    // This effect only runs on authenticated pages because of the check above.
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
   
   // While user is loading, or if there is no user (before redirect kicks in), show a loading screen.
   if (isUserLoading || !user) {
