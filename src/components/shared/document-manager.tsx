@@ -39,15 +39,30 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
 
         setIsUploading(true);
         const storage = getStorage(firebaseApp);
-        const fileExtension = file.name.split('.').pop();
-        const fullStoragePath = `${storagePath}.${fileExtension}`;
-        const storageRef = ref(storage, fullStoragePath);
+
+        // 1. If a file already exists, delete it from Storage first.
+        if (currentUrl) {
+            try {
+                const oldStorageRef = ref(storage, currentUrl);
+                await deleteObject(oldStorageRef);
+            } catch (error: any) {
+                // If the old file doesn't exist in storage, that's fine. We can continue.
+                if (error.code !== 'storage/object-not-found') {
+                    console.error("Could not delete old file:", error);
+                    toast({ variant: 'destructive', title: "Error de Limpieza", description: "No se pudo borrar el archivo anterior. Aún así se intentará subir el nuevo." });
+                }
+            }
+        }
+        
+        // 2. Upload the new file.
+        const fullStoragePath = `${storagePath}/${file.name}`;
+        const newStorageRef = ref(storage, fullStoragePath);
 
         try {
-            // This will overwrite any existing file at the same path.
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
+            await uploadBytes(newStorageRef, file);
+            const downloadURL = await getDownloadURL(newStorageRef);
 
+            // 3. Update the Firestore document with the new URL.
             const docRef = doc(firestore, docPath);
             await updateDoc(docRef, { [fieldName]: downloadURL });
             
@@ -68,13 +83,11 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
         setIsDeleting(true);
         const storage = getStorage(firebaseApp);
         
+        // Delete from Storage
         try {
-            // Get reference from download URL. This is the correct way.
             const storageRef = ref(storage, currentUrl);
             await deleteObject(storageRef);
         } catch (error: any) {
-            // If the file doesn't exist in storage (e.g., deleted manually), 
-            // we can still proceed to delete the DB record without throwing an error.
             if (error.code !== 'storage/object-not-found') {
                  console.error("Delete from storage error:", error);
                  toast({ variant: 'destructive', title: "Error al borrar", description: "No se pudo borrar el archivo del almacenamiento." });
@@ -83,6 +96,7 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
             }
         }
         
+        // Delete from Firestore
         try {
             const docRef = doc(firestore, docPath);
             await updateDoc(docRef, { [fieldName]: deleteField() });
