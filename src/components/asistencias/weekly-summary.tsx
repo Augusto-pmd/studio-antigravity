@@ -258,44 +258,30 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
             
             const employeesQueryToFetch = query(collection(firestore, 'employees').withConverter(employeeConverter));
             const attendanceQueryToFetch = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
-            const advancesQueryToFetch = query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId));
-
-            const [employeesSnap, attendanceSnap, advancesSnap] = await Promise.all([
+            
+            const [employeesSnap, attendanceSnap] = await Promise.all([
                 getDocs(employeesQueryToFetch),
                 getDocs(attendanceQueryToFetch),
-                getDocs(advancesQueryToFetch),
             ]);
 
             const employeesData = employeesSnap.docs.map(d => d.data());
             const attendancesData = attendanceSnap.docs.map(d => d.data());
-            const advancesData = advancesSnap.docs.map(d => d.data());
-
+            
             const employeeWages = new Map(employeesData.map(e => [e.id, e.dailyWage]));
-            const costsByProject = new Map<string, { wages: number, advances: number }>();
+            const costsByProject = new Map<string, number>();
 
             for (const attendance of attendancesData) {
                 if (attendance.status === 'presente' && attendance.projectId) {
                     const wage = employeeWages.get(attendance.employeeId) || 0;
-                    const projectCost = costsByProject.get(attendance.projectId) || { wages: 0, advances: 0 };
-                    projectCost.wages += wage;
-                    costsByProject.set(attendance.projectId, projectCost);
-                }
-            }
-
-            for (const advance of advancesData) {
-                if (advance.projectId) {
-                    const projectCost = costsByProject.get(advance.projectId) || { wages: 0, advances: 0 };
-                    projectCost.advances += advance.amount;
-                    costsByProject.set(advance.projectId, projectCost);
+                    costsByProject.set(attendance.projectId, (costsByProject.get(attendance.projectId) || 0) + wage);
                 }
             }
 
             const weekEndDateISO = parseISO(weekEndDate).toISOString();
             const weekRange = formatDateRange(weekStartDate, weekEndDate);
 
-            for (const [projectId, costs] of costsByProject.entries()) {
-                const totalCost = costs.wages + costs.advances;
-                if (totalCost > 0) {
+            for (const [projectId, cost] of costsByProject.entries()) {
+                if (cost > 0) {
                     const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
                     const newExpense: Omit<Expense, 'id'> = {
                         projectId: projectId,
@@ -303,8 +289,8 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
                         supplierId: supplierId,
                         categoryId: 'CAT-02', 
                         documentType: 'Recibo Común',
-                        description: `Costo de personal y adelantos - Semana ${weekRange}`,
-                        amount: totalCost,
+                        description: `Costo de mano de obra - Semana ${weekRange}`,
+                        amount: cost,
                         currency: 'ARS',
                         exchangeRate: 1,
                         status: 'Pagado',
@@ -330,7 +316,7 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
         }
       });
   };
-
+  
   const handleReopenWeek = (week: PayrollWeek) => {
     if (!firestore || !permissions.canSupervise) return;
     if (currentWeek) {
@@ -350,7 +336,7 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
 
             // 1. Find and delete associated expenses
             const weekRange = formatDateRange(week.startDate, week.endDate);
-            const expenseDescription = `Costo de personal y adelantos - Semana ${weekRange}`;
+            const expenseDescription = `Costo de mano de obra - Semana ${weekRange}`;
             const expensesQuery = query(
                 collectionGroup(firestore, 'expenses'),
                 where('description', '==', expenseDescription),
