@@ -47,6 +47,7 @@ import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { HistoricalWeekViewDialog } from "./historical-week-view-dialog";
 
 const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
@@ -54,11 +55,29 @@ const payrollWeekConverter = {
 };
 
 const employeeConverter = {
-    toFirestore: (data: Employee): DocumentData => {
-        const { id, ...rest } = data;
-        return rest;
+    toFirestore(employee: Employee): DocumentData {
+        const { id, ...data } = employee;
+        return data;
     },
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee)
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): Employee {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            name: data.name || '',
+            email: data.email || undefined,
+            phone: data.phone || undefined,
+            status: data.status || 'Inactivo',
+            paymentType: data.paymentType || 'Semanal',
+            category: data.category || 'N/A',
+            dailyWage: data.dailyWage || 0,
+            artExpiryDate: data.artExpiryDate || undefined,
+            accidentInsuranceUrl: data.accidentInsuranceUrl || undefined,
+            criminalRecordUrl: data.criminalRecordUrl || undefined,
+        };
+    }
 };
 
 const attendanceConverter = {
@@ -478,10 +497,12 @@ export function WeeklySummary() {
                                             <Badge variant="secondary">{week.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm">
-                                                <FilePenLine className="mr-2 h-4 w-4" />
-                                                Editar
-                                            </Button>
+                                            <HistoricalWeekViewDialog week={week}>
+                                                <Button variant="outline" size="sm">
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    Ver Detalle
+                                                </Button>
+                                            </HistoricalWeekViewDialog>
                                         </TableCell>
                                     </TableRow>
                                 ))}
