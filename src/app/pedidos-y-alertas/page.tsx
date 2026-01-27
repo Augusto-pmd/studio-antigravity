@@ -1,9 +1,15 @@
+'use client';
+
 import { CreatedTasksList } from "@/components/pedidos/created-tasks-list";
 import { NewRequestDialog } from "@/components/pedidos/new-request-dialog";
 import { PendingTasksList } from "@/components/pedidos/pending-tasks-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUser } from "@/firebase";
 
 export default function PedidosAlertasPage() {
+  const { permissions } = useUser();
+  const canSupervise = permissions.canSupervise;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -18,8 +24,8 @@ export default function PedidosAlertasPage() {
       
       <Tabs defaultValue="pendientes" className="w-full">
         <TabsList>
-          <TabsTrigger value="pendientes">Mis Tareas Pendientes</TabsTrigger>
-          <TabsTrigger value="creados">Pedidos Creados por Mí</TabsTrigger>
+          <TabsTrigger value="pendientes">{canSupervise ? 'Tareas Pendientes (Todos)' : 'Mis Tareas Pendientes'}</TabsTrigger>
+          <TabsTrigger value="creados">{canSupervise ? 'Historial (Todos)' : 'Pedidos Creados por Mí'}</TabsTrigger>
         </TabsList>
         <TabsContent value="pendientes" className="mt-4">
           <PendingTasksList />

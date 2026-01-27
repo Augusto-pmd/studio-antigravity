@@ -18,17 +18,24 @@ const taskRequestConverter = {
 };
 
 export function CreatedTasksList() {
-  const { user, firestore } = useUser();
+  const { user, firestore, permissions } = useUser();
 
   const tasksQuery = useMemo(
-    () =>
-      user && firestore
-        ? query(
-            collection(firestore, 'taskRequests').withConverter(taskRequestConverter),
-            where('requesterId', '==', user.uid)
-          )
-        : null,
-    [user, firestore]
+    () => {
+      if (!user || !firestore) return null;
+      
+      const tasksCollection = collection(firestore, 'taskRequests').withConverter(taskRequestConverter);
+
+      if (permissions.canSupervise) {
+        return query(tasksCollection);
+      }
+
+      return query(
+        tasksCollection,
+        where('requesterId', '==', user.uid)
+      );
+    },
+    [user, firestore, permissions.canSupervise]
   );
 
   const { data: tasks, isLoading } = useCollection<TaskRequest>(tasksQuery);

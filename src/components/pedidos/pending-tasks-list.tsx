@@ -19,21 +19,28 @@ const taskRequestConverter = {
 };
 
 export function PendingTasksList() {
-  const { user, firestore } = useUser();
+  const { user, firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   const tasksQuery = useMemo(
-    () =>
-      user && firestore
-        ? query(
-            collection(firestore, 'taskRequests').withConverter(taskRequestConverter),
-            where('assigneeId', '==', user.uid),
-            where('status', '==', 'Pendiente')
-          )
-        : null,
-    [user, firestore]
+    () => {
+      if (!user || !firestore) return null;
+      
+      const tasksCollection = collection(firestore, 'taskRequests').withConverter(taskRequestConverter);
+
+      if (permissions.canSupervise) {
+        return query(tasksCollection, where('status', '==', 'Pendiente'));
+      }
+      
+      return query(
+        tasksCollection,
+        where('assigneeId', '==', user.uid),
+        where('status', '==', 'Pendiente')
+      );
+    },
+    [user, firestore, permissions.canSupervise]
   );
 
   const { data: tasks, isLoading } = useCollection<TaskRequest>(tasksQuery);
@@ -44,7 +51,7 @@ export function PendingTasksList() {
     startTransition(() => {
       const taskRef = doc(firestore, 'taskRequests', taskId);
       const updatedData = {
-          status: 'Finalizado',
+          status: 'Finalizado' as const,
           completedAt: new Date().toISOString(),
       };
       
@@ -83,7 +90,7 @@ export function PendingTasksList() {
         <TableHeader>
           <TableRow>
             <TableHead>Tarea</TableHead>
-            <TableHead>Solicitado por</TableHead>
+            <TableHead>Asignado a</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead className="text-right">Acción</TableHead>
           </TableRow>
@@ -103,7 +110,7 @@ export function PendingTasksList() {
                 <div className="font-medium">{task.title}</div>
                 {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
               </TableCell>
-              <TableCell>{task.requesterName}</TableCell>
+              <TableCell>{task.assigneeName}</TableCell>
               <TableCell>
                 <div className="text-sm">{format(parseISO(task.createdAt), 'dd/MM/yyyy')}</div>
                 <div className="text-xs text-muted-foreground">
