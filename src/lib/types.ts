@@ -159,7 +159,7 @@ export interface FundRequest {
     amount: number;
     currency: 'ARS' | 'USD';
     exchangeRate: number;
-    status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
+    status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado' | 'Aplazado';
     description?: string;
 }
 

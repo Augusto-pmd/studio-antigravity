@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase";
-import { MoreHorizontal, Check, X, Undo, Receipt } from "lucide-react";
+import { MoreHorizontal, Check, X, Undo, Receipt, Archive } from "lucide-react";
 import type { FundRequest } from "@/lib/types";
 import { parseISO, format } from "date-fns";
 import { doc, updateDoc } from "firebase/firestore";
@@ -111,10 +111,11 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                             <p className='font-mono font-semibold text-foreground'>{formatCurrency(req.amount, req.currency)}</p>
                              <div>
                                 <Badge variant="outline" className={cn(
-                                    'text-xs',
+                                    'text-xs capitalize',
                                     req.status === 'Pendiente' && 'text-yellow-500 border-yellow-500',
                                     req.status === 'Aprobado' && 'text-green-500 border-green-500',
                                     req.status === 'Pagado' && 'text-blue-500 border-blue-500',
+                                    req.status === 'Aplazado' && 'text-gray-500 border-gray-500',
                                     req.status === 'Rechazado' && 'text-destructive border-destructive',
                                 )}>
                                     {req.status}
@@ -141,6 +142,10 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                                                         <Check className="mr-2 h-4 w-4 text-green-500" />
                                                         <span>Aprobar</span>
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aplazado')}>
+                                                        <Archive className="mr-2 h-4 w-4" />
+                                                        <span>Aplazar</span>
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Rechazado')}>
                                                         <X className="mr-2 h-4 w-4 text-red-500" />
                                                         <span>Rechazar</span>
@@ -154,16 +159,20 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                                                         <span>Marcar como Pagado</span>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
+                                                     <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aplazado')}>
+                                                        <Archive className="mr-2 h-4 w-4" />
+                                                        <span>Aplazar</span>
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pendiente')}>
                                                         <Undo className="mr-2 h-4 w-4" />
                                                         <span>Volver a Pendiente</span>
                                                     </DropdownMenuItem>
                                                 </>
                                             )}
-                                            {req.status === 'Rechazado' && (
+                                            {(req.status === 'Rechazado' || req.status === 'Aplazado') && (
                                                 <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pendiente')}>
                                                     <Undo className="mr-2 h-4 w-4" />
-                                                    <span>Volver a Pendiente</span>
+                                                    <span>Reactivar (a Pendiente)</span>
                                                 </DropdownMenuItem>
                                             )}
                                         </DropdownMenuContent>

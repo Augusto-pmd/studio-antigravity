@@ -795,7 +795,8 @@
             "Pendiente",
             "Aprobado",
             "Pagado",
-            "Rechazado"
+            "Rechazado",
+            "Aplazado"
           ]
         },
         "description": {
