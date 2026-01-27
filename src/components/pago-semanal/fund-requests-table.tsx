@@ -71,6 +71,8 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
             <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
             <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+            <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+            <TableCell className="text-right hidden md:table-cell"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
             {isAdmin && <TableCell className="text-right"><Skeleton className="h-9 w-9 rounded-md ml-auto" /></TableCell>}
         </TableRow>
     ))
@@ -84,6 +86,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                     <TableHead>Solicitante</TableHead>
                     <TableHead className="hidden md:table-cell">Categoría</TableHead>
                     <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                    <TableHead className="hidden md:table-cell">Estado</TableHead>
                     <TableHead className="text-right hidden md:table-cell">Monto</TableHead>
                     {isAdmin && (
                       <TableHead className="text-right w-[100px]">Acciones</TableHead>
@@ -94,7 +97,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                 {isLoading && renderSkeleton()}
                 {!isLoading && requests?.length === 0 && (
                   <TableRow>
-                      <TableCell colSpan={isAdmin ? 5 : 4} className="h-24 text-center">
+                      <TableCell colSpan={isAdmin ? 6 : 5} className="h-24 text-center">
                           No hay solicitudes de fondos registradas.
                       </TableCell>
                   </TableRow>
@@ -125,6 +128,18 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{req.category}</TableCell>
                         <TableCell className="hidden md:table-cell">{formatDate(req.date)}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            <Badge variant="outline" className={cn(
+                                'capitalize',
+                                req.status === 'Pendiente' && 'text-yellow-500 border-yellow-500',
+                                req.status === 'Aprobado' && 'text-green-500 border-green-500',
+                                req.status === 'Pagado' && 'text-blue-500 border-blue-500',
+                                req.status === 'Aplazado' && 'text-gray-500 border-gray-500',
+                                req.status === 'Rechazado' && 'text-destructive border-destructive',
+                            )}>
+                                {req.status}
+                            </Badge>
+                        </TableCell>
                         <TableCell className="text-right font-mono hidden md:table-cell">{formatCurrency(req.amount, req.currency)}</TableCell>
                         {isAdmin && (
                             <TableCell className="text-right">
