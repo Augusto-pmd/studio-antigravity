@@ -102,6 +102,11 @@ const cashAdvanceConverter = {
     }
 };
 
+const formatCurrency = (amount: number) => {
+    if (typeof amount !== 'number') return '';
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
+};
+
 export function WeeklySummary() {
   const { permissions, firestore } = useUser();
   const { toast } = useToast();
@@ -112,14 +117,54 @@ export function WeeklySummary() {
     () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc')) : null,
     [firestore]
   );
-  const { data: weeks, isLoading } = useCollection<PayrollWeek>(payrollWeeksQuery);
+  const { data: weeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
 
-  const currentWeek = useMemo(() => weeks?.find(w => w.status === 'Abierta') || weeks?.[0], [weeks]);
+  const currentWeek = useMemo(() => weeks?.find(w => w.status === 'Abierta'), [weeks]);
   const historicalWeeks = useMemo(() => {
     if (!weeks) return [];
-    if (!currentWeek) return weeks;
-    return weeks.filter(w => w.id !== currentWeek.id);
-  }, [weeks, currentWeek]);
+    return weeks.filter(w => w.status === 'Cerrada');
+  }, [weeks]);
+
+  // Data for the summary
+  const attendanceQuery = useMemo(
+      () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
+      [firestore, currentWeek]
+  );
+  const { data: weekAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
+
+  const employeesQuery = useMemo(() => firestore ? query(collection(firestore, 'employees').withConverter(employeeConverter), where('status', '==', 'Activo')) : null, [firestore]);
+  const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
+
+  const advancesQuery = useMemo(
+      () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
+      [firestore, currentWeek]
+  );
+  const { data: weekAdvances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
+  
+  const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances;
+  
+  const weeklySummaryData = useMemo(() => {
+      if (!weekAttendances || !employees || !weekAdvances) {
+          return { grossWages: 0, totalAdvances: 0, netPay: 0 };
+      }
+
+      const employeeWageMap = new Map(employees.map(e => [e.id, e.dailyWage]));
+
+      const grossWages = weekAttendances.reduce((sum, attendance) => {
+          if (attendance.status === 'presente') {
+              const wage = employeeWageMap.get(attendance.employeeId) || 0;
+              return sum + wage;
+          }
+          return sum;
+      }, 0);
+
+      const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
+
+      const netPay = grossWages - totalAdvances;
+
+      return { grossWages, totalAdvances, netPay };
+
+  }, [weekAttendances, employees, weekAdvances]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = parseISO(startDate);
@@ -188,7 +233,6 @@ export function WeeklySummary() {
         try {
             const batch = writeBatch(firestore);
 
-            // Ensure 'Personal Propio' supplier exists
             const supplierId = 'personal-propio';
             const supplierRef = doc(firestore, 'suppliers', supplierId);
             const supplierSnap = await getDoc(supplierRef);
@@ -203,22 +247,20 @@ export function WeeklySummary() {
                 });
             }
             
-            // 1. Fetch all necessary data for the week
-            const employeesQuery = query(collection(firestore, 'employees').withConverter(employeeConverter));
-            const attendanceQuery = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
-            const advancesQuery = query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId));
+            const employeesQueryToFetch = query(collection(firestore, 'employees').withConverter(employeeConverter));
+            const attendanceQueryToFetch = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
+            const advancesQueryToFetch = query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId));
 
             const [employeesSnap, attendanceSnap, advancesSnap] = await Promise.all([
-                getDocs(employeesQuery),
-                getDocs(attendanceQuery),
-                getDocs(advancesQuery),
+                getDocs(employeesQueryToFetch),
+                getDocs(attendanceQueryToFetch),
+                getDocs(advancesQueryToFetch),
             ]);
 
             const employeesData = employeesSnap.docs.map(d => d.data());
             const attendancesData = attendanceSnap.docs.map(d => d.data());
             const advancesData = advancesSnap.docs.map(d => d.data());
 
-            // 2. Process and aggregate costs by project
             const employeeWages = new Map(employeesData.map(e => [e.id, e.dailyWage]));
             const costsByProject = new Map<string, { wages: number, advances: number }>();
 
@@ -239,7 +281,6 @@ export function WeeklySummary() {
                 }
             }
 
-            // 4. Add expense documents to the batch for each project
             const weekEndDateISO = parseISO(weekEndDate).toISOString();
             const weekRange = formatDateRange(weekStartDate, weekEndDate);
 
@@ -251,7 +292,7 @@ export function WeeklySummary() {
                         projectId: projectId,
                         date: weekEndDateISO,
                         supplierId: supplierId,
-                        categoryId: 'CAT-02', // Mano de Obra
+                        categoryId: 'CAT-02', 
                         documentType: 'Recibo Común',
                         description: `Costo de personal y adelantos - Semana ${weekRange}`,
                         amount: totalCost,
@@ -265,11 +306,9 @@ export function WeeklySummary() {
                 }
             }
 
-            // 5. Update the payroll week status to 'Cerrada'
             const weekRef = doc(firestore, 'payrollWeeks', weekId);
             batch.update(weekRef, { status: 'Cerrada' });
 
-            // 6. Commit the batch
             await batch.commit();
 
             toast({
@@ -292,7 +331,7 @@ export function WeeklySummary() {
                 <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
             {isAdmin && (
-                <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoading}>
+                <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks}>
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Generar Nueva Semana
@@ -301,8 +340,8 @@ export function WeeklySummary() {
          </div>
         
         <TabsContent value="actual">
-            {isLoading && <Skeleton className="h-80 w-full" />}
-            {!isLoading && !currentWeek && (
+            {isLoadingWeeks && <Skeleton className="h-80 w-full" />}
+            {!isLoadingWeeks && !currentWeek && (
                  <Card>
                     <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
                         <p className="text-lg font-medium text-muted-foreground">No hay ninguna semana de pagos activa.</p>
@@ -310,18 +349,37 @@ export function WeeklySummary() {
                     </CardContent>
                  </Card>
             )}
-            {!isLoading && currentWeek && (
+            {!isLoadingWeeks && currentWeek && (
                  <Card>
                     <CardHeader>
                         <CardTitle>Planilla de Pagos: {formatDateRange(currentWeek.startDate, currentWeek.endDate)}</CardTitle>
                         <CardDescription>
-                        Resumen de pagos a empleados y proveedores para la semana en curso.
+                        Resumen de pagos a empleados para la semana en curso. Los montos se actualizan en tiempo real.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex h-64 items-center justify-center rounded-md border border-dashed">
-                            <p className="text-muted-foreground">Aquí se mostrará el resumen de la semana actual.</p>
-                        </div>
+                       {isLoadingSummaryData ? (
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <Skeleton className="h-24 w-full" />
+                                <Skeleton className="h-24 w-full" />
+                                <Skeleton className="h-24 w-full" />
+                            </div>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div className="rounded-lg border p-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Sueldos Brutos (Asistencias)</p>
+                                    <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.grossWages)}</p>
+                                </div>
+                                <div className="rounded-lg border p-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Adelantos Otorgados</p>
+                                    <p className="text-2xl font-bold text-destructive">{formatCurrency(weeklySummaryData.totalAdvances * -1)}</p>
+                                </div>
+                                <div className="rounded-lg border bg-muted p-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Neto a Pagar</p>
+                                    <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.netPay)}</p>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                     <CardFooter className="justify-between">
                         <p className="text-sm text-muted-foreground">Estado de la semana: 
@@ -332,7 +390,7 @@ export function WeeklySummary() {
                                 {currentWeek.status}
                             </span>
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap justify-end">
                              {isAdmin && currentWeek.status === 'Abierta' && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -389,8 +447,8 @@ export function WeeklySummary() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {isLoading && <TableRow><TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
-                                {!isLoading && historicalWeeks.length === 0 && (
+                                {isLoadingWeeks && <TableRow><TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
+                                {!isLoadingWeeks && historicalWeeks.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={3} className="h-24 text-center">No hay semanas en el historial.</TableCell>
                                     </TableRow>
