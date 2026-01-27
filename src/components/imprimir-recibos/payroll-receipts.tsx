@@ -178,27 +178,27 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                 <h1 className="text-2xl font-bold">Recibos de Pago (Contratistas)</h1>
                 <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
             </div>
-            <div className="p-8 bg-white rounded-lg shadow-md break-inside-avoid print:shadow-none print:p-4 print:border">
-                <header className="flex justify-between items-start border-b pb-4">
+            <div className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
+                <header className="flex justify-between items-start border-b pb-2">
                     <div>
-                        <Logo className="h-10 w-auto" />
-                        <p className="text-sm text-gray-500 mt-2">PMD Arquitectura</p>
+                        <Logo className="h-6 w-auto" />
+                        <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
                     </div>
                     <div className="text-right">
-                        <h2 className="text-xl font-semibold">Recibo de Pago a Contratista</h2>
-                        <p className="text-sm text-gray-500">
-                        Semana del {format(parseISO(week.startDate), 'dd/MM/yyyy')} al {format(parseISO(week.endDate), 'dd/MM/yyyy')}
+                        <h2 className="text-base font-semibold">Recibo de Pago a Contratista</h2>
+                        <p className="text-xs text-gray-500">
+                        Semana del {format(parseISO(week.startDate), 'dd/MM/yy')} al {format(parseISO(week.endDate), 'dd/MM/yy')}
                         </p>
                     </div>
                 </header>
 
-                <div className="flex h-48 items-center justify-center rounded-md border border-dashed my-8">
-                    <p className="text-muted-foreground text-center">La liquidación semanal para contratistas está en construcción.<br/>Este recibo es un modelo de ejemplo.</p>
+                <div className="flex h-24 items-center justify-center rounded-md border border-dashed my-4">
+                    <p className="text-muted-foreground text-center text-xs">La liquidación semanal para contratistas está en construcción.<br/>Este recibo es un modelo de ejemplo.</p>
                 </div>
                 
-                <footer className="mt-16 flex justify-between items-end">
+                <footer className="mt-4 flex justify-between items-end">
                     <div className="w-1/2">
-                        <div className="border-t pt-2 text-center text-sm">
+                        <div className="border-t pt-1 text-center text-xs">
                         Firma del Contratista
                         </div>
                     </div>
@@ -218,35 +218,35 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
         <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
       </div>
 
-      <div className="space-y-8 print:space-y-4">
+      <div className="space-y-4 print:space-y-2">
         {receiptsData.map(data => (
-          <div key={data.employee.id} className="p-8 bg-white rounded-lg shadow-md break-inside-avoid print:p-4 print:shadow-none print:border">
-            <header className="flex justify-between items-start border-b pb-4">
+          <div key={data.employee.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
+            <header className="flex justify-between items-start border-b pb-2">
               <div>
-                <Logo className="h-10 w-auto" />
-                <p className="text-sm text-gray-500 mt-2">PMD Arquitectura</p>
+                <Logo className="h-6 w-auto" />
+                <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
               </div>
               <div className="text-right">
-                <h2 className="text-xl font-semibold">Recibo de Sueldo</h2>
-                <p className="text-sm text-gray-500">
-                  Semana del {format(parseISO(data.week.startDate), 'dd/MM/yyyy')} al {format(parseISO(data.week.endDate), 'dd/MM/yyyy')}
+                <h2 className="text-base font-semibold">Recibo de Sueldo</h2>
+                <p className="text-xs text-gray-500">
+                  Semana del {format(parseISO(data.week.startDate), 'dd/MM/yy')} al {format(parseISO(data.week.endDate), 'dd/MM/yy')}
                 </p>
               </div>
             </header>
 
-            <section className="mt-6">
-              <h3 className="font-semibold">Empleado: {data.employee.name}</h3>
-              <p className="text-sm text-gray-500">Categoría: {data.employee.category}</p>
+            <section className="mt-2 text-xs">
+              <h3 className="font-medium">Empleado: {data.employee.name}</h3>
+              <p className="text-gray-500">Categoría: {data.employee.category}</p>
             </section>
             
-            <section className="mt-6">
-              <h4 className="font-medium mb-2">Detalle de Asistencias</h4>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
+            <section className="mt-2">
+              <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Detalle de Asistencias</h4>
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full text-xs">
                   <thead className="bg-gray-50">
                     <tr>
                       {weekDays.map(day => (
-                        <th key={day.toString()} className="p-2 font-medium text-center">{format(day, 'E dd', { locale: es })}</th>
+                        <th key={day.toString()} className="p-1 font-medium text-center">{format(day, 'E dd', { locale: es })}</th>
                       ))}
                     </tr>
                   </thead>
@@ -255,8 +255,8 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                       {weekDays.map(day => {
                         const attendanceRecord = data.attendance.find(a => format(parseISO(a.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
                         return (
-                          <td key={day.toString()} className="p-2 text-center capitalize">
-                            {attendanceRecord ? attendanceRecord.status : '-'}
+                          <td key={day.toString()} className="p-1 text-center capitalize">
+                            {attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}
                           </td>
                         );
                       })}
@@ -266,18 +266,18 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               </div>
             </section>
 
-            <section className="mt-6 grid grid-cols-2 gap-8">
+            <section className="mt-2 grid grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium mb-2">Liquidación</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Días Trabajados:</span><span>{data.summary.daysPresent}</span></div>
-                  <div className="flex justify-between"><span>Jornal Diario:</span><span>{formatCurrency(data.employee.dailyWage)}</span></div>
-                  <div className="flex justify-between font-semibold border-t pt-1 mt-1"><span>Sueldo Bruto:</span><span>{formatCurrency(data.summary.grossPay)}</span></div>
+                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Liquidación</h4>
+                <div className="space-y-0.5 text-xs">
+                  <div className="flex justify-between"><span>Días Trab.:</span><span>{data.summary.daysPresent}</span></div>
+                  <div className="flex justify-between"><span>Jornal:</span><span>{formatCurrency(data.employee.dailyWage)}</span></div>
+                  <div className="flex justify-between font-semibold border-t pt-0.5 mt-0.5"><span>Bruto:</span><span>{formatCurrency(data.summary.grossPay)}</span></div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Adelantos y Deducciones</h4>
-                 <div className="space-y-1 text-sm">
+                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Deducciones</h4>
+                 <div className="space-y-0.5 text-xs">
                     {data.advances.length > 0 && data.advances.map(adv => (
                        <div key={adv.id} className="flex justify-between">
                          <span>Adelanto ({format(parseISO(adv.date), 'dd/MM')}):</span>
@@ -286,14 +286,14 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                     ))}
                     {data.summary.lateHoursDeduction > 0 && (
                         <div className="flex justify-between">
-                            <span>Horas Tarde ({data.summary.totalLateHours} hs):</span>
+                            <span>Hs. Tarde ({data.summary.totalLateHours} hs):</span>
                             <span>({formatCurrency(data.summary.lateHoursDeduction)})</span>
                         </div>
                     )}
-                    {data.advances.length === 0 && data.summary.lateHoursDeduction === 0 && (
-                        <p className="text-gray-500">Sin deducciones</p>
+                    {(data.advances.length === 0 && data.summary.lateHoursDeduction === 0) && (
+                        <p className="text-gray-400">Sin deducciones</p>
                     )}
-                    <div className="flex justify-between font-semibold border-t pt-1 mt-1">
+                    <div className="flex justify-between font-semibold border-t pt-0.5 mt-0.5">
                         <span>Total Deducido:</span>
                         <span>({formatCurrency(data.summary.totalAdvances + data.summary.lateHoursDeduction)})</span>
                     </div>
@@ -301,21 +301,21 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               </div>
             </section>
             
-            <section className="mt-8 border-t-2 border-dashed pt-4">
-              <div className="flex justify-between items-center text-lg font-bold">
+            <section className="mt-2 border-t-2 border-dashed pt-1">
+              <div className="flex justify-between items-center text-sm font-bold">
                 <span>NETO A COBRAR:</span>
                 <span>{formatCurrency(data.summary.netPay)}</span>
               </div>
             </section>
             
-            <footer className="mt-16 flex justify-between items-end">
+            <footer className="mt-4 flex justify-between items-end">
               <div className="w-1/2">
-                <div className="border-t pt-2 text-center text-sm">
+                <div className="border-t pt-1 text-center text-xs">
                   Firma del Empleado
                 </div>
               </div>
               <div className="w-1/2 text-right text-xs text-gray-400">
-                Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                <p>Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
               </div>
             </footer>
           </div>
