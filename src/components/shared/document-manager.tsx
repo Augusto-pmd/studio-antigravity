@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface DocumentManagerProps {
     title: string;
     docPath: string; // e.g. "employees/employeeId123"
-    storagePath: string; // e.g. "employee-documents/employeeId123/accident-insurance"
+    storagePath: string; // e.g. "employee-documents/employeeId123"
     fieldName: string; // e.g. "accidentInsuranceUrl"
     currentUrl?: string;
 }
@@ -39,42 +39,27 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
 
         setIsUploading(true);
         const storage = getStorage(firebaseApp);
-        const oldUrl = currentUrl; // Keep track of the old URL to delete later
-
-        // Use a unique name for the new file to avoid caching issues and simplify logic.
-        const fullStoragePath = `${storagePath}/${Date.now()}_${file.name}`;
-        const newStorageRef = ref(storage, fullStoragePath);
+        const fullStoragePath = `${storagePath}/${fieldName}`;
+        const storageRef = ref(storage, fullStoragePath);
 
         try {
-            // 1. Upload the new file.
-            await uploadBytes(newStorageRef, file);
-            const downloadURL = await getDownloadURL(newStorageRef);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
 
-            // 2. Update the Firestore document with the new URL.
             const docRef = doc(firestore, docPath);
             await updateDoc(docRef, { [fieldName]: downloadURL });
             
-            // 3. UI/State updates
             setCurrentUrl(downloadURL);
             setFile(null);
             toast({ title: "Documento Subido", description: `${title} ha sido guardado.` });
 
-            // 4. After successful upload and DB update, delete the old file.
-            if (oldUrl) {
-                try {
-                    const oldStorageRef = ref(storage, oldUrl);
-                    await deleteObject(oldStorageRef);
-                } catch (error: any) {
-                    // It's not critical if the old file deletion fails. Log it and move on.
-                    if (error.code !== 'storage/object-not-found') {
-                         console.warn("Could not delete old file from storage:", error);
-                    }
-                }
-            }
-
-        } catch (error) {
+        } catch (error: any) {
             console.error("Upload error:", error);
-            toast({ variant: 'destructive', title: "Error al subir", description: "No se pudo subir el documento. Revisa los permisos de almacenamiento." });
+            let description = "No se pudo subir el documento. Revisa tu conexión a internet.";
+            if (error.code === 'storage/unauthorized') {
+                description = "No tienes permisos para subir archivos. Es probable que las reglas de Firebase Storage necesiten ser ajustadas.";
+            }
+            toast({ variant: 'destructive', title: "Error al subir", description: description });
         } finally {
             setIsUploading(false);
         }
@@ -86,9 +71,9 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
         setIsDeleting(true);
         const storage = getStorage(firebaseApp);
         
-        // Delete from Storage
         try {
-            const storageRef = ref(storage, currentUrl);
+            const fullStoragePath = `${storagePath}/${fieldName}`;
+            const storageRef = ref(storage, fullStoragePath);
             await deleteObject(storageRef);
         } catch (error: any) {
             if (error.code !== 'storage/object-not-found') {
@@ -99,7 +84,6 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
             }
         }
         
-        // Delete from Firestore
         try {
             const docRef = doc(firestore, docPath);
             await updateDoc(docRef, { [fieldName]: deleteField() });

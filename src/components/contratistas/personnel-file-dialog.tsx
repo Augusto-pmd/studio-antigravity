@@ -32,7 +32,7 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
                     key={`acc-ins-${displayPersonnel.id}`}
                     title="Seguro de Accidentes Personales"
                     docPath={`contractors/${contractorId}/personnel/${displayPersonnel.id}`}
-                    storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}/accidentInsuranceUrl`}
+                    storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}`}
                     fieldName="accidentInsuranceUrl"
                     currentUrl={displayPersonnel.accidentInsuranceUrl}
                   />
@@ -40,7 +40,7 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
                     key={`crim-rec-${displayPersonnel.id}`}
                     title="Antecedentes Penales"
                     docPath={`contractors/${contractorId}/personnel/${displayPersonnel.id}`}
-                    storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}/criminalRecordUrl`}
+                    storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}`}
                     fieldName="criminalRecordUrl"
                     currentUrl={displayPersonnel.criminalRecordUrl}
                   />

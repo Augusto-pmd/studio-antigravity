@@ -33,7 +33,7 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
                     key={`acc-ins-${displayEmployee.id}`}
                     title="Seguro de Accidentes Personales"
                     docPath={`employees/${displayEmployee.id}`}
-                    storagePath={`employee-documents/${displayEmployee.id}/accidentInsuranceUrl`}
+                    storagePath={`employee-documents/${displayEmployee.id}`}
                     fieldName="accidentInsuranceUrl"
                     currentUrl={displayEmployee.accidentInsuranceUrl}
                   />
@@ -41,7 +41,7 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
                     key={`crim-rec-${displayEmployee.id}`}
                     title="Antecedentes Penales"
                     docPath={`employees/${displayEmployee.id}`}
-                    storagePath={`employee-documents/${displayEmployee.id}/criminalRecordUrl`}
+                    storagePath={`employee-documents/${displayEmployee.id}`}
                     fieldName="criminalRecordUrl"
                     currentUrl={displayEmployee.criminalRecordUrl}
                   />
