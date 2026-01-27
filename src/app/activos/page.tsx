@@ -10,7 +10,7 @@ import { PlusCircle } from "lucide-react";
 export default function ActivosPage() {
   const { permissions } = useUser();
 
-  if (!permissions.canValidate) {
+  if (!permissions.canValidate && !permissions.canSupervise) {
     return (
       <Card>
           <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">

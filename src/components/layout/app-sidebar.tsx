@@ -145,7 +145,11 @@ export function AppSidebar() {
                 return null;
               }
 
-              const adminValidationRoutes = ['/contabilidad', '/activos', '/calendario-pagos', '/ventas', '/gastos-recurrentes'];
+              if (item.href === '/activos' && !permissions.canValidate && !permissions.canSupervise) {
+                return null;
+              }
+
+              const adminValidationRoutes = ['/contabilidad', '/calendario-pagos', '/ventas', '/gastos-recurrentes'];
               if (adminValidationRoutes.includes(item.href) && !permissions.canValidate) {
                 return null;
               }
