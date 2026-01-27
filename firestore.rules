@@ -42,7 +42,7 @@ service cloud.firestore {
     }
 
     match /projects/{projectId}/expenses/{expenseId} {
-        allow read, write: if true;
+        allow read, write: if isSignedIn();
     }
 
     match /suppliers/{supplierId} {
@@ -77,7 +77,7 @@ service cloud.firestore {
     }
     
     match /assets/{assetId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración', 'Supervisor'];
     }
     
     match /fundRequests/{fundRequestId} {
@@ -97,7 +97,7 @@ service cloud.firestore {
     }
 
     match /attendances/{attendanceId} {
-      allow read, write: if true; 
+      allow read, write: if true;
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
@@ -116,10 +116,10 @@ service cloud.firestore {
     }
 
     match /stockItems/{itemId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
       
       match /movements/{movementId} {
-        allow read, write: if true;
+        allow read, write: if isSignedIn();
       }
     }
   }
