@@ -131,17 +131,20 @@ export function WeeklySummary() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const payrollWeeksQuery = useMemo(
-    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc')) : null,
+  const openWeekQuery = useMemo(
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), orderBy('startDate', 'desc'), limit(1)) : null,
     [firestore]
   );
-  const { data: weeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
+  const { data: openWeeks, isLoading: isLoadingOpenWeek } = useCollection<PayrollWeek>(openWeekQuery);
+  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
-  const currentWeek = useMemo(() => weeks?.find(w => w.status === 'Abierta'), [weeks]);
-  const historicalWeeks = useMemo(() => {
-    if (!weeks) return [];
-    return weeks.filter(w => w.status === 'Cerrada');
-  }, [weeks]);
+  const historicalWeeksQuery = useMemo(
+    () => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Cerrada'), orderBy('startDate', 'desc')) : null,
+    [firestore]
+  );
+  const { data: historicalWeeks, isLoading: isLoadingHistorical } = useCollection<PayrollWeek>(historicalWeeksQuery);
+
+  const isLoadingWeeks = isLoadingOpenWeek || isLoadingHistorical;
 
   // Data for the summary
   const attendanceQuery = useMemo(
@@ -201,7 +204,7 @@ export function WeeklySummary() {
 
   const handleGenerateNewWeek = () => {
     if (!firestore) return;
-    if (weeks?.some(w => w.status === 'Abierta')) {
+    if (openWeeks && openWeeks.length > 0) {
       toast({
         variant: "destructive",
         title: "Semana Abierta",
