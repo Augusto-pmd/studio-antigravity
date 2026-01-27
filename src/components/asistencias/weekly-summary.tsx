@@ -39,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, PlusCircle, FilePenLine, Eye, Loader2 } from "lucide-react";
 import { useUser } from "@/firebase";
 import { useCollection } from "@/firebase";
-import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, writeBatch, where, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDocs, limit, setDoc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, writeBatch, where, getDoc, collectionGroup } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { PayrollWeek, Employee, Attendance, CashAdvance, Expense } from "@/lib/types";
 import { format, parseISO, addDays, startOfWeek, endOfWeek } from "date-fns";
@@ -215,7 +215,7 @@ export function WeeklySummary() {
 
     startTransition(() => {
       const generate = async () => {
-        const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
+        const lastWeekQuery = query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc'), limit(1));
         const lastWeekSnap = await getDocs(lastWeekQuery);
         
         let nextStartDate: Date;
@@ -223,7 +223,7 @@ export function WeeklySummary() {
         if (lastWeekSnap.empty) {
           nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
         } else {
-          const lastWeek = lastWeekSnap.docs[0].data() as PayrollWeek;
+          const lastWeek = lastWeekSnap.docs[0].data();
           nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
         }
 
@@ -351,6 +351,53 @@ export function WeeklySummary() {
         }
       });
   };
+
+  const handleReopenWeek = (week: PayrollWeek) => {
+    if (!firestore || !permissions.canSupervise) return;
+    if (currentWeek) {
+        toast({
+            variant: "destructive",
+            title: "Operación no permitida",
+            description: `Ya hay una semana abierta (${formatDateRange(currentWeek.startDate, currentWeek.endDate)}). Debe cerrarla primero.`,
+        });
+        return;
+    }
+
+    startTransition(async () => {
+        toast({ title: "Reabriendo semana...", description: "Eliminando los gastos contables generados previamente. Esto puede tardar." });
+
+        try {
+            const batch = writeBatch(firestore);
+
+            // 1. Find and delete associated expenses
+            const weekRange = formatDateRange(week.startDate, week.endDate);
+            const expenseDescription = `Costo de personal y adelantos - Semana ${weekRange}`;
+            const expensesQuery = query(
+                collectionGroup(firestore, 'expenses'),
+                where('description', '==', expenseDescription),
+                where('supplierId', '==', 'personal-propio')
+            );
+            const expensesSnap = await getDocs(expensesQuery);
+            expensesSnap.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            
+            // 2. Update week status to "Abierta"
+            const weekRef = doc(firestore, 'payrollWeeks', week.id);
+            batch.update(weekRef, { status: 'Abierta' });
+
+            await batch.commit();
+            toast({
+                title: "Semana Reabierta",
+                description: `La semana del ${weekRange} está activa nuevamente. Los gastos contables asociados fueron revertidos.`,
+            });
+
+        } catch (error) {
+            console.error("Error reopening week:", error);
+            toast({ variant: 'destructive', title: "Error al reabrir", description: "No se pudo reabrir la semana. Es posible que no tengas permisos." });
+        }
+    });
+};
 
   return (
     <div className="mt-4">
@@ -500,12 +547,37 @@ export function WeeklySummary() {
                                             <Badge variant="secondary">{week.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <HistoricalWeekViewDialog week={week}>
-                                                <Button variant="outline" size="sm">
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    Ver Detalle
-                                                </Button>
-                                            </HistoricalWeekViewDialog>
+                                           <div className="flex items-center justify-end gap-2">
+                                                <HistoricalWeekViewDialog week={week}>
+                                                    <Button variant="outline" size="sm">
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        Ver Detalle
+                                                    </Button>
+                                                </HistoricalWeekViewDialog>
+                                                {permissions.canSupervise && (
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" disabled={isPending || !!currentWeek}>
+                                                                <FilePenLine className="mr-2 h-4 w-4" />
+                                                                Reabrir
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>¿Está seguro que desea reabrir esta semana?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Esta acción revertirá los gastos de mano de obra que se generaron al cerrar la semana y la marcará como "Abierta".
+                                                                    Solo puede haber una semana abierta a la vez.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleReopenWeek(week)}>Confirmar</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                )}
+                                           </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
