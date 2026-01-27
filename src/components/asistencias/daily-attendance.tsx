@@ -128,7 +128,6 @@ const attendanceConverter = {
 export function DailyAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
-  const [lastProjectByEmployee, setLastProjectByEmployee] = useState<Record<string, string>>({});
   const [isClient, setIsClient] = useState(false);
   const [isSaving, startTransition] = useTransition();
   const { toast } = useToast();
@@ -144,6 +143,13 @@ export function DailyAttendance() {
 
   const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
+  
+  const activeEmployees = useMemo(() => {
+    if (!employees) return [];
+    return employees.filter(
+      (emp) => emp.status === 'Activo'
+    );
+  }, [employees]);
 
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -162,32 +168,39 @@ export function DailyAttendance() {
   }, []);
 
   useEffect(() => {
-    if (isLoadingAttendances) return;
-
+    if (isLoadingAttendances || isLoadingEmployees) return;
+    
+    const newAttendanceState: Record<string, AttendanceRecord> = {};
+    
+    // First, populate from existing logs for the selected day
     if (dayAttendances && dayAttendances.length > 0) {
-      const newAttendanceState: Record<string, AttendanceRecord> = {};
-      dayAttendances.forEach(att => {
-          newAttendanceState[att.employeeId] = {
-              status: att.status,
-              lateHours: att.lateHours || 0,
-              notes: att.notes || '',
-              projectId: att.projectId || null
-          };
-      });
-      setAttendance(newAttendanceState);
-    } else {
-      // "Foja cero" - Start with a clean slate for the new day
-      setAttendance({});
+        dayAttendances.forEach(att => {
+            newAttendanceState[att.employeeId] = {
+                status: att.status,
+                lateHours: att.lateHours || 0,
+                notes: att.notes || '',
+                projectId: att.projectId || null
+            };
+        });
     }
-  }, [dayAttendances, isLoadingAttendances, selectedDate]);
 
+    // For any active employees not in the day's logs, set a default "presente" state ("foja cero")
+    // This handles both a completely new day and cases where a new employee is added.
+    activeEmployees.forEach(emp => {
+        if (!newAttendanceState[emp.id]) {
+             newAttendanceState[emp.id] = {
+                status: 'presente',
+                lateHours: 0,
+                notes: '',
+                projectId: null,
+             };
+        }
+    });
 
-  const activeEmployees = useMemo(() => {
-    if (!employees) return [];
-    return employees.filter(
-      (emp) => emp.status === 'Activo'
-    );
-  }, [employees]);
+    setAttendance(newAttendanceState);
+
+  }, [dayAttendances, isLoadingAttendances, activeEmployees, isLoadingEmployees, selectedDate]);
+
 
   const weekDays = useMemo(() => {
     if (!selectedDate) return [];
@@ -201,9 +214,9 @@ export function DailyAttendance() {
         status: 'presente', 
         lateHours: 0, 
         notes: '', 
-        projectId: lastProjectByEmployee[employeeId] || null 
+        projectId: null
     };
-  }, [attendance, lastProjectByEmployee]);
+  }, [attendance]);
   
   const groupedEmployees = useMemo(() => {
     if (!activeEmployees || !projects) return {};
@@ -254,21 +267,8 @@ export function DailyAttendance() {
         [field]: value,
       };
 
-      if (field === 'status') {
-        if (value === 'presente') {
-          if (!newRecord.projectId) { // If toggling back to present and there's no project
-            newRecord.projectId = lastProjectByEmployee[employeeId] || null;
-          }
-        } else if (value === 'ausente') {
+      if (field === 'status' && value === 'ausente') {
           newRecord.projectId = null;
-        }
-      }
-      
-      if (field === 'projectId' && typeof value === 'string' && value) {
-        setLastProjectByEmployee(prevLastProject => ({
-            ...prevLastProject,
-            [employeeId]: value
-        }));
       }
 
       return {
@@ -293,17 +293,15 @@ export function DailyAttendance() {
         
         const existingDocsMap = new Map(dayAttendances?.map(d => [d.employeeId, d.id]));
 
-        // Only process employees whose attendance has been explicitly set/changed in the UI
-        for (const employeeId of Object.keys(attendance)) {
-            const employeeAttendance = attendance[employeeId];
+        // Process all active employees to ensure every one has a record for the day
+        for (const employee of activeEmployees) {
+            const employeeAttendance = getEmployeeAttendance(employee.id);
 
-            if (!employeeAttendance) continue; // Should not happen, but a safeguard
-
-            const docId = existingDocsMap.get(employeeId);
+            const docId = existingDocsMap.get(employee.id);
             const docRef = docId ? doc(firestore, 'attendances', docId) : doc(collection(firestore, 'attendances'));
 
             const dataToSave: Omit<Attendance, 'id'> = {
-                employeeId: employeeId,
+                employeeId: employee.id,
                 date: dateStr,
                 payrollWeekId: weekToSave.id,
                 status: employeeAttendance.status,
@@ -315,10 +313,6 @@ export function DailyAttendance() {
         }
 
         try {
-            if (Object.keys(attendance).length === 0) {
-                toast({ variant: 'default', title: 'Nada que guardar', description: 'No se ha modificado ninguna asistencia.' });
-                return;
-            }
             await batch.commit();
             toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(dateToSave, 'dd/MM/yyyy')}` });
         } catch (error) {

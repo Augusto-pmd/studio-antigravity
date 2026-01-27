@@ -131,19 +131,24 @@ export function WeeklySummary() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   
-  const allWeeksQuery = useMemo(() => 
-    firestore 
-      ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), orderBy('startDate', 'desc')) 
+  const openWeekQuery = useMemo(() =>
+    firestore
+      ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1))
       : null,
     [firestore]
   );
-  const { data: allWeeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(allWeeksQuery);
+  const { data: openWeeks, isLoading: isLoadingOpenWeek } = useCollection<PayrollWeek>(openWeekQuery);
+  const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
-  const { currentWeek, historicalWeeks } = useMemo(() => {
-    const open = allWeeks?.find(w => w.status === 'Abierta');
-    const closed = allWeeks?.filter(w => w.status === 'Cerrada') || [];
-    return { currentWeek: open, historicalWeeks: closed };
-  }, [allWeeks]);
+  const historicalWeeksQuery = useMemo(() =>
+    firestore
+      ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Cerrada'), orderBy('startDate', 'desc'))
+      : null,
+    [firestore]
+  );
+  const { data: historicalWeeks, isLoading: isLoadingHistoricalWeeks } = useCollection<PayrollWeek>(historicalWeeksQuery);
+
+  const isLoadingWeeks = isLoadingOpenWeek || isLoadingHistoricalWeeks;
 
   // Data for the summary
   const attendanceQuery = useMemo(
@@ -214,15 +219,15 @@ export function WeeklySummary() {
 
     startTransition(() => {
       const generate = async () => {
-        // The allWeeks query is already ordered by startDate desc
-        const lastWeek = allWeeks?.[0]; 
+        const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
+        const lastWeekSnap = await getDocs(lastWeekQuery);
+        const lastWeek = lastWeekSnap.docs.length > 0 ? lastWeekSnap.docs[0].data() as PayrollWeek : null;
         
         let nextStartDate: Date;
 
         if (!lastWeek) {
           nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
         } else {
-          // parseISO is crucial here to correctly handle the string from Firestore
           nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
         }
 
@@ -405,7 +410,7 @@ export function WeeklySummary() {
                 <TabsTrigger value="actual">Semana Actual</TabsTrigger>
                 <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
-            <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks || !permissions.canSupervise}>
+            <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks || !!currentWeek || !permissions.canSupervise}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Generar Nueva Semana
