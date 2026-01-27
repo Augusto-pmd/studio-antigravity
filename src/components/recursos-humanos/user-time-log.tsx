@@ -61,6 +61,7 @@ export function UserTimeLog() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeLogEntries, setTimeLogEntries] = useState<TimeLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const projectsQuery = useMemo(() => (firestore ? query(collection(firestore, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso')) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -89,7 +90,7 @@ export function UserTimeLog() {
           where('date', '>=', monthStart),
           where('date', '<=', monthEnd)
       ) : null),
-      [user, firestore, monthStart, monthEnd]
+      [user, firestore, monthStart, monthEnd, refreshKey]
   );
 
   const { data: monthlyLogs, isLoading: isLoadingMonthlyLogs } = useCollection<TimeLog>(monthlyLogsQuery);
@@ -207,6 +208,7 @@ export function UserTimeLog() {
         batch.commit()
             .then(() => {
                 toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
+                setRefreshKey(oldKey => oldKey + 1);
             })
             .catch((error) => {
                 console.error("Error writing to Firestore:", error);
