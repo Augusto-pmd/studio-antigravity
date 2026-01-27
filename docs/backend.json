@@ -1425,6 +1425,72 @@
         "date",
         "userId"
       ]
+    },
+    "ContractorCertification": {
+      "title": "Contractor Certification",
+      "type": "object",
+      "description": "Represents a weekly work certification for a contractor to be paid.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "payrollWeekId": {
+          "type": "string",
+          "description": "Reference to the payroll week."
+        },
+        "contractorId": {
+          "type": "string",
+          "description": "Reference to the contractor."
+        },
+        "contractorName": {
+          "type": "string",
+          "description": "Denormalized name of the contractor."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the project."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Denormalized name of the project."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount to be paid."
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the certification."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Aprobado",
+            "Pagado",
+            "Rechazado"
+          ],
+          "description": "The status of the certification payment."
+        }
+      },
+      "required": [
+        "id",
+        "payrollWeekId",
+        "contractorId",
+        "contractorName",
+        "projectId",
+        "projectName",
+        "amount",
+        "currency",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -1882,6 +1948,22 @@
             {
               "name": "movementId",
               "description": "The unique identifier for the stock movement."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contractorCertifications/{certificationId}",
+        "definition": {
+          "entityName": "ContractorCertification",
+          "schema": {
+            "$ref": "#/backend/entities/ContractorCertification"
+          },
+          "description": "Stores weekly work certifications for contractors.",
+          "params": [
+            {
+              "name": "certificationId",
+              "description": "The unique identifier for the certification."
             }
           ]
         }

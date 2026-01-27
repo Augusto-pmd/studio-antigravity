@@ -4,12 +4,15 @@ import { useMemo } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData, limit, orderBy } from "firebase/firestore";
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, orderBy, and } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
 import { CashAdvances } from '@/components/asistencias/cash-advances';
 import { DailyAttendance } from '@/components/asistencias/daily-attendance';
+import { WeeklyPaymentSummary } from '@/components/pago-semanal/weekly-payment-summary';
+import { ContractorCertifications } from '@/components/pago-semanal/contractor-certifications';
+import { parseISO, format } from 'date-fns';
 
 const fundRequestConverter = {
     toFirestore(request: FundRequest): DocumentData {
@@ -48,21 +51,6 @@ export default function PagoSemanalPage() {
     const { user, firestore, permissions } = useUser();
     const isAdmin = permissions.canSupervise;
     
-    const fundRequestsQuery = useMemo(() => {
-        if (!firestore) return null;
-        const coll = collection(firestore, 'fundRequests').withConverter(fundRequestConverter);
-        // Admins and supervisors see all requests. Other roles only see their own.
-        if (isAdmin) {
-          return query(coll);
-        }
-        if (user) {
-          return query(coll, where('requesterId', '==', user.uid));
-        }
-        return null;
-      }, [firestore, user, isAdmin]);
-
-    const { data: requests, isLoading: isLoadingRequests } = useCollection<FundRequest>(fundRequestsQuery);
-
     const openWeekQuery = useMemo(() =>
         firestore
         ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1))
@@ -80,6 +68,27 @@ export default function PagoSemanalPage() {
     );
     const { data: historicalWeeks, isLoading: isLoadingHistoricalWeeks } = useCollection<PayrollWeek>(historicalWeeksQuery);
 
+    const fundRequestsQuery = useMemo(() => {
+        if (!firestore) return null;
+        
+        let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter));
+
+        // Filter by date range of the current week if it exists
+        if(currentWeek) {
+            const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+            const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
+            q = query(q, and(where('date', '>=', startDate), where('date', '<=', endDate)));
+        }
+
+        // Admins see all, others see their own
+        if (!isAdmin && user) {
+          q = query(q, where('requesterId', '==', user.uid));
+        }
+
+        return q;
+      }, [firestore, user, isAdmin, currentWeek]);
+
+    const { data: requests, isLoading: isLoadingRequests } = useCollection<FundRequest>(fundRequestsQuery);
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,12 +99,19 @@ export default function PagoSemanalPage() {
             </p>
         </div>
 
-        <Tabs defaultValue="planilla" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="planilla">Planilla de Pagos (Personal)</TabsTrigger>
+        <Tabs defaultValue="resumen" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                <TabsTrigger value="resumen">Resumen Total</TabsTrigger>
+                <TabsTrigger value="personal">Planilla (Personal)</TabsTrigger>
+                <TabsTrigger value="contratistas">Certificaciones (Contratistas)</TabsTrigger>
                 <TabsTrigger value="solicitudes">Solicitudes de Fondos</TabsTrigger>
             </TabsList>
-            <TabsContent value="planilla" className="mt-6">
+
+            <TabsContent value="resumen" className="mt-6">
+              <WeeklyPaymentSummary currentWeek={currentWeek} isLoadingWeek={isLoadingOpenWeek || isLoadingHistoricalWeeks} />
+            </TabsContent>
+
+            <TabsContent value="personal" className="mt-6">
                 <div className="flex flex-col gap-6">
                     <WeeklySummary 
                         currentWeek={currentWeek}
@@ -112,6 +128,14 @@ export default function PagoSemanalPage() {
                     />
                 </div>
             </TabsContent>
+
+            <TabsContent value="contratistas" className="mt-6">
+              <ContractorCertifications 
+                currentWeek={currentWeek}
+                isLoadingWeek={isLoadingOpenWeek || isLoadingHistoricalWeeks}
+              />
+            </TabsContent>
+
             <TabsContent value="solicitudes" className="mt-6">
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">

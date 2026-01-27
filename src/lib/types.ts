@@ -337,3 +337,16 @@ export interface StockMovement {
   projectName?: string;
   notes?: string;
 }
+
+export interface ContractorCertification {
+  id: string;
+  payrollWeekId: string;
+  contractorId: string;
+  contractorName: string;
+  projectId: string;
+  projectName: string;
+  amount: number;
+  currency: 'ARS' | 'USD';
+  notes?: string;
+  status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
+}

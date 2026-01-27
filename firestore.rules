@@ -122,5 +122,9 @@ service cloud.firestore {
         allow read, write: if isSignedIn();
       }
     }
+
+    match /contractorCertifications/{certificationId} {
+      allow read, write: if true;
+    }
   }
 }

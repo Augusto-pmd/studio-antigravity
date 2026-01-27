@@ -1,0 +1,169 @@
+
+'use client';
+
+import { useMemo } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useUser, useCollection } from '@/firebase';
+import { collection, query, where, doc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import type { ContractorCertification, PayrollWeek } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { parseISO, format } from 'date-fns';
+import { AddContractorCertificationDialog } from './add-contractor-certification-dialog';
+import { MoreHorizontal, Check, X, Undo, Receipt, Archive } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+
+const formatCurrency = (amount: number, currency: string = 'ARS') => {
+  if (typeof amount !== 'number') return '';
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+};
+const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    return format(parseISO(dateString), 'dd/MM/yyyy');
+};
+
+const certificationConverter = {
+    toFirestore: (cert: ContractorCertification): DocumentData => cert,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification)
+};
+
+export function ContractorCertifications({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
+  const { firestore, permissions } = useUser();
+  const { toast } = useToast();
+
+  const certificationsQuery = useMemo(
+    () => firestore && currentWeek ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
+    [firestore, currentWeek]
+  );
+  const { data: certifications, isLoading: isLoadingCerts } = useCollection<ContractorCertification>(certificationsQuery);
+  
+  const isLoading = isLoadingWeek || isLoadingCerts;
+  
+  const handleStatusChange = (certId: string, status: ContractorCertification['status']) => {
+    if (!firestore) return;
+    const certRef = doc(firestore, 'contractorCertifications', certId);
+    updateDoc(certRef, { status })
+        .then(() => toast({ title: 'Estado actualizado' }))
+        .catch(() => toast({ variant: 'destructive', title: 'Error al actualizar' }));
+  };
+
+  const renderSkeleton = () => (
+    Array.from({ length: 2 }).map((_, i) => (
+      <TableRow key={`skel-cert-${i}`}>
+        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
+      </TableRow>
+    ))
+  );
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+            <CardTitle>Certificaciones de Contratistas</CardTitle>
+            <CardDescription>
+            Registre y apruebe los montos a pagar a contratistas para la semana actual.
+            </CardDescription>
+        </div>
+        <AddContractorCertificationDialog currentWeek={currentWeek} />
+      </CardHeader>
+      <CardContent>
+        {!currentWeek && !isLoadingWeek && (
+            <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">No hay una semana de pagos abierta.</p>
+            </div>
+        )}
+        {currentWeek && (
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Contratista</TableHead>
+                            <TableHead className='hidden md:table-cell'>Obra</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead className="text-right">Monto</TableHead>
+                            <TableHead className="text-right w-[100px]">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading && renderSkeleton()}
+                        {!isLoading && certifications?.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    No hay certificaciones registradas para esta semana.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {!isLoading && certifications?.map(cert => (
+                            <TableRow key={cert.id}>
+                                <TableCell className="font-medium">{cert.contractorName}</TableCell>
+                                <TableCell className='hidden md:table-cell'>{cert.projectName}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={cn(
+                                      'capitalize',
+                                      cert.status === 'Pendiente' && 'text-yellow-500 border-yellow-500',
+                                      cert.status === 'Aprobado' && 'text-green-500 border-green-500',
+                                      cert.status === 'Pagado' && 'text-blue-500 border-blue-500',
+                                      cert.status === 'Rechazado' && 'text-destructive border-destructive',
+                                  )}>
+                                      {cert.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right font-mono">{formatCurrency(cert.amount, cert.currency)}</TableCell>
+                                <TableCell className="text-right">
+                                    {cert.status !== 'Pagado' && permissions.canSupervise && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {cert.status === 'Pendiente' && (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Aprobado')}><Check className="mr-2 h-4 w-4 text-green-500" /><span>Aprobar</span></DropdownMenuItem>
+                                                )}
+                                                {cert.status === 'Aprobado' && (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Pagado')}><Receipt className="mr-2 h-4 w-4 text-blue-500" /><span>Marcar como Pagado</span></DropdownMenuItem>
+                                                )}
+                                                 {(cert.status === 'Aprobado' || cert.status === 'Rechazado') && <DropdownMenuSeparator />}
+                                                 {cert.status !== 'Pendiente' && (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Pendiente')}><Undo className="mr-2 h-4 w-4" /><span>Volver a Pendiente</span></DropdownMenuItem>
+                                                 )}
+                                                 {cert.status !== 'Rechazado' && (
+                                                     <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Rechazado')}><X className="mr-2 h-4 w-4 text-red-500" /><span>Rechazar</span></DropdownMenuItem>
+                                                 )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
