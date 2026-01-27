@@ -22,11 +22,18 @@ import type { CashAdvance } from "@/lib/types";
 export function DeleteCashAdvanceDialog({ advance }: { advance: CashAdvance }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const handleDelete = () => {
-    if (!firestore) return;
+    if (!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Error de conexión",
+        description: "No se pudo conectar a la base de datos.",
+      });
+      return;
+    }
     startTransition(() => {
       const advanceRef = doc(firestore, 'cashAdvances', advance.id);
       deleteDoc(advanceRef)
