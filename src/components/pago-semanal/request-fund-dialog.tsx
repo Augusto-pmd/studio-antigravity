@@ -36,6 +36,7 @@ import { useCollection } from "@/firebase";
 import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Project, FundRequest } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const fundRequestCategories = [
     'Logística y PMD',
@@ -63,6 +64,7 @@ export function RequestFundDialog() {
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [amount, setAmount] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
+  const [description, setDescription] = useState('');
 
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -74,6 +76,7 @@ export function RequestFundDialog() {
     setCurrency('ARS');
     setAmount('');
     setExchangeRate('');
+    setDescription('');
   };
 
   useEffect(() => {
@@ -111,6 +114,7 @@ export function RequestFundDialog() {
           currency,
           exchangeRate: parseFloat(exchangeRate),
           status: 'Pendiente',
+          description: description || undefined,
       };
 
       setDoc(requestRef, requestData)
@@ -180,6 +184,11 @@ export function RequestFundDialog() {
                     ))}
                 </SelectContent>
                 </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción (Opcional)</Label>
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Añada un detalle o motivo para la solicitud." />
             </div>
 
             <div className="space-y-2">

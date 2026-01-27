@@ -29,6 +29,7 @@ const fundRequestConverter = {
             currency: data.currency,
             exchangeRate: data.exchangeRate,
             status: data.status,
+            description: data.description,
         };
     }
 };

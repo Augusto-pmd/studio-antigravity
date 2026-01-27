@@ -160,6 +160,7 @@ export interface FundRequest {
     currency: 'ARS' | 'USD';
     exchangeRate: number;
     status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
+    description?: string;
 }
 
 export interface PayrollWeek {

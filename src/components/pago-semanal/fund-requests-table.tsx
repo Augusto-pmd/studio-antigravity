@@ -104,6 +104,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                         <TableCell>
                           <div className="font-medium">{req.requesterName}</div>
                           <div className="text-sm text-muted-foreground">{req.projectName || 'N/A'}</div>
+                          {req.description && <p className="text-xs text-muted-foreground mt-1 italic">"{req.description}"</p>}
                           <div className='md:hidden mt-2 space-y-1 text-sm text-muted-foreground'>
                             <p>{req.category}</p>
                             <p>{formatDate(req.date)}</p>

@@ -773,6 +773,9 @@
         "projectId": {
           "type": "string"
         },
+        "projectName": {
+          "type": "string"
+        },
         "amount": {
           "type": "number"
         },
@@ -794,6 +797,10 @@
             "Pagado",
             "Rechazado"
           ]
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional description or reason for the fund request."
         }
       },
       "required": [
