@@ -127,7 +127,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export function WeeklySummary() {
-  const { firestore } = useUser();
+  const { firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -357,7 +357,7 @@ export function WeeklySummary() {
                 <TabsTrigger value="actual">Semana Actual</TabsTrigger>
                 <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
-            <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks}>
+            <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks || !permissions.canSupervise}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Generar Nueva Semana
@@ -431,7 +431,7 @@ export function WeeklySummary() {
                              {currentWeek.status === 'Abierta' && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="outline" disabled={isPending}>Cerrar y Contabilizar</Button>
+                                        <Button variant="outline" disabled={isPending || !permissions.canSupervise}>Cerrar y Contabilizar</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>

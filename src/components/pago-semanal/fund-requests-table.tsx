@@ -40,7 +40,7 @@ const formatDate = (dateString?: string) => {
 export function FundRequestsTable({ requests, isLoading }: { requests: FundRequest[] | null, isLoading: boolean }) {
   const { permissions, firestore } = useUser();
   const { toast } = useToast();
-  const isAdmin = permissions.canValidate;
+  const isAdmin = permissions.canSupervise;
 
   const handleStatusChange = (requestId: string, status: FundRequest['status']) => {
     if (!firestore) {

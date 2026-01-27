@@ -40,7 +40,7 @@ const fundRequestConverter = {
 
 export default function PagoSemanalPage() {
     const { user, firestore, permissions } = useUser();
-    const isAdmin = permissions.canValidate;
+    const isAdmin = permissions.canSupervise;
     
     const fundRequestsQuery = useMemo(() => {
         if (!firestore) return null;
