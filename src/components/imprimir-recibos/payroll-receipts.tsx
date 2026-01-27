@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -112,7 +113,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
 
   const attendanceQuery = useMemo(() => firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
-  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
+  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
   
   const advancesQuery = useMemo(() => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
@@ -172,13 +173,39 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
   if (type === 'contractors') {
     return (
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
             <div className="flex justify-between items-center mb-8 no-print">
                 <h1 className="text-2xl font-bold">Recibos de Pago (Contratistas)</h1>
                 <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
             </div>
-            <div className="flex h-96 items-center justify-center rounded-md border border-dashed bg-white shadow-sm">
-                <p className="text-muted-foreground">La generación de recibos para contratistas está en construcción.</p>
+            <div className="p-8 bg-white rounded-lg shadow-md break-inside-avoid print:shadow-none print:p-4 print:border">
+                <header className="flex justify-between items-start border-b pb-4">
+                    <div>
+                        <Logo className="h-10 w-auto" />
+                        <p className="text-sm text-gray-500 mt-2">PMD Arquitectura</p>
+                    </div>
+                    <div className="text-right">
+                        <h2 className="text-xl font-semibold">Recibo de Pago a Contratista</h2>
+                        <p className="text-sm text-gray-500">
+                        Semana del {format(parseISO(week.startDate), 'dd/MM/yyyy')} al {format(parseISO(week.endDate), 'dd/MM/yyyy')}
+                        </p>
+                    </div>
+                </header>
+
+                <div className="flex h-48 items-center justify-center rounded-md border border-dashed my-8">
+                    <p className="text-muted-foreground text-center">La liquidación semanal para contratistas está en construcción.<br/>Este recibo es un modelo de ejemplo.</p>
+                </div>
+                
+                <footer className="mt-16 flex justify-between items-end">
+                    <div className="w-1/2">
+                        <div className="border-t pt-2 text-center text-sm">
+                        Firma del Contratista
+                        </div>
+                    </div>
+                    <div className="w-1/2 text-right text-xs text-gray-400">
+                        Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                    </div>
+                </footer>
             </div>
         </div>
     )
@@ -191,9 +218,9 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
         <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-8 print:space-y-4">
         {receiptsData.map(data => (
-          <div key={data.employee.id} className="p-8 bg-white rounded-lg shadow-md break-after-page">
+          <div key={data.employee.id} className="p-8 bg-white rounded-lg shadow-md break-inside-avoid print:p-4 print:shadow-none print:border">
             <header className="flex justify-between items-start border-b pb-4">
               <div>
                 <Logo className="h-10 w-auto" />

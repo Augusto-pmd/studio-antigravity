@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -18,8 +19,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   }, [user, isUserLoading, pathname, router]);
 
-  // Don't show the main layout on the login page
-  if (pathname === '/login') {
+  // Don't show the main layout on the login or print pages
+  if (pathname === '/login' || pathname === '/imprimir-recibos') {
     return <>{children}</>;
   }
   
