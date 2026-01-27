@@ -39,36 +39,39 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
 
         setIsUploading(true);
         const storage = getStorage(firebaseApp);
+        const oldUrl = currentUrl; // Keep track of the old URL to delete later
 
-        // 1. If a file already exists, delete it from Storage first.
-        if (currentUrl) {
-            try {
-                const oldStorageRef = ref(storage, currentUrl);
-                await deleteObject(oldStorageRef);
-            } catch (error: any) {
-                // If the old file doesn't exist in storage, that's fine. We can continue.
-                if (error.code !== 'storage/object-not-found') {
-                    console.error("Could not delete old file:", error);
-                    toast({ variant: 'destructive', title: "Error de Limpieza", description: "No se pudo borrar el archivo anterior. Aún así se intentará subir el nuevo." });
-                }
-            }
-        }
-        
-        // 2. Upload the new file.
-        const fullStoragePath = `${storagePath}/${file.name}`;
+        // Use a unique name for the new file to avoid caching issues and simplify logic.
+        const fullStoragePath = `${storagePath}/${Date.now()}_${file.name}`;
         const newStorageRef = ref(storage, fullStoragePath);
 
         try {
+            // 1. Upload the new file.
             await uploadBytes(newStorageRef, file);
             const downloadURL = await getDownloadURL(newStorageRef);
 
-            // 3. Update the Firestore document with the new URL.
+            // 2. Update the Firestore document with the new URL.
             const docRef = doc(firestore, docPath);
             await updateDoc(docRef, { [fieldName]: downloadURL });
             
+            // 3. UI/State updates
             setCurrentUrl(downloadURL);
             setFile(null);
             toast({ title: "Documento Subido", description: `${title} ha sido guardado.` });
+
+            // 4. After successful upload and DB update, delete the old file.
+            if (oldUrl) {
+                try {
+                    const oldStorageRef = ref(storage, oldUrl);
+                    await deleteObject(oldStorageRef);
+                } catch (error: any) {
+                    // It's not critical if the old file deletion fails. Log it and move on.
+                    if (error.code !== 'storage/object-not-found') {
+                         console.warn("Could not delete old file from storage:", error);
+                    }
+                }
+            }
+
         } catch (error) {
             console.error("Upload error:", error);
             toast({ variant: 'destructive', title: "Error al subir", description: "No se pudo subir el documento. Revisa los permisos de almacenamiento." });
