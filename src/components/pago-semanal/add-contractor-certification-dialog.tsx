@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,7 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
   const [open, setOpen] = useState(false);
   const { firestore } = useUser();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   // FORM STATE
   const [contractorId, setContractorId] = useState<string | undefined>();
@@ -70,7 +70,7 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
     if (open) resetForm();
   }, [open]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !currentWeek) {
         toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
         return;
@@ -79,49 +79,50 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
         toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Contratista, Obra y Monto son obligatorios.' });
         return;
     }
+    
+    const selectedContractor = contractors?.find(c => c.id === contractorId);
+    const selectedProject = projects?.find(p => p.id === projectId);
 
-    startTransition(() => {
-      const selectedContractor = contractors?.find(c => c.id === contractorId);
-      const selectedProject = projects?.find(p => p.id === projectId);
+    if (!selectedContractor || !selectedProject) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Contratista o Proyecto no válido.' });
+        return;
+    }
 
-      if (!selectedContractor || !selectedProject) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Contratista o Proyecto no válido.' });
-          return;
-      }
+    setIsPending(true);
+    try {
+        const collectionRef = collection(firestore, 'contractorCertifications');
+        const docRef = doc(collectionRef);
+        
+        const newCertification: ContractorCertification = {
+            id: docRef.id,
+            payrollWeekId: currentWeek.id,
+            contractorId,
+            contractorName: selectedContractor.name,
+            projectId,
+            projectName: selectedProject.name,
+            amount: parseFloat(amount) || 0,
+            currency,
+            notes: notes || undefined,
+            status: 'Pendiente',
+        };
 
-      const collectionRef = collection(firestore, 'contractorCertifications');
-      const docRef = doc(collectionRef);
-      
-      const newCertification: ContractorCertification = {
-          id: docRef.id,
-          payrollWeekId: currentWeek.id,
-          contractorId,
-          contractorName: selectedContractor.name,
-          projectId,
-          projectName: selectedProject.name,
-          amount: parseFloat(amount) || 0,
-          currency,
-          notes: notes || undefined,
-          status: 'Pendiente',
-      };
-
-      setDoc(docRef, newCertification)
-        .then(() => {
-            toast({
-                title: 'Certificación Registrada',
-                description: `Se ha guardado la certificación para ${selectedContractor.name}.`,
-            });
-            setOpen(false);
-        })
-        .catch((error) => {
-            console.error("Error writing to Firestore:", error);
-            toast({
-                variant: "destructive",
-                title: "Error al guardar",
-                description: "No se pudo guardar la certificación. Es posible que no tengas permisos.",
-            });
+        await setDoc(docRef, newCertification);
+        
+        toast({
+            title: 'Certificación Registrada',
+            description: `Se ha guardado la certificación para ${selectedContractor.name}.`,
         });
-    });
+        setOpen(false);
+    } catch (error) {
+        console.error("Error writing to Firestore:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al guardar",
+            description: "No se pudo guardar la certificación. Es posible que no tengas permisos.",
+        });
+    } finally {
+        setIsPending(false);
+    }
   };
 
   return (
