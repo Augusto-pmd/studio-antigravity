@@ -22,6 +22,10 @@ import { collection, query, where, orderBy, limit, type DocumentData, type Query
 import type { CashAdvance, PayrollWeek } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { parseISO, format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
+import { EditCashAdvanceDialog } from './edit-cash-advance-dialog';
+import { DeleteCashAdvanceDialog } from './delete-cash-advance-dialog';
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -93,8 +97,10 @@ export function CashAdvances() {
       <TableRow key={`skel-adv-${i}`}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
-        <TableCell className="text-right md:hidden"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+        <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
       </TableRow>
     ))
   );
@@ -113,7 +119,7 @@ export function CashAdvances() {
       <CardContent>
         {!currentWeek && !isLoadingWeeks && (
             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
-                <p className="text-muted-foreground">No hay una semana de pagos abierta. Genere una en "Planillas Semanales".</p>
+                <p className="text-muted-foreground">No hay una semana de pagos abierta. Genere una para poder registrar adelantos.</p>
             </div>
         )}
         {currentWeek && (
@@ -121,17 +127,19 @@ export function CashAdvances() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead className='hidden md:table-cell'>Empleado</TableHead>
-                            <TableHead className='hidden md:table-cell'>Obra</TableHead>
-                            <TableHead className="text-right hidden md:table-cell">Monto</TableHead>
+                            <TableHead>Empleado</TableHead>
+                            <TableHead className='hidden md:table-cell'>Fecha</TableHead>
+                            <TableHead className='hidden lg:table-cell'>Obra</TableHead>
+                            <TableHead className='hidden lg:table-cell'>Motivo</TableHead>
+                            <TableHead className="text-right">Monto</TableHead>
+                            <TableHead className="text-right w-[100px]">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading && renderSkeleton()}
                         {!isLoading && advances?.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     No hay adelantos registrados para esta semana.
                                 </TableCell>
                             </TableRow>
@@ -139,16 +147,27 @@ export function CashAdvances() {
                         {!isLoading && advances?.map(advance => (
                                 <TableRow key={advance.id}>
                                     <TableCell>
-                                      <div>{formatDate(advance.date)}</div>
+                                      <div className='font-medium'>{advance.employeeName}</div>
                                       <div className='md:hidden mt-2 space-y-1 text-sm text-muted-foreground'>
-                                        <p className='font-medium text-foreground'>{advance.employeeName}</p>
+                                        <p>{formatDate(advance.date)}</p>
                                         <p>{advance.projectName || 'N/A'}</p>
-                                        <p className='font-mono font-semibold text-foreground'>{formatCurrency(advance.amount)}</p>
+                                        {advance.reason && <p className="italic">"{advance.reason}"</p>}
                                       </div>
                                     </TableCell>
-                                    <TableCell className='hidden md:table-cell'>{advance.employeeName}</TableCell>
-                                    <TableCell className='hidden md:table-cell'>{advance.projectName || 'N/A'}</TableCell>
-                                    <TableCell className="text-right font-mono hidden md:table-cell">{formatCurrency(advance.amount)}</TableCell>
+                                    <TableCell className='hidden md:table-cell'>{formatDate(advance.date)}</TableCell>
+                                    <TableCell className='hidden lg:table-cell'>{advance.projectName || 'N/A'}</TableCell>
+                                    <TableCell className='hidden lg:table-cell italic text-muted-foreground'>{advance.reason || '-'}</TableCell>
+                                    <TableCell className="text-right font-mono">{formatCurrency(advance.amount)}</TableCell>
+                                    <TableCell className="text-right">
+                                      <div className="flex justify-end items-center">
+                                        <EditCashAdvanceDialog advance={advance} currentWeek={currentWeek}>
+                                          <Button variant="ghost" size="icon">
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        </EditCashAdvanceDialog>
+                                        <DeleteCashAdvanceDialog advance={advance} />
+                                      </div>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         }
