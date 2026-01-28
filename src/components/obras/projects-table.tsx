@@ -33,13 +33,31 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(amount);
+const formatCurrency = (amount: number, currency: 'ARS' | 'USD') => {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: currency }).format(amount);
 };
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => {
+        const data = snapshot.data(options) || {};
+        return {
+            id: snapshot.id,
+            name: data.name || '',
+            client: data.client || '',
+            address: data.address || '',
+            currency: ['ARS', 'USD'].includes(data.currency) ? data.currency : 'ARS',
+            status: ['En Curso', 'Completado', 'Pausado', 'Cancelado'].includes(data.status) ? data.status : 'Pausado',
+            supervisor: data.supervisor || '',
+            budget: data.budget || 0,
+            balance: data.balance ?? 0,
+            progress: data.progress || 0,
+            projectType: data.projectType,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            description: data.description,
+        };
+    }
 };
 
 export function ProjectsTable() {
@@ -125,7 +143,7 @@ export function ProjectsTable() {
                         {project.status}
                       </Badge>
                    </div>
-                    <p><span className="font-medium text-foreground">Saldo:</span> {formatCurrency(project.balance)}</p>
+                    <p><span className="font-medium text-foreground">Saldo:</span> {formatCurrency(project.balance, project.currency)}</p>
                    <div className="flex items-center gap-2">
                        <span className="font-medium text-foreground">Progreso:</span>
                         <Progress value={project.progress} className="w-[100px]" />
