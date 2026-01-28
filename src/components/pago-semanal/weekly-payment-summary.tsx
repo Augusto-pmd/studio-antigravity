@@ -66,13 +66,11 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
     const { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown } = useMemo(() => {
-        if (isLoadingData || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
+        if (!attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
             return { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
         }
 
         const employeeMap = new Map(employees.map(e => [e.id, { wage: e.dailyWage || 0, hourlyRate: (e.dailyWage || 0) / 8 }]));
-        
-        // --- 1. Calculate Grand Totals First ---
         
         const grossWages = attendances.reduce((sum, att) => {
             if (att.status === 'presente') {
@@ -92,7 +90,10 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
         const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
 
-        const totalContratistas = certifications.reduce((sum, cert) => sum + cert.amount, 0);
+        const totalContratistas = certifications.reduce((sum, cert) => {
+            const amountInArs = cert.currency === 'USD' ? cert.amount * 200 : cert.amount; // TODO: use real exchange rate
+            return sum + amountInArs;
+        }, 0);
 
         const totalSolicitudes = fundRequests.reduce((sum, req) => {
             const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
@@ -100,8 +101,6 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
         }, 0);
 
         const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
-
-        // --- 2. Calculate Per-Project Breakdown ---
         
         const projectMap = new Map<string, { name: string, personal: number, contratistas: number, solicitudes: number }>();
         projects.forEach(p => projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }));
@@ -128,7 +127,8 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
         certifications.forEach(cert => {
             const projectEntry = projectMap.get(cert.projectId);
             if (projectEntry) {
-                projectEntry.contratistas += cert.amount;
+                 const amountInArs = cert.currency === 'USD' ? cert.amount * 200 : cert.amount; // TODO: use real exchange rate
+                 projectEntry.contratistas += amountInArs;
             }
         });
 
@@ -146,9 +146,9 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
 
-    }, [isLoadingData, attendances, advances, fundRequests, certifications, employees, projects]);
+    }, [attendances, advances, fundRequests, certifications, employees, projects]);
 
-    if (isLoadingWeek) {
+    if (isLoadingData) {
         return <Skeleton className="h-96 w-full" />
     }
     
@@ -161,10 +161,6 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
                 </CardContent>
             </Card>
         );
-    }
-
-    if (isLoadingData) {
-        return <Skeleton className="h-96 w-full" />
     }
     
     const summaryCards = [

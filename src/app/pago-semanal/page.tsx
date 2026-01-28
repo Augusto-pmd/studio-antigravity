@@ -71,13 +71,14 @@ export default function PagoSemanalPage() {
     const fundRequestsQuery = useMemo(() => {
         if (!firestore) return null;
         
-        let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter));
+        let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), orderBy('date', 'desc'));
 
         // Filter by date range of the current week if it exists
         if(currentWeek) {
             const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-            const nextDayOfEndDate = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
-            q = query(q, where('date', '>=', startDate), where('date', '<', nextDayOfEndDate));
+            // We use addDays to make the range inclusive of the end date.
+            const endDate = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
+            q = query(q, and(where('date', '>=', startDate), where('date', '<', endDate)));
         }
 
         // Admins see all, others see their own
@@ -85,9 +86,6 @@ export default function PagoSemanalPage() {
           q = query(q, where('requesterId', '==', user.uid));
         }
         
-        q = query(q, orderBy('date', 'desc'));
-
-
         return q;
       }, [firestore, user, isAdmin, currentWeek]);
 
@@ -111,7 +109,7 @@ export default function PagoSemanalPage() {
             </TabsList>
 
             <TabsContent value="resumen" className="mt-6">
-              <WeeklyPaymentSummary currentWeek={currentWeek} isLoadingWeek={isLoadingOpenWeek || isLoadingHistoricalWeeks} />
+              <WeeklyPaymentSummary currentWeek={currentWeek} isLoadingWeek={isLoadingOpenWeek} />
             </TabsContent>
 
             <TabsContent value="personal" className="mt-6">
