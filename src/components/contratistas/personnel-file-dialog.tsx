@@ -7,13 +7,14 @@ import type { ContractorEmployee } from "@/lib/types";
 import { DocumentManager } from "@/components/shared/document-manager";
 import { useDoc, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PersonnelFileDialog({ contractorId, personnel, children }: { contractorId: string; personnel: ContractorEmployee; children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
     const firestore = useFirestore();
 
     const personnelRef = useMemo(() => firestore ? doc(firestore, `contractors/${contractorId}/personnel/${personnel.id}`) : null, [firestore, contractorId, personnel.id]);
-    const { data: updatedPersonnel } = useDoc(personnelRef);
+    const { data: updatedPersonnel, isLoading } = useDoc(personnelRef);
 
     const displayPersonnel = updatedPersonnel || personnel;
 
@@ -28,22 +29,31 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <DocumentManager 
-                    key={`acc-ins-${displayPersonnel.id}`}
-                    title="Seguro de Accidentes Personales"
-                    docPath={`contractors/${contractorId}/personnel/${displayPersonnel.id}`}
-                    storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}`}
-                    fieldName="accidentInsuranceUrl"
-                    currentUrl={displayPersonnel.accidentInsuranceUrl}
-                  />
-                  <DocumentManager 
-                    key={`crim-rec-${displayPersonnel.id}`}
-                    title="Antecedentes Penales"
-                    docPath={`contractors/${contractorId}/personnel/${displayPersonnel.id}`}
-                    storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}`}
-                    fieldName="criminalRecordUrl"
-                    currentUrl={displayPersonnel.criminalRecordUrl}
-                  />
+                  {isLoading ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-24 w-full" />
+                      <Skeleton className="h-24 w-full" />
+                    </div>
+                  ) : (
+                    <>
+                      <DocumentManager 
+                        key={`acc-ins-${displayPersonnel.id}`}
+                        title="Seguro de Accidentes Personales"
+                        docPath={`contractors/${contractorId}/personnel/${displayPersonnel.id}`}
+                        storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}`}
+                        fieldName="accidentInsuranceUrl"
+                        currentUrl={displayPersonnel.accidentInsuranceUrl}
+                      />
+                      <DocumentManager 
+                        key={`crim-rec-${displayPersonnel.id}`}
+                        title="Antecedentes Penales"
+                        docPath={`contractors/${contractorId}/personnel/${displayPersonnel.id}`}
+                        storagePath={`contractor-documents/${contractorId}/${displayPersonnel.id}`}
+                        fieldName="criminalRecordUrl"
+                        currentUrl={displayPersonnel.criminalRecordUrl}
+                      />
+                    </>
+                  )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>

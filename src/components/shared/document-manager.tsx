@@ -40,21 +40,11 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
 
         setIsUploading(true);
         const storage = getStorage(firebaseApp);
+        // Use the original file name to avoid overwriting and create a unique path
         const fullStoragePath = `${storagePath}/${file.name}`;
         const storageRef = ref(storage, fullStoragePath);
 
         try {
-            if (currentUrl) {
-                try {
-                    const oldFileRef = ref(storage, currentUrl);
-                    await deleteObject(oldFileRef);
-                } catch (deleteError: any) {
-                     if (deleteError.code !== 'storage/object-not-found') {
-                         console.warn("Could not delete old file, it might not exist:", deleteError);
-                     }
-                }
-            }
-
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
@@ -84,9 +74,12 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
         const storage = getStorage(firebaseApp);
         
         try {
+            // This will fail if the rules are not set correctly, but we proceed to delete from DB anyway.
             const storageRef = ref(storage, currentUrl);
             await deleteObject(storageRef);
         } catch (error: any) {
+            // If the file doesn't exist in storage (e.g. deleted manually), we can still proceed
+            // to delete the reference from Firestore. We only log other errors.
             if (error.code !== 'storage/object-not-found') {
                  console.error("Delete from storage error:", error);
                  toast({ variant: 'destructive', title: "Error al borrar", description: "No se pudo borrar el archivo del almacenamiento." });
