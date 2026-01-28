@@ -127,19 +127,20 @@ export function UserTimeLog() {
   }, []);
   
   useEffect(() => {
-    // This effect now correctly populates the form based on the fetched data.
-    // It no longer bails out during loading, preventing stale state.
-    if (!isLoadingExistingLogs && existingLogs) {
+    if (isLoadingExistingLogs) {
+      return;
+    }
+    if (existingLogs) {
       if (existingLogs.length > 0) {
-        const entries: TimeLogEntry[] = existingLogs.map(log => ({
-          id: log.id,
-          projectId: log.projectId,
-          hours: log.hours.toString(), // Convert number from DB to string for input
-        }));
-        setTimeLogEntries(entries);
+        setTimeLogEntries(
+          existingLogs.map((log) => ({
+            id: log.id,
+            projectId: log.projectId,
+            hours: log.hours.toString(),
+          }))
+        );
       } else {
-        // If no logs exist for the selected day, provide a default empty entry.
-        setTimeLogEntries([{ id: `temp-${Date.now()}`, projectId: '', hours: '8' }]);
+        setTimeLogEntries([]);
       }
     }
   }, [existingLogs, isLoadingExistingLogs]);
@@ -167,54 +168,45 @@ export function UserTimeLog() {
 
   const handleSaveLogs = () => {
     if (!firestore || !user || !selectedDate) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos o la fecha no es válida.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos o la fecha no es válida.' });
+      return;
     }
-    if (timeLogEntries.some(entry => !entry.projectId || Number(entry.hours) <= 0)) {
-        toast({ variant: 'destructive', title: 'Datos Incompletos', description: 'Asegúrese de seleccionar una obra y asignar horas a cada entrada.' });
+    if (timeLogEntries.some(entry => !entry.projectId || !entry.hours || Number(entry.hours) <= 0)) {
+        toast({ variant: 'destructive', title: 'Datos Incompletos', description: 'Asegúrese de seleccionar una obra y asignar horas (mayores a 0) a cada entrada.' });
         return;
     }
     
     const currentFormattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-    startTransition(() => {
+    startTransition(async () => {
+      try {
         const batch = writeBatch(firestore);
 
-        // Delete old logs for this day that are no longer in the entries list
-        existingLogs?.forEach(oldLog => {
-            if (!timeLogEntries.some(entry => entry.id === oldLog.id)) {
-                const docRef = doc(firestore, 'timeLogs', oldLog.id);
-                batch.delete(docRef);
-            }
+        existingLogs?.forEach(log => {
+          batch.delete(doc(firestore, 'timeLogs', log.id));
         });
 
-        // Set/Update current entries from the form state
         timeLogEntries.forEach(entry => {
-            const isNew = entry.id.startsWith('temp-');
-            const docRef = isNew 
-                ? doc(collection(firestore, 'timeLogs')) 
-                : doc(firestore, 'timeLogs', entry.id);
-            
+          if (entry.projectId && Number(entry.hours) > 0) {
+            const docRef = doc(collection(firestore, 'timeLogs'));
             const logData: Omit<TimeLog, 'id'> = {
-                userId: user.uid,
-                date: currentFormattedDate,
-                projectId: entry.projectId,
-                hours: Number(entry.hours) || 0, // Convert back to number for saving
+              userId: user.uid,
+              date: currentFormattedDate,
+              projectId: entry.projectId,
+              hours: Number(entry.hours),
             };
-            
-            // Use set with merge true to handle both create and update elegantly
-            batch.set(docRef, logData, { merge: true });
+            batch.set(docRef, logData);
+          }
         });
 
-        batch.commit()
-            .then(() => {
-                toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
-                setRefreshKey(oldKey => oldKey + 1);
-            })
-            .catch((error) => {
-                console.error("Error writing to Firestore:", error);
-                toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros de horas. Es posible que no tengas permisos.' });
-            });
+        await batch.commit();
+
+        toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
+        setRefreshKey(oldKey => oldKey + 1);
+      } catch (error) {
+        console.error("Error writing to Firestore:", error);
+        toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros de horas. Es posible que no tengas permisos.' });
+      }
     });
   }
 
@@ -338,7 +330,7 @@ export function UserTimeLog() {
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
                         </div>
-                    ) : (
+                    ) : timeLogEntries.length > 0 ? (
                         timeLogEntries.map((entry, index) => (
                             <div key={entry.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 p-3 rounded-md border">
                                 <div>
@@ -368,10 +360,14 @@ export function UserTimeLog() {
                                 </Button>
                             </div>
                         ))
+                    ) : (
+                        <div className="text-center text-muted-foreground py-10">
+                            No hay horas cargadas para este día.
+                        </div>
                     )}
                      <Button variant="outline" onClick={addEntry} className="w-full" disabled={!selectedDate}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Añadir Otra Obra
+                        Añadir Entrada
                     </Button>
                 </div>
             </CardContent>
@@ -379,7 +375,7 @@ export function UserTimeLog() {
                 <div className="text-lg">
                     Total de Horas: <span className="font-bold font-mono">{totalHours}</span>
                 </div>
-                <Button onClick={handleSaveLogs} disabled={isPending || isLoadingExistingLogs || timeLogEntries.length === 0}>
+                <Button onClick={handleSaveLogs} disabled={isPending || isLoadingExistingLogs}>
                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Guardar Horas
                 </Button>
