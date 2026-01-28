@@ -40,13 +40,10 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
 
         setIsUploading(true);
         const storage = getStorage(firebaseApp);
-        // Use the original file name to ensure uniqueness
         const fullStoragePath = `${storagePath}/${file.name}`;
         const storageRef = ref(storage, fullStoragePath);
 
         try {
-            // If a file already exists, delete it before uploading the new one
-            // to prevent orphaned files in storage.
             if (currentUrl) {
                 try {
                     const oldFileRef = ref(storage, currentUrl);
@@ -87,12 +84,9 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
         const storage = getStorage(firebaseApp);
         
         try {
-            // Create a reference from the HTTPS URL to delete the file from storage
             const storageRef = ref(storage, currentUrl);
             await deleteObject(storageRef);
         } catch (error: any) {
-            // If the object doesn't exist in storage, we can ignore the error
-            // and proceed to clear the reference from the database.
             if (error.code !== 'storage/object-not-found') {
                  console.error("Delete from storage error:", error);
                  toast({ variant: 'destructive', title: "Error al borrar", description: "No se pudo borrar el archivo del almacenamiento." });
@@ -102,7 +96,6 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
         }
         
         try {
-            // Now, remove the URL from the Firestore document
             const docRef = doc(firestore, docPath);
             await updateDoc(docRef, { [fieldName]: deleteField() });
             setCurrentUrl(undefined);
@@ -122,9 +115,9 @@ export function DocumentManager({ title, docPath, storagePath, fieldName, curren
             {currentUrl ? (
                 <div className="flex items-center justify-between">
                     <Button asChild variant="link" className="p-0 h-auto">
-                        <a href={currentUrl} target="_blank" rel="noopener noreferrer">
+                        <a href={currentUrl} target="_blank" rel="noopener noreferrer" download>
                             <LinkIcon className="mr-2 h-4 w-4" />
-                            Ver Documento
+                            Ver / Descargar Documento
                         </a>
                     </Button>
                     <Button onClick={handleDelete} variant="destructive" size="sm" disabled={isDeleting}>
