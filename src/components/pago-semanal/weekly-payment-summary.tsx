@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, and } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification } from '@/lib/types';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -27,19 +27,18 @@ const projectConverter = { toFirestore: (data: any): DocumentData => data, fromF
 export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
     const firestore = useFirestore();
 
-    const { weekStart, weekEndQueryLimit } = useMemo(() => {
-        if (!currentWeek) return { weekStart: null, weekEndQueryLimit: null };
-        const startDate = parseISO(currentWeek.startDate);
-        const endDate = addDays(parseISO(currentWeek.endDate), 1);
-        return {
-            weekStart: format(startDate, 'yyyy-MM-dd'),
-            weekEndQueryLimit: format(endDate, 'yyyy-MM-dd'),
-        };
+    const { weekStart, weekEnd } = useMemo(() => {
+        if (!currentWeek) return { weekStart: null, weekEnd: null };
+        // Firestore date ranges are exclusive on the end date, so we add a day.
+        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+        const endDate = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
+        return { weekStart: startDate, weekEnd: endDate };
     }, [currentWeek]);
+
 
     const { data: attendances, isLoading: l1 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
     const { data: advances, isLoading: l2 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
-    const { data: fundRequests, isLoading: l3 } = useCollection(weekStart && weekEndQueryLimit && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', weekStart), where('date', '<', weekEndQueryLimit))) : null);
+    const { data: fundRequests, isLoading: l3 } = useCollection(weekStart && weekEnd && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', weekStart), where('date', '<', weekEnd))) : null);
     const { data: certifications, isLoading: l4 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado')) : null);
     const { data: employees, isLoading: l5 } = useCollection(firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null);
     const { data: projects, isLoading: l6 } = useCollection(firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null);

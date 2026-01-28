@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, orderBy } from "firebase/firestore";
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, orderBy, and } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
@@ -12,6 +12,7 @@ import { CashAdvances } from '@/components/asistencias/cash-advances';
 import { DailyAttendance } from '@/components/asistencias/daily-attendance';
 import { WeeklyPaymentSummary } from '@/components/pago-semanal/weekly-payment-summary';
 import { ContractorCertifications } from '@/components/pago-semanal/contractor-certifications';
+import { format, parseISO, addDays } from 'date-fns';
 
 const fundRequestConverter = {
     toFirestore(request: FundRequest): DocumentData {
@@ -66,6 +67,17 @@ export default function PagoSemanalPage() {
         [firestore]
     );
     const { data: historicalWeeks, isLoading: isLoadingHistoricalWeeks } = useCollection<PayrollWeek>(historicalWeeksQuery);
+
+    const { weekStart, weekEnd } = useMemo(() => {
+        if (!currentWeek) return { weekStart: null, weekEnd: null };
+        const startDate = parseISO(currentWeek.startDate);
+        const endDate = addDays(parseISO(currentWeek.endDate), 1); // Firestore date ranges are exclusive on the end date
+        return {
+            weekStart: format(startDate, 'yyyy-MM-dd'),
+            weekEnd: format(endDate, 'yyyy-MM-dd'),
+        };
+    }, [currentWeek]);
+
 
      const fundRequestsQuery = useMemo(() => {
         if (!firestore) return null;
