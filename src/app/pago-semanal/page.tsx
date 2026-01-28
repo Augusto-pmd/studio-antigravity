@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, orderBy, and } from "firebase/firestore";
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, orderBy } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
@@ -12,7 +12,6 @@ import { CashAdvances } from '@/components/asistencias/cash-advances';
 import { DailyAttendance } from '@/components/asistencias/daily-attendance';
 import { WeeklyPaymentSummary } from '@/components/pago-semanal/weekly-payment-summary';
 import { ContractorCertifications } from '@/components/pago-semanal/contractor-certifications';
-import { parseISO, format, addDays } from 'date-fns';
 
 const fundRequestConverter = {
     toFirestore(request: FundRequest): DocumentData {
@@ -68,26 +67,17 @@ export default function PagoSemanalPage() {
     );
     const { data: historicalWeeks, isLoading: isLoadingHistoricalWeeks } = useCollection<PayrollWeek>(historicalWeeksQuery);
 
-    const fundRequestsQuery = useMemo(() => {
+     const fundRequestsQuery = useMemo(() => {
         if (!firestore) return null;
         
         let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), orderBy('date', 'desc'));
 
-        // Filter by date range of the current week if it exists
-        if(currentWeek) {
-            const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-            // We use addDays to make the range inclusive of the end date.
-            const endDate = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
-            q = query(q, and(where('date', '>=', startDate), where('date', '<', endDate)));
-        }
-
-        // Admins see all, others see their own
         if (!isAdmin && user) {
           q = query(q, where('requesterId', '==', user.uid));
         }
         
         return q;
-      }, [firestore, user, isAdmin, currentWeek]);
+      }, [firestore, user, isAdmin]);
 
     const { data: requests, isLoading: isLoadingRequests } = useCollection<FundRequest>(fundRequestsQuery);
 
@@ -116,8 +106,9 @@ export default function PagoSemanalPage() {
                 <div className="flex flex-col gap-6">
                     <WeeklySummary 
                         currentWeek={currentWeek}
+                        isLoadingCurrentWeek={isLoadingOpenWeek}
                         historicalWeeks={historicalWeeks || []}
-                        isLoadingWeeks={isLoadingOpenWeek || isLoadingHistoricalWeeks}
+                        isLoadingHistoricalWeeks={isLoadingHistoricalWeeks}
                     />
                     <CashAdvances 
                         currentWeek={currentWeek} 
@@ -133,7 +124,7 @@ export default function PagoSemanalPage() {
             <TabsContent value="contratistas" className="mt-6">
               <ContractorCertifications 
                 currentWeek={currentWeek}
-                isLoadingWeek={isLoadingOpenWeek || isLoadingHistoricalWeeks}
+                isLoadingWeek={isLoadingOpenWeek}
               />
             </TabsContent>
 

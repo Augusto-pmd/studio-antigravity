@@ -36,6 +36,8 @@ import {
     type DocumentData,
     type QueryDocumentSnapshot,
     type SnapshotOptions,
+    deleteDoc,
+    getDocs,
 } from 'firebase/firestore';
 import type { Project, Employee, PayrollWeek, Attendance } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -142,11 +144,10 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
   }, []);
 
   useEffect(() => {
-    if (isLoadingAttendances || isLoadingEmployees) return;
+    if (isLoadingAttendances || isLoadingEmployees || !activeEmployees) return;
     
     const newAttendanceState: Record<string, AttendanceRecord> = {};
     
-    // First, populate from existing logs for the selected day
     if (dayAttendances && dayAttendances.length > 0) {
         dayAttendances.forEach(att => {
             newAttendanceState[att.employeeId] = {
@@ -156,20 +157,16 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
                 projectId: att.projectId || null
             };
         });
-    }
-
-    // For any active employees not in the day's logs, set a default "presente" state ("foja cero")
-    // This handles both a completely new day and cases where a new employee is added.
-    activeEmployees.forEach(emp => {
-        if (!newAttendanceState[emp.id]) {
-             newAttendanceState[emp.id] = {
+    } else {
+        activeEmployees.forEach(emp => {
+            newAttendanceState[emp.id] = {
                 status: 'presente',
                 lateHours: 0,
                 notes: '',
                 projectId: null,
-             };
-        }
-    });
+            };
+        });
+    }
 
     setAttendance(newAttendanceState);
 
@@ -262,31 +259,34 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     const dateToSave = selectedDate;
 
     startTransition(async () => {
-        const batch = writeBatch(firestore);
-        const dateStr = format(dateToSave, 'yyyy-MM-dd');
-        
-        const existingDocsMap = new Map(dayAttendances?.map(d => [d.employeeId, d.id]));
-
-        // Process all active employees to ensure every one has a record for the day
-        for (const employee of activeEmployees) {
-            const employeeAttendance = getEmployeeAttendance(employee.id);
-
-            const docId = existingDocsMap.get(employee.id);
-            const docRef = docId ? doc(firestore, 'attendances', docId) : doc(collection(firestore, 'attendances'));
-
-            const dataToSave: Omit<Attendance, 'id'> = {
-                employeeId: employee.id,
-                date: dateStr,
-                payrollWeekId: weekToSave.id,
-                status: employeeAttendance.status,
-                lateHours: Number(employeeAttendance.lateHours) || 0,
-                notes: employeeAttendance.notes,
-                projectId: employeeAttendance.status === 'ausente' ? null : (employeeAttendance.projectId || null),
-            };
-            batch.set(docRef, dataToSave, { merge: true });
-        }
-
         try {
+            const dateStr = format(dateToSave, 'yyyy-MM-dd');
+            
+            const existingLogsQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
+            const existingLogsSnap = await getDocs(existingLogsQuery);
+
+            const batch = writeBatch(firestore);
+
+            existingLogsSnap.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            for (const employee of activeEmployees) {
+                const employeeAttendance = getEmployeeAttendance(employee.id);
+                const docRef = doc(collection(firestore, 'attendances'));
+
+                const dataToSave: Omit<Attendance, 'id'> = {
+                    employeeId: employee.id,
+                    date: dateStr,
+                    payrollWeekId: weekToSave.id,
+                    status: employeeAttendance.status,
+                    lateHours: Number(employeeAttendance.lateHours) || 0,
+                    notes: employeeAttendance.notes,
+                    projectId: employeeAttendance.status === 'ausente' ? null : (employeeAttendance.projectId || null),
+                };
+                batch.set(docRef, dataToSave, { merge: true });
+            }
+
             await batch.commit();
             toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(dateToSave, 'dd/MM/yyyy')}` });
         } catch (error) {
@@ -431,7 +431,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
           </CardDescription>
         </CardHeader>
         <CardContent>
-            {isLoadingEmployees || isLoadingProjects ? (
+            {isLoadingEmployees || isLoadingProjects || isLoadingAttendances ? (
                 <div className="space-y-4">
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-40 w-full" />

@@ -122,12 +122,11 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: { currentWeek?: PayrollWeek, historicalWeeks: PayrollWeek[], isLoadingWeeks: boolean }) {
+export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWeek, isLoadingHistoricalWeeks }: { currentWeek?: PayrollWeek, historicalWeeks: PayrollWeek[], isLoadingCurrentWeek: boolean, isLoadingHistoricalWeeks: boolean }) {
   const { firestore, permissions } = useUser();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   
-  // Data for the summary
   const attendanceQuery = useMemo(
       () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
       [firestore, currentWeek]
@@ -151,7 +150,7 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
       }
 
       const employeeWageMap = new Map(employees.map(e => [e.id, e.dailyWage]));
-      const employeeHourlyRateMap = new Map(employees.map(e => [e.id, (e.dailyWage || 0) / 8])); // Assuming 8-hour day
+      const employeeHourlyRateMap = new Map(employees.map(e => [e.id, (e.dailyWage || 0) / 8]));
 
       const grossWages = weekAttendances.reduce((sum, attendance) => {
           if (attendance.status === 'presente') {
@@ -335,7 +334,6 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
         try {
             const batch = writeBatch(firestore);
 
-            // 1. Find and delete associated expenses
             const weekRange = formatDateRange(week.startDate, week.endDate);
             const expenseDescription = `Costo de mano de obra - Semana ${weekRange}`;
             const expensesQuery = query(
@@ -348,7 +346,6 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
                 batch.delete(doc.ref);
             });
             
-            // 2. Update week status to "Abierta"
             const weekRef = doc(firestore, 'payrollWeeks', week.id);
             batch.update(weekRef, { status: 'Abierta' });
 
@@ -373,16 +370,18 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
                 <TabsTrigger value="actual">Semana Actual</TabsTrigger>
                 <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
-            <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingWeeks || !!currentWeek || !permissions.canSupervise}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Generar Nueva Semana
-            </Button>
+            {permissions.canSupervise && (
+                <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingCurrentWeek || !!currentWeek}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Generar Nueva Semana
+                </Button>
+            )}
          </div>
         
         <TabsContent value="actual">
-            {isLoadingWeeks && <Skeleton className="h-80 w-full" />}
-            {!isLoadingWeeks && !currentWeek && (
+            {isLoadingCurrentWeek && <Skeleton className="h-80 w-full" />}
+            {!isLoadingCurrentWeek && !currentWeek && (
                  <Card>
                     <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
                         <p className="text-lg font-medium text-muted-foreground">No hay ninguna semana de pagos activa.</p>
@@ -390,7 +389,7 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
                     </CardContent>
                  </Card>
             )}
-            {!isLoadingWeeks && currentWeek && (
+            {!isLoadingCurrentWeek && currentWeek && (
                  <Card>
                     <CardHeader>
                         <CardTitle>Planilla de Pagos: {formatDateRange(currentWeek.startDate, currentWeek.endDate)}</CardTitle>
@@ -444,10 +443,10 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
                             </span>
                         </p>
                         <div className="flex gap-2 flex-wrap justify-end">
-                             {currentWeek.status === 'Abierta' && (
+                             {currentWeek.status === 'Abierta' && permissions.canSupervise && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="outline" disabled={isPending || !permissions.canSupervise}>Cerrar y Contabilizar</Button>
+                                        <Button variant="outline" disabled={isPending}>Cerrar y Contabilizar</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
@@ -500,13 +499,13 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingWeeks }: 
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {isLoadingWeeks && <TableRow><TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
-                                {!isLoadingWeeks && historicalWeeks.length === 0 && (
+                                {isLoadingHistoricalWeeks && <TableRow><TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
+                                {!isLoadingHistoricalWeeks && historicalWeeks.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={3} className="h-24 text-center">No hay semanas en el historial.</TableCell>
                                     </TableRow>
                                 )}
-                                {historicalWeeks.map(week => (
+                                {!isLoadingHistoricalWeeks && historicalWeeks.map(week => (
                                     <TableRow key={week.id}>
                                         <TableCell className="font-medium">{formatDateRange(week.startDate, week.endDate)}</TableCell>
                                         <TableCell>

@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, and } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,30 +16,13 @@ const formatCurrency = (amount: number) => {
 };
 
 // Converters
-const employeeConverter = { 
-    toFirestore: (data: Employee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) 
-};
-const attendanceConverter = { 
-    toFirestore: (data: Attendance): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) 
-};
-const cashAdvanceConverter = { 
-    toFirestore: (data: CashAdvance): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) 
-};
-const fundRequestConverter = { 
-    toFirestore: (data: FundRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id } as FundRequest) 
-};
-const certificationConverter = { 
-    toFirestore: (data: ContractorCertification): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) 
-};
-const projectConverter = { 
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) 
-};
+const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
+const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
+const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
+const fundRequestConverter = { toFirestore: (data: FundRequest): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id } as FundRequest) };
+const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
+const projectConverter = { toFirestore: (data: any): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): any => ({ ...snapshot.data(options), id: snapshot.id } as any) };
+
 
 export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
     const firestore = useFirestore();
@@ -47,15 +30,13 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
     const { weekStart, weekEndQueryLimit } = useMemo(() => {
         if (!currentWeek) return { weekStart: null, weekEndQueryLimit: null };
         const startDate = parseISO(currentWeek.startDate);
-        const endDate = parseISO(currentWeek.endDate);
-        const nextDayOfEndDate = addDays(endDate, 1);
+        const endDate = addDays(parseISO(currentWeek.endDate), 1);
         return {
             weekStart: format(startDate, 'yyyy-MM-dd'),
-            weekEndQueryLimit: format(nextDayOfEndDate, 'yyyy-MM-dd'),
+            weekEndQueryLimit: format(endDate, 'yyyy-MM-dd'),
         };
     }, [currentWeek]);
 
-    // Data Fetching
     const { data: attendances, isLoading: l1 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
     const { data: advances, isLoading: l2 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
     const { data: fundRequests, isLoading: l3 } = useCollection(weekStart && weekEndQueryLimit && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', weekStart), where('date', '<', weekEndQueryLimit))) : null);
@@ -66,7 +47,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
     const { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown } = useMemo(() => {
-        if (!attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
+        if (isLoadingData || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
             return { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
         }
 
@@ -146,8 +127,8 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
 
-    }, [attendances, advances, fundRequests, certifications, employees, projects]);
-
+    }, [isLoadingData, attendances, advances, fundRequests, certifications, employees, projects]);
+    
     if (isLoadingData) {
         return <Skeleton className="h-96 w-full" />
     }

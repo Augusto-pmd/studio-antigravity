@@ -3,96 +3,23 @@
 import { useMemo } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance, Project } from '@/lib/types';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification } from '@/lib/types';
 import { eachDayOfInterval, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 
-// Converters
-const payrollWeekConverter = { 
-    toFirestore: (data: PayrollWeek): DocumentData => data, 
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) 
-};
+const payrollWeekConverter = { toFirestore: (data: PayrollWeek): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
+const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
+const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
+const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
+const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
+const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
 
-const employeeConverter = {
-    toFirestore(employee: Employee): DocumentData {
-        const { id, ...data } = employee;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Employee {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name || '',
-            email: data.email || undefined,
-            phone: data.phone || undefined,
-            status: data.status || 'Inactivo',
-            paymentType: data.paymentType || 'Semanal',
-            category: data.category || 'N/A',
-            dailyWage: data.dailyWage || 0,
-            artExpiryDate: data.artExpiryDate || undefined,
-            documents: data.documents || [],
-            emergencyContactName: data.emergencyContactName,
-            emergencyContactPhone: data.emergencyContactPhone,
-        };
-    }
-};
+const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 
-const attendanceConverter = {
-    toFirestore(attendance: Attendance): DocumentData {
-        const { id, ...data } = attendance;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            employeeId: data.employeeId,
-            date: data.date,
-            status: data.status,
-            lateHours: data.lateHours || 0,
-            notes: data.notes || '',
-            projectId: data.projectId || null,
-            payrollWeekId: data.payrollWeekId,
-        };
-    }
-};
-
-const cashAdvanceConverter = {
-    toFirestore(advance: CashAdvance): DocumentData {
-        const { id, ...data } = advance;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            employeeId: data.employeeId,
-            employeeName: data.employeeName,
-            projectId: data.projectId || undefined,
-            projectName: data.projectName || undefined,
-            date: data.date,
-            amount: data.amount || 0,
-            reason: data.reason || undefined,
-            payrollWeekId: data.payrollWeekId,
-        };
-    }
-};
-
-const projectConverter = {
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
-};
-
-
-const formatCurrency = (amount: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
-
-interface ReceiptData {
+interface EmployeeReceiptData {
   employee: Employee;
   week: PayrollWeek;
   attendance: Attendance[];
@@ -111,7 +38,6 @@ interface ReceiptData {
 export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'employees' | 'contractors' }) {
   const firestore = useFirestore();
 
-  // Data fetching
   const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
   const { data: week, isLoading: isLoadingWeek } = useDoc<PayrollWeek>(weekDocRef);
 
@@ -123,18 +49,21 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   
   const advancesQuery = useMemo(() => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
-
+  
   const projectsQuery = useMemo(() => firestore ? query(collection(firestore, 'projects').withConverter(projectConverter)) : null, [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects;
+  const certificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
+  const { data: certifications, isLoading: isLoadingCerts } = useCollection<ContractorCertification>(certificationsQuery);
+
+  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts;
 
   const projectsMap = useMemo(() => {
     if (!projects) return new Map<string, string>();
     return new Map(projects.map(p => [p.id, p.name]));
   }, [projects]);
 
-  const receiptsData = useMemo<ReceiptData[]>(() => {
+  const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
     if (isLoading || !week || !employees || !attendances || !advances) return [];
 
     return employees.map(employee => {
@@ -167,7 +96,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
           netPay,
         }
       };
-    });
+    }).filter(data => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
   }, [isLoading, week, employees, attendances, advances]);
 
   const weekDays = useMemo(() => {
@@ -184,42 +113,62 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   if (!week) {
     return <div className="flex h-screen items-center justify-center"><p>No se encontró la semana de pago.</p></div>;
   }
-
+  
   if (type === 'contractors') {
+    const contractorReceipts = certifications?.filter(c => c.status === 'Aprobado' || c.status === 'Pagado');
     return (
         <div className="p-4 sm:p-8">
             <div className="flex justify-between items-center mb-8 no-print">
                 <h1 className="text-2xl font-bold">Recibos de Pago (Contratistas)</h1>
                 <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
             </div>
-            <div className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
-                <header className="flex justify-between items-start border-b pb-2">
-                    <div>
-                        <Logo className="h-6 w-auto" />
-                        <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
-                    </div>
-                    <div className="text-right">
-                        <h2 className="text-sm font-semibold">Recibo Semanal</h2>
-                        <p className="text-xs text-gray-500">
-                        Semana del {format(parseISO(week.startDate), 'dd/MM/yy')} al {format(parseISO(week.endDate), 'dd/MM/yy')}
-                        </p>
-                    </div>
-                </header>
-
-                <div className="flex h-24 items-center justify-center rounded-md border border-dashed my-4">
-                    <p className="text-muted-foreground text-center text-xs">La liquidación semanal para contratistas está en construcción.<br/>Este recibo es un modelo de ejemplo.</p>
-                </div>
-                
-                <footer className="mt-4 flex justify-between items-end">
-                    <div className="w-1/2">
-                        <div className="border-t pt-1 text-center text-xs">
-                        Firma del Contratista
+            <div className="space-y-4 print:space-y-2">
+              {contractorReceipts?.length === 0 ? (
+                <div className="flex h-64 items-center justify-center rounded-md border border-dashed">No hay certificaciones aprobadas para esta semana.</div>
+              ) : contractorReceipts?.map(cert => (
+                <div key={cert.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
+                    <header className="flex justify-between items-start border-b pb-2">
+                        <div>
+                            <Logo className="h-6 w-auto" />
+                            <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
                         </div>
-                    </div>
-                    <div className="w-1/2 text-right text-xs text-gray-400">
-                        Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
-                    </div>
-                </footer>
+                        <div className="text-right">
+                            <h2 className="text-sm font-semibold">Recibo Semanal de Contratista</h2>
+                            <p className="text-xs text-gray-500">
+                            Semana del {format(parseISO(week.startDate), 'dd/MM/yy')} al {format(parseISO(week.endDate), 'dd/MM/yy')}
+                            </p>
+                        </div>
+                    </header>
+
+                    <section className="mt-2 text-xs">
+                      <h3 className="font-medium">Contratista: {cert.contractorName}</h3>
+                      <p className="text-gray-500">Obra: {cert.projectName}</p>
+                    </section>
+
+                    <section className="mt-2 border-t pt-2">
+                        <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Detalle</h4>
+                        <p className="text-xs">{cert.notes || 'Certificación de trabajos semanales.'}</p>
+                    </section>
+                    
+                    <section className="mt-2 border-t-2 border-dashed pt-1">
+                      <div className="flex justify-between items-center text-sm font-bold">
+                        <span>TOTAL A PAGAR:</span>
+                        <span>{formatCurrency(cert.amount, cert.currency)}</span>
+                      </div>
+                    </section>
+                    
+                    <footer className="mt-4 flex justify-between items-end">
+                        <div className="w-1/2">
+                            <div className="border-t pt-1 text-center text-xs">
+                            Firma del Contratista
+                            </div>
+                        </div>
+                        <div className="w-1/2 text-right text-xs text-gray-400">
+                            Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                        </div>
+                    </footer>
+                </div>
+              ))}
             </div>
         </div>
     )
@@ -233,7 +182,8 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
       </div>
 
       <div className="space-y-4 print:space-y-2">
-        {receiptsData.map(data => (
+        {employeeReceiptsData.length === 0 && <div className="flex h-64 items-center justify-center rounded-md border border-dashed">No hay actividad registrada para empleados esta semana.</div>}
+        {employeeReceiptsData.map(data => (
           <div key={data.employee.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
             <header className="flex justify-between items-start border-b pb-2">
               <div>
@@ -289,7 +239,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
             <section className="mt-2 grid grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Liquidación</h4>
+                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Haberes</h4>
                 <div className="space-y-0.5 text-xs">
                   <div className="flex justify-between"><span>Días Trab.:</span><span>{data.summary.daysPresent}</span></div>
                   <div className="flex justify-between"><span>Jornal:</span><span>{formatCurrency(data.employee.dailyWage)}</span></div>
