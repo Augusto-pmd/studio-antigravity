@@ -105,6 +105,8 @@ export interface Employee {
     name: string;
     email?: string;
     phone?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
     status: 'Activo' | 'Inactivo';
     paymentType: 'Diario' | 'Semanal';
     category: string;

@@ -60,6 +60,8 @@ const employeeConverter = {
             name: data.name || '',
             email: data.email || undefined,
             phone: data.phone || undefined,
+            emergencyContactName: data.emergencyContactName,
+            emergencyContactPhone: data.emergencyContactPhone,
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || '',
@@ -157,6 +159,11 @@ export function EmployeesTable() {
                     <div className="text-sm text-muted-foreground">{employee.category}</div>
                     <div className="hidden md:block text-sm text-muted-foreground">{employee.email}</div>
                     <div className="hidden md:block text-sm text-muted-foreground">{employee.phone}</div>
+                     {employee.emergencyContactName && (
+                      <div className="hidden md:block text-sm text-muted-foreground">
+                          Contacto Emergencia: {employee.emergencyContactName} ({employee.emergencyContactPhone})
+                      </div>
+                    )}
                      <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                         <div>
                            <Badge
@@ -172,6 +179,11 @@ export function EmployeesTable() {
                         </div>
                         {employee.email && <p>{employee.email}</p>}
                         {employee.phone && <p>{employee.phone}</p>}
+                        {employee.emergencyContactName && (
+                            <p>
+                                <span className="font-semibold text-foreground">Emergencia:</span> {employee.emergencyContactName} ({employee.emergencyContactPhone})
+                            </p>
+                        )}
                         <p>Jornal: <span className="font-mono text-foreground">{formatCurrency(employee.dailyWage)}</span></p>
                         {artStatus && <div className={cn(artStatus.variant === 'destructive' && 'text-destructive', artStatus.variant === 'warning' && 'text-yellow-500')}>ART: {artStatus.message}</div>}
                     </div>

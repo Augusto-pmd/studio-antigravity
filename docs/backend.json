@@ -506,6 +506,14 @@
           "type": "string",
           "description": "The phone number of the employee."
         },
+        "emergencyContactName": {
+          "type": "string",
+          "description": "Name of the emergency contact."
+        },
+        "emergencyContactPhone": {
+          "type": "string",
+          "description": "Phone number of the emergency contact."
+        },
         "status": {
           "type": "string",
           "enum": [

@@ -53,6 +53,8 @@ export function EmployeeDialog({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [emergencyContactName, setEmergencyContactName] = useState('');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [category, setCategory] = useState('');
   const [dailyWage, setDailyWage] = useState('');
   const [paymentType, setPaymentType] = useState<'Diario' | 'Semanal'>('Semanal');
@@ -63,6 +65,8 @@ export function EmployeeDialog({
     setName(employee?.name || '');
     setEmail(employee?.email || '');
     setPhone(employee?.phone || '');
+    setEmergencyContactName(employee?.emergencyContactName || '');
+    setEmergencyContactPhone(employee?.emergencyContactPhone || '');
     setCategory(employee?.category || '');
     setDailyWage(employee?.dailyWage?.toString() || '');
     setPaymentType(employee?.paymentType || 'Semanal');
@@ -96,6 +100,8 @@ export function EmployeeDialog({
         name,
         email: email || undefined,
         phone: phone || undefined,
+        emergencyContactName: emergencyContactName || undefined,
+        emergencyContactPhone: emergencyContactPhone || undefined,
         category,
         dailyWage: parseFloat(dailyWage) || 0,
         paymentType,
@@ -137,7 +143,7 @@ export function EmployeeDialog({
             {isEditMode ? 'Modifique la información del empleado.' : 'Complete el formulario para registrar un nuevo empleado en el sistema.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
               Nombre
@@ -156,6 +162,19 @@ export function EmployeeDialog({
               Teléfono
             </Label>
             <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(Opcional)" className="col-span-3" />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="emergencyContactName" className="text-right">
+              Contacto Emergencia
+            </Label>
+            <Input id="emergencyContactName" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Nombre (opcional)" className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="emergencyContactPhone" className="text-right">
+              Tel. Emergencia
+            </Label>
+            <Input id="emergencyContactPhone" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="Teléfono (opcional)" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
