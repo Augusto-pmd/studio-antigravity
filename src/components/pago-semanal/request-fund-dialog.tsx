@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +53,7 @@ const projectConverter = {
 
 export function RequestFundDialog() {
   const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const { user, firestore } = useUser();
   const { toast } = useToast();
 
@@ -85,7 +85,7 @@ export function RequestFundDialog() {
     }
   }, [open]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
         return;
@@ -95,7 +95,8 @@ export function RequestFundDialog() {
         return;
     }
 
-    startTransition(() => {
+    setIsPending(true);
+    try {
       const selectedProject = projects?.find(p => p.id === projectId);
 
       const fundRequestsCollection = collection(firestore, 'fundRequests');
@@ -117,24 +118,25 @@ export function RequestFundDialog() {
           description: description || undefined,
       };
 
-      setDoc(requestRef, requestData)
-        .then(() => {
-            toast({
-                title: 'Solicitud Enviada',
-                description: 'Tu solicitud de fondos ha sido registrada y está pendiente de aprobación.',
-            });
-            resetForm();
-            setOpen(false);
-        })
-        .catch((error) => {
-            console.error("Error writing to Firestore:", error);
-            toast({
-                variant: "destructive",
-                title: "Error al guardar",
-                description: "No se pudo enviar la solicitud. Es posible que no tengas permisos.",
-            });
+      await setDoc(requestRef, requestData);
+      
+      toast({
+          title: 'Solicitud Enviada',
+          description: 'Tu solicitud de fondos ha sido registrada y está pendiente de aprobación.',
+      });
+      resetForm();
+      setOpen(false);
+
+    } catch (error) {
+        console.error("Error writing to Firestore:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al guardar",
+            description: "No se pudo enviar la solicitud. Es posible que no tengas permisos.",
         });
-    });
+    } finally {
+        setIsPending(false);
+    }
   };
 
   return (
@@ -238,7 +240,7 @@ export function RequestFundDialog() {
             </div>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handleSave} disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enviar Solicitud
           </Button>
