@@ -103,7 +103,7 @@ export function SalesTable() {
                 <TableHead className="hidden md:table-cell">Fecha</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Monto Total</TableHead>
-                {permissions.canValidate && <TableHead className="text-right w-[100px]">Acciones</TableHead>}
+                {permissions.canManageSales && <TableHead className="text-right w-[100px]">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,7 +143,7 @@ export function SalesTable() {
                      )}>{sale.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono hidden md:table-cell">{formatCurrency(sale.totalAmount)}</TableCell>
-                  {permissions.canValidate && (
+                  {permissions.canManageSales && (
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end">
                             {sale.invoiceUrl && (
