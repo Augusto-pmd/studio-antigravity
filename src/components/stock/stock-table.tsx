@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
@@ -40,7 +40,7 @@ export function StockTable() {
   const firestore = useFirestore();
   const { permissions } = useUser();
   const stockQuery = useMemo(() => firestore ? query(collection(firestore, 'stockItems').withConverter(stockItemConverter), orderBy('name', 'asc')) : null, [firestore]);
-  const { data: stockItems, isLoading } = useCollection(stockQuery);
+  const { data: stockItems, isLoading } = useCollection<StockItem>(stockQuery);
 
   const renderSkeleton = () => (
     Array.from({ length: 4 }).map((_, i) => (
@@ -70,7 +70,7 @@ export function StockTable() {
           {!isLoading && stockItems?.length === 0 && (
             <TableRow><TableCell colSpan={permissions.canManageStock ? 5 : 4} className="h-24 text-center">No hay ítems en el stock.</TableCell></TableRow>
           )}
-          {stockItems?.map((item) => {
+          {stockItems?.map((item: StockItem) => {
             const isLowStock = item.reorderPoint !== undefined && item.quantity <= item.reorderPoint;
             return (
               <TableRow key={item.id} className={cn(isLowStock && 'bg-yellow-500/10 hover:bg-yellow-500/20')}>
@@ -104,26 +104,26 @@ export function StockTable() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                         <StockMovementDialog item={item} movementType="Egreso">
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
                             <ArrowUpCircle className="mr-2 h-4 w-4 text-destructive" />
                             <span>Registrar Salida</span>
                           </DropdownMenuItem>
                         </StockMovementDialog>
                         <StockMovementDialog item={item} movementType="Ingreso">
-                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                           <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
                             <ArrowDownCircle className="mr-2 h-4 w-4 text-green-500" />
                             <span>Registrar Entrada</span>
                           </DropdownMenuItem>
                         </StockMovementDialog>
                          <DropdownMenuSeparator />
                         <StockMovementHistoryDialog item={item}>
-                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                           <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
                             <History className="mr-2 h-4 w-4" />
                             <span>Ver Historial</span>
                           </DropdownMenuItem>
                         </StockMovementHistoryDialog>
                         <StockItemDialog item={item}>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
                             <Pencil className="mr-2 h-4 w-4" />
                             <span>Editar Ítem</span>
                           </DropdownMenuItem>

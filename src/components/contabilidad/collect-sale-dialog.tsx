@@ -153,15 +153,15 @@ export function CollectSaleDialog({ sale, children }: { sale: Sale, children: Re
           <div className="grid grid-cols-3 gap-3">
              <div className="space-y-2">
                 <Label htmlFor="retGanancias">Ganancias</Label>
-                <Input id="retGanancias" type="number" placeholder="0.00" value={retGanancias} onChange={e => setRetGanancias(e.target.value)} />
+                <Input id="retGanancias" type="number" placeholder="0.00" value={retGanancias} onChange={(e: any) => setRetGanancias(e.target.value)} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="retIva">IVA</Label>
-                <Input id="retIva" type="number" placeholder="0.00" value={retIva} onChange={e => setRetIva(e.target.value)} />
+                <Input id="retIva" type="number" placeholder="0.00" value={retIva} onChange={(e: any) => setRetIva(e.target.value)} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="retIibb">IIBB</Label>
-                <Input id="retIibb" type="number" placeholder="0.00" value={retIibb} onChange={e => setRetIibb(e.target.value)} />
+                <Input id="retIibb" type="number" placeholder="0.00" value={retIibb} onChange={(e: any) => setRetIibb(e.target.value)} />
             </div>
           </div>
 

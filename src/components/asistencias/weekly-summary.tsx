@@ -149,8 +149,8 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
           return { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
       }
 
-      const employeeWageMap = new Map(employees.map(e => [e.id, e.dailyWage]));
-      const employeeHourlyRateMap = new Map(employees.map(e => [e.id, (e.dailyWage || 0) / 8]));
+      const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
+      const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (e.dailyWage || 0) / 8]));
 
       const grossWages = weekAttendances.reduce((sum, attendance) => {
           if (attendance.status === 'presente') {
@@ -236,84 +236,86 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
   const handleCloseWeek = (weekId: string, weekStartDate: string, weekEndDate: string) => {
       if (!firestore) return;
       
-      startTransition(async () => {
-        toast({ title: "Cerrando semana...", description: "Calculando costos y generando gastos. Esto puede tardar un momento." });
+      startTransition(() => {
+        (async () => {
+            toast({ title: "Cerrando semana...", description: "Calculando costos y generando gastos. Esto puede tardar un momento." });
 
-        try {
-            const batch = writeBatch(firestore);
+            try {
+                const batch = writeBatch(firestore);
 
-            const supplierId = 'personal-propio';
-            const supplierRef = doc(firestore, 'suppliers', supplierId);
-            const supplierSnap = await getDoc(supplierRef);
+                const supplierId = 'personal-propio';
+                const supplierRef = doc(firestore, 'suppliers', supplierId);
+                const supplierSnap = await getDoc(supplierRef);
 
-            if (!supplierSnap.exists()) {
-                batch.set(supplierRef, {
-                    id: supplierId,
-                    name: 'Personal Propio',
-                    cuit: '00-00000000-0',
-                    status: 'Aprobado',
-                    type: 'Servicios'
+                if (!supplierSnap.exists()) {
+                    batch.set(supplierRef, {
+                        id: supplierId,
+                        name: 'Personal Propio',
+                        cuit: '00-00000000-0',
+                        status: 'Aprobado',
+                        type: 'Servicios'
+                    });
+                }
+                
+                const employeesQueryToFetch = query(collection(firestore, 'employees').withConverter(employeeConverter));
+                const attendanceQueryToFetch = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
+                
+                const [employeesSnap, attendanceSnap] = await Promise.all([
+                    getDocs(employeesQueryToFetch),
+                    getDocs(attendanceQueryToFetch),
+                ]);
+
+                const employeesData = employeesSnap.docs.map((d: any) => d.data());
+                const attendancesData = attendanceSnap.docs.map((d: any) => d.data());
+                
+                const employeeWages = new Map(employeesData.map((e: any) => [e.id, e.dailyWage]));
+                const costsByProject = new Map<string, number>();
+
+                for (const attendance of attendancesData) {
+                    if (attendance.status === 'presente' && attendance.projectId) {
+                        const wage = employeeWages.get(attendance.employeeId) || 0;
+                        costsByProject.set(attendance.projectId, (costsByProject.get(attendance.projectId) || 0) + wage);
+                    }
+                }
+
+                const weekEndDateISO = parseISO(weekEndDate).toISOString();
+                const weekRange = formatDateRange(weekStartDate, weekEndDate);
+
+                for (const [projectId, cost] of costsByProject.entries()) {
+                    if (cost > 0) {
+                        const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
+                        const newExpense: Omit<Expense, 'id'> = {
+                            projectId: projectId,
+                            date: weekEndDateISO,
+                            supplierId: supplierId,
+                            categoryId: 'CAT-02', 
+                            documentType: 'Recibo Común',
+                            description: `Costo de mano de obra - Semana ${weekRange}`,
+                            amount: cost,
+                            currency: 'ARS',
+                            exchangeRate: 1,
+                            status: 'Pagado',
+                            paymentMethod: 'Planilla Semanal',
+                            paidDate: new Date().toISOString(),
+                        };
+                        batch.set(expenseRef, newExpense);
+                    }
+                }
+
+                const weekRef = doc(firestore, 'payrollWeeks', weekId);
+                batch.update(weekRef, { status: 'Cerrada' });
+
+                await batch.commit();
+
+                toast({
+                    title: "Semana Cerrada Exitosamente",
+                    description: "Se han imputado los costos de personal a cada obra correspondiente."
                 });
+            } catch (error) {
+                console.error("Error closing week:", error);
+                toast({ variant: 'destructive', title: "Error al cerrar", description: "No se pudo cerrar la semana y generar los gastos. Es posible que no tengas permisos." });
             }
-            
-            const employeesQueryToFetch = query(collection(firestore, 'employees').withConverter(employeeConverter));
-            const attendanceQueryToFetch = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
-            
-            const [employeesSnap, attendanceSnap] = await Promise.all([
-                getDocs(employeesQueryToFetch),
-                getDocs(attendanceQueryToFetch),
-            ]);
-
-            const employeesData = employeesSnap.docs.map(d => d.data());
-            const attendancesData = attendanceSnap.docs.map(d => d.data());
-            
-            const employeeWages = new Map(employeesData.map(e => [e.id, e.dailyWage]));
-            const costsByProject = new Map<string, number>();
-
-            for (const attendance of attendancesData) {
-                if (attendance.status === 'presente' && attendance.projectId) {
-                    const wage = employeeWages.get(attendance.employeeId) || 0;
-                    costsByProject.set(attendance.projectId, (costsByProject.get(attendance.projectId) || 0) + wage);
-                }
-            }
-
-            const weekEndDateISO = parseISO(weekEndDate).toISOString();
-            const weekRange = formatDateRange(weekStartDate, weekEndDate);
-
-            for (const [projectId, cost] of costsByProject.entries()) {
-                if (cost > 0) {
-                    const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
-                    const newExpense: Omit<Expense, 'id'> = {
-                        projectId: projectId,
-                        date: weekEndDateISO,
-                        supplierId: supplierId,
-                        categoryId: 'CAT-02', 
-                        documentType: 'Recibo Común',
-                        description: `Costo de mano de obra - Semana ${weekRange}`,
-                        amount: cost,
-                        currency: 'ARS',
-                        exchangeRate: 1,
-                        status: 'Pagado',
-                        paymentMethod: 'Planilla Semanal',
-                        paidDate: new Date().toISOString(),
-                    };
-                    batch.set(expenseRef, newExpense);
-                }
-            }
-
-            const weekRef = doc(firestore, 'payrollWeeks', weekId);
-            batch.update(weekRef, { status: 'Cerrada' });
-
-            await batch.commit();
-
-            toast({
-                title: "Semana Cerrada Exitosamente",
-                description: "Se han imputado los costos de personal a cada obra correspondiente."
-            });
-        } catch (error) {
-            console.error("Error closing week:", error);
-            toast({ variant: 'destructive', title: "Error al cerrar", description: "No se pudo cerrar la semana y generar los gastos. Es posible que no tengas permisos." });
-        }
+        })();
       });
   };
   
@@ -328,37 +330,39 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
         return;
     }
 
-    startTransition(async () => {
-        toast({ title: "Reabriendo semana...", description: "Eliminando los gastos contables generados previamente. Esto puede tardar." });
+    startTransition(() => {
+        (async () => {
+            toast({ title: "Reabriendo semana...", description: "Eliminando los gastos contables generados previamente. Esto puede tardar." });
 
-        try {
-            const batch = writeBatch(firestore);
+            try {
+                const batch = writeBatch(firestore);
 
-            const weekRange = formatDateRange(week.startDate, week.endDate);
-            const expenseDescription = `Costo de mano de obra - Semana ${weekRange}`;
-            const expensesQuery = query(
-                collectionGroup(firestore, 'expenses'),
-                where('description', '==', expenseDescription),
-                where('supplierId', '==', 'personal-propio')
-            );
-            const expensesSnap = await getDocs(expensesQuery);
-            expensesSnap.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            
-            const weekRef = doc(firestore, 'payrollWeeks', week.id);
-            batch.update(weekRef, { status: 'Abierta' });
+                const weekRange = formatDateRange(week.startDate, week.endDate);
+                const expenseDescription = `Costo de mano de obra - Semana ${weekRange}`;
+                const expensesQuery = query(
+                    collectionGroup(firestore, 'expenses'),
+                    where('description', '==', expenseDescription),
+                    where('supplierId', '==', 'personal-propio')
+                );
+                const expensesSnap = await getDocs(expensesQuery);
+                expensesSnap.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                const weekRef = doc(firestore, 'payrollWeeks', week.id);
+                batch.update(weekRef, { status: 'Abierta' });
 
-            await batch.commit();
-            toast({
-                title: "Semana Reabierta",
-                description: `La semana del ${weekRange} está activa nuevamente. Los gastos contables asociados fueron revertidos.`,
-            });
+                await batch.commit();
+                toast({
+                    title: "Semana Reabierta",
+                    description: `La semana del ${weekRange} está activa nuevamente. Los gastos contables asociados fueron revertidos.`,
+                });
 
-        } catch (error) {
-            console.error("Error reopening week:", error);
-            toast({ variant: 'destructive', title: "Error al reabrir", description: "No se pudo reabrir la semana. Es posible que no tengas permisos." });
-        }
+            } catch (error) {
+                console.error("Error reopening week:", error);
+                toast({ variant: 'destructive', title: "Error al reabrir", description: "No se pudo reabrir la semana. Es posible que no tengas permisos." });
+            }
+        })();
     });
 };
 
@@ -505,7 +509,7 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
                                         <TableCell colSpan={3} className="h-24 text-center">No hay semanas en el historial.</TableCell>
                                     </TableRow>
                                 )}
-                                {!isLoadingHistoricalWeeks && historicalWeeks.map(week => (
+                                {!isLoadingHistoricalWeeks && historicalWeeks.map((week: PayrollWeek) => (
                                     <TableRow key={week.id}>
                                         <TableCell className="font-medium">{formatDateRange(week.startDate, week.endDate)}</TableCell>
                                         <TableCell>

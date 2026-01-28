@@ -53,7 +53,7 @@ function UserCashAccountCard({ profile }: { profile: UserProfile }) {
                         <Skeleton className="h-8 w-full" />
                     </div>
                 )}
-                {accounts && accounts.length > 0 ? accounts.map(account => (
+                {accounts && accounts.length > 0 ? accounts.map((account: CashAccount) => (
                     <div key={account.id} className="flex items-center justify-between rounded-md border p-3">
                         <div className='flex items-center gap-2'>
                             <Wallet className="h-4 w-4 text-muted-foreground"/>
@@ -99,7 +99,7 @@ export function CashAccountsDashboard() {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {profiles?.map(profile => (
+        {profiles?.map((profile: UserProfile) => (
             <UserCashAccountCard key={profile.id} profile={profile} />
         ))}
     </div>

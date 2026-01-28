@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -138,7 +138,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
         return;
     }
 
-    const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
+    const selectedEmployee = employees?.find((e: Employee) => e.id === selectedEmployeeId);
     if (!selectedEmployee) {
         toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
         return;
@@ -146,7 +146,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
 
     setIsPending(true);
     try {
-      const selectedProject = projects?.find(p => p.id === selectedProjectId);
+      const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId);
 
       const advancesCollection = collection(firestore, 'cashAdvances');
       const advanceRef = doc(advancesCollection);
@@ -208,7 +208,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                 <SelectValue placeholder="Seleccione un empleado" />
               </SelectTrigger>
               <SelectContent>
-                {employees?.filter(e => e.status === 'Activo').map((e: Employee) => (
+                {employees?.filter((e: Employee) => e.status === 'Activo').map((e: Employee) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.name}
                   </SelectItem>
@@ -226,7 +226,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                 <SelectValue placeholder="Imputar a una obra (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                {projects?.filter(p => p.status === 'En Curso').map((p: Project) => (
+                {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -269,14 +269,14 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
             <Label htmlFor="amount" className="text-right">
               Monto
             </Label>
-            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" value={amount} onChange={e => setAmount(e.target.value)} />
+            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" value={amount} onChange={(e: any) => setAmount(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="reason" className="text-right pt-2">
               Motivo
             </Label>
-            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" value={reason} onChange={e => setReason(e.target.value)}/>
+            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" value={reason} onChange={(e: any) => setReason(e.target.value)}/>
           </div>
         </div>
         <DialogFooter>

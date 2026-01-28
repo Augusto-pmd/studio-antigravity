@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useTransition, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -86,7 +86,7 @@ export function SettleSalaryDialog({ employee, children }: { employee: Technical
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="period">Período de Liquidación</Label>
-                        <Input id="period" type="month" value={period} onChange={e => setPeriod(e.target.value)} />
+                        <Input id="period" type="month" value={period} onChange={(e: any) => setPeriod(e.target.value)} />
                     </div>
                     <div className="space-y-2">
                         <Label>Salario Bruto</Label>
@@ -94,7 +94,7 @@ export function SettleSalaryDialog({ employee, children }: { employee: Technical
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="deductions">Total Deducciones (Aportes, etc.)</Label>
-                        <Input id="deductions" type="number" value={deductions} onChange={e => setDeductions(e.target.value)} placeholder="0.00" />
+                        <Input id="deductions" type="number" value={deductions} onChange={(e: any) => setDeductions(e.target.value)} placeholder="0.00" />
                     </div>
                     <div className="rounded-md border bg-muted p-3 space-y-1">
                         <Label>Neto a Pagar</Label>

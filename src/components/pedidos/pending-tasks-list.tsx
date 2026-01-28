@@ -107,7 +107,7 @@ export function PendingTasksList() {
               </TableCell>
             </TableRow>
           )}
-          {tasks?.map((task) => (
+          {tasks?.map((task: TaskRequest) => (
             <TableRow key={task.id}>
               <TableCell>
                 <div className="font-medium">{task.title}</div>

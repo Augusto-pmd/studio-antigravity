@@ -56,8 +56,8 @@ export function AccountsPayable() {
   const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
-  const projectsMap = useMemo(() => projects?.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {}, [projects]);
-  const suppliersMap = useMemo(() => suppliers?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {}, [suppliers]);
+  const projectsMap = useMemo(() => projects?.reduce((acc: Record<string, string>, p: Project) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {}, [projects]);
+  const suppliersMap = useMemo(() => suppliers?.reduce((acc: Record<string, string>, s: Supplier) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {}, [suppliers]);
 
   const isLoading = isLoadingExpenses || isLoadingProjects || isLoadingSuppliers;
 
@@ -94,7 +94,7 @@ export function AccountsPayable() {
                   <TableCell colSpan={4} className="h-24 text-center">No hay cuentas pendientes de pago.</TableCell>
                 </TableRow>
               )}
-              {expenses?.map(expense => (
+              {expenses?.map((expense: Expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>
                     <div className="font-medium">{suppliersMap[expense.supplierId] || expense.supplierId}</div>

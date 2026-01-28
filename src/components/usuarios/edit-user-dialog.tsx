@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -90,7 +90,7 @@ export function EditUserDialog({
         <div className="grid gap-4 py-4">
             <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                    <AvatarImage src={userProfile.photoURL} />
+                    <AvatarImage src={userProfile.photoURL ?? undefined} />
                     <AvatarFallback className="text-2xl">{userProfile.fullName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -105,7 +105,7 @@ export function EditUserDialog({
                 <SelectValue placeholder="Seleccione un rol" />
               </SelectTrigger>
               <SelectContent>
-                {roles.map((r) => (
+                {roles.map((r: Role) => (
                   <SelectItem key={r} value={r}>
                     {r}
                   </SelectItem>

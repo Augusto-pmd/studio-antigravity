@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -136,7 +136,7 @@ export function RecurringExpenseDialog({
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
-            <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej. Alquiler Oficina, Monotributo" />
+            <Input id="description" value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Ej. Alquiler Oficina, Monotributo" />
           </div>
 
           <div className="space-y-2">
@@ -146,7 +146,7 @@ export function RecurringExpenseDialog({
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map(cat => (
+                {expenseCategories.map((cat: any) => (
                   <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -156,7 +156,7 @@ export function RecurringExpenseDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
                 <Label htmlFor="amount">Monto</Label>
-                <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+                <Input id="amount" type="number" value={amount} onChange={(e: any) => setAmount(e.target.value)} placeholder="0.00" />
             </div>
             <div className="space-y-2">
                 <Label>Moneda</Label>
@@ -188,7 +188,7 @@ export function RecurringExpenseDialog({
                     <SelectValue placeholder="Seleccione período" />
                 </SelectTrigger>
                 <SelectContent>
-                    {periods.map(p => (
+                    {periods.map((p: any) => (
                         <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
                 </SelectContent>
@@ -233,5 +233,4 @@ export function RecurringExpenseDialog({
     </Dialog>
   );
 }
-
     

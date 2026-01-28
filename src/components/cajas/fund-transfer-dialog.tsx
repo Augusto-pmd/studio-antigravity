@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useTransition, useEffect, useMemo } from "react";
 import {
@@ -79,13 +79,13 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
         return;
     }
 
-    const selectedAccount = cashAccounts.find(acc => acc.id === selectedAccountId);
+    const selectedAccount = cashAccounts.find((acc: CashAccount) => acc.id === selectedAccountId);
     if (!selectedAccount) {
         toast({ variant: 'destructive', title: 'Error', description: `La caja de destino no es válida.` });
         return;
     }
     
-    const sourceAccount = treasuryAccounts?.find(acc => acc.id === sourceAccountId);
+    const sourceAccount = treasuryAccounts?.find((acc: TreasuryAccount) => acc.id === sourceAccountId);
     if (!sourceAccount) {
         toast({ variant: 'destructive', title: 'Error', description: `La cuenta de origen no es válida.` });
         return;
@@ -180,7 +180,7 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
                 <SelectValue placeholder="Seleccione una cuenta de origen" />
               </SelectTrigger>
               <SelectContent>
-                {treasuryAccounts?.map((account) => (
+                {treasuryAccounts?.map((account: TreasuryAccount) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name} (Saldo: {formatCurrency(account.balance, account.currency)})
                   </SelectItem>
@@ -211,7 +211,7 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
                     <SelectValue placeholder="Seleccione una caja de destino" />
                 </SelectTrigger>
                 <SelectContent>
-                    {cashAccounts.map((account) => (
+                    {cashAccounts.map((account: CashAccount) => (
                     <SelectItem key={account.id} value={account.id}>
                         {account.name} (Saldo: {formatCurrency(account.balance, 'ARS')})
                     </SelectItem>
@@ -223,15 +223,15 @@ export function FundTransferDialog({ profile, cashAccounts, children }: { profil
 
           <div className="space-y-2">
             <Label htmlFor="amount">Monto (ARS)</Label>
-            <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+            <Input id="amount" type="number" value={amount} onChange={(e: any) => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Descripción / Motivo</Label>
-            <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej: Refuerzo semanal para viáticos" />
+            <Input id="description" value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Ej: Refuerzo semanal para viáticos" />
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave} disabled={isPending || !amount || !description || !selectedAccountId || !sourceAccountId}>
+          <Button type="button" onClick={handleSave} disabled={isPending || !amount || !description || !selectedAccountId || !sourceAccountId}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Confirmar Transferencia
           </Button>

@@ -84,7 +84,7 @@ export function RecurringExpensesTable() {
           {!isLoading && expenses?.length === 0 && (
             <TableRow><TableCell colSpan={5} className="h-24 text-center">No hay gastos recurrentes registrados.</TableCell></TableRow>
           )}
-          {expenses?.map((expense) => {
+          {expenses?.map((expense: RecurringExpense) => {
             const dueDateStatus = getDueDateStatus(expense.nextDueDate);
             return (
               <TableRow key={expense.id}>

@@ -1,4 +1,5 @@
 'use client';
+
 import { useMemo, useState } from 'react';
 import {
   Dialog,
@@ -121,8 +122,8 @@ export function HistoricalWeekViewDialog({ week, children }: { week: PayrollWeek
             return { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
         }
 
-        const employeeWageMap = new Map(employees.map(e => [e.id, e.dailyWage]));
-        const employeeHourlyRateMap = new Map(employees.map(e => [e.id, (e.dailyWage || 0) / 8])); // Assuming 8-hour day
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (e.dailyWage || 0) / 8])); // Assuming 8-hour day
 
         const grossWages = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente') {

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { parseISO, format } from 'date-fns';
+import { format } from 'date-fns';
 import { CollectSaleDialog } from '@/components/contabilidad/collect-sale-dialog';
 
 const saleConverter = {
@@ -43,7 +43,7 @@ export function AccountsReceivable() {
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const projectsMap = useMemo(() => projects?.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {}, [projects]);
+  const projectsMap = useMemo(() => projects?.reduce((acc: Record<string, string>, p: Project) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {}, [projects]);
 
   const isLoading = isLoadingSales || isLoadingProjects;
 
@@ -79,7 +79,7 @@ export function AccountsReceivable() {
                   <TableCell colSpan={4} className="h-24 text-center">No hay cuentas pendientes de cobro.</TableCell>
                 </TableRow>
               )}
-              {sales?.map(sale => (
+              {sales?.map((sale: Sale) => (
                 <TableRow key={sale.id}>
                   <TableCell>
                     <div className="font-medium">{projectsMap[sale.projectId] || sale.projectId}</div>

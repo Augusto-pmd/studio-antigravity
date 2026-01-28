@@ -69,7 +69,7 @@ export function TechnicalOfficeEmployeesTable() {
                   </TableCell>
                 </TableRow>
               )}
-              {employees?.map((employee) => (
+              {employees?.map((employee: TechnicalOfficeEmployee) => (
                 <TableRow key={employee.id}>
                   <TableCell>
                       <div className="font-medium">{employee.fullName}</div>

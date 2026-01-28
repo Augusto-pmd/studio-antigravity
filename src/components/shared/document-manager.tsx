@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { es } from 'date-fns/locale';
 interface DocumentManagerProps {
     title: string;
     documents: DocumentRecord[];
-    onUpload: (file: File) => Promise<void>;
+    onUpload: (file: File) => void;
     onDelete: (document: DocumentRecord) => Promise<void>;
     isUploading: boolean;
     isDeleting: string | null; // ID of the document being deleted
@@ -35,7 +35,7 @@ export function DocumentManager({ title, documents, onUpload, onDelete, isUpload
         <div className="space-y-3 rounded-lg border p-4">
             <h4 className="font-medium">{title}</h4>
             <div className="space-y-2">
-                {documents.map((doc) => (
+                {documents.map((doc: any) => (
                     <div key={doc.id} className="flex items-center justify-between rounded-md border bg-muted/50 p-2 text-sm">
                         <div className="flex items-center gap-2 truncate">
                            <FileText className="h-4 w-4 shrink-0"/>

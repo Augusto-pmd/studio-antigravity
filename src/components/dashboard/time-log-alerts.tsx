@@ -41,7 +41,7 @@ export function TimeLogAlerts() {
         const lastWeek = subWeeks(today, 1);
         const start = startOfWeek(lastWeek, { weekStartsOn: 1 });
         const end = endOfWeek(lastWeek, { weekStartsOn: 1 });
-        const days = eachDayOfInterval({ start, end }).filter(day => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
+        const days = eachDayOfInterval({ start, end }).filter((day: any) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
         return { lastWeekStart: start, lastWeekEnd: end, workDays: days };
     }, []);
 
@@ -68,18 +68,18 @@ export function TimeLogAlerts() {
             return;
         }
 
-        const employeesWhoDidntLog = employees.filter(employee => {
+        const employeesWhoDidntLog = employees.filter((employee: any) => {
             // Exclude 'Augusto Menendez' as requested
             if (employee.fullName === 'Augusto Menendez') {
                 return false;
             }
             
-            const logsForEmployee = lastWeekLogs.filter(log => log.userId === employee.userId);
-            const loggedDays = new Set(logsForEmployee.map(log => log.date));
-            const requiredDays = workDays.map(day => format(day, 'yyyy-MM-dd'));
+            const logsForEmployee = lastWeekLogs.filter((log: any) => log.userId === employee.userId);
+            const loggedDays = new Set(logsForEmployee.map((log: any) => log.date));
+            const requiredDays = workDays.map((day: any) => format(day, 'yyyy-MM-dd'));
 
             // Check if all required workdays have at least one log entry
-            const hasLoggedAllDays = requiredDays.every(dayStr => loggedDays.has(dayStr));
+            const hasLoggedAllDays = requiredDays.every((dayStr: any) => loggedDays.has(dayStr));
 
             return !hasLoggedAllDays;
         });
@@ -126,7 +126,7 @@ export function TimeLogAlerts() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-3">
-                    {defaulters.map(employee => (
+                    {defaulters.map((employee: TechnicalOfficeEmployee) => (
                         <div key={employee.id} className="flex items-center justify-between rounded-md border border-yellow-500/20 bg-background p-3">
                             <div className="flex items-center gap-3">
                                 <Avatar>

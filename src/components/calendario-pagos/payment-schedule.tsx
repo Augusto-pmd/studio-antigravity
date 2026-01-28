@@ -38,7 +38,7 @@ export function PaymentSchedule() {
     const items: any[] = [];
 
     // Recurring Expenses
-    recurringExpenses?.forEach(item => {
+    recurringExpenses?.forEach((item: RecurringExpense) => {
       items.push({
         id: `re-${item.id}`,
         date: parseISO(item.nextDueDate),
@@ -52,7 +52,7 @@ export function PaymentSchedule() {
     });
 
     // Moratorias
-    moratorias?.forEach(item => {
+    moratorias?.forEach((item: Moratoria) => {
       items.push({
         id: `m-${item.id}`,
         date: parseISO(item.nextDueDate),
@@ -66,7 +66,7 @@ export function PaymentSchedule() {
     });
 
     // Pending Supplier Expenses (assuming due on creation)
-    pendingExpenses?.forEach(item => {
+    pendingExpenses?.forEach((item: Expense) => {
       items.push({
         id: `exp-${item.id}`,
         date: parseISO(item.date),
@@ -80,7 +80,7 @@ export function PaymentSchedule() {
     });
 
     // Pending Salaries (assuming due at end of period month)
-    pendingSalaries?.forEach(item => {
+    pendingSalaries?.forEach((item: MonthlySalary) => {
       items.push({
         id: `sal-${item.id}`,
         date: endOfMonth(parseISO(item.period + '-01')),
@@ -94,13 +94,13 @@ export function PaymentSchedule() {
     });
     
     // Contractor ART/Insurance Expirations
-    contractors?.forEach(c => {
+    contractors?.forEach((c: Contractor) => {
         if(c.artExpiryDate) items.push({ id: `c-art-${c.id}`, date: parseISO(c.artExpiryDate), title: `Vencimiento ART`, description: `Contratista: ${c.name}`, type: 'Vencimiento DOC', itemData: c });
         if(c.insuranceExpiryDate) items.push({ id: `c-ins-${c.id}`, date: parseISO(c.insuranceExpiryDate), title: `Vencimiento Seguro`, description: `Contratista: ${c.name}`, type: 'Vencimiento DOC', itemData: c });
     })
     
     // Employee ART Expirations
-    employees?.forEach(e => {
+    employees?.forEach((e: Employee) => {
         if(e.artExpiryDate) items.push({ id: `e-art-${e.id}`, date: parseISO(e.artExpiryDate), title: `Vencimiento ART`, description: `Empleado: ${e.name}`, type: 'Vencimiento DOC', itemData: e });
     })
 
@@ -116,7 +116,7 @@ export function PaymentSchedule() {
     const sevenDaysFromNow = addDays(todayEnd, 7);
     const thirtyDaysFromNow = addDays(todayEnd, 30);
     
-    return allItems.reduce((acc, item) => {
+    return allItems.reduce((acc: any, item: any) => {
       if (isBefore(item.date, todayStart)) {
         acc.overdue.push(item);
       } else if (item.date >= todayStart && item.date <= todayEnd) {
@@ -152,8 +152,8 @@ export function PaymentSchedule() {
   return (
     <Card>
       <CardContent className="p-0">
-        <Accordion type="multiple" defaultValue={scheduleGroups.filter(g => g.defaultOpen).map(g => g.title)} className="w-full">
-            {scheduleGroups.map(group => group.items.length > 0 && (
+        <Accordion type="multiple" defaultValue={scheduleGroups.filter((g: any) => g.defaultOpen).map((g: any) => g.title)} className="w-full">
+            {scheduleGroups.map((group: any) => group.items.length > 0 && (
                 <AccordionItem value={group.title} key={group.title}>
                     <AccordionTrigger className="px-6 text-lg font-medium hover:no-underline">
                         <div className="flex items-center gap-4">

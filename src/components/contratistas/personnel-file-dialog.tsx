@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -107,7 +107,7 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
                       <DocumentManager
                         title="Seguro de Accidentes Personales"
                         documents={accidentInsuranceDocs}
-                        onUpload={(file) => handleUpload(file, 'accidentInsurance')}
+                        onUpload={(file) => { handleUpload(file, 'accidentInsurance'); } }
                         onDelete={handleDelete}
                         isUploading={isUploading}
                         isDeleting={deletingDocId}
@@ -115,7 +115,7 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
                       <DocumentManager
                         title="Antecedentes Penales"
                         documents={criminalRecordDocs}
-                        onUpload={(file) => handleUpload(file, 'criminalRecord')}
+                        onUpload={(file) => { handleUpload(file, 'criminalRecord'); } }
                         onDelete={handleDelete}
                         isUploading={isUploading}
                         isDeleting={deletingDocId}

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -137,7 +137,7 @@ export function AssetDialog({
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nombre del Activo</Label>
-            <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Camioneta Toyota Hilux" />
+            <Input id="name" value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Ej. Camioneta Toyota Hilux" />
           </div>
 
           <div className="space-y-2">
@@ -147,7 +147,7 @@ export function AssetDialog({
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {assetCategories.map(cat => (
+                {assetCategories.map((cat: string) => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
@@ -156,7 +156,7 @@ export function AssetDialog({
 
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Patente, número de serie, u otra información relevante." />
+            <Textarea id="description" value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Patente, número de serie, u otra información relevante." />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -177,7 +177,7 @@ export function AssetDialog({
             </div>
             <div className="space-y-2">
                 <Label htmlFor="purchaseValue">Valor de Compra</Label>
-                <Input id="purchaseValue" type="number" value={purchaseValue} onChange={e => setPurchaseValue(e.target.value)} placeholder="0.00" />
+                <Input id="purchaseValue" type="number" value={purchaseValue} onChange={(e: any) => setPurchaseValue(e.target.value)} placeholder="0.00" />
             </div>
           </div>
           

@@ -1,6 +1,6 @@
 'use client';
 
-import { parseISO, format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState, useTransition, ChangeEvent, useMemo, useRef, useEffect } from "react";
 import {
@@ -116,7 +116,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
 
     startTransition(() => {
       const saveData = async () => {
-        const project = projects?.find(p => p.id === projectId);
+        const project = projects?.find((p: Project) => p.id === projectId);
         if (!project) throw new Error("Proyecto no encontrado");
 
         const batch = writeBatch(firestore);
@@ -214,7 +214,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
               <SelectContent>
-                {(projects || []).filter(p => p.status === 'En Curso').map((p) => (
+                {(projects || []).filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -229,7 +229,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map((c) => (
+                {expenseCategories.map((c: any) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -266,11 +266,11 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">Monto (ARS)</Label>
-            <Input id="amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+            <Input id="amount" type="number" value={amount} onChange={(e: any) => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Descripción del Gasto</Label>
-            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej: Compra de clavos y tornillos para..." />
+            <Textarea id="description" value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Ej: Compra de clavos y tornillos para..." />
           </div>
            <div className="space-y-2">
             <Label htmlFor="receipt-file">Comprobante (Opcional)</Label>

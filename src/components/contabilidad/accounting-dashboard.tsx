@@ -22,12 +22,58 @@ import { PlanesDePagoTable } from '@/components/planes-de-pago/planes-de-pago-ta
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            projectId: data.projectId,
+            date: data.date,
+            supplierId: data.supplierId,
+            categoryId: data.categoryId,
+            documentType: data.documentType,
+            amount: data.amount,
+            currency: data.currency,
+            exchangeRate: data.exchangeRate,
+            status: data.status,
+            invoiceNumber: data.invoiceNumber,
+            paymentMethod: data.paymentMethod,
+            iva: data.iva,
+            iibb: data.iibb,
+            iibbJurisdiction: data.iibbJurisdiction,
+            receiptUrl: data.receiptUrl,
+            description: data.description,
+            retencionGanancias: data.retencionGanancias,
+            retencionIVA: data.retencionIVA,
+            retencionIIBB: data.retencionIIBB,
+            retencionSUSS: data.retencionSUSS,
+            paidDate: data.paidDate,
+            treasuryAccountId: data.treasuryAccountId,
+        };
+    }
 };
 
 const saleConverter = {
     toFirestore: (data: Sale): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => ({ ...snapshot.data(options), id: snapshot.id } as Sale)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            projectId: data.projectId,
+            date: data.date,
+            description: data.description,
+            documentType: data.documentType,
+            netAmount: data.netAmount,
+            ivaAmount: data.ivaAmount,
+            totalAmount: data.totalAmount,
+            status: data.status,
+            invoiceUrl: data.invoiceUrl,
+            collectedDate: data.collectedDate,
+            treasuryAccountId: data.treasuryAccountId,
+            retencionGanancias: data.retencionGanancias,
+            retencionIVA: data.retencionIVA,
+            retencionIIBB: data.retencionIIBB,
+        };
+    }
 };
 
 export function AccountingDashboard() {
@@ -48,7 +94,7 @@ export function AccountingDashboard() {
   const formalExpenses = useMemo(() => {
     if (!allExpenses) return [];
     // Exclude expenses paid with "Efectivo" from formal accounting
-    return allExpenses.filter(e => e.paymentMethod !== 'Efectivo');
+    return allExpenses.filter((e: any) => e.paymentMethod !== 'Efectivo');
   }, [allExpenses]);
 
 
@@ -58,7 +104,7 @@ export function AccountingDashboard() {
     }
     
     const expenseSummary = formalExpenses.reduce(
-      (acc, expense) => {
+      (acc: any, expense: Expense) => {
         const sign = expense.documentType === 'Nota de Crédito' ? -1 : 1;
         acc.ivaCredit += (expense.iva || 0) * sign;
         if (expense.iibbJurisdiction === 'CABA') {
@@ -75,7 +121,7 @@ export function AccountingDashboard() {
       { ivaCredit: 0, iibbCABA: 0, iibbProvincia: 0, retGanancias: 0, retIva: 0, retIibb: 0, retSuss: 0 }
     );
     
-    const ivaDebit = sales.reduce((acc, sale) => {
+    const ivaDebit = sales.reduce((acc, sale: Sale) => {
       if (!['Cancelado', 'Borrador'].includes(sale.status)) {
         const sign = sale.documentType === 'Nota de Crédito' ? -1 : 1;
         return acc + (sale.ivaAmount || 0) * sign;

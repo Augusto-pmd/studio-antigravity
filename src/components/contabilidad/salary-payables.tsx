@@ -63,7 +63,7 @@ export function SalaryPayables() {
                   <TableCell colSpan={4} className="h-24 text-center">No hay salarios pendientes de pago.</TableCell>
                 </TableRow>
               )}
-              {salaries?.map(salary => (
+              {salaries?.map((salary: MonthlySalary) => (
                 <TableRow key={salary.id}>
                   <TableCell>
                     <div className="font-medium">{salary.employeeName}</div>

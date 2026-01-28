@@ -38,7 +38,7 @@ export function MyTimeLogReminder() {
         const today = new Date();
         const start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
         const end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
-        const days = eachDayOfInterval({ start, end }).filter(day => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
+        const days = eachDayOfInterval({ start, end }).filter((day: any) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
         return { 
             weekToCheckStart: start, 
             workDays: days,
@@ -61,9 +61,9 @@ export function MyTimeLogReminder() {
 
     const isLogComplete = useMemo(() => {
         if (isLoadingLogs || !weekLogs) return null; // Still loading
-        const loggedDays = new Set(weekLogs.map(log => log.date));
-        const requiredDays = workDays.map(day => format(day, 'yyyy-MM-dd'));
-        return requiredDays.every(dayStr => loggedDays.has(dayStr));
+        const loggedDays = new Set(weekLogs.map((log: TimeLog) => log.date));
+        const requiredDays = workDays.map((day: any) => format(day, 'yyyy-MM-dd'));
+        return requiredDays.every((dayStr: any) => loggedDays.has(dayStr));
     }, [weekLogs, workDays, isLoadingLogs]);
 
     useEffect(() => {

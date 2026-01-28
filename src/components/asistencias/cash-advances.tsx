@@ -120,7 +120,7 @@ export function CashAdvances({ currentWeek, isLoadingWeek }: { currentWeek?: Pay
                                 </TableCell>
                             </TableRow>
                         )}
-                        {!isLoading && advances?.map(advance => (
+                        {!isLoading && advances?.map((advance: CashAdvance) => (
                                 <TableRow key={advance.id}>
                                     <TableCell>
                                       <div className='font-medium'>{advance.employeeName}</div>

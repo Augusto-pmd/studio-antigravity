@@ -57,10 +57,10 @@ export function TreasuryDashboard() {
 
   const isLoading = loadingTxs || loadingAccs || loadingProjs;
 
-  const accountsMap = useMemo(() => accounts?.reduce((map, acc) => { map[acc.id] = acc.name; return map; }, {} as Record<string, string>) || {}, [accounts]);
+  const accountsMap = useMemo(() => accounts?.reduce((map: any, acc) => { map[acc.id] = acc.name; return map; }, {} as Record<string, string>) || {}, [accounts]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions?.filter(tx => {
+    return transactions?.filter((tx: TreasuryTransaction) => {
       const txDate = parseISO(tx.date);
       const dateMatch = !dateRange || !dateRange.from || (txDate >= dateRange.from && txDate <= (dateRange.to || dateRange.from));
       const accountMatch = !selectedAccount || tx.treasuryAccountId === selectedAccount;
@@ -135,20 +135,20 @@ export function TreasuryDashboard() {
                     <SelectTrigger><SelectValue placeholder="Filtrar por Cuenta" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todas las Cuentas</SelectItem>
-                        {accounts?.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                        {accounts?.map((acc: TreasuryAccount) => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
                  <Select onValueChange={(v) => setSelectedProject(v === 'all' ? undefined : v)} value={selectedProject}>
                     <SelectTrigger><SelectValue placeholder="Filtrar por Obra" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todas las Obras</SelectItem>
-                        {projects?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        {projects?.map((p: Project) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
                 <Input
                     placeholder="Buscar por descripción..."
                     value={searchDescription}
-                    onChange={(e) => setSearchDescription(e.target.value)}
+                    onChange={(e: any) => setSearchDescription(e.target.value)}
                 />
                 {hasActiveFilters && (
                     <Button variant="ghost" onClick={resetFilters}>
@@ -174,7 +174,7 @@ export function TreasuryDashboard() {
               {!isLoading && filteredTransactions.length === 0 && (
                 <TableRow><TableCell colSpan={4} className="h-24 text-center">No se encontraron movimientos con los filtros aplicados.</TableCell></TableRow>
               )}
-              {filteredTransactions.map(tx => (
+              {filteredTransactions.map((tx: TreasuryTransaction) => (
                 <TableRow key={tx.id}>
                   <TableCell className="text-sm">{formatDate(tx.date)}</TableCell>
                   <TableCell>{accountsMap[tx.treasuryAccountId]}</TableCell>

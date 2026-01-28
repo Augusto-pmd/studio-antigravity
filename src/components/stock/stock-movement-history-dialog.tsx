@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useMemo } from "react";
 import {
@@ -74,7 +73,7 @@ export function StockMovementHistoryDialog({ item, children }: { item: StockItem
                     {!isLoading && movements?.length === 0 && (
                         <TableRow><TableCell colSpan={4} className="h-24 text-center">No hay movimientos registrados para este ítem.</TableCell></TableRow>
                     )}
-                    {movements?.map(mov => {
+                    {movements?.map((mov: StockMovement) => {
                         const isIngreso = mov.type === 'Ingreso';
                         return (
                             <TableRow key={mov.id}>

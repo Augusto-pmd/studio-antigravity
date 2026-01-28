@@ -88,7 +88,7 @@ export function UsersTable() {
                   <TableCell>
                     <div className="flex items-center gap-4">
                         <Avatar>
-                            <AvatarImage src={user.photoURL} />
+                            <AvatarImage src={user.photoURL ?? undefined} />
                             <AvatarFallback>{user.fullName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>

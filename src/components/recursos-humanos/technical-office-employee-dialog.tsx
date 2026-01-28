@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition, useMemo } from "react";
 import {
@@ -162,7 +162,7 @@ export function TechnicalOfficeEmployeeDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="position">Cargo</Label>
-            <Input id="position" value={position} onChange={e => setPosition(e.target.value)} placeholder="Ej. Proyectista, Jefe de Compras" />
+            <Input id="position" value={position} onChange={(e: any) => setPosition(e.target.value)} placeholder="Ej. Proyectista, Jefe de Compras" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="employmentType">Tipo de Contratación</Label>
@@ -180,7 +180,7 @@ export function TechnicalOfficeEmployeeDialog({
             <Label htmlFor="monthlySalary">
                 {employmentType === 'Relación de Dependencia' ? 'Salario Mensual Bruto (ARS)' : 'Honorarios Mensuales (ARS)'}
             </Label>
-            <Input id="monthlySalary" type="number" value={monthlySalary} onChange={e => setMonthlySalary(e.target.value)} placeholder="0.00" />
+            <Input id="monthlySalary" type="number" value={monthlySalary} onChange={(e: any) => setMonthlySalary(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>

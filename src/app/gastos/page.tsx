@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -75,18 +74,18 @@ export default function GastosPage() {
       return { summary: null, isLoading };
     }
 
-    const projectExpenses = allExpenses.filter(e => e.projectId === selectedProject);
+    const projectExpenses = allExpenses.filter((e: Expense) => e.projectId === selectedProject);
 
     const materialesCost = projectExpenses
-      .filter(e => e.categoryId === 'CAT-01')
+      .filter((e: Expense) => e.categoryId === 'CAT-01')
       .reduce((sum, e) => sum + (e.currency === 'USD' && e.exchangeRate ? e.amount * e.exchangeRate : e.amount), 0);
 
     const manoDeObraCost = projectExpenses
-      .filter(e => e.categoryId === 'CAT-02')
+      .filter((e: Expense) => e.categoryId === 'CAT-02')
       .reduce((sum, e) => sum + (e.currency === 'USD' && e.exchangeRate ? e.amount * e.exchangeRate : e.amount), 0);
       
-    const employeeSalaryMap = new Map(techOfficeEmployees.map(e => [e.userId, e.monthlySalary]));
-    const projectTimeLogs = allTimeLogs.filter(log => log.projectId === selectedProject);
+    const employeeSalaryMap = new Map(techOfficeEmployees.map((e: TechnicalOfficeEmployee) => [e.userId, e.monthlySalary]));
+    const projectTimeLogs = allTimeLogs.filter((log: TimeLog) => log.projectId === selectedProject);
 
     const horasOficinaTecnicaCost = projectTimeLogs.reduce((total, log) => {
         const salary = employeeSalaryMap.get(log.userId);
@@ -144,7 +143,7 @@ export default function GastosPage() {
                     {isLoadingProjects ? (
                         <SelectItem value="loading" disabled>Cargando...</SelectItem>
                     ) : (
-                        projects?.map((p) => (
+                        projects?.map((p: Project) => (
                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                         ))
                     )}
@@ -159,7 +158,7 @@ export default function GastosPage() {
                      {isLoadingSuppliers ? (
                         <SelectItem value="loading" disabled>Cargando...</SelectItem>
                     ) : (
-                        suppliers?.map((s) => (
+                        suppliers?.map((s: Supplier) => (
                             <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))
                     )}
@@ -171,7 +170,7 @@ export default function GastosPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todos los Rubros</SelectItem>
-                    {expenseCategories.map((c) => (
+                    {expenseCategories.map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                 </SelectContent>

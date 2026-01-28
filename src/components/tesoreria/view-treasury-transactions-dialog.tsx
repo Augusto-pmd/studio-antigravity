@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -16,13 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection } from "@/firebase";
 import { useFirestore } from "@/firebase";
 import type { TreasuryAccount, TreasuryTransaction } from "@/lib/types";
 import { collection, query, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { useMemo } from "react";
@@ -97,7 +97,7 @@ export function ViewTreasuryTransactionsDialog({ account, children }: { account:
                     {!isLoading && transactions?.length === 0 && (
                         <TableRow><TableCell colSpan={3} className="h-24 text-center">No hay movimientos registrados.</TableCell></TableRow>
                     )}
-                    {transactions?.map(tx => {
+                    {transactions?.map((tx: TreasuryTransaction) => {
                         const isIncome = tx.type === 'Ingreso';
                         return (
                             <TableRow key={tx.id}>

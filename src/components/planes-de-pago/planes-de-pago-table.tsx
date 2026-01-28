@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, CreditCard } from "lucide-react";
 import { parseISO, format as formatDateFns, differenceInDays, isBefore } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import { PlanDePagoDialog } from '@/components/planes-de-pago/plan-de-pago-dialog';
 import { PayInstallmentDialog } from '@/components/planes-de-pago/pay-installment-dialog';
 import { Progress } from '@/components/ui/progress';
@@ -40,7 +40,7 @@ const formatDate = (dateString?: string) => {
 export function PlanesDePagoTable() {
   const firestore = useFirestore();
   const planesQuery = useMemo(() => firestore ? query(collection(firestore, 'moratorias').withConverter(moratoriaConverter)) : null, [firestore]);
-  const { data: planes, isLoading } = useCollection(planesQuery);
+  const { data: planes, isLoading } = useCollection<Moratoria>(planesQuery);
 
   const getDueDateStatus = (dateString: string, status: Moratoria['status']) => {
     if (status !== 'Activa') return null;
@@ -87,7 +87,7 @@ export function PlanesDePagoTable() {
           {!isLoading && planes?.length === 0 && (
             <TableRow><TableCell colSpan={5} className="h-24 text-center">No hay planes de pago registrados.</TableCell></TableRow>
           )}
-          {planes?.map((plan) => {
+          {planes?.map((plan: Moratoria) => {
             const dueDateStatus = getDueDateStatus(plan.nextDueDate, plan.status);
             const progress = (plan.paidInstallments / plan.installments) * 100;
             return (

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useMemo } from "react";
 import {
@@ -123,7 +123,7 @@ export function PersonnelDialog({
                           No hay personal registrado para este contratista.
                         </TableCell>
                       </TableRow>
-                    ) : personnel?.map((person) => {
+                    ) : personnel?.map((person: ContractorEmployee) => {
                         const artStatus = getArtStatus(person.artExpiryDate);
                         return (
                         <TableRow key={person.id}>

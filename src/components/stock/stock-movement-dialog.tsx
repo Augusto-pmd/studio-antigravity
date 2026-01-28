@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -101,8 +101,8 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
             }
 
             newQuantity = item.quantity - moveQuantity;
-            const selectedAssignee = users?.find(u => u.id === assigneeId);
-            const selectedProject = projects?.find(p => p.id === projectId);
+            const selectedAssignee = users?.find((u: UserProfile) => u.id === assigneeId);
+            const selectedProject = projects?.find((p: Project) => p.id === projectId);
 
             newMovement = {
                 itemId: item.id,
@@ -167,7 +167,7 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
           </Alert>
           <div className="space-y-2">
             <Label htmlFor="quantity">Cantidad</Label>
-            <Input id="quantity" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0" />
+            <Input id="quantity" type="number" value={quantity} onChange={(e: any) => setQuantity(e.target.value)} placeholder="0" />
           </div>
           {movementType === 'Egreso' && (
             <>
@@ -176,7 +176,7 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
                 <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isLoadingUsers}>
                   <SelectTrigger id="assignee"><SelectValue placeholder="Asignar a..." /></SelectTrigger>
                   <SelectContent>
-                    {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+                    {users?.map((u: UserProfile) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -185,7 +185,7 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
                 <Select value={projectId} onValueChange={setProjectId} disabled={isLoadingProjects}>
                   <SelectTrigger id="project"><SelectValue placeholder="Seleccionar obra..." /></SelectTrigger>
                   <SelectContent>
-                    {projects?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    {projects?.map((p: Project) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -193,7 +193,7 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
           )}
           <div className="space-y-2">
             <Label htmlFor="notes">Notas (Opcional)</Label>
-            <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ej: Herramienta nueva, devolución por final de obra..." />
+            <Textarea id="notes" value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Ej: Herramienta nueva, devolución por final de obra..." />
           </div>
         </div>
         <DialogFooter>

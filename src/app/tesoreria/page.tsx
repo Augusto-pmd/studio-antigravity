@@ -15,7 +15,6 @@ export default function TesoreriaPage() {
               <p className="text-lg font-medium text-muted-foreground">Acceso Denegado</p>
               <p className="text-sm text-muted-foreground">No tienes permisos para acceder a esta sección.</p>
           </CardContent>
-      </Card>
     );
   }
 

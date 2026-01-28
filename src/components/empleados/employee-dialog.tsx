@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -148,47 +148,47 @@ export function EmployeeDialog({
             <Label htmlFor="name" className="text-right">
               Nombre
             </Label>
-            <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
+            <Input id="name" value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="email" className="text-right">
               Email
             </Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@ejemplo.com (opcional)" className="col-span-3" />
+            <Input id="email" type="email" value={email} onChange={(e: any) => setEmail(e.target.value)} placeholder="email@ejemplo.com (opcional)" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="phone" className="text-right">
               Teléfono
             </Label>
-            <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(Opcional)" className="col-span-3" />
+            <Input id="phone" value={phone} onChange={(e: any) => setPhone(e.target.value)} placeholder="(Opcional)" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="emergencyContactName" className="text-right">
               Contacto Emergencia
             </Label>
-            <Input id="emergencyContactName" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Nombre (opcional)" className="col-span-3" />
+            <Input id="emergencyContactName" value={emergencyContactName} onChange={(e: any) => setEmergencyContactName(e.target.value)} placeholder="Nombre (opcional)" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="emergencyContactPhone" className="text-right">
               Tel. Emergencia
             </Label>
-            <Input id="emergencyContactPhone" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="Teléfono (opcional)" className="col-span-3" />
+            <Input id="emergencyContactPhone" value={emergencyContactPhone} onChange={(e: any) => setEmergencyContactPhone(e.target.value)} placeholder="Teléfono (opcional)" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="category" className="text-right">
               Rubro
             </Label>
-            <Input id="category" value={category} onChange={e => setCategory(e.target.value)} placeholder="Ej. Albañil, Electricista" className="col-span-3" />
+            <Input id="category" value={category} onChange={(e: any) => setCategory(e.target.value)} placeholder="Ej. Albañil, Electricista" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="dailyWage" className="text-right">
               Salario Diario
             </Label>
-            <Input id="dailyWage" type="number" value={dailyWage} onChange={e => setDailyWage(e.target.value)} placeholder="ARS" className="col-span-3" />
+            <Input id="dailyWage" type="number" value={dailyWage} onChange={(e: any) => setDailyWage(e.target.value)} placeholder="ARS" className="col-span-3" />
           </div>
           
            <div className="grid grid-cols-4 items-start gap-4 pt-2">
