@@ -162,7 +162,7 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
 
 
   const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, i) => (
+    Array.from({ length: 3 }).map((_: any, i: number) => (
       <TableRow key={i}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell className='hidden sm:table-cell'><Skeleton className="h-5 w-32" /></TableCell>

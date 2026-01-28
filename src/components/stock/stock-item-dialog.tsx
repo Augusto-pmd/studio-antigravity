@@ -146,7 +146,7 @@ export function StockItemDialog({
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(cat => (
+                {categories.map((cat: StockItem['category']) => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>

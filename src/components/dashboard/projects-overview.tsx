@@ -49,7 +49,7 @@ export function ProjectsOverview() {
   const { data: activeProjects, isLoading } = useCollection<Project>(projectsQuery);
 
   const renderSkeleton = () => (
-    Array.from({ length: 2 }).map((_, i) => (
+    Array.from({ length: 2 }).map((_: any, i: number) => (
       <TableRow key={`skel-proj-${i}`}>
         <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -91,7 +91,7 @@ export function ProjectsOverview() {
                 </TableCell>
               </TableRow>
             )}
-            {!isLoading && activeProjects.map((project) => (
+            {!isLoading && activeProjects.map((project: Project) => (
               <TableRow key={project.id}>
                 <TableCell>
                   <div className="font-medium">{project.name}</div>

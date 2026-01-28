@@ -75,7 +75,7 @@ function MyTransactionsTable({ account }: { account: CashAccount }) {
                             </TableCell>
                         </TableRow>
                     )}
-                    {transactions?.map(tx => {
+                    {transactions?.map((tx: CashTransaction) => {
                         const isIncome = ['Ingreso', 'Refuerzo'].includes(tx.type);
                         return (
                             <TableRow key={tx.id}>
@@ -146,7 +146,7 @@ export function MyCashView() {
 
       {accounts && accounts.length > 0 ? (
         <Accordion type="single" collapsible className="w-full space-y-4">
-            {accounts.map(account => (
+            {accounts.map((account: CashAccount) => (
                 <Card key={account.id}>
                     <AccordionItem value={account.id} className="border-b-0">
                         <AccordionTrigger className="p-6 hover:no-underline">

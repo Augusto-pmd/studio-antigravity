@@ -69,7 +69,7 @@ export function CashAdvances({ currentWeek, isLoadingWeek }: { currentWeek?: Pay
   const isLoading = isLoadingWeek || isLoadingAdvances;
 
   const renderSkeleton = () => (
-    Array.from({ length: 2 }).map((_, i) => (
+    Array.from({ length: 2 }).map((_: any, i: number) => (
       <TableRow key={`skel-adv-${i}`}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>

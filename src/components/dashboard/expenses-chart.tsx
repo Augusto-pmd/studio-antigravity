@@ -80,7 +80,7 @@ export function ExpensesChart() {
             total: 0
         }));
 
-        expenses.forEach(expense => {
+        expenses.forEach((expense: Expense) => {
             const expenseDate = parseISO(expense.date);
             if (getYear(expenseDate) === currentYear) {
                 const monthIndex = getMonth(expenseDate);

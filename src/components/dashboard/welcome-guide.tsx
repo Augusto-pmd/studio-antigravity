@@ -63,7 +63,7 @@ export function WelcomeGuide() {
         </p>
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {guideItems.map((item) => (
+        {guideItems.map((item: any) => (
           <Link href={item.href} key={item.href} className="flex">
             <Card className="flex w-full flex-col transition-all hover:bg-muted/50 hover:shadow-lg">
               <CardHeader className="flex-row items-start gap-4">
