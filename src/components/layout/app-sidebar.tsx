@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
 import {
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useUser } from "@/firebase";
+import { useUser, useCollection } from "@/firebase";
 import {
   Building2,
   LayoutDashboard,
@@ -49,11 +50,12 @@ import {
   CalendarDays,
   Warehouse,
 } from "lucide-react";
-import type { Role } from "@/lib/types";
+import type { Role, TaskRequest } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getAuth, signOut } from 'firebase/auth';
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -111,11 +113,35 @@ const menuItems = [
   },
 ];
 
+const taskRequestConverter = {
+    toFirestore: (data: TaskRequest): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => ({ ...snapshot.data(options), id: snapshot.id } as TaskRequest)
+};
+
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, role, permissions, auth } = useUser();
+  const { user, role, permissions, auth, firestore } = useUser();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+
+  const pendingTasksQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    
+    const tasksCollection = collection(firestore, 'taskRequests').withConverter(taskRequestConverter);
+
+    if (permissions.canSupervise) {
+      return query(tasksCollection, where('status', '==', 'Pendiente'));
+    }
+    
+    return query(
+      tasksCollection,
+      where('assigneeId', '==', user.uid),
+      where('status', '==', 'Pendiente')
+    );
+  }, [user, firestore, permissions.canSupervise]);
+
+  const { data: pendingTasks } = useCollection<TaskRequest>(pendingTasksQuery);
+  const pendingTasksCount = pendingTasks?.length || 0;
   
   const handleLogout = async () => {
     if (!auth) return;
@@ -153,6 +179,8 @@ export function AppSidebar() {
                 return null;
               }
               
+              const isPedidos = item.href === "/pedidos-y-alertas";
+
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
@@ -163,6 +191,9 @@ export function AppSidebar() {
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
+                      {isPedidos && pendingTasksCount > 0 && (
+                        <SidebarMenuBadge>{pendingTasksCount}</SidebarMenuBadge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
