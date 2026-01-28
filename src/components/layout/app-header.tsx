@@ -5,6 +5,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
 import { Moon, Sun } from "lucide-react";
+import { EmergencyContacts } from "@/components/layout/emergency-contacts";
 
 export function AppHeader() {
   const { user } = useUser();
@@ -60,8 +61,8 @@ export function AppHeader() {
       
       {renderThemeButton()}
 
-      <div className="flex-1">
-        {/* Placeholder for potential breadcrumbs or page titles */}
+      <div className="flex flex-1 justify-center">
+        <EmergencyContacts />
       </div>
       <div className="flex items-center gap-4">
         {/* User menu is now only in the sidebar footer */}
