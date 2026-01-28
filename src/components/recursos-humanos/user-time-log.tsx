@@ -49,8 +49,21 @@ const projectConverter = {
 };
 
 const timeLogConverter = {
-    toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
+    toFirestore: (data: TimeLog): DocumentData => {
+        const { id, ...rest } = data;
+        return rest;
+    },
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            userId: data.userId,
+            date: data.date,
+            projectId: data.projectId,
+            hours: data.hours,
+            description: data.description,
+        };
+    }
 };
 
 export function UserTimeLog() {
@@ -99,13 +112,13 @@ export function UserTimeLog() {
     if (!monthlyLogs || !projects) return [];
 
     const summary = new Map<string, number>();
-    monthlyLogs.forEach(log => {
+    monthlyLogs.forEach((log: TimeLog) => {
         const currentHours = summary.get(log.projectId) || 0;
-        summary.set(log.projectId, currentHours + log.hours);
+        summary.set(log.projectId, currentHours + Number(log.hours || 0));
     });
 
     return Array.from(summary.entries()).map(([projectId, hours]) => {
-        const project = projects.find(p => p.id === projectId);
+        const project = projects.find((p: Project) => p.id === projectId);
         return {
             projectId,
             projectName: project?.name || 'Obra Desconocida',
@@ -117,7 +130,7 @@ export function UserTimeLog() {
   
   const totalMonthlyHours = useMemo(() => {
     if (!monthlyLogs) return 0;
-    return monthlyLogs.reduce((sum, log) => sum + log.hours, 0);
+    return monthlyLogs.reduce((sum, log) => sum + Number(log.hours || 0), 0);
   }, [monthlyLogs]);
   // --- End Monthly Summary Data ---
 
@@ -133,7 +146,7 @@ export function UserTimeLog() {
     if (existingLogs) {
       if (existingLogs.length > 0) {
         setTimeLogEntries(
-          existingLogs.map((log) => ({
+          existingLogs.map((log: TimeLog) => ({
             id: log.id,
             projectId: log.projectId,
             hours: log.hours.toString(),
@@ -188,7 +201,7 @@ export function UserTimeLog() {
         const batch = writeBatch(firestore);
 
         // 2. Schedule them for deletion
-        docsToDeleteSnap.forEach(document => {
+        docsToDeleteSnap.forEach((document: any) => {
             batch.delete(document.ref);
         });
 
@@ -245,7 +258,7 @@ export function UserTimeLog() {
                     </PopoverContent>
                     </Popover>
                     <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1 flex-wrap">
-                    {isClient && weekDays.map(day => (
+                    {isClient && weekDays.map((day: Date) => (
                         <Button
                         key={day.toISOString()}
                         variant={selectedDate && isSameDay(day, selectedDate) ? 'default' : 'ghost'}
@@ -311,7 +324,7 @@ export function UserTimeLog() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                            monthlySummary.map(summary => (
+                            monthlySummary.map((summary: any) => (
                                 <TableRow key={summary.projectId}>
                                     <TableCell className="font-medium">{summary.projectName}</TableCell>
                                     <TableCell className="text-right font-mono">{summary.totalHours}</TableCell>
@@ -348,7 +361,7 @@ export function UserTimeLog() {
                                             <SelectValue placeholder="Seleccione una obra" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                        {projects?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        {projects?.map((p: Project) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -392,3 +405,5 @@ export function UserTimeLog() {
     </div>
   );
 }
+
+    

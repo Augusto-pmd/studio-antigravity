@@ -20,10 +20,11 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const data = snapshot.docs.map((doc: QueryDocumentSnapshot<T>) => ({
-          ...doc.data(),
-          id: doc.id,
-        }));
+        const data = snapshot.docs.map((doc: QueryDocumentSnapshot<T>) => {
+          // The converter should handle the data typing, but we explicitly
+          // spread and add the ID to ensure it's always present.
+          return { ...doc.data(), id: doc.id }
+        });
         setData(data);
         setIsLoading(false);
         setError(null);
@@ -40,3 +41,5 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
 
   return { data, isLoading, error };
 }
+
+    
