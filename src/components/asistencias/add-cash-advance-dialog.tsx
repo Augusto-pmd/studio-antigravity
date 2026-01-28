@@ -54,6 +54,11 @@ const employeeConverter = {
             category: data.category,
             dailyWage: data.dailyWage,
             artExpiryDate: data.artExpiryDate,
+            documents: data.documents,
+            email: data.email,
+            phone: data.phone,
+            emergencyContactName: data.emergencyContactName,
+            emergencyContactPhone: data.emergencyContactPhone,
         };
     }
 };

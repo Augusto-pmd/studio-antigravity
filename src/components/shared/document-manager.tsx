@@ -1,132 +1,70 @@
 "use client";
 
-import { useState, ChangeEvent, useEffect } from "react";
+import { useState, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Upload, Trash2, Link as LinkIcon } from "lucide-react";
-import { useUser, useFirestore, useFirebaseApp } from "@/firebase";
-import { doc, updateDoc, deleteField } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { useToast } from "@/hooks/use-toast";
+import { Loader2, Upload, Trash2, Link as LinkIcon, FileText } from "lucide-react";
+import type { DocumentRecord } from "@/lib/types";
+import { format, parseISO } from "date-fns";
+import { es } from 'date-fns/locale';
 
 interface DocumentManagerProps {
     title: string;
-    docPath: string; // e.g. "employees/employeeId123"
-    storagePath: string; // e.g. "employee-documents/employeeId123"
-    fieldName: string; // e.g. "accidentInsuranceUrl"
-    currentUrl?: string;
+    documents: DocumentRecord[];
+    onUpload: (file: File) => Promise<void>;
+    onDelete: (document: DocumentRecord) => Promise<void>;
+    isUploading: boolean;
+    isDeleting: string | null; // ID of the document being deleted
 }
 
-export function DocumentManager({ title, docPath, storagePath, fieldName, currentUrl: initialUrl }: DocumentManagerProps) {
+export function DocumentManager({ title, documents, onUpload, onDelete, isUploading, isDeleting }: DocumentManagerProps) {
     const [file, setFile] = useState<File | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [currentUrl, setCurrentUrl] = useState(initialUrl);
-
-    useEffect(() => {
-        setCurrentUrl(initialUrl);
-    }, [initialUrl]);
-
-    const { firestore } = useUser();
-    const firebaseApp = useFirebaseApp();
-    const { toast } = useToast();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setFile(e.target.files?.[0] || null);
+        const selectedFile = e.target.files?.[0] || null;
+        setFile(selectedFile);
     };
 
-    const handleUpload = async () => {
-        if (!file || !firestore || !firebaseApp) return;
-
-        setIsUploading(true);
-        const storage = getStorage(firebaseApp);
-        // Use the original file name to avoid overwriting and create a unique path
-        const fullStoragePath = `${storagePath}/${file.name}`;
-        const storageRef = ref(storage, fullStoragePath);
-
-        try {
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
-            const docRef = doc(firestore, docPath);
-            await updateDoc(docRef, { [fieldName]: downloadURL });
-            
-            setCurrentUrl(downloadURL);
-            setFile(null);
-            toast({ title: "Documento Subido", description: `${title} ha sido guardado.` });
-
-        } catch (error: any) {
-            console.error("Upload error:", error);
-            let description = "No se pudo subir el documento. Revisa tu conexión a internet.";
-            if (error.code === 'storage/unauthorized') {
-                description = "No tienes permisos para subir archivos. Es probable que las reglas de Firebase Storage necesiten ser ajustadas.";
-            }
-            toast({ variant: 'destructive', title: "Error al subir", description });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-    
-    const handleDelete = async () => {
-        if (!currentUrl || !firestore || !firebaseApp) return;
-
-        setIsDeleting(true);
-        const storage = getStorage(firebaseApp);
-        
-        try {
-            // This will fail if the rules are not set correctly, but we proceed to delete from DB anyway.
-            const storageRef = ref(storage, currentUrl);
-            await deleteObject(storageRef);
-        } catch (error: any) {
-            // If the file doesn't exist in storage (e.g. deleted manually), we can still proceed
-            // to delete the reference from Firestore. We only log other errors.
-            if (error.code !== 'storage/object-not-found') {
-                 console.error("Delete from storage error:", error);
-                 toast({ variant: 'destructive', title: "Error al borrar", description: "No se pudo borrar el archivo del almacenamiento." });
-                 setIsDeleting(false);
-                 return;
-            }
-        }
-        
-        try {
-            const docRef = doc(firestore, docPath);
-            await updateDoc(docRef, { [fieldName]: deleteField() });
-            setCurrentUrl(undefined);
-            setFile(null);
-            toast({ title: "Documento Eliminado" });
-        } catch (error) {
-            console.error("Delete from firestore error:", error);
-            toast({ variant: 'destructive', title: "Error al borrar", description: "No se pudo borrar la referencia del documento." });
-        } finally {
-            setIsDeleting(false);
-        }
+    const handleUploadClick = async () => {
+        if (!file) return;
+        await onUpload(file);
+        setFile(null); // Clear file input after upload
     };
 
     return (
         <div className="space-y-3 rounded-lg border p-4">
             <h4 className="font-medium">{title}</h4>
-            {currentUrl ? (
-                <div className="flex items-center justify-between">
-                    <Button asChild variant="link" className="p-0 h-auto">
-                        <a href={currentUrl} target="_blank" rel="noopener noreferrer" download>
-                            <LinkIcon className="mr-2 h-4 w-4" />
-                            Ver / Descargar Documento
-                        </a>
-                    </Button>
-                    <Button onClick={handleDelete} variant="destructive" size="sm" disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Borrar
-                    </Button>
-                </div>
-            ) : (
-                <div className="flex items-center gap-2">
-                    <Input type="file" onChange={handleFileChange} className="flex-1" />
-                    <Button onClick={handleUpload} disabled={!file || isUploading} size="sm">
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        Subir
-                    </Button>
-                </div>
-            )}
+            <div className="space-y-2">
+                {documents.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between rounded-md border bg-muted/50 p-2 text-sm">
+                        <div className="flex items-center gap-2 truncate">
+                           <FileText className="h-4 w-4 shrink-0"/>
+                           <div className="truncate">
+                             <a href={doc.url} target="_blank" rel="noopener noreferrer" className="truncate font-medium hover:underline">{doc.fileName}</a>
+                             <p className="text-xs text-muted-foreground">Subido el {format(parseISO(doc.uploadedAt), 'dd/MM/yyyy', { locale: es })}</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center">
+                            <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                                <a href={doc.url} target="_blank" rel="noopener noreferrer" download={doc.fileName}><LinkIcon className="h-4 w-4" /></a>
+                            </Button>
+                            <Button onClick={() => onDelete(doc)} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={isDeleting === doc.id}>
+                                {isDeleting === doc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+                {documents.length === 0 && (
+                    <p className="text-xs text-muted-foreground px-2">No hay documentos para esta categoría.</p>
+                )}
+            </div>
+             <div className="flex items-center gap-2 pt-2 border-t">
+                <Input type="file" onChange={handleFileChange} className="flex-1 h-9 text-xs" />
+                <Button onClick={handleUploadClick} disabled={!file || isUploading} size="sm">
+                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    Subir
+                </Button>
+            </div>
         </div>
     );
 }

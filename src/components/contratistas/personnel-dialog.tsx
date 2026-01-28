@@ -59,7 +59,13 @@ const getArtStatus = (dateString?: string): { variant: 'destructive' | 'warning'
 
 const contractorEmployeeConverter = {
     toFirestore: (data: ContractorEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => ({ ...snapshot.data(options), id: snapshot.id } as ContractorEmployee)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => ({
+        id: snapshot.id,
+        name: snapshot.data().name,
+        contractorId: snapshot.data().contractorId,
+        artExpiryDate: snapshot.data().artExpiryDate,
+        documents: snapshot.data().documents || [],
+    } as ContractorEmployee)
 };
 
 export function PersonnelDialog({

@@ -69,8 +69,9 @@ const employeeConverter = {
             category: data.category || 'N/A',
             dailyWage: data.dailyWage || 0,
             artExpiryDate: data.artExpiryDate || undefined,
-            accidentInsuranceUrl: data.accidentInsuranceUrl || undefined,
-            criminalRecordUrl: data.criminalRecordUrl || undefined,
+            documents: data.documents || [],
+            emergencyContactName: data.emergencyContactName,
+            emergencyContactPhone: data.emergencyContactPhone,
         };
     }
 };

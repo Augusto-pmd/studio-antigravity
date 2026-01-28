@@ -91,13 +91,20 @@ export interface Contractor {
   artExpiryDate?: string;
 }
 
+export interface DocumentRecord {
+    id: string;
+    type: string;
+    fileName: string;
+    url: string;
+    uploadedAt: string;
+}
+
 export interface ContractorEmployee {
     id: string;
     name: string;
     contractorId: string;
     artExpiryDate?: string;
-    accidentInsuranceUrl?: string;
-    criminalRecordUrl?: string;
+    documents?: DocumentRecord[];
 }
 
 export interface Employee {
@@ -112,8 +119,7 @@ export interface Employee {
     category: string;
     dailyWage: number;
     artExpiryDate?: string;
-    accidentInsuranceUrl?: string;
-    criminalRecordUrl?: string;
+    documents?: DocumentRecord[];
 }
 
 export interface Asset {
