@@ -83,8 +83,8 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
         }
     };
 
-    const accidentInsuranceDocs = displayPersonnel.documents?.filter(doc => doc.type === 'accidentInsurance') || [];
-    const criminalRecordDocs = displayPersonnel.documents?.filter(doc => doc.type === 'criminalRecord') || [];
+    const accidentInsuranceDocs = displayPersonnel.documents?.filter((doc: any) => doc.type === 'accidentInsurance') || [];
+    const criminalRecordDocs = displayPersonnel.documents?.filter((doc: any) => doc.type === 'criminalRecord') || [];
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
