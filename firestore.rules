@@ -7,21 +7,24 @@ service cloud.firestore {
     }
     
     function isDirector() {
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isSignedIn() &&
          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Dirección';
+         userRole == 'Dirección';
     }
     
     function isAdmin() {
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isSignedIn() &&
          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración'];
+         (userRole == 'Dirección' || userRole == 'Administración');
     }
 
     function canManageSales() {
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración', 'Supervisor'];
+        (userRole == 'Dirección' || userRole == 'Administración' || userRole == 'Supervisor');
     }
 
     match /users/{userId} {
