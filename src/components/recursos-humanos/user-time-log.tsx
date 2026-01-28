@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useTransition } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,7 +26,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUser, useCollection } from '@/firebase';
-import { collection, doc, query, where, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { collection, doc, query, where, writeBatch, getDocs, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Project, TimeLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save, PlusCircle, Trash2, Loader2 } from 'lucide-react';
@@ -56,27 +56,26 @@ const timeLogConverter = {
 export function UserTimeLog() {
   const { user, firestore } = useUser();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [timeLogEntries, setTimeLogEntries] = useState<TimeLogEntry[]>([]);
   const [isClient, setIsClient] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const projectsQuery = useMemo(() => (firestore ? query(collection(firestore, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso')) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const formattedDate = useMemo(() => selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, [selectedDate]);
+  const formattedDate = useMemo(() => format(selectedDate, 'yyyy-MM-dd'), [selectedDate]);
   
   const timeLogsQuery = useMemo(
-    () => (user && firestore && formattedDate ? query(collection(firestore, 'timeLogs').withConverter(timeLogConverter), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
+    () => (user && firestore ? query(collection(firestore, 'timeLogs').withConverter(timeLogConverter), where('userId', '==', user.uid), where('date', '==', formattedDate)) : null),
     [user, firestore, formattedDate]
   );
   const { data: existingLogs, isLoading: isLoadingExistingLogs } = useCollection<TimeLog>(timeLogsQuery);
 
   // --- Monthly Summary Data ---
   const { monthStart, monthEnd, currentMonthName } = useMemo(() => {
-    const referenceDate = selectedDate || new Date();
+    const referenceDate = selectedDate;
     return {
         monthStart: format(startOfMonth(referenceDate), 'yyyy-MM-dd'),
         monthEnd: format(endOfMonth(referenceDate), 'yyyy-MM-dd'),
@@ -91,7 +90,7 @@ export function UserTimeLog() {
           where('date', '>=', monthStart),
           where('date', '<=', monthEnd)
       ) : null),
-      [user, firestore, monthStart, monthEnd, refreshKey]
+      [user, firestore, monthStart, monthEnd]
   );
 
   const { data: monthlyLogs, isLoading: isLoadingMonthlyLogs } = useCollection<TimeLog>(monthlyLogsQuery);
@@ -128,6 +127,7 @@ export function UserTimeLog() {
   
   useEffect(() => {
     if (isLoadingExistingLogs) {
+      // While loading, don't change the current entries to prevent flickering
       return;
     }
     if (existingLogs) {
@@ -140,6 +140,7 @@ export function UserTimeLog() {
           }))
         );
       } else {
+        // If no logs exist for the selected date, clear the entries
         setTimeLogEntries([]);
       }
     }
@@ -147,7 +148,6 @@ export function UserTimeLog() {
 
 
   const weekDays = useMemo(() => {
-    if (!selectedDate) return [];
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [selectedDate]);
@@ -166,9 +166,9 @@ export function UserTimeLog() {
     setTimeLogEntries(timeLogEntries.map(entry => entry.id === id ? { ...entry, [field]: value } : entry));
   };
 
-  const handleSaveLogs = () => {
-    if (!firestore || !user || !selectedDate) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos o la fecha no es válida.' });
+  const handleSaveLogs = useCallback(async () => {
+    if (!firestore || !user) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
     if (timeLogEntries.some(entry => !entry.projectId || !entry.hours || Number(entry.hours) <= 0)) {
@@ -176,22 +176,29 @@ export function UserTimeLog() {
         return;
     }
     
-    const currentFormattedDate = format(selectedDate, 'yyyy-MM-dd');
+    setIsSaving(true);
+    try {
+        const dateToSave = format(selectedDate, 'yyyy-MM-dd');
+        
+        // 1. Find all existing documents for this user and day inside this function
+        const logsCollectionRef = collection(firestore, 'timeLogs');
+        const q = query(logsCollectionRef, where('userId', '==', user.uid), where('date', '==', dateToSave));
+        const docsToDeleteSnap = await getDocs(q);
 
-    startTransition(async () => {
-      try {
         const batch = writeBatch(firestore);
 
-        existingLogs?.forEach(log => {
-          batch.delete(doc(firestore, 'timeLogs', log.id));
+        // 2. Schedule them for deletion
+        docsToDeleteSnap.forEach(document => {
+            batch.delete(document.ref);
         });
 
+        // 3. Schedule new ones for creation from UI state
         timeLogEntries.forEach(entry => {
           if (entry.projectId && Number(entry.hours) > 0) {
-            const docRef = doc(collection(firestore, 'timeLogs'));
+            const docRef = doc(logsCollectionRef);
             const logData: Omit<TimeLog, 'id'> = {
               userId: user.uid,
-              date: currentFormattedDate,
+              date: dateToSave,
               projectId: entry.projectId,
               hours: Number(entry.hours),
             };
@@ -199,16 +206,17 @@ export function UserTimeLog() {
           }
         });
 
+        // 4. Commit all changes at once
         await batch.commit();
 
-        toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy')}.` });
-        setRefreshKey(oldKey => oldKey + 1);
+        toast({ title: 'Horas Guardadas', description: `Se han guardado ${totalHours} horas para el día ${format(selectedDate, 'dd/MM/yyyy', { locale: es })}.` });
       } catch (error) {
-        console.error("Error writing to Firestore:", error);
-        toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros de horas. Es posible que no tengas permisos.' });
+        console.error("Error saving time logs:", error);
+        toast({ variant: 'destructive', title: 'Error al Guardar', description: 'No se pudieron guardar los registros. Es posible que no tengas permisos.' });
+      } finally {
+        setIsSaving(false);
       }
-    });
-  }
+  }, [firestore, user, selectedDate, timeLogEntries, toast, totalHours]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -229,7 +237,7 @@ export function UserTimeLog() {
                         className={cn('w-full sm:w-[240px] justify-start text-left font-normal',!selectedDate && 'text-muted-foreground')}
                         >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Cargando...</span>}
+                        {isClient ? format(selectedDate, 'PPP', { locale: es }) : <span>Cargando...</span>}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -365,7 +373,7 @@ export function UserTimeLog() {
                             No hay horas cargadas para este día.
                         </div>
                     )}
-                     <Button variant="outline" onClick={addEntry} className="w-full" disabled={!selectedDate}>
+                     <Button variant="outline" onClick={addEntry} className="w-full">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Añadir Entrada
                     </Button>
@@ -375,8 +383,8 @@ export function UserTimeLog() {
                 <div className="text-lg">
                     Total de Horas: <span className="font-bold font-mono">{totalHours}</span>
                 </div>
-                <Button onClick={handleSaveLogs} disabled={isPending || isLoadingExistingLogs}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                <Button onClick={handleSaveLogs} disabled={isSaving || isLoadingExistingLogs}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Guardar Horas
                 </Button>
             </CardFooter>
