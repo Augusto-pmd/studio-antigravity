@@ -40,7 +40,7 @@ export function FirebaseProvider({ children, firebaseApp, auth, firestore }: Fir
     const canValidate = role === 'Dirección' || role === 'Administración';
     const canSupervise = role === 'Dirección' || role === 'Supervisor' || role === 'Administración';
     const canLoadExpenses = role === 'Dirección' || role === 'Administración' || role === 'Supervisor' || role === 'Operador';
-    const canManageProjects = role === 'Dirección' || role === 'Administración' || role === 'Supervisor' || role === 'Operador';
+    const canManageProjects = !!role;
     const canManageStock = !!role;
     const canManageSales = role === 'Dirección' || role === 'Administración' || role === 'Operador';
     return { isSuperAdmin, canValidate, canLoadExpenses, canManageProjects, canSupervise, canManageStock, canManageSales };
