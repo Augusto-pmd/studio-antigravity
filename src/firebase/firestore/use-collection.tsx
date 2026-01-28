@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onSnapshot, type Query, type DocumentData } from 'firebase/firestore';
+import { onSnapshot, type Query, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
 
 export function useCollection<T extends DocumentData>(q: Query<T> | null) {
   const [data, setData] = useState<T[]>([]);
@@ -20,7 +20,7 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
+        const data = snapshot.docs.map((doc: QueryDocumentSnapshot<T>) => ({
           ...doc.data(),
           id: doc.id,
         }));
