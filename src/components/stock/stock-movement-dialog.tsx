@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,8 +26,7 @@ import { useUser, useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, writeBatch, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { StockItem, StockMovement, UserProfile, Project } from "@/lib/types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TriangleAlert } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const userProfileConverter = {
     toFirestore: (data: UserProfile): DocumentData => data,
@@ -46,7 +45,7 @@ interface StockMovementDialogProps {
 
 export function StockMovementDialog({ item, movementType, children }: StockMovementDialogProps) {
   const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const { user, firestore } = useUser();
   const { toast } = useToast();
 
@@ -72,7 +71,7 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
     if (open) resetForm();
   }, [open]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !user) return toast({ variant: 'destructive', title: 'Error de autenticación.' });
     
     const moveQuantity = parseInt(quantity, 10);
@@ -89,7 +88,8 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
       }
     }
 
-    startTransition(() => {
+    setIsPending(true);
+    try {
       const batch = writeBatch(firestore);
       const stockItemRef = doc(firestore, 'stockItems', item.id);
       const movementRef = doc(collection(firestore, `stockItems/${item.id}/movements`));
@@ -118,16 +118,16 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
       };
       batch.set(movementRef, newMovement);
 
-      batch.commit()
-        .then(() => {
-          toast({ title: 'Movimiento Registrado', description: `El stock de "${item.name}" ha sido actualizado.` });
-          setOpen(false);
-        })
-        .catch(error => {
-          console.error("Error committing batch:", error);
-          toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el movimiento.' });
-        });
-    });
+      await batch.commit();
+
+      toast({ title: 'Movimiento Registrado', description: `El stock de "${item.name}" ha sido actualizado.` });
+      setOpen(false);
+    } catch (error) {
+      console.error("Error committing batch:", error);
+      toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el movimiento.' });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
