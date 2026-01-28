@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useTransition } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +91,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
   const [open, setOpen] = useState(false);
   const { firestore } = useUser();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   // FORM STATE
   const [date, setDate] = useState<Date | undefined>();
@@ -123,7 +123,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
     }
   }, [open]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!firestore || !currentWeek) {
         toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
         return;
@@ -133,14 +133,15 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
         return;
     }
 
-    startTransition(() => {
-      const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
-      const selectedProject = projects?.find(p => p.id === selectedProjectId);
+    const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId);
+    if (!selectedEmployee) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
+        return;
+    }
 
-      if (!selectedEmployee) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
-          return;
-      }
+    setIsPending(true);
+    try {
+      const selectedProject = projects?.find(p => p.id === selectedProjectId);
 
       const advancesCollection = collection(firestore, 'cashAdvances');
       const advanceRef = doc(advancesCollection);
@@ -158,23 +159,23 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
           reason: reason || undefined,
       };
 
-      setDoc(advanceRef, newAdvance, { merge: false })
-        .then(() => {
-            toast({
-                title: 'Adelanto Registrado',
-                description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
-            });
-            setOpen(false);
-        })
-        .catch((error) => {
-            console.error("Error writing to Firestore:", error);
-            toast({
-                variant: "destructive",
-                title: "Error al guardar",
-                description: "No se pudo guardar el adelanto. Es posible que no tengas permisos.",
-            });
+      await setDoc(advanceRef, newAdvance);
+
+      toast({
+          title: 'Adelanto Registrado',
+          description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
+      });
+      setOpen(false);
+    } catch (error) {
+        console.error("Error writing to Firestore:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al guardar",
+            description: "No se pudo guardar el adelanto. Es posible que no tengas permisos.",
         });
-    });
+    } finally {
+        setIsPending(false);
+    }
   };
 
   return (
