@@ -65,9 +65,9 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
 
         setDeletingDocId(documentToDelete.id);
         const storage = getStorage(firebaseApp);
-        const storageRef = ref(storage, documentToDelete.url);
 
         try {
+            const storageRef = ref(storage, documentToDelete.url);
             await updateDoc(personnelRef, {
                 documents: arrayRemove(documentToDelete)
             });
@@ -107,16 +107,16 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
                       <DocumentManager
                         title="Seguro de Accidentes Personales"
                         documents={accidentInsuranceDocs}
-                        onUpload={(file) => { handleUpload(file, 'accidentInsurance'); } }
-                        onDelete={handleDelete}
+                        onUpload={(file: File) => { handleUpload(file, 'accidentInsurance'); } }
+                        onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
                         isUploading={isUploading}
                         isDeleting={deletingDocId}
                       />
                       <DocumentManager
                         title="Antecedentes Penales"
                         documents={criminalRecordDocs}
-                        onUpload={(file) => { handleUpload(file, 'criminalRecord'); } }
-                        onDelete={handleDelete}
+                        onUpload={(file: File) => { handleUpload(file, 'criminalRecord'); } }
+                        onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
                         isUploading={isUploading}
                         isDeleting={deletingDocId}
                       />

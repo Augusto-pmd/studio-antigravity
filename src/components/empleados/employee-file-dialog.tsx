@@ -113,16 +113,16 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
                         <DocumentManager
                             title="Seguro de Accidentes Personales"
                             documents={accidentInsuranceDocs}
-                            onUpload={(file) => { handleUpload(file, 'accidentInsurance'); } }
-                            onDelete={handleDelete}
+                            onUpload={(file: File) => { handleUpload(file, 'accidentInsurance'); } }
+                            onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
                             isUploading={isUploading}
                             isDeleting={deletingDocId}
                         />
                         <DocumentManager
                             title="Antecedentes Penales"
                             documents={criminalRecordDocs}
-                            onUpload={(file) => { handleUpload(file, 'criminalRecord'); } }
-                            onDelete={handleDelete}
+                            onUpload={(file: File) => { handleUpload(file, 'criminalRecord'); } }
+                            onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
                             isUploading={isUploading}
                             isDeleting={deletingDocId}
                         />
