@@ -78,55 +78,73 @@ export function StockMovementDialog({ item, movementType, children }: StockMovem
     if (isNaN(moveQuantity) || moveQuantity <= 0) {
       return toast({ variant: 'destructive', title: 'Cantidad no válida', description: 'La cantidad debe ser un número mayor a cero.' });
     }
-
-    if (movementType === 'Egreso') {
-      if (moveQuantity > item.quantity) {
-        return toast({ variant: 'destructive', title: 'Stock insuficiente', description: `No puede dar salida a más de ${item.quantity} unidades.` });
-      }
-      if (!assigneeId || !projectId) {
-        return toast({ variant: 'destructive', title: 'Campos requeridos', description: 'Debe seleccionar un responsable y una obra para la salida.' });
-      }
-    }
-
+    
     setIsPending(true);
     try {
-      const batch = writeBatch(firestore);
-      const stockItemRef = doc(firestore, 'stockItems', item.id);
-      const movementRef = doc(collection(firestore, `stockItems/${item.id}/movements`));
-      
-      const newQuantity = movementType === 'Ingreso' ? item.quantity + moveQuantity : item.quantity - moveQuantity;
-      
-      batch.update(stockItemRef, {
-        quantity: newQuantity,
-        lastUpdated: new Date().toISOString(),
-      });
+        const batch = writeBatch(firestore);
+        const stockItemRef = doc(firestore, 'stockItems', item.id);
+        const movementRef = doc(collection(firestore, `stockItems/${item.id}/movements`));
+        
+        let newQuantity;
+        let newMovement: Omit<StockMovement, 'id'>;
 
-      const selectedAssignee = users?.find(u => u.id === assigneeId);
-      const selectedProject = projects?.find(p => p.id === projectId);
+        if (movementType === 'Egreso') {
+            if (moveQuantity > item.quantity) {
+                toast({ variant: 'destructive', title: 'Stock insuficiente', description: `No puede dar salida a más de ${item.quantity} unidades.` });
+                setIsPending(false);
+                return;
+            }
+            if (!assigneeId || !projectId) {
+                toast({ variant: 'destructive', title: 'Campos requeridos', description: 'Debe seleccionar un responsable y una obra para la salida.' });
+                setIsPending(false);
+                return;
+            }
 
-      const newMovement: Omit<StockMovement, 'id'> = {
-        itemId: item.id,
-        type: movementType,
-        quantity: moveQuantity,
-        date: new Date().toISOString(),
-        userId: user.uid,
-        assigneeId: selectedAssignee?.id,
-        assigneeName: selectedAssignee?.fullName,
-        projectId: selectedProject?.id,
-        projectName: selectedProject?.name,
-        notes: notes || undefined,
-      };
-      batch.set(movementRef, newMovement);
+            newQuantity = item.quantity - moveQuantity;
+            const selectedAssignee = users?.find(u => u.id === assigneeId);
+            const selectedProject = projects?.find(p => p.id === projectId);
 
-      await batch.commit();
+            newMovement = {
+                itemId: item.id,
+                type: 'Egreso',
+                quantity: moveQuantity,
+                date: new Date().toISOString(),
+                userId: user.uid,
+                assigneeId: selectedAssignee?.id,
+                assigneeName: selectedAssignee?.fullName,
+                projectId: selectedProject?.id,
+                projectName: selectedProject?.name,
+                notes: notes || undefined,
+            };
 
-      toast({ title: 'Movimiento Registrado', description: `El stock de "${item.name}" ha sido actualizado.` });
-      setOpen(false);
+        } else { // Ingreso
+            newQuantity = item.quantity + moveQuantity;
+            newMovement = {
+                itemId: item.id,
+                type: 'Ingreso',
+                quantity: moveQuantity,
+                date: new Date().toISOString(),
+                userId: user.uid,
+                notes: notes || undefined,
+            };
+        }
+        
+        batch.update(stockItemRef, {
+            quantity: newQuantity,
+            lastUpdated: new Date().toISOString(),
+        });
+        batch.set(movementRef, newMovement);
+
+        await batch.commit();
+
+        toast({ title: 'Movimiento Registrado', description: `El stock de "${item.name}" ha sido actualizado.` });
+        setOpen(false);
+
     } catch (error) {
-      console.error("Error committing batch:", error);
-      toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el movimiento.' });
+        console.error("Error committing batch:", error);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo registrar el movimiento.' });
     } finally {
-      setIsPending(false);
+        setIsPending(false);
     }
   };
 
