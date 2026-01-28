@@ -12,7 +12,7 @@ import { CashAdvances } from '@/components/asistencias/cash-advances';
 import { DailyAttendance } from '@/components/asistencias/daily-attendance';
 import { WeeklyPaymentSummary } from '@/components/pago-semanal/weekly-payment-summary';
 import { ContractorCertifications } from '@/components/pago-semanal/contractor-certifications';
-import { parseISO, format } from 'date-fns';
+import { parseISO, format, addDays } from 'date-fns';
 
 const fundRequestConverter = {
     toFirestore(request: FundRequest): DocumentData {
@@ -76,14 +76,17 @@ export default function PagoSemanalPage() {
         // Filter by date range of the current week if it exists
         if(currentWeek) {
             const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-            const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
-            q = query(q, and(where('date', '>=', startDate), where('date', '<=', endDate)));
+            const nextDayOfEndDate = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
+            q = query(q, where('date', '>=', startDate), where('date', '<', nextDayOfEndDate));
         }
 
         // Admins see all, others see their own
         if (!isAdmin && user) {
           q = query(q, where('requesterId', '==', user.uid));
         }
+        
+        q = query(q, orderBy('date', 'desc'));
+
 
         return q;
       }, [firestore, user, isAdmin, currentWeek]);
