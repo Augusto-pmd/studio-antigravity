@@ -18,6 +18,12 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración'];
     }
 
+    function canManageSales() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración', 'Supervisor'];
+    }
+
     match /users/{userId} {
       allow read, write: if true;
       
@@ -31,13 +37,13 @@ service cloud.firestore {
     }
 
     match /projects/{projectId} {
-      allow read, write: if true;
+      allow read, write: if canManageSales();
 
       match /sales/{saleId} {
-        allow read, write: if true;
+        allow read, write: if canManageSales();
       }
       match /contracts/{contractId} {
-        allow read, write: if true;
+        allow read, write: if canManageSales();
       }
     }
 
