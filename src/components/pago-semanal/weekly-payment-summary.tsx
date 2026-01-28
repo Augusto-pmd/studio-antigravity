@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, and } from 'firebase/firestore';
+import { collection, query, where, and, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,55 +27,58 @@ const projectConverter = { toFirestore: (data: any): DocumentData => data, fromF
 export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
     const firestore = useFirestore();
 
-    const { weekStart, weekEnd } = useMemo(() => {
-        if (!currentWeek) return { weekStart: null, weekEnd: null };
-        // Firestore date ranges are exclusive on the end date, so we add a day.
-        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-        const endDate = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
-        return { weekStart: startDate, weekEnd: endDate };
-    }, [currentWeek]);
-
-
     const { data: attendances, isLoading: l1 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
     const { data: advances, isLoading: l2 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
-    const { data: fundRequests, isLoading: l3 } = useCollection(weekStart && weekEnd && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', weekStart), where('date', '<', weekEnd))) : null);
-    const { data: certifications, isLoading: l4 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado')) : null);
+    const { data: allFundRequests, isLoading: l3 } = useCollection(firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter)) : null);
+    const { data: allCertifications, isLoading: l4 } = useCollection(firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter)) : null);
     const { data: employees, isLoading: l5 } = useCollection(firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null);
     const { data: projects, isLoading: l6 } = useCollection(firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null);
     
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
     const { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown } = useMemo(() => {
-        if (isLoadingData || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
+        if (isLoadingData || !currentWeek || !attendances || !advances || !allFundRequests || !allCertifications || !employees || !projects) {
             return { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
         }
 
-        const employeeMap = new Map(employees.map(e => [e.id, { wage: e.dailyWage || 0, hourlyRate: (e.dailyWage || 0) / 8 }]));
+        const weekStart = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+        const weekEnd = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
+
+        const fundRequests = allFundRequests.filter((req: FundRequest) => {
+            if (req.status !== 'Aprobado') return false;
+            if (!req.date) return false;
+            const reqDate = format(parseISO(req.date), 'yyyy-MM-dd');
+            return reqDate >= weekStart && reqDate < weekEnd;
+        });
+
+        const certifications = allCertifications.filter((cert: ContractorCertification) => cert.payrollWeekId === currentWeek.id && cert.status === 'Aprobado');
+
+        const employeeMap = new Map(employees.map((e: any) => [e.id, { wage: e.dailyWage || 0, hourlyRate: (e.dailyWage || 0) / 8 }]));
         
-        const grossWages = attendances.reduce((sum, att) => {
+        const grossWages = attendances.reduce((sum: any, att: any) => {
             if (att.status === 'presente') {
                 return sum + (employeeMap.get(att.employeeId)?.wage || 0);
             }
             return sum;
         }, 0);
 
-        const lateHoursDeductions = attendances.reduce((sum, att) => {
+        const lateHoursDeductions = attendances.reduce((sum: any, att: any) => {
             if (att.status === 'presente' && att.lateHours > 0) {
                 return sum + ((att.lateHours || 0) * (employeeMap.get(att.employeeId)?.hourlyRate || 0));
             }
             return sum;
         }, 0);
 
-        const totalAdvances = advances.reduce((sum, adv) => sum + adv.amount, 0);
+        const totalAdvances = advances.reduce((sum: any, adv: any) => sum + adv.amount, 0);
 
         const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
 
-        const totalContratistas = certifications.reduce((sum, cert) => {
-            const amountInArs = cert.currency === 'USD' ? cert.amount * 200 : cert.amount; // TODO: use real exchange rate
+        const totalContratistas = certifications.reduce((sum: any, cert: any) => {
+            const amountInArs = cert.currency === 'USD' ? cert.amount * 1000 : cert.amount; // TODO: use real exchange rate
             return sum + amountInArs;
         }, 0);
 
-        const totalSolicitudes = fundRequests.reduce((sum, req) => {
+        const totalSolicitudes = fundRequests.reduce((sum: any, req: any) => {
             const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
             return sum + amountInArs;
         }, 0);
@@ -83,9 +86,9 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
         const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
         
         const projectMap = new Map<string, { name: string, personal: number, contratistas: number, solicitudes: number }>();
-        projects.forEach(p => projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }));
+        projects.forEach((p: any) => projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }));
         
-        attendances.forEach(att => {
+        attendances.forEach((att: any) => {
             if (att.status === 'presente' && att.projectId) {
                 const projectEntry = projectMap.get(att.projectId);
                 const emp = employeeMap.get(att.employeeId);
@@ -95,7 +98,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
                 }
             }
         });
-        advances.forEach(adv => {
+        advances.forEach((adv: any) => {
              if (adv.projectId) {
                 const projectEntry = projectMap.get(adv.projectId);
                 if (projectEntry) {
@@ -104,15 +107,15 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
              }
         });
 
-        certifications.forEach(cert => {
+        certifications.forEach((cert: any) => {
             const projectEntry = projectMap.get(cert.projectId);
             if (projectEntry) {
-                 const amountInArs = cert.currency === 'USD' ? cert.amount * 200 : cert.amount; // TODO: use real exchange rate
+                 const amountInArs = cert.currency === 'USD' ? cert.amount * 1000 : cert.amount; // TODO:
                  projectEntry.contratistas += amountInArs;
             }
         });
 
-        fundRequests.forEach(req => {
+        fundRequests.forEach((req: any) => {
             if (req.projectId) {
                 const projectEntry = projectMap.get(req.projectId);
                 if (projectEntry) {
@@ -126,10 +129,10 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
 
-    }, [isLoadingData, attendances, advances, fundRequests, certifications, employees, projects]);
+    }, [isLoadingData, currentWeek, attendances, advances, allFundRequests, allCertifications, employees, projects]);
     
     if (isLoadingData) {
-        return <Skeleton className="h-96 w-full" />
+        return <Skeleton className="h-96 w-full" />;
     }
     
     if (!currentWeek) {
@@ -195,7 +198,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
                                 {breakdown.length === 0 && (
                                     <TableRow><TableCell colSpan={5} className="h-24 text-center">No hay costos imputados a obras esta semana.</TableCell></TableRow>
                                 )}
-                                {breakdown.map(item => {
+                                {breakdown.map((item: any) => {
                                     const subtotal = item.personal + item.contratistas + item.solicitudes;
                                     return (
                                         <TableRow key={item.name}>
