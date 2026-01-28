@@ -46,6 +46,7 @@ export function CreatedTasksList() {
         <TableRow key={`skel-${i}`}>
             <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
             <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
         </TableRow>
@@ -58,6 +59,7 @@ export function CreatedTasksList() {
         <TableHeader>
           <TableRow>
             <TableHead>Tarea</TableHead>
+            <TableHead>Solicitado por</TableHead>
             <TableHead>Asignado a</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Estado</TableHead>
@@ -67,7 +69,7 @@ export function CreatedTasksList() {
           {isLoading && renderSkeleton()}
           {!isLoading && tasks?.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="h-24 text-center">
+              <TableCell colSpan={5} className="h-24 text-center">
                 No has creado ningún pedido todavía.
               </TableCell>
             </TableRow>
@@ -78,6 +80,7 @@ export function CreatedTasksList() {
                 <div className="font-medium">{task.title}</div>
                 {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
               </TableCell>
+              <TableCell>{task.requesterName}</TableCell>
               <TableCell>{task.assigneeName}</TableCell>
               <TableCell>
                 <div className="text-sm">{format(parseISO(task.createdAt), 'dd/MM/yyyy')}</div>
