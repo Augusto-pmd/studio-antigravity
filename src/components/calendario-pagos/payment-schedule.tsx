@@ -116,18 +116,29 @@ export function PaymentSchedule() {
     const sevenDaysFromNow = addDays(todayEnd, 7);
     const thirtyDaysFromNow = addDays(todayEnd, 30);
     
-    return allItems.reduce((acc: any, item: any) => {
+    const groups = { overdue: [] as any[], today: [] as any[], next7Days: [] as any[], next30Days: [] as any[], later: [] as any[] };
+
+    if (!allItems) return groups;
+
+    return allItems.reduce((acc, item) => {
+      // Robustness: Skip items with invalid dates to prevent crashes.
+      if (!item.date || !(item.date instanceof Date) || isNaN(item.date.getTime())) {
+        return acc;
+      }
+      
       if (isBefore(item.date, todayStart)) {
         acc.overdue.push(item);
       } else if (item.date >= todayStart && item.date <= todayEnd) {
         acc.today.push(item);
-      } else if (item.date > sevenDaysFromNow && item.date <= thirtyDaysFromNow) {
+      } else if (item.date > todayEnd && item.date <= sevenDaysFromNow) {
         acc.next7Days.push(item);
-      } else {
+      } else if (item.date > sevenDaysFromNow && item.date <= thirtyDaysFromNow) {
+        acc.next30Days.push(item);
+      } else if (item.date > thirtyDaysFromNow) {
         acc.later.push(item);
       }
       return acc;
-    }, { overdue: [] as any[], today: [] as any[], next7Days: [] as any[], next30Days: [] as any[], later: [] as any[] });
+    }, groups);
   }, [allItems]);
 
   const scheduleGroups = [
