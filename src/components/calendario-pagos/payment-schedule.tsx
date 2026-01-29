@@ -34,79 +34,88 @@ export function PaymentSchedule() {
 
   // --- Data Processing ---
   const allItems = useMemo(() => {
-    const today = startOfToday();
-    const items: any[] = [];
+    const processedItems: any[] = [];
 
     // Recurring Expenses
     recurringExpenses?.forEach((item: RecurringExpense) => {
-      items.push({
-        id: `re-${item.id}`,
-        date: parseISO(item.nextDueDate),
-        title: item.description,
-        description: `Gasto Recurrente (${item.period})`,
-        amount: item.amount,
-        currency: item.currency,
-        type: 'Gasto Recurrente',
-        itemData: item
-      });
+      if (item.nextDueDate) {
+        processedItems.push({
+          id: `re-${item.id}`,
+          date: parseISO(item.nextDueDate),
+          title: item.description,
+          description: `Gasto Recurrente (${item.period})`,
+          amount: item.amount,
+          currency: item.currency,
+          type: 'Gasto Recurrente',
+          itemData: item
+        });
+      }
     });
 
     // Moratorias
     moratorias?.forEach((item: Moratoria) => {
-      items.push({
-        id: `m-${item.id}`,
-        date: parseISO(item.nextDueDate),
-        title: item.name,
-        description: `Cuota ${item.paidInstallments + 1}/${item.installments} de ${item.tax}`,
-        amount: item.installmentAmount,
-        currency: 'ARS',
-        type: 'Moratoria',
-        itemData: item
-      });
+      if (item.nextDueDate) {
+        processedItems.push({
+          id: `m-${item.id}`,
+          date: parseISO(item.nextDueDate),
+          title: item.name,
+          description: `Cuota ${item.paidInstallments + 1}/${item.installments} de ${item.tax}`,
+          amount: item.installmentAmount,
+          currency: 'ARS',
+          type: 'Moratoria',
+          itemData: item
+        });
+      }
     });
 
-    // Pending Supplier Expenses (assuming due on creation)
+    // Pending Supplier Expenses
     pendingExpenses?.forEach((item: Expense) => {
-      items.push({
-        id: `exp-${item.id}`,
-        date: parseISO(item.date),
-        title: `Factura Proveedor`,
-        description: item.invoiceNumber || `Gasto ID: ${item.id.substring(0,6)}`,
-        amount: item.amount,
-        currency: item.currency,
-        type: 'Factura Proveedor',
-        itemData: item
-      });
+      if (item.date) {
+        processedItems.push({
+          id: `exp-${item.id}`,
+          date: parseISO(item.date),
+          title: `Factura Proveedor`,
+          description: item.invoiceNumber || `Gasto ID: ${item.id.substring(0,6)}`,
+          amount: item.amount,
+          currency: item.currency,
+          type: 'Factura Proveedor',
+          itemData: item
+        });
+      }
     });
 
-    // Pending Salaries (assuming due at end of period month)
+    // Pending Salaries
     pendingSalaries?.forEach((item: MonthlySalary) => {
-      items.push({
-        id: `sal-${item.id}`,
-        date: endOfMonth(parseISO(item.period + '-01')),
-        title: `Sueldo ${item.employeeName}`,
-        description: `Período ${item.period}`,
-        amount: item.netSalary,
-        currency: 'ARS',
-        type: 'Sueldo',
-        itemData: item
-      });
+      if (item.period) {
+        processedItems.push({
+          id: `sal-${item.id}`,
+          date: endOfMonth(parseISO(item.period + '-01')),
+          title: `Sueldo ${item.employeeName}`,
+          description: `Período ${item.period}`,
+          amount: item.netSalary,
+          currency: 'ARS',
+          type: 'Sueldo',
+          itemData: item
+        });
+      }
     });
     
     // Contractor ART/Insurance Expirations
     contractors?.forEach((c: Contractor) => {
-        if(c.artExpiryDate) items.push({ id: `c-art-${c.id}`, date: parseISO(c.artExpiryDate), title: `Vencimiento ART`, description: `Contratista: ${c.name}`, type: 'Vencimiento DOC', itemData: c });
-        if(c.insuranceExpiryDate) items.push({ id: `c-ins-${c.id}`, date: parseISO(c.insuranceExpiryDate), title: `Vencimiento Seguro`, description: `Contratista: ${c.name}`, type: 'Vencimiento DOC', itemData: c });
+        if(c.artExpiryDate) processedItems.push({ id: `c-art-${c.id}`, date: parseISO(c.artExpiryDate), title: `Vencimiento ART`, description: `Contratista: ${c.name}`, type: 'Vencimiento DOC', itemData: c });
+        if(c.insuranceExpiryDate) processedItems.push({ id: `c-ins-${c.id}`, date: parseISO(c.insuranceExpiryDate), title: `Vencimiento Seguro`, description: `Contratista: ${c.name}`, type: 'Vencimiento DOC', itemData: c });
     })
     
     // Employee ART Expirations
     employees?.forEach((e: Employee) => {
-        if(e.artExpiryDate) items.push({ id: `e-art-${e.id}`, date: parseISO(e.artExpiryDate), title: `Vencimiento ART`, description: `Empleado: ${e.name}`, type: 'Vencimiento DOC', itemData: e });
+        if(e.artExpiryDate) processedItems.push({ id: `e-art-${e.id}`, date: parseISO(e.artExpiryDate), title: `Vencimiento ART`, description: `Empleado: ${e.name}`, type: 'Vencimiento DOC', itemData: e });
     })
 
+    // Filter out items with invalid dates before sorting
+    const validItems = processedItems.filter(item => item.date && !isNaN(item.date.getTime()));
 
-    // Sort all items by date
-    return items.sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Sort all valid items by date
+    return validItems.sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [recurringExpenses, moratorias, pendingExpenses, pendingSalaries, contractors, employees]);
 
   // --- Grouping Logic ---
@@ -121,11 +130,7 @@ export function PaymentSchedule() {
     if (!allItems) return groups;
 
     return allItems.reduce((acc, item) => {
-      // Robustness: Skip items with invalid dates to prevent crashes.
-      if (!item.date || !(item.date instanceof Date) || isNaN(item.date.getTime())) {
-        return acc;
-      }
-      
+      // This check is now safer because allItems only contains valid dates
       if (isBefore(item.date, todayStart)) {
         acc.overdue.push(item);
       } else if (item.date >= todayStart && item.date <= todayEnd) {
