@@ -29,7 +29,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser, useCollection } from '@/firebase';
 import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
@@ -259,7 +259,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                   onSelect={setDate}
                   initialFocus
                   locale={es}
-                  disabled={(d: Date) => currentWeek ? (d < parseISO(currentWeek.startDate) || d > parseISO(currentWeek.endDate)) : false}
+                  disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
             </Popover>
