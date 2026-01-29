@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -26,8 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser, useCollection } from '@/firebase';
-import { collection, query, where, doc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { ContractorCertification, PayrollWeek } from '@/lib/types';
+import { collection, query, where, doc, updateDoc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import type { ContractorCertification, PayrollWeek, Expense } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { parseISO, format } from 'date-fns';
 import { AddContractorCertificationDialog } from './add-contractor-certification-dialog';
@@ -62,13 +61,52 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   
   const isLoading = isLoadingWeek || isLoadingCerts;
   
-  const handleStatusChange = (certId: string, status: ContractorCertification['status']) => {
-    if (!firestore) return;
-    const certRef = doc(firestore, 'contractorCertifications', certId);
-    updateDoc(certRef, { status })
-        .then(() => toast({ title: 'Estado actualizado' }))
-        .catch(() => toast({ variant: 'destructive', title: 'Error al actualizar' }));
+  const handleStatusChange = async (cert: ContractorCertification, status: ContractorCertification['status']) => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error de conexión' });
+      return;
+    }
+
+    try {
+        const batch = writeBatch(firestore);
+        const certRef = doc(firestore, 'contractorCertifications', cert.id);
+
+        batch.update(certRef, { status });
+
+        if (status === 'Pagado') {
+            if (!currentWeek) {
+                toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
+                return;
+            }
+
+            const expenseRef = doc(collection(firestore, `projects/${cert.projectId}/expenses`));
+
+            const expenseData: Omit<Expense, 'id'> = {
+                projectId: cert.projectId,
+                date: new Date().toISOString(),
+                supplierId: cert.contractorId,
+                categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
+                documentType: 'Recibo Común',
+                description: `Certificación de contratista: ${cert.contractorName} - Semana ${format(parseISO(currentWeek.startDate), 'dd/MM/yy')} a ${format(parseISO(currentWeek.endDate), 'dd/MM/yy')}`,
+                amount: cert.amount,
+                currency: cert.currency,
+                exchangeRate: 1, // Assume 1:1 for this flow
+                status: 'Pagado',
+                paymentMethod: 'Planilla Semanal',
+                paidDate: new Date().toISOString(),
+            };
+            batch.set(expenseRef, expenseData);
+        }
+
+        await batch.commit();
+        toast({ title: 'Estado actualizado', description: `La certificación ha sido marcada como ${status.toLowerCase()}${status === 'Pagado' ? ' y se ha generado el gasto correspondiente.' : '.'}` });
+
+    } catch (error) {
+        console.error("Error updating status or creating expense:", error);
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo completar la operación.' });
+    }
   };
+
 
   const renderSkeleton = () => (
     Array.from({ length: 2 }).map((_, i) => (
@@ -141,17 +179,17 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 {cert.status === 'Pendiente' && (
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Aprobado')}><Check className="mr-2 h-4 w-4 text-green-500" /><span>Aprobar</span></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Aprobado')}><Check className="mr-2 h-4 w-4 text-green-500" /><span>Aprobar</span></DropdownMenuItem>
                                                 )}
                                                 {cert.status === 'Aprobado' && (
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Pagado')}><Receipt className="mr-2 h-4 w-4 text-blue-500" /><span>Marcar como Pagado</span></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Pagado')}><Receipt className="mr-2 h-4 w-4 text-blue-500" /><span>Marcar como Pagado</span></DropdownMenuItem>
                                                 )}
                                                  {(cert.status === 'Aprobado' || cert.status === 'Rechazado') && <DropdownMenuSeparator />}
                                                  {cert.status !== 'Pendiente' && (
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Pendiente')}><Undo className="mr-2 h-4 w-4" /><span>Volver a Pendiente</span></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Pendiente')}><Undo className="mr-2 h-4 w-4" /><span>Volver a Pendiente</span></DropdownMenuItem>
                                                  )}
                                                  {cert.status !== 'Rechazado' && (
-                                                     <DropdownMenuItem onClick={() => handleStatusChange(cert.id, 'Rechazado')}><X className="mr-2 h-4 w-4 text-red-500" /><span>Rechazar</span></DropdownMenuItem>
+                                                     <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Rechazado')}><X className="mr-2 h-4 w-4 text-red-500" /><span>Rechazar</span></DropdownMenuItem>
                                                  )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
