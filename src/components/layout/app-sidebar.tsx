@@ -49,6 +49,7 @@ import {
   Repeat,
   CalendarDays,
   Warehouse,
+  PieChart,
 } from "lucide-react";
 import type { Role, TaskRequest } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -65,6 +66,7 @@ const menuItems = [
   { href: "/contratistas", label: "Contratistas", icon: HardHat, pañoleroHidden: true },
   { href: "/activos", label: "Activos", icon: Archive, pañoleroHidden: true },
   { href: "/stock", label: "Stock Pañol", icon: Warehouse },
+  { href: "/resumen-semanal", label: "Resumen Semanal", icon: PieChart, pañoleroHidden: true },
   { href: "/pago-semanal", label: "Pago Semanal", icon: CircleDollarSign, pañoleroHidden: true },
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
   { href: "/mis-horas", label: "Mis Horas", icon: Clock },

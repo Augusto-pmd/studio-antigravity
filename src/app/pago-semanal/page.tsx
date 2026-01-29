@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
 import { CashAdvances } from '@/components/asistencias/cash-advances';
 import { DailyAttendance } from '@/components/asistencias/daily-attendance';
-import { WeeklyPaymentSummary } from '@/components/pago-semanal/weekly-payment-summary';
 import { ContractorCertifications } from '@/components/pago-semanal/contractor-certifications';
 import { format, parseISO, addDays } from 'date-fns';
 
@@ -102,17 +101,12 @@ export default function PagoSemanalPage() {
             </p>
         </div>
 
-        <Tabs defaultValue="resumen" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-                <TabsTrigger value="resumen">Resumen Total</TabsTrigger>
+        <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
                 <TabsTrigger value="personal">Planilla (Personal)</TabsTrigger>
                 <TabsTrigger value="contratistas">Certificaciones (Contratistas)</TabsTrigger>
                 <TabsTrigger value="solicitudes">Solicitudes de Fondos</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="resumen" className="mt-6">
-              <WeeklyPaymentSummary currentWeek={currentWeek} isLoadingWeek={isLoadingOpenWeek} />
-            </TabsContent>
 
             <TabsContent value="personal" className="mt-6">
                 <div className="flex flex-col gap-6">
