@@ -188,7 +188,7 @@ export function AddExpenseDialog({
             if (extractedData.iibb) setIibb(extractedData.iibb.toString());
             if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
             if (extractedData.date) {
-                const utcDate = new Date(`\${extractedData.date}T00:00:00`);
+                const utcDate = new Date(`${'\'\'\''}${extractedData.date}${'\'\'\''}T00:00:00`);
                 setDate(utcDate);
             }
 
@@ -196,13 +196,13 @@ export function AddExpenseDialog({
                 const matchedSupplier = suppliers.find(s => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
                 if (matchedSupplier) {
                     setSelectedSupplier(matchedSupplier.id);
-                    toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "\${matchedSupplier.name}".` });
+                    toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${'\'\'\''}${matchedSupplier.name}${'\'\'\''}".` });
                 }
             } else if (extractedData.supplierName && suppliers) {
                  const matchedSupplier = suppliers.find(s => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
                  if (matchedSupplier) {
                      setSelectedSupplier(matchedSupplier.id);
-                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "\${matchedSupplier.name}".` });
+                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${'\'\'\''}${matchedSupplier.name}${'\'\'\''}".` });
                  }
             }
         };
@@ -241,38 +241,54 @@ export function AddExpenseDialog({
         let receiptUrl = expense?.receiptUrl || '';
         if (file) {
             const storage = getStorage(firebaseApp);
-            const filePath = `receipts/\${projectId}/\${expenseRef.id}/\${file.name}`;
+            const filePath = `receipts/${projectId}/${expenseRef.id}/${file.name}`;
             const fileRef = ref(storage, filePath);
             
             await uploadBytes(fileRef, file);
             receiptUrl = await getDownloadURL(fileRef);
         }
 
-        const expenseData: Omit<Expense, 'id'> & { id: string } = {
+        const expenseData: Partial<Expense> = {
             id: expenseRef.id,
             projectId: projectId,
             date: date.toISOString(),
             supplierId: selectedSupplier,
             categoryId: selectedCategory,
-            description: description || undefined,
             documentType,
-            invoiceNumber: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? invoiceNumber : undefined,
             amount: parseFloat(amount) || 0,
-            iva: parseOptionalFloat(iva),
-            iibb: parseOptionalFloat(iibb),
-            iibbJurisdiction: (documentType === 'Factura' || documentType === 'Nota de Crédito') ? iibbJurisdiction : 'No Aplica',
             currency,
             exchangeRate: parseFloat(exchangeRate) || 0,
-            receiptUrl: receiptUrl || undefined,
-            retencionGanancias: parseOptionalFloat(retencionGanancias),
-            retencionIVA: parseOptionalFloat(retencionIVA),
-            retencionIIBB: parseOptionalFloat(retencionIIBB),
-            retencionSUSS: parseOptionalFloat(retencionSUSS),
             status: isEditMode ? expense.status : 'Pendiente de Pago',
-            paymentMethod: isEditMode ? expense.paymentMethod : undefined,
-            paidDate: isEditMode ? expense.paidDate : undefined,
-            treasuryAccountId: isEditMode ? expense.treasuryAccountId : undefined,
         };
+
+        if (description) expenseData.description = description;
+        if (receiptUrl) expenseData.receiptUrl = receiptUrl;
+
+        if (documentType === 'Factura' || documentType === 'Nota de Crédito') {
+            expenseData.invoiceNumber = invoiceNumber;
+            expenseData.iibbJurisdiction = iibbJurisdiction;
+            const parsedIva = parseOptionalFloat(iva);
+            if (parsedIva !== undefined) expenseData.iva = parsedIva;
+            const parsedIibb = parseOptionalFloat(iibb);
+            if (parsedIibb !== undefined) expenseData.iibb = parsedIibb;
+        } else {
+            expenseData.iibbJurisdiction = 'No Aplica';
+        }
+
+        const parsedRetG = parseOptionalFloat(retencionGanancias);
+        if (parsedRetG !== undefined) expenseData.retencionGanancias = parsedRetG;
+        const parsedRetIva = parseOptionalFloat(retencionIVA);
+        if (parsedRetIva !== undefined) expenseData.retencionIVA = parsedRetIva;
+        const parsedRetIibb = parseOptionalFloat(retencionIIBB);
+        if (parsedRetIibb !== undefined) expenseData.retencionIIBB = parsedRetIibb;
+        const parsedRetSuss = parseOptionalFloat(retencionSUSS);
+        if (parsedRetSuss !== undefined) expenseData.retencionSUSS = parsedRetSuss;
+        
+        if (isEditMode && expense) {
+            if (expense.paymentMethod) expenseData.paymentMethod = expense.paymentMethod;
+            if (expense.paidDate) expenseData.paidDate = expense.paidDate;
+            if (expense.treasuryAccountId) expenseData.treasuryAccountId = expense.treasuryAccountId;
+        }
 
         return setDoc(expenseRef, expenseData, { merge: true });
       };
@@ -284,7 +300,7 @@ export function AddExpenseDialog({
         })
         .catch((error: any) => {
             console.error("Error writing to Firestore:", error);
-            const description = error.message || 'No se pudo registrar el documento. Es posible que no tengas permisos.';
+            const description = "No se pudo registrar el documento. Por favor, revise los datos e inténtelo de nuevo.";
             toast({ variant: 'destructive', title: 'Error al guardar', description });
         })
         .finally(() => {
