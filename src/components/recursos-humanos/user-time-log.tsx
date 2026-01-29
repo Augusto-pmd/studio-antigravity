@@ -96,17 +96,22 @@ export function UserTimeLog() {
     }
   }, [selectedDate]);
 
-  const monthlyLogsQuery = useMemo(
+  const allUserLogsQuery = useMemo(
       () => (user && firestore ? query(
           collection(firestore, 'timeLogs').withConverter(timeLogConverter), 
-          where('userId', '==', user.uid),
-          where('date', '>=', monthStart),
-          where('date', '<=', monthEnd)
+          where('userId', '==', user.uid)
       ) : null),
-      [user, firestore, monthStart, monthEnd]
+      [user, firestore]
   );
 
-  const { data: monthlyLogs, isLoading: isLoadingMonthlyLogs } = useCollection<TimeLog>(monthlyLogsQuery);
+  const { data: allUserLogs, isLoading: isLoadingAllUserLogs } = useCollection<TimeLog>(allUserLogsQuery);
+
+  const monthlyLogs = useMemo(() => {
+    if (!allUserLogs) return [];
+    return allUserLogs.filter((log: TimeLog) => {
+        return log.date >= monthStart && log.date <= monthEnd;
+    });
+  }, [allUserLogs, monthStart, monthEnd]);
 
   const monthlySummary = useMemo(() => {
     if (!monthlyLogs || !projects) return [];
@@ -135,18 +140,15 @@ export function UserTimeLog() {
 
     const total = monthlyLogs.reduce((sum: number, log: TimeLog) => {
       const hours = log.hours;
-      // Ensure hours is a valid number before adding.
       if (typeof hours === 'number' && !isNaN(hours)) {
         return sum + hours;
       }
-      // Try to parse if it's a string.
       if (typeof hours === 'string') {
         const parsedHours = parseFloat(hours);
         if (!isNaN(parsedHours)) {
           return sum + parsedHours;
         }
       }
-      // If not a valid number or string, add 0.
       return sum;
     }, 0);
 
@@ -304,7 +306,7 @@ export function UserTimeLog() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isLoadingMonthlyLogs ? (
+                    {isLoadingAllUserLogs ? (
                         <Skeleton className="h-16 w-1/2" />
                     ) : (
                         <div className="text-5xl font-bold font-mono">{totalMonthlyHours} <span className="text-2xl text-muted-foreground font-sans">hs</span></div>
@@ -326,7 +328,7 @@ export function UserTimeLog() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {(isLoadingMonthlyLogs || isLoadingProjects) ? (
+                            {(isLoadingAllUserLogs || isLoadingProjects) ? (
                                 <>
                                     <TableRow>
                                         <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
@@ -425,5 +427,7 @@ export function UserTimeLog() {
     </div>
   );
 }
+
+    
 
     
