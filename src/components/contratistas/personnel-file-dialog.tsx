@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import type { ContractorEmployee, DocumentRecord } from "@/lib/types";
 import { DocumentManager } from "@/components/shared/document-manager";
 import { useDoc, useFirestore, useFirebaseApp } from "@/firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, collection } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { collection } from "firebase/firestore";
 
 export function PersonnelFileDialog({ contractorId, personnel, children }: { contractorId: string; personnel: ContractorEmployee; children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
@@ -65,18 +66,28 @@ export function PersonnelFileDialog({ contractorId, personnel, children }: { con
 
         setDeletingDocId(documentToDelete.id);
         const storage = getStorage(firebaseApp);
-
+        
         try {
+            // First, atomically update the Firestore document
+            const docSnap = await getDoc(personnelRef);
+            if (docSnap.exists()) {
+                const currentData = docSnap.data();
+                const updatedDocuments = currentData.documents?.filter((doc: DocumentRecord) => doc.id !== documentToDelete.id) || [];
+                await updateDoc(personnelRef, {
+                    documents: updatedDocuments
+                });
+            }
+
+            // Then, delete from Storage
             const storageRef = ref(storage, documentToDelete.url);
-            await updateDoc(personnelRef, {
-                documents: arrayRemove(documentToDelete)
-            });
             await deleteObject(storageRef);
+            
             toast({ title: "Documento Eliminado" });
         } catch (error: any) {
             console.error("Delete error:", error);
+            // If the file doesn't exist in storage, Firestore update still goes through. That's OK.
             if(error.code !== 'storage/object-not-found') {
-                toast({ variant: 'destructive', title: "Error al eliminar", description: "No se pudo eliminar el archivo. La referencia fue borrada." });
+                toast({ variant: 'destructive', title: "Error al eliminar", description: "No se pudo eliminar el archivo del almacenamiento, pero la referencia ha sido borrada." });
             }
         } finally {
             setDeletingDocId(null);

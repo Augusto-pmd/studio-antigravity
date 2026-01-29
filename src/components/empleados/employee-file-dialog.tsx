@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { Employee, DocumentRecord } from "@/lib/types";
 import { DocumentManager } from "@/components/shared/document-manager";
 import { useDoc, useFirestore, useFirebaseApp } from "@/firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, collection } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, getDoc, collection } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -68,19 +68,24 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
         const storage = getStorage(firebaseApp);
         
         try {
-            const storageRef = ref(storage, documentToDelete.url);
-            // First, delete from Firestore to immediately update the UI
-            await updateDoc(employeeRef, {
-                documents: arrayRemove(documentToDelete)
-            });
+            // First, atomically update the Firestore document
+            const docSnap = await getDoc(employeeRef);
+            if (docSnap.exists()) {
+                const currentData = docSnap.data();
+                const updatedDocuments = currentData.documents?.filter((doc: DocumentRecord) => doc.id !== documentToDelete.id) || [];
+                await updateDoc(employeeRef, {
+                    documents: updatedDocuments
+                });
+            }
 
             // Then, delete from Storage
+            const storageRef = ref(storage, documentToDelete.url);
             await deleteObject(storageRef);
             
             toast({ title: "Documento Eliminado" });
         } catch (error: any) {
             console.error("Delete error:", error);
-            // If the file doesn't exist in storage, Firestore update still goes through.
+            // If the file doesn't exist in storage, Firestore update still goes through. That's OK.
             if(error.code !== 'storage/object-not-found') {
                 toast({ variant: 'destructive', title: "Error al eliminar", description: "No se pudo eliminar el archivo del almacenamiento, pero la referencia ha sido borrada." });
             }
