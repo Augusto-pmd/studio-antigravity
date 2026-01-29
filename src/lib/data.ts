@@ -12,4 +12,5 @@ export const expenseCategories = [
     { id: 'CAT-10', name: 'Gastos Administrativos de Obra' },
     { id: 'CAT-11', name: 'Imprevistos' },
     { id: 'CAT-12', name: 'Otros' },
+    { id: 'CAT-14', name: 'Oficina Técnica (Costo)' },
 ];

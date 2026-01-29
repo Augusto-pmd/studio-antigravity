@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
 import { ExpensesTable } from "@/components/expenses/expenses-table";
-import { ProjectExpenseSummary } from "@/components/expenses/project-expense-summary";
 import { useUser, useCollection, useFirestore } from "@/firebase";
 import {
   Select,
@@ -51,13 +50,13 @@ export default function GastosPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<string | undefined>();
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
 
+  // Fetch all data sources
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
-  // Data for summary
   const allExpensesQuery = useMemo(() => (firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null), [firestore]);
   const { data: allExpenses, isLoading: isLoadingAllExpenses } = useCollection<Expense>(allExpensesQuery);
 
@@ -67,45 +66,56 @@ export default function GastosPage() {
   const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
   const { data: techOfficeEmployees, isLoading: isLoadingTechOffice } = useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
 
-  const { summary, isLoading: isLoadingSummary } = useMemo(() => {
-    const isLoading = isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice;
+  const isLoading = isLoadingProjects || isLoadingSuppliers || isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice;
 
-    if (!selectedProject || !allExpenses || !allTimeLogs || !techOfficeEmployees) {
-      return { summary: null, isLoading };
-    }
+  // Create virtual expenses for office hours
+  const officeExpenses = useMemo((): Expense[] => {
+    if (!allTimeLogs || !techOfficeEmployees) return [];
 
-    const projectExpenses = allExpenses.filter((e: Expense) => e.projectId === selectedProject);
+    const employeeSalaryMap = new Map(techOfficeEmployees.map((e) => [e.userId, { salary: e.monthlySalary, name: e.fullName }]));
 
-    const materialesCost = projectExpenses
-      .filter((e: Expense) => e.categoryId === 'CAT-01')
-      .reduce((sum, e) => sum + (e.currency === 'USD' && e.exchangeRate ? e.amount * e.exchangeRate : e.amount), 0);
+    return allTimeLogs.map((log: any) => {
+      const employeeData = employeeSalaryMap.get(log.userId);
+      if (!employeeData) return null;
 
-    const manoDeObraCost = projectExpenses
-      .filter((e: Expense) => e.categoryId === 'CAT-02')
-      .reduce((sum, e) => sum + (e.currency === 'USD' && e.exchangeRate ? e.amount * e.exchangeRate : e.amount), 0);
-      
-    const employeeSalaryMap = new Map(techOfficeEmployees.map((e: TechnicalOfficeEmployee) => [e.userId, e.monthlySalary]));
-    const projectTimeLogs = allTimeLogs.filter((log: TimeLog) => log.projectId === selectedProject);
+      // Assume 160 working hours in a month.
+      const hourlyRate = employeeData.salary / 160;
+      const cost = log.hours * hourlyRate;
 
-    const horasOficinaTecnicaCost = projectTimeLogs.reduce((total, log) => {
-        const salary = employeeSalaryMap.get(log.userId);
-        if (!salary) return total;
-        // Assume 160 working hours in a month. This is a reasonable assumption for a prototype.
-        const hourlyRate = salary / 160;
-        return total + (log.hours * hourlyRate);
-    }, 0);
+      return {
+        id: `log-${log.id}`, // Unique ID for virtual expense
+        projectId: log.projectId,
+        date: log.date, // TimeLog date is already YYYY-MM-DD
+        supplierId: 'OFICINA-TECNICA',
+        categoryId: 'CAT-14',
+        documentType: 'Recibo Común',
+        amount: cost,
+        currency: 'ARS',
+        exchangeRate: 1,
+        status: 'Pagado',
+        description: `Costo Horas: ${employeeData.name}`,
+      } as Expense; // Cast to Expense, even though it's partial
+    }).filter((e): e is Expense => e !== null);
+  }, [allTimeLogs, techOfficeEmployees]);
 
-    return { 
-        summary: {
-            materialesCost,
-            manoDeObraCost,
-            horasOficinaTecnicaCost,
-        },
-        isLoading: false
-    };
+  // Create maps for display names
+  const projectsMap = useMemo(() => projects?.reduce((acc: Record<string, string>, p: any) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {}, [projects]);
+  const suppliersMap = useMemo(() => {
+    const map = suppliers?.reduce((acc: Record<string, string>, s: any) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
+    map['OFICINA-TECNICA'] = 'Oficina Técnica'; // Add virtual supplier
+    return map;
+  }, [suppliers]);
 
-  }, [selectedProject, allExpenses, allTimeLogs, techOfficeEmployees, isLoadingAllExpenses, isLoadingAllTimeLogs, isLoadingTechOffice]);
-
+  // Combine real and virtual expenses, then filter
+  const displayedExpenses = useMemo(() => {
+    const combined = [...(allExpenses || []), ...officeExpenses];
+    return combined.filter(expense => {
+      const projectMatch = !selectedProject || expense.projectId === selectedProject;
+      const supplierMatch = !selectedSupplier || expense.supplierId === selectedSupplier;
+      const categoryMatch = !selectedCategory || expense.categoryId === selectedCategory;
+      return projectMatch && supplierMatch && categoryMatch;
+    });
+  }, [allExpenses, officeExpenses, selectedProject, selectedSupplier, selectedCategory]);
 
   const resetFilters = () => {
     setSelectedProject(undefined);
@@ -126,10 +136,6 @@ export default function GastosPage() {
         </div>
         {permissions.canLoadExpenses && <AddExpenseDialog />}
       </div>
-
-      {selectedProject && (
-        <ProjectExpenseSummary summary={summary} isLoading={isLoadingSummary} />
-      )}
       
       <div className="flex flex-col gap-4 rounded-lg border p-4 md:flex-row">
         <h3 className="hidden shrink-0 font-semibold tracking-tight md:block mt-2">Filtros:</h3>
@@ -158,8 +164,8 @@ export default function GastosPage() {
                      {isLoadingSuppliers ? (
                         <SelectItem value="loading" disabled>Cargando...</SelectItem>
                     ) : (
-                        suppliers?.map((s: Supplier) => (
-                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        Object.entries(suppliersMap).map(([id, name]) => (
+                            <SelectItem key={id} value={id}>{name}</SelectItem>
                         ))
                     )}
                 </SelectContent>
@@ -185,9 +191,10 @@ export default function GastosPage() {
       </div>
 
       <ExpensesTable 
-        projectId={selectedProject}
-        supplierId={selectedSupplier}
-        categoryId={selectedCategory}
+        expenses={displayedExpenses}
+        isLoading={isLoading}
+        projectsMap={projectsMap}
+        suppliersMap={suppliersMap}
       />
     </div>
   );

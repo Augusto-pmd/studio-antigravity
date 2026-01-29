@@ -9,13 +9,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Expense, Project, Supplier } from "@/lib/types";
+import type { Expense } from "@/lib/types";
 import { parseISO, format as formatDateFns } from 'date-fns';
-import { useFirestore, useCollection, useUser } from "@/firebase";
-import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
+import { useFirestore, useUser } from "@/firebase";
+import { doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { expenseCategories } from "@/lib/data";
-import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
@@ -30,106 +29,27 @@ const formatCurrency = (amount: number, currency: string) => {
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
-}
-
-const expenseConverter = {
-    toFirestore: (data: Expense): DocumentData => {
-      const { id, ...rest } = data;
-      return rest;
-    },
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            projectId: data.projectId,
-            date: data.date,
-            supplierId: data.supplierId,
-            categoryId: data.categoryId,
-            documentType: data.documentType,
-            invoiceNumber: data.invoiceNumber,
-            paymentMethod: data.paymentMethod,
-            amount: data.amount,
-            iva: data.iva,
-            iibb: data.iibb,
-            iibbJurisdiction: data.iibbJurisdiction,
-            currency: data.currency,
-            exchangeRate: data.exchangeRate,
-            receiptUrl: data.receiptUrl,
-            description: data.description,
-            retencionGanancias: data.retencionGanancias,
-            retencionIVA: data.retencionIVA,
-            retencionIIBB: data.retencionIIBB,
-            retencionSUSS: data.retencionSUSS,
-            status: data.status,
-            paidDate: data.paidDate,
-            treasuryAccountId: data.treasuryAccountId,
-        };
+    // Dates can be full ISO strings or YYYY-MM-DD. parseISO handles both.
+    try {
+        return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
+    } catch (e) {
+        return dateString; // fallback for invalid date strings
     }
-};
-
-const projectConverter = {
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
-};
-
-const supplierConverter = {
-    toFirestore: (data: Supplier): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
-};
+}
 
 interface ExpensesTableProps {
-  projectId?: string;
-  supplierId?: string;
-  categoryId?: string;
+  expenses: Expense[];
+  isLoading: boolean;
+  projectsMap: Record<string, string>;
+  suppliersMap: Record<string, string>;
 }
 
-export function ExpensesTable({ projectId, supplierId, categoryId }: ExpensesTableProps) {
+export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap }: ExpensesTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { permissions } = useUser();
 
-  const expensesQuery = useMemo(() => (
-    firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter)) : null
-  ), [firestore]);
-  
-  const { data: allExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
-
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
-
-  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
-  const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
-
-  const projectsMap = useMemo(() => {
-    if (!projects) return {};
-    return projects.reduce((acc, p) => {
-      acc[p.id] = p.name;
-      return acc;
-    }, {} as Record<string, string>);
-  }, [projects]);
-
-  const suppliersMap = useMemo(() => {
-    if (!suppliers) return {};
-    return suppliers.reduce((acc, s) => {
-      acc[s.id] = s.name;
-      return acc;
-    }, {} as Record<string, string>);
-  }, [suppliers]);
-
-  const filteredExpenses = useMemo(() => {
-    if (!allExpenses) return [];
-    return allExpenses.filter(expense => {
-      const projectMatch = !projectId || expense.projectId === projectId;
-      const supplierMatch = !supplierId || expense.supplierId === supplierId;
-      const categoryMatch = !categoryId || expense.categoryId === categoryId;
-      return projectMatch && supplierMatch && categoryMatch;
-    });
-  }, [allExpenses, projectId, supplierId, categoryId]);
-
   const getCategoryName = (categoryId: string) => expenseCategories.find(c => c.id === categoryId)?.name || categoryId;
-
-  const isLoading = isLoadingExpenses || isLoadingProjects || isLoadingSuppliers;
 
   const handleDelete = (expense: Expense) => {
     if (!firestore) return;
@@ -183,14 +103,16 @@ export function ExpensesTable({ projectId, supplierId, categoryId }: ExpensesTab
                   {renderSkeleton()}
                 </>
               )}
-              {!isLoading && filteredExpenses.length === 0 && (
+              {!isLoading && expenses.length === 0 && (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    {allExpenses && allExpenses.length > 0 ? "No hay gastos que coincidan con los filtros seleccionados." : "No hay gastos registrados. Comience creando uno nuevo."}
+                    No hay gastos que coincidan con los filtros aplicados.
                   </TableCell>
                 </TableRow>
               )}
-              {!isLoading && filteredExpenses.map((expense: Expense) => (
+              {!isLoading && expenses.map((expense: Expense) => {
+                const isVirtual = expense.categoryId === 'CAT-14';
+                return (
                 <TableRow key={expense.id}>
                   <TableCell>
                     <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
@@ -221,7 +143,7 @@ export function ExpensesTable({ projectId, supplierId, categoryId }: ExpensesTab
                   </TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                   <TableCell className="text-right">
-                    {permissions.canLoadExpenses && (
+                    {permissions.canLoadExpenses && !isVirtual && ( // Disable actions for virtual expenses
                       <div className="flex items-center justify-end">
                         <AddExpenseDialog expense={expense}>
                           <Button variant="ghost" size="icon">
@@ -258,7 +180,7 @@ export function ExpensesTable({ projectId, supplierId, categoryId }: ExpensesTab
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
       </div>
