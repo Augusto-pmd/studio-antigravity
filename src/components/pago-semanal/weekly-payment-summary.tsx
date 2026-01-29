@@ -11,11 +11,15 @@ import { Briefcase, Handshake, HardHat } from 'lucide-react';
 import { format, parseISO, addDays, isValid } from 'date-fns';
 
 const formatCurrency = (amount: number) => {
-    if (typeof amount !== 'number' || isNaN(amount)) return 'ARS 0,00';
+    // This is now bulletproof. If it receives a non-number or NaN, it returns a default value.
+    if (typeof amount !== 'number' || isNaN(amount)) {
+        console.warn("formatCurrency received an invalid value:", amount);
+        return 'ARS 0,00';
+    }
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-// Converters
+// Converters (these are fine)
 const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
 const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
@@ -49,13 +53,15 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
     const summary = useMemo(() => {
-        const defaultResult = { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
+        const defaultResult = { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] as any[] };
         
+        // This is the main guard. If something still fails, the try/catch will handle it.
         if (isLoadingData || !currentWeek || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
             return defaultResult;
         }
 
         try {
+            // All calculations are wrapped in a try/catch. A single error won't crash the component.
             const employeeMap = new Map(employees.map((e: any) => [e.id, { 
                 wage: Number(e.dailyWage) || 0, 
                 hourlyRate: (Number(e.dailyWage) || 0) / 8 
@@ -83,7 +89,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
             const totalContratistas = certifications.reduce((sum: number, cert: any) => {
                 const amount = Number(cert.amount) || 0;
-                // Assuming ARS for USD values for stability. A proper exchange rate mechanism is needed.
+                // Assuming ARS for now for stability. A proper currency conversion would be needed for multi-currency support.
                 return sum + amount;
             }, 0);
 
@@ -96,10 +102,10 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
             const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
             
-            const projectMap = new Map<string, { name: string, personal: number, contratistas: number, solicitudes: number }>();
+            const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach((p: any) => {
                 if (p.id && p.name) {
-                    projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 })
+                    projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 })
                 }
             });
             
@@ -108,7 +114,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
                     const projectEntry = projectMap.get(att.projectId);
                     const emp = employeeMap.get(att.employeeId);
                     if (projectEntry && emp) {
-                         const dailyCost = emp.wage - ((Number(att.lateHours) || 0) * emp.hourlyRate);
+                         const dailyCost = (emp.wage || 0) - ((Number(att.lateHours) || 0) * (emp.hourlyRate || 0));
                          projectEntry.personal += dailyCost;
                     }
                 }
@@ -148,7 +154,8 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
             return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
         } catch (error) {
-            console.error("Error calculating weekly summary:", error);
+            console.error("FATAL: WeeklyPaymentSummary calculation failed. Returning default values.", error);
+            // If any error occurs, we return a safe default value to prevent a crash.
             return defaultResult;
         }
 
@@ -224,7 +231,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
                                 {summary.breakdown.map((item: any) => {
                                     const subtotal = item.personal + item.contratistas + item.solicitudes;
                                     return (
-                                        <TableRow key={item.name}>
+                                        <TableRow key={item.id}>
                                             <TableCell className="font-medium">{item.name}</TableCell>
                                             <TableCell className="text-right font-mono">{formatCurrency(item.personal)}</TableCell>
                                             <TableCell className="text-right font-mono">{formatCurrency(item.contratistas)}</TableCell>
