@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil } from "lucide-react";
 import { parseISO, format as formatDateFns, differenceInDays, isBefore } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import { RecurringExpenseDialog } from '@/components/gastos-recurrentes/recurring-expense-dialog';
 
 const recurringExpenseConverter = {
@@ -74,7 +74,7 @@ export function RecurringExpensesTable() {
           <TableRow>
             <TableHead>Descripción</TableHead>
             <TableHead>Monto</TableHead>
-            <TableHead>Próximo Vencimiento</TableHead>
+            <TableHead>Fechas</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
@@ -91,18 +91,20 @@ export function RecurringExpensesTable() {
                 <TableCell>
                   <div className="font-medium">{expense.description}</div>
                   <div className="text-sm text-muted-foreground">{expense.category} ({expense.period})</div>
+                  {expense.notes && <p className="text-xs italic text-muted-foreground pt-1">"{expense.notes}"</p>}
                 </TableCell>
                 <TableCell>
                   <div className="font-mono">{formatCurrency(expense.amount, expense.currency)}</div>
                 </TableCell>
                 <TableCell>
-                  <div className={cn("flex items-center gap-2", 
-                    dueDateStatus?.variant === 'destructive' && 'text-destructive',
-                    dueDateStatus?.variant === 'warning' && 'text-yellow-500'
-                  )}>
-                    {formatDate(expense.nextDueDate)}
-                  </div>
-                   {dueDateStatus && <div className="text-xs">{dueDateStatus.message}</div>}
+                    <div className={cn("font-medium", 
+                        dueDateStatus?.variant === 'destructive' && 'text-destructive',
+                        dueDateStatus?.variant === 'warning' && 'text-yellow-500'
+                    )}>
+                        Vence: {formatDate(expense.nextDueDate)}
+                    </div>
+                    {expense.issueDate && <div className="text-xs text-muted-foreground">Emisión: {formatDate(expense.issueDate)}</div>}
+                    {dueDateStatus && <div className="text-xs mt-1">{dueDateStatus.message}</div>}
                 </TableCell>
                 <TableCell>
                   <Badge variant={expense.status === 'Activo' ? 'default' : 'secondary'} className={cn(

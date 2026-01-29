@@ -304,8 +304,10 @@ export interface RecurringExpense {
   currency: 'ARS' | 'USD';
   period: 'Diario' | 'Semanal' | 'Mensual' | 'Bimestral' | 'Trimestral' | 'Semestral' | 'Anual';
   paymentSource: 'Tesorería' | 'Caja Chica';
+  issueDate?: string; // YYYY-MM-DD
   nextDueDate: string; // YYYY-MM-DD
   status: 'Activo' | 'Pausado';
+  notes?: string;
 }
 
 export interface Moratoria {

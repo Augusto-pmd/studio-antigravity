@@ -36,6 +36,7 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { setDoc, collection, doc } from "firebase/firestore";
 import { expenseCategories } from "@/lib/data";
+import { Textarea } from "@/components/ui/textarea";
 
 const periods = ["Diario", "Semanal", "Mensual", "Bimestral", "Trimestral", "Semestral", "Anual"];
 
@@ -59,8 +60,10 @@ export function RecurringExpenseDialog({
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [period, setPeriod] = useState<RecurringExpense['period']>('Mensual');
   const [paymentSource, setPaymentSource] = useState<'Tesorería' | 'Caja Chica'>('Tesorería');
+  const [issueDate, setIssueDate] = useState<Date | undefined>();
   const [nextDueDate, setNextDueDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<'Activo' | 'Pausado'>('Activo');
+  const [notes, setNotes] = useState('');
 
   const resetForm = () => {
     setDescription(expense?.description || '');
@@ -69,8 +72,10 @@ export function RecurringExpenseDialog({
     setCurrency(expense?.currency || 'ARS');
     setPeriod(expense?.period || 'Mensual');
     setPaymentSource(expense?.paymentSource || 'Tesorería');
+    setIssueDate(expense?.issueDate ? parseISO(expense.issueDate) : undefined);
     setNextDueDate(expense?.nextDueDate ? parseISO(expense.nextDueDate) : undefined);
     setStatus(expense?.status || 'Activo');
+    setNotes(expense?.notes || '');
   };
 
   useEffect(() => {
@@ -82,7 +87,7 @@ export function RecurringExpenseDialog({
   const handleSave = () => {
     if (!firestore) return;
     if (!description || !category || !amount || !period || !nextDueDate) {
-      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Todos los campos son obligatorios.' });
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Descripción, Categoría, Monto, Período y Próximo Vencimiento son obligatorios.' });
       return;
     }
 
@@ -100,6 +105,8 @@ export function RecurringExpenseDialog({
         paymentSource,
         nextDueDate: format(nextDueDate, 'yyyy-MM-dd'),
         status,
+        issueDate: issueDate ? format(issueDate, 'yyyy-MM-dd') : undefined,
+        notes: notes || undefined,
       };
       
       setDoc(docRef, expenseData, { merge: true })
@@ -194,7 +201,23 @@ export function RecurringExpenseDialog({
                 </SelectContent>
                 </Select>
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
+                <Label htmlFor="issueDate">Fecha de Emisión (Opcional)</Label>
+                <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    variant={"outline"}
+                    className={cn("w-full justify-start text-left font-normal", !issueDate && "text-muted-foreground")}
+                    >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {issueDate ? format(issueDate, "PPP", { locale: es }) : <span>Seleccionar</span>}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={issueDate} onSelect={setIssueDate} locale={es} /></PopoverContent>
+                </Popover>
+            </div>
+          </div>
+           <div className="space-y-2">
                 <Label htmlFor="nextDueDate">Próximo Vencimiento</Label>
                 <Popover>
                 <PopoverTrigger asChild>
@@ -209,7 +232,6 @@ export function RecurringExpenseDialog({
                 <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={nextDueDate} onSelect={setNextDueDate} locale={es} /></PopoverContent>
                 </Popover>
             </div>
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
@@ -220,6 +242,11 @@ export function RecurringExpenseDialog({
                     <SelectItem value="Pausado">Pausado</SelectItem>
                 </SelectContent>
             </Select>
+          </div>
+          
+           <div className="space-y-2">
+            <Label htmlFor="notes">Observaciones</Label>
+            <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Añada cualquier detalle relevante..." />
           </div>
 
         </div>

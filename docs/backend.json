@@ -1281,6 +1281,11 @@
           ],
           "description": "Defines the accounting path. Tesorería is formal ('blanca'), Caja Chica is informal ('negra')."
         },
+        "issueDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the expense was issued."
+        },
         "nextDueDate": {
           "type": "string",
           "format": "date"
@@ -1291,6 +1296,10 @@
             "Activo",
             "Pausado"
           ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the recurring expense."
         }
       },
       "required": [
