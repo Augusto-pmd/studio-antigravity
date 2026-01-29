@@ -45,9 +45,9 @@ export function CreatedTasksList() {
     Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={`skel-${i}`}>
             <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+            <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+            <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+            <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
             <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
         </TableRow>
     ))
@@ -59,9 +59,9 @@ export function CreatedTasksList() {
         <TableHeader>
           <TableRow>
             <TableHead>Tarea</TableHead>
-            <TableHead>Solicitado por</TableHead>
-            <TableHead>Asignado a</TableHead>
-            <TableHead>Fecha</TableHead>
+            <TableHead className="hidden md:table-cell">Solicitado por</TableHead>
+            <TableHead className="hidden md:table-cell">Asignado a</TableHead>
+            <TableHead className="hidden sm:table-cell">Fecha</TableHead>
             <TableHead>Estado</TableHead>
           </TableRow>
         </TableHeader>
@@ -79,10 +79,17 @@ export function CreatedTasksList() {
               <TableCell>
                 <div className="font-medium">{task.title}</div>
                 {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
+                 <div className="mt-2 space-y-1 text-sm text-muted-foreground md:hidden">
+                  <p><span className="font-medium text-foreground">De:</span> {task.requesterName}</p>
+                  <p><span className="font-medium text-foreground">Para:</span> {task.assigneeName}</p>
+                   <div className="text-xs pt-1 sm:hidden">
+                    {formatDistanceToNow(parseISO(task.createdAt), { addSuffix: true, locale: es })}
+                  </div>
+                </div>
               </TableCell>
-              <TableCell>{task.requesterName}</TableCell>
-              <TableCell>{task.assigneeName}</TableCell>
-              <TableCell>
+              <TableCell className="hidden md:table-cell">{task.requesterName}</TableCell>
+              <TableCell className="hidden md:table-cell">{task.assigneeName}</TableCell>
+              <TableCell className="hidden sm:table-cell">
                 <div className="text-sm">{format(parseISO(task.createdAt), 'dd/MM/yyyy')}</div>
                 <div className="text-xs text-muted-foreground">
                     {formatDistanceToNow(parseISO(task.createdAt), { addSuffix: true, locale: es })}
@@ -92,6 +99,7 @@ export function CreatedTasksList() {
                 <Badge
                   variant="outline"
                   className={cn(
+                    'capitalize',
                     task.status === 'Pendiente' && 'text-yellow-500 border-yellow-500',
                     task.status === 'Finalizado' && 'text-green-500 border-green-500'
                   )}

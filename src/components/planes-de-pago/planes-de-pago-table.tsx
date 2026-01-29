@@ -62,9 +62,9 @@ export function PlanesDePagoTable() {
     Array.from({ length: 3 }).map((_, i) => (
       <TableRow key={i}>
         <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto" /></TableCell>
       </TableRow>
     ))
@@ -76,9 +76,9 @@ export function PlanesDePagoTable() {
         <TableHeader>
           <TableRow>
             <TableHead>Plan de Pago</TableHead>
-            <TableHead>Progreso</TableHead>
-            <TableHead>Próximo Vencimiento</TableHead>
-            <TableHead>Estado</TableHead>
+            <TableHead className="hidden sm:table-cell">Progreso</TableHead>
+            <TableHead className="hidden md:table-cell">Próximo Vencimiento</TableHead>
+            <TableHead className="hidden lg:table-cell">Estado</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -96,14 +96,35 @@ export function PlanesDePagoTable() {
                   <div className="font-medium">{plan.name}</div>
                   <div className="text-sm text-muted-foreground">{plan.tax}</div>
                   <div className="text-sm text-muted-foreground font-mono">{formatCurrency(plan.installmentAmount)}</div>
+                   <div className="mt-2 space-y-1 text-sm md:hidden">
+                     <div className={cn("font-medium", 
+                        dueDateStatus?.variant === 'destructive' && 'text-destructive',
+                        dueDateStatus?.variant === 'warning' && 'text-yellow-500'
+                    )}>
+                        Vence: {formatDate(plan.nextDueDate)}
+                        {dueDateStatus && <span className="ml-2 text-xs">({dueDateStatus.message})</span>}
+                    </div>
+                     <div className='lg:hidden'>
+                        <Badge variant={plan.status === 'Activa' ? 'default' : 'secondary'} className={cn(
+                          'capitalize',
+                          plan.status === "Activa" && "bg-green-900/40 text-green-300 border-green-700",
+                          plan.status === "Finalizada" && "bg-blue-900/40 text-blue-300 border-blue-700",
+                          plan.status === "Incumplida" && "bg-red-900/40 text-red-300 border-red-700",
+                      )}>{plan.status}</Badge>
+                     </div>
+                  </div>
+                   <div className='flex items-center gap-2 mt-2 sm:hidden'>
+                        <Progress value={progress} className="w-[100px]" />
+                        <span className='text-xs text-muted-foreground'>({plan.paidInstallments}/{plan.installments})</span>
+                    </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                     <div className='flex items-center gap-2'>
                         <Progress value={progress} className="w-[100px]" />
                         <span className='text-xs text-muted-foreground'>({plan.paidInstallments}/{plan.installments})</span>
                     </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <div className={cn("flex items-center gap-2", 
                     dueDateStatus?.variant === 'destructive' && 'text-destructive',
                     dueDateStatus?.variant === 'warning' && 'text-yellow-500'
@@ -112,8 +133,9 @@ export function PlanesDePagoTable() {
                   </div>
                    {dueDateStatus && <div className="text-xs">{dueDateStatus.message}</div>}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
                   <Badge variant={plan.status === 'Activa' ? 'default' : 'secondary'} className={cn(
+                      'capitalize',
                       plan.status === "Activa" && "bg-green-900/40 text-green-300 border-green-700",
                       plan.status === "Finalizada" && "bg-blue-900/40 text-blue-300 border-blue-700",
                       plan.status === "Incumplida" && "bg-red-900/40 text-red-300 border-red-700",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useTransition } from "react";
+import { useState, useMemo, useEffect, useTransition, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser, useCollection } from '@/firebase';
@@ -176,7 +176,7 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar Adelanto de Sueldo</DialogTitle>
           <DialogDescription>
@@ -184,12 +184,10 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="employee" className="text-right">
-              Empleado
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="employee">Empleado</Label>
             <Select onValueChange={setSelectedEmployeeId} value={selectedEmployeeId} disabled={isLoadingEmployees}>
-              <SelectTrigger id="employee" className="col-span-3">
+              <SelectTrigger id="employee">
                 <SelectValue placeholder="Seleccione un empleado" />
               </SelectTrigger>
               <SelectContent>
@@ -202,12 +200,10 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
             </Select>
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="project" className="text-right">
-              Obra
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="project">Obra</Label>
             <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
-              <SelectTrigger id="project" className="col-span-3">
+              <SelectTrigger id="project">
                 <SelectValue placeholder="Imputar a una obra (opcional)" />
               </SelectTrigger>
               <SelectContent>
@@ -220,16 +216,14 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
             </Select>
           </div>
 
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
-              Fecha
-            </Label>
+           <div className="space-y-2">
+            <Label htmlFor="date">Fecha</Label>
              <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "col-span-3 justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -250,18 +244,14 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
             </Popover>
           </div>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="amount" className="text-right">
-              Monto
-            </Label>
-            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" value={amount} onChange={(e: any) => setAmount(e.target.value)} />
+          <div className="space-y-2">
+            <Label htmlFor="amount">Monto</Label>
+            <Input id="amount" type="number" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="reason" className="text-right pt-2">
-              Motivo
-            </Label>
-            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" value={reason} onChange={(e: any) => setReason(e.target.value)}/>
+          <div className="space-y-2">
+            <Label htmlFor="reason">Motivo</Label>
+            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}/>
           </div>
         </div>
         <DialogFooter>

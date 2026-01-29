@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -191,7 +191,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
           Registrar Adelanto
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Registrar Adelanto de Sueldo</DialogTitle>
           <DialogDescription>
@@ -199,85 +199,71 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="employee" className="text-right">
-              Empleado
-            </Label>
-            <Select onValueChange={setSelectedEmployeeId} value={selectedEmployeeId} disabled={isLoadingEmployees}>
-              <SelectTrigger id="employee" className="col-span-3">
-                <SelectValue placeholder="Seleccione un empleado" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees?.filter((e: Employee) => e.status === 'Activo').map((e: Employee) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="project" className="text-right">
-              Obra
-            </Label>
-            <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
-              <SelectTrigger id="project" className="col-span-3">
-                <SelectValue placeholder="Imputar a una obra (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
-              Fecha
-            </Label>
-             <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                  locale={es}
-                  disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="amount" className="text-right">
-              Monto
-            </Label>
-            <Input id="amount" type="number" placeholder="ARS" className="col-span-3" value={amount} onChange={(e: any) => setAmount(e.target.value)} />
-          </div>
-
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="reason" className="text-right pt-2">
-              Motivo
-            </Label>
-            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" className="col-span-3" value={reason} onChange={(e: any) => setReason(e.target.value)}/>
-          </div>
+            <div className="space-y-2">
+                <Label htmlFor="employee">Empleado</Label>
+                <Select onValueChange={setSelectedEmployeeId} value={selectedEmployeeId} disabled={isLoadingEmployees}>
+                <SelectTrigger id="employee">
+                    <SelectValue placeholder="Seleccione un empleado" />
+                </SelectTrigger>
+                <SelectContent>
+                    {employees?.filter((e: Employee) => e.status === 'Activo').map((e: Employee) => (
+                    <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="project">Obra</Label>
+                 <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
+                <SelectTrigger id="project">
+                    <SelectValue placeholder="Imputar a una obra (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                    {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
+                    <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="date">Fecha</Label>
+                <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    variant={"outline"}
+                    className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                    )}
+                    >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                    locale={es}
+                    disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
+                    />
+                </PopoverContent>
+                </Popover>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="amount">Monto</Label>
+                <Input id="amount" type="number" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="reason">Motivo</Label>
+                <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}/>
+            </div>
         </div>
         <DialogFooter>
           <Button type="button" onClick={handleSave} disabled={isPending}>

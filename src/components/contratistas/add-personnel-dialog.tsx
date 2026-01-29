@@ -88,7 +88,7 @@ export function AddPersonnelDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Agregar Personal al Contratista</DialogTitle>
           <DialogDescription>
@@ -96,22 +96,18 @@ export function AddPersonnelDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Nombre
-            </Label>
-            <Input id="name" value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre</Label>
+            <Input id="name" value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nombre completo del empleado" />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="artExpiryDate" className="text-right">
-              Vencimiento ART
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="artExpiryDate">Vencimiento ART</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "col-span-3 justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal",
                     !artExpiryDate && "text-muted-foreground"
                   )}
                 >

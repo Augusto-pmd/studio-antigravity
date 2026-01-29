@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -136,7 +136,7 @@ export function EmployeeDialog({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Editar Empleado' : 'Alta de Nuevo Empleado'}</DialogTitle>
           <DialogDescription>
@@ -144,56 +144,42 @@ export function EmployeeDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Nombre
-            </Label>
-            <Input id="name" value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre</Label>
+            <Input id="name" value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nombre completo del empleado" />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input id="email" type="email" value={email} onChange={(e: any) => setEmail(e.target.value)} placeholder="email@ejemplo.com (opcional)" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" value={email} onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} placeholder="email@ejemplo.com (opcional)" />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="phone" className="text-right">
-              Teléfono
-            </Label>
-            <Input id="phone" value={phone} onChange={(e: any) => setPhone(e.target.value)} placeholder="(Opcional)" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="phone">Teléfono</Label>
+            <Input id="phone" value={phone} onChange={(e: ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)} placeholder="(Opcional)" />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="emergencyContactName" className="text-right">
-              Contacto Emergencia
-            </Label>
-            <Input id="emergencyContactName" value={emergencyContactName} onChange={(e: any) => setEmergencyContactName(e.target.value)} placeholder="Nombre (opcional)" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="emergencyContactName">Contacto Emergencia</Label>
+            <Input id="emergencyContactName" value={emergencyContactName} onChange={(e: ChangeEvent<HTMLInputElement>) => setEmergencyContactName(e.target.value)} placeholder="Nombre (opcional)" />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="emergencyContactPhone" className="text-right">
-              Tel. Emergencia
-            </Label>
-            <Input id="emergencyContactPhone" value={emergencyContactPhone} onChange={(e: any) => setEmergencyContactPhone(e.target.value)} placeholder="Teléfono (opcional)" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="emergencyContactPhone">Tel. Emergencia</Label>
+            <Input id="emergencyContactPhone" value={emergencyContactPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEmergencyContactPhone(e.target.value)} placeholder="Teléfono (opcional)" />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">
-              Rubro
-            </Label>
-            <Input id="category" value={category} onChange={(e: any) => setCategory(e.target.value)} placeholder="Ej. Albañil, Electricista" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="category">Rubro</Label>
+            <Input id="category" value={category} onChange={(e: ChangeEvent<HTMLInputElement>) => setCategory(e.target.value)} placeholder="Ej. Albañil, Electricista" />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="dailyWage" className="text-right">
-              Salario Diario
-            </Label>
-            <Input id="dailyWage" type="number" value={dailyWage} onChange={(e: any) => setDailyWage(e.target.value)} placeholder="ARS" className="col-span-3" />
+          <div className="space-y-2">
+            <Label htmlFor="dailyWage">Salario Diario</Label>
+            <Input id="dailyWage" type="number" value={dailyWage} onChange={(e: ChangeEvent<HTMLInputElement>) => setDailyWage(e.target.value)} placeholder="ARS" />
           </div>
           
-           <div className="grid grid-cols-4 items-start gap-4 pt-2">
-            <Label className="text-right leading-tight pt-2">Forma de Pago</Label>
-             <RadioGroup value={paymentType} onValueChange={(v: any) => setPaymentType(v)} className="col-span-3 flex items-center gap-6">
+           <div className="space-y-2">
+            <Label>Forma de Pago</Label>
+             <RadioGroup value={paymentType} onValueChange={(v: any) => setPaymentType(v)} className="flex items-center gap-6 pt-1">
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Semanal" id="semanal" />
                     <Label htmlFor="semanal">Semanal</Label>
@@ -205,16 +191,14 @@ export function EmployeeDialog({
             </RadioGroup>
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="artExpiryDate" className="text-right">
-              Vencimiento ART
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="artExpiryDate">Vencimiento ART</Label>
              <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "col-span-3 justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal",
                     !artExpiryDate && "text-muted-foreground"
                   )}
                 >
@@ -233,12 +217,10 @@ export function EmployeeDialog({
             </Popover>
           </div>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
-              Estado
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="status">Estado</Label>
             <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                <SelectTrigger id="status" className="col-span-3">
+                <SelectTrigger id="status" className="w-full">
                   <SelectValue placeholder="Seleccione un estado" />
                 </SelectTrigger>
                 <SelectContent>
