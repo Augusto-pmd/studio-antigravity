@@ -74,8 +74,8 @@ service cloud.firestore {
     }
     
     match /timeLogs/{logId} {
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow write: if request.auth != null;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     match /contractors/{contractorId} {
