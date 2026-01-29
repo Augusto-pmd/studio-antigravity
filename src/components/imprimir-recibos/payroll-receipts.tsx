@@ -122,48 +122,48 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                 <h1 className="text-2xl font-bold">Recibos de Pago (Contratistas)</h1>
                 <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
             </div>
-            <div className="space-y-4 print:space-y-2">
+            <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
               {contractorReceipts?.length === 0 ? (
-                <div className="flex h-64 items-center justify-center rounded-md border border-dashed">No hay certificaciones aprobadas para esta semana.</div>
+                <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay certificaciones aprobadas para esta semana.</div>
               ) : contractorReceipts?.map(cert => (
-                <div key={cert.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
-                    <header className="flex justify-between items-start border-b pb-2">
+                <div key={cert.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border print:text-[10px]">
+                    <header className="flex justify-between items-start border-b pb-2 print:pb-1">
                         <div>
-                            <Logo className="h-6 w-auto" />
-                            <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
+                            <Logo className="h-5 w-auto" />
+                            <p className="text-xs text-gray-500 mt-1 print:text-[8px] print:mt-0.5">PMD Arquitectura</p>
                         </div>
                         <div className="text-right">
-                            <h2 className="text-sm font-semibold">Recibo Semanal de Contratista</h2>
-                            <p className="text-xs text-gray-500">
+                            <h2 className="text-sm font-semibold print:text-[10px]">Recibo Semanal de Contratista</h2>
+                            <p className="text-xs text-gray-500 print:text-[8px]">
                             Semana del {format(parseISO(week.startDate), 'dd/MM/yy')} al {format(parseISO(week.endDate), 'dd/MM/yy')}
                             </p>
                         </div>
                     </header>
 
-                    <section className="mt-2 text-xs">
+                    <section className="mt-2 print:mt-1 text-xs print:text-[9px]">
                       <h3 className="font-medium">Contratista: {cert.contractorName}</h3>
                       <p className="text-gray-500">Obra: {cert.projectName}</p>
                     </section>
 
-                    <section className="mt-2 border-t pt-2">
-                        <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Detalle</h4>
-                        <p className="text-xs">{cert.notes || 'Certificación de trabajos semanales.'}</p>
+                    <section className="mt-2 print:mt-1 border-t pt-2 print:pt-1">
+                        <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Detalle</h4>
+                        <p className="text-xs print:text-[9px]">{cert.notes || 'Certificación de trabajos semanales.'}</p>
                     </section>
                     
-                    <section className="mt-2 border-t-2 border-dashed pt-1">
-                      <div className="flex justify-between items-center text-sm font-bold">
+                    <section className="mt-2 print:mt-1 border-t-2 border-dashed pt-1">
+                      <div className="flex justify-between items-center text-sm font-bold print:text-[10px]">
                         <span>TOTAL A PAGAR:</span>
                         <span>{formatCurrency(cert.amount, cert.currency)}</span>
                       </div>
                     </section>
                     
-                    <footer className="mt-4 flex justify-between items-end">
-                        <div className="w-1/2">
-                            <div className="border-t pt-1 text-center text-xs">
+                    <footer className="mt-4 print:mt-2 flex justify-between items-end">
+                        <div className="w-1/2 pt-4">
+                            <div className="border-t pt-1 text-center text-xs print:text-[8px]">
                             Firma del Contratista
                             </div>
                         </div>
-                        <div className="w-1/2 text-right text-xs text-gray-400">
+                        <div className="w-1/2 text-right text-xs text-gray-400 print:text-[8px]">
                             Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
                         </div>
                     </footer>
@@ -181,29 +181,29 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
         <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
       </div>
 
-      <div className="space-y-4 print:space-y-2">
-        {employeeReceiptsData.length === 0 && <div className="flex h-64 items-center justify-center rounded-md border border-dashed">No hay actividad registrada para empleados esta semana.</div>}
+      <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
+        {employeeReceiptsData.length === 0 && <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay actividad registrada para empleados esta semana.</div>}
         {employeeReceiptsData.map(data => (
-          <div key={data.employee.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border">
-            <header className="flex justify-between items-start border-b pb-2">
+          <div key={data.employee.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border print:text-[10px]">
+            <header className="flex justify-between items-start border-b pb-2 print:pb-1">
               <div>
-                <Logo className="h-6 w-auto" />
-                <p className="text-xs text-gray-500 mt-1">PMD Arquitectura</p>
+                <Logo className="h-5 w-auto" />
+                <p className="text-xs text-gray-500 mt-1 print:text-[8px] print:mt-0.5">PMD Arquitectura</p>
               </div>
               <div className="text-right">
-                <h2 className="text-sm font-semibold">Recibo Semanal</h2>
-                <p className="text-xs text-gray-500">
+                <h2 className="text-sm font-semibold print:text-[10px]">Recibo Semanal</h2>
+                <p className="text-xs text-gray-500 print:text-[8px]">
                   Semana del {format(parseISO(data.week.startDate), 'dd/MM/yy')} al {format(parseISO(data.week.endDate), 'dd/MM/yy')}
                 </p>
               </div>
             </header>
 
-            <section className="mt-2 text-xs">
+            <section className="mt-2 print:mt-1 text-xs print:text-[9px]">
               <h3 className="font-medium">Empleado: {data.employee.name}</h3>
               <p className="text-gray-500">Categoría: {data.employee.category}</p>
             </section>
             
-            <section className="mt-1">
+            <section className="mt-1 print:mt-0.5">
               <h4 className="font-medium text-[8px] mb-0.5 uppercase text-gray-500">Detalle de Asistencias</h4>
               <div className="border rounded-sm overflow-hidden">
                 <table className="w-full text-[8px]">
@@ -237,18 +237,18 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               </div>
             </section>
 
-            <section className="mt-2 grid grid-cols-2 gap-4">
+            <section className="mt-2 print:mt-1 grid grid-cols-2 gap-x-2">
               <div>
-                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Haberes</h4>
-                <div className="space-y-0.5 text-xs">
+                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Haberes</h4>
+                <div className="space-y-0.5 text-xs print:text-[9px]">
                   <div className="flex justify-between"><span>Días Trab.:</span><span>{data.summary.daysPresent}</span></div>
                   <div className="flex justify-between"><span>Jornal:</span><span>{formatCurrency(data.employee.dailyWage)}</span></div>
                   <div className="flex justify-between font-semibold border-t pt-0.5 mt-0.5"><span>Bruto:</span><span>{formatCurrency(data.summary.grossPay)}</span></div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground">Deducciones</h4>
-                 <div className="space-y-0.5 text-xs">
+                <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Deducciones</h4>
+                 <div className="space-y-0.5 text-xs print:text-[9px]">
                     {data.advances.length > 0 && data.advances.map(adv => (
                        <div key={adv.id} className="flex justify-between">
                          <span>Adelanto ({format(parseISO(adv.date), 'dd/MM')}):</span>
@@ -272,20 +272,20 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               </div>
             </section>
             
-            <section className="mt-2 border-t-2 border-dashed pt-1">
-              <div className="flex justify-between items-center text-sm font-bold">
+            <section className="mt-2 print:mt-1 border-t-2 border-dashed pt-1">
+              <div className="flex justify-between items-center text-sm font-bold print:text-[10px]">
                 <span>NETO A COBRAR:</span>
                 <span>{formatCurrency(data.summary.netPay)}</span>
               </div>
             </section>
             
-            <footer className="mt-4 flex justify-between items-end">
-              <div className="w-1/2">
-                <div className="border-t pt-1 text-center text-xs">
+            <footer className="mt-4 print:mt-2 flex justify-between items-end">
+              <div className="w-1/2 pt-4">
+                <div className="border-t pt-1 text-center text-xs print:text-[8px]">
                   Firma del Empleado
                 </div>
               </div>
-              <div className="w-1/2 text-right text-xs text-gray-400">
+              <div className="w-1/2 text-right text-xs text-gray-400 print:text-[8px]">
                 <p>Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
               </div>
             </footer>
