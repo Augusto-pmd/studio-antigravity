@@ -53,13 +53,16 @@ export default function ResumenSemanalPage() {
     const [summary, setSummary] = useState<SummaryData | null>(null);
     const [isCalculating, setIsCalculating] = useState(true);
 
-    // --- Data Fetching Hooks (unchanged) ---
+    // --- Data Fetching Hooks (REBUILT WITH useMemo) ---
     const openWeekQuery = useMemo(() => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null, [firestore]);
     const { data: openWeeks, isLoading: isLoadingWeek } = useCollection<PayrollWeek>(openWeekQuery);
     const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
-    const { data: attendances, isLoading: l1 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
-    const { data: advances, isLoading: l2 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
+    const attendancesQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null, [currentWeek, firestore]);
+    const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
+
+    const advancesQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null, [currentWeek, firestore]);
+    const { data: advances, isLoading: l2 } = useCollection(advancesQuery);
     
     const fundRequestsQuery = useMemo(() => {
         if (!currentWeek || !firestore || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return null;
@@ -67,13 +70,18 @@ export default function ResumenSemanalPage() {
     }, [currentWeek, firestore]);
     const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
-    const { data: certifications, isLoading: l4 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), and(where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado'))) : null);
-    const { data: employees, isLoading: l5 } = useCollection(firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null);
-    const { data: projects, isLoading: l6 } = useCollection(firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null);
+    const certificationsQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), and(where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado'))) : null, [currentWeek, firestore]);
+    const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
+
+    const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
+    const { data: employees, isLoading: l5 } = useCollection(employeesQuery);
+
+    const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
+    const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
     
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
-    // --- REBUILT CALCULATION LOGIC ---
+    // --- Calculation Logic (unchanged, but now fed by stable queries) ---
     useEffect(() => {
         if (isLoadingData) {
             setIsCalculating(true);
@@ -82,7 +90,6 @@ export default function ResumenSemanalPage() {
 
         const defaultResult: SummaryData = { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
 
-        // The try/catch block is the last line of defense. The core fix is the defensive programming within.
         try {
             if (!currentWeek || !employees || !projects) {
                 setSummary(defaultResult);
@@ -96,7 +103,7 @@ export default function ResumenSemanalPage() {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
             });
 
-            // PERSONAL: Calculated only if all its dependencies are present.
+            // PERSONAL
             let totalPersonal = 0;
             if (attendances && advances) {
                 const grossWages = attendances.reduce((sum, att) => {
@@ -113,7 +120,6 @@ export default function ResumenSemanalPage() {
                 const totalAdvances = advances.reduce((sum, adv) => sum + safeParseFloat(adv.amount), 0);
                 totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
                 
-                // Breakdown for personal
                  attendances.forEach(att => {
                     const emp = employeeMap.get(att.employeeId);
                     const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
@@ -129,7 +135,7 @@ export default function ResumenSemanalPage() {
                 });
             }
             
-            // CONTRATISTAS: Calculated only if its dependency is present.
+            // CONTRATISTAS
             let totalContratistas = 0;
             if (certifications) {
                 totalContratistas = certifications.reduce((sum, cert) => sum + safeParseFloat(cert.amount), 0);
@@ -141,7 +147,7 @@ export default function ResumenSemanalPage() {
                 });
             }
             
-            // SOLICITUDES: Calculated only if its dependency is present.
+            // SOLICITUDES
             let totalSolicitudes = 0;
             if (fundRequests) {
                 totalSolicitudes = fundRequests.reduce((sum, req) => {
@@ -162,7 +168,6 @@ export default function ResumenSemanalPage() {
             const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
             const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
             
-            // Final check to prevent NaN from ever reaching the state
             const finalSummary = {
                 totalPersonal: isNaN(totalPersonal) ? 0 : totalPersonal,
                 totalContratistas: isNaN(totalContratistas) ? 0 : totalContratistas,
@@ -180,7 +185,7 @@ export default function ResumenSemanalPage() {
 
         } catch (error) {
             console.error("FATAL: Calculation logic in ResumenSemanalPage failed.", error);
-            setSummary(defaultResult); // On any unexpected error, safely reset to the default state.
+            setSummary(defaultResult);
         } finally {
             setIsCalculating(false);
         }
