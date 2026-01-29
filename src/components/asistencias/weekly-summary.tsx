@@ -118,7 +118,9 @@ const cashAdvanceConverter = {
 };
 
 const formatCurrency = (amount: number) => {
-    if (typeof amount !== 'number') return '';
+    if (typeof amount !== 'number' || isNaN(amount)) {
+      return 'ARS 0,00';
+    }
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
@@ -145,36 +147,48 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
   const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances;
   
   const weeklySummaryData = useMemo(() => {
-      if (!weekAttendances || !employees || !weekAdvances) {
-          return { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
-      }
+    const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
 
-      const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
-      const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (e.dailyWage || 0) / 8]));
+    if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances) {
+        return defaultResult;
+    }
+    
+    try {
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, Number(e.dailyWage) || 0]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (Number(e.dailyWage) || 0) / 8]));
 
-      const grossWages = weekAttendances.reduce((sum, attendance) => {
-          if (attendance.status === 'presente') {
-              const wage = employeeWageMap.get(attendance.employeeId) || 0;
-              return sum + wage;
-          }
-          return sum;
-      }, 0);
+        const grossWages = weekAttendances.reduce((sum, attendance) => {
+            if (attendance.status === 'presente') {
+                const wage = employeeWageMap.get(attendance.employeeId) || 0;
+                return sum + wage;
+            }
+            return sum;
+        }, 0);
 
-      const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
-        if (attendance.status === 'presente' && attendance.lateHours > 0) {
-            const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-            return sum + (attendance.lateHours * hourlyRate);
+        const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
+            if (attendance.status === 'presente' && Number(attendance.lateHours) > 0) {
+                const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
+                return sum + ((Number(attendance.lateHours) || 0) * hourlyRate);
+            }
+            return sum;
+        }, 0);
+
+        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + (Number(advance.amount) || 0), 0);
+
+        const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
+
+        if (isNaN(netPay)) {
+            console.error("WeeklySummary calculation resulted in NaN.", { grossWages, totalAdvances, totalLateHoursDeduction });
+            return defaultResult;
         }
-        return sum;
-      }, 0);
 
-      const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
+        return { grossWages, totalAdvances, totalLateHoursDeduction, netPay };
+    } catch(error) {
+        console.error("Error calculating weekly summary:", error);
+        return defaultResult;
+    }
 
-      const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
-
-      return { grossWages, totalAdvances, totalLateHoursDeduction, netPay };
-
-  }, [weekAttendances, employees, weekAdvances]);
+  }, [isLoadingSummaryData, weekAttendances, employees, weekAdvances]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = parseISO(startDate);
@@ -194,42 +208,42 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
     }
 
     startTransition(() => {
-      const generate = async () => {
-        const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
-        const lastWeekSnap = await getDocs(lastWeekQuery);
-        const lastWeek = lastWeekSnap.docs.length > 0 ? lastWeekSnap.docs[0].data() as PayrollWeek : null;
-        
-        let nextStartDate: Date;
+      (async () => {
+        try {
+            const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
+            const lastWeekSnap = await getDocs(lastWeekQuery);
+            const lastWeek = lastWeekSnap.docs.length > 0 ? lastWeekSnap.docs[0].data() as PayrollWeek : null;
+            
+            let nextStartDate: Date;
 
-        if (!lastWeek) {
-          nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
-        } else {
-          nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
+            if (!lastWeek) {
+              nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+            } else {
+              nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
+            }
+
+            const nextEndDate = endOfWeek(nextStartDate, { weekStartsOn: 1 });
+
+            const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
+            const newWeek: PayrollWeek = {
+              id: newWeekRef.id,
+              startDate: nextStartDate.toISOString(),
+              endDate: nextEndDate.toISOString(),
+              status: 'Abierta',
+              generatedAt: new Date().toISOString(),
+            };
+
+            await setDoc(newWeekRef, newWeek);
+            
+            toast({
+                title: "Nueva Semana Generada",
+                description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
+            });
+        } catch (error: any) {
+            console.error("Error generating new week:", error);
+            toast({ variant: 'destructive', title: "Error al generar", description: `No se pudo generar la nueva semana. ${error.message}` });
         }
-
-        const nextEndDate = endOfWeek(nextStartDate, { weekStartsOn: 1 });
-
-        const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-        const newWeek: PayrollWeek = {
-          id: newWeekRef.id,
-          startDate: nextStartDate.toISOString(),
-          endDate: nextEndDate.toISOString(),
-          status: 'Abierta',
-          generatedAt: new Date().toISOString(),
-        };
-
-        await setDoc(newWeekRef, newWeek);
-        
-        toast({
-            title: "Nueva Semana Generada",
-            description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
-        });
-      };
-
-      generate().catch((error) => {
-        console.error("Error writing to Firestore:", error);
-        toast({ variant: 'destructive', title: "Error al generar", description: `No se pudo generar la nueva semana. ${error.message}` });
-      });
+      })();
     });
   };
   
