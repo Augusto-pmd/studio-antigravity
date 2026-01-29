@@ -55,7 +55,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getAuth, signOut } from 'firebase/auth';
 import { useState, useMemo } from "react";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
-import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -174,7 +174,7 @@ export function AppSidebar() {
                 return null;
               }
 
-              const adminValidationRoutes = ['/contabilidad', '/calendario-pagos', '/ventas', '/gastos-recurrentes'];
+              const adminValidationRoutes = ['/contabilidad', '/calendario-pagos', '/gastos-recurrentes'];
               if (adminValidationRoutes.includes(item.href) && !permissions.canValidate) {
                 return null;
               }
