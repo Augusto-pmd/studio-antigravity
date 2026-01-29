@@ -29,29 +29,17 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
     const { data: attendances, isLoading: l1 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
     const { data: advances, isLoading: l2 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
-    const { data: allFundRequests, isLoading: l3 } = useCollection(firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter)) : null);
-    const { data: allCertifications, isLoading: l4 } = useCollection(firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter)) : null);
+    const { data: fundRequests, isLoading: l3 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), where('status', '==', 'Aprobado'), where('date', '>=', currentWeek.startDate), where('date', '<=', currentWeek.endDate)) : null);
+    const { data: certifications, isLoading: l4 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado')) : null);
     const { data: employees, isLoading: l5 } = useCollection(firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null);
     const { data: projects, isLoading: l6 } = useCollection(firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null);
     
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
     const { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown } = useMemo(() => {
-        if (isLoadingData || !currentWeek || !attendances || !advances || !allFundRequests || !allCertifications || !employees || !projects) {
+        if (isLoadingData || !currentWeek || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
             return { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
         }
-
-        const weekStart = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-        const weekEnd = format(addDays(parseISO(currentWeek.endDate), 1), 'yyyy-MM-dd');
-
-        const fundRequests = allFundRequests.filter((req: FundRequest) => {
-            if (req.status !== 'Aprobado') return false;
-            if (!req.date) return false;
-            const reqDate = format(parseISO(req.date), 'yyyy-MM-dd');
-            return reqDate >= weekStart && reqDate < weekEnd;
-        });
-
-        const certifications = allCertifications.filter((cert: ContractorCertification) => cert.payrollWeekId === currentWeek.id && cert.status === 'Aprobado');
 
         const employeeMap = new Map(employees.map((e: any) => [e.id, { wage: e.dailyWage || 0, hourlyRate: (e.dailyWage || 0) / 8 }]));
         
@@ -129,7 +117,7 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
 
-    }, [isLoadingData, currentWeek, attendances, advances, allFundRequests, allCertifications, employees, projects]);
+    }, [isLoadingData, currentWeek, attendances, advances, fundRequests, certifications, employees, projects]);
     
     if (isLoadingData) {
         return <Skeleton className="h-96 w-full" />;
