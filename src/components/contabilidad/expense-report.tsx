@@ -133,7 +133,7 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
       projectsMap[expense.projectId] || '',
       expense.supplierId,
       suppliersMap[expense.supplierId] || '',
-      expenseCategories.find((c: any) => c.id === expense.categoryId)?.name || expense.categoryId,
+      expenseCategories.find((c) => c.id === expense.categoryId)?.name || expense.categoryId,
       expense.documentType,
       expense.invoiceNumber || '',
       expense.amount,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -100,7 +100,7 @@ export function AddPersonnelDialog({
             <Label htmlFor="name" className="text-right">
               Nombre
             </Label>
-            <Input id="name" value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
+            <Input id="name" value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Nombre completo del empleado" className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="artExpiryDate" className="text-right">

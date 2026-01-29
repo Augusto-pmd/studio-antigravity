@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, ChangeEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  ChangeEvent,
+  useTransition,
+} from 'react';
 import {
   Dialog,
   DialogContent,
@@ -67,7 +73,7 @@ export function SaleDialog({
 }) {
   const [open, setOpen] = useState(false);
   const isEditMode = !!sale;
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, startTransition] = useTransition();
   const firestore = useFirestore();
   const firebaseApp = useFirebaseApp();
   const { toast } = useToast();
@@ -126,7 +132,7 @@ export function SaleDialog({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (isSaving) return;
 
     if (!firestore || !firebaseApp) {
@@ -145,66 +151,71 @@ export function SaleDialog({
       });
       return;
     }
+    
+    startTransition(() => {
+      const saveData = async () => {
+        const saleCollection = collection(firestore, `projects/${projectId}/sales`);
+        const saleRef =
+          isEditMode && sale
+            ? doc(saleCollection, sale.id)
+            : doc(saleCollection);
 
-    setIsSaving(true);
+        let invoiceUrl = sale?.invoiceUrl || '';
+        if (invoiceFile) {
+          const storage = getStorage(firebaseApp);
+          const filePath = `sales_invoices/${projectId}/${saleRef.id}/${invoiceFile.name}`;
+          const fileRef = ref(storage, filePath);
+          await uploadBytes(fileRef, invoiceFile);
+          invoiceUrl = await getDownloadURL(fileRef);
+        }
 
-    try {
-      const saleCollection = collection(firestore, `projects/${projectId}/sales`);
-      const saleRef =
-        isEditMode && sale
-          ? doc(saleCollection, sale.id)
-          : doc(saleCollection);
+        const saleData: Sale = {
+          id: saleRef.id,
+          projectId,
+          date: date.toISOString(),
+          description,
+          documentType,
+          netAmount: parseFloat(netAmount) || 0,
+          ivaAmount: parseFloat(ivaAmount) || 0,
+          totalAmount: parseFloat(totalAmount) || 0,
+          status,
+          invoiceUrl: invoiceUrl || undefined,
+          collectedDate: sale?.collectedDate,
+          treasuryAccountId: sale?.treasuryAccountId,
+          retencionGanancias: sale?.retencionGanancias,
+          retencionIVA: sale?.retencionIVA,
+          retencionIIBB: sale?.retencionIIBB,
+        };
 
-      let invoiceUrl = sale?.invoiceUrl || '';
-      if (invoiceFile) {
-        const storage = getStorage(firebaseApp);
-        const filePath = `sales_invoices/${projectId}/${saleRef.id}/${invoiceFile.name}`;
-        const fileRef = ref(storage, filePath);
-        await uploadBytes(fileRef, invoiceFile);
-        invoiceUrl = await getDownloadURL(fileRef);
-      }
+        // Remove undefined properties before sending to Firestore
+        const cleanData = Object.fromEntries(
+          Object.entries(saleData).filter(([, v]) => v !== undefined)
+        );
 
-      const saleData: Sale = {
-        id: saleRef.id,
-        projectId,
-        date: date.toISOString(),
-        description,
-        documentType,
-        netAmount: parseFloat(netAmount) || 0,
-        ivaAmount: parseFloat(ivaAmount) || 0,
-        totalAmount: parseFloat(totalAmount) || 0,
-        status,
-        invoiceUrl: invoiceUrl || undefined,
-        collectedDate: sale?.collectedDate,
-        treasuryAccountId: sale?.treasuryAccountId,
-        retencionGanancias: sale?.retencionGanancias,
-        retencionIVA: sale?.retencionIVA,
-        retencionIIBB: sale?.retencionIIBB,
+        await setDoc(saleRef, cleanData, { merge: true });
       };
 
-      // Remove undefined properties before sending to Firestore
-      const cleanData = Object.fromEntries(
-        Object.entries(saleData).filter(([, v]) => v !== undefined)
-      );
-
-      await setDoc(saleRef, cleanData, { merge: true });
-
-      toast({
-        title: isEditMode ? 'Documento Actualizado' : 'Documento Registrado',
-        description: `El documento de venta ha sido guardado correctamente.`,
-      });
-      setOpen(false);
-    } catch (error) {
-      console.error('Error writing to Firestore:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error al guardar',
-        description:
-          'No se pudo guardar el documento. Por favor, revise los datos e inténtelo de nuevo.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
+      saveData()
+        .then(() => {
+          toast({
+            title: isEditMode ? 'Documento Actualizado' : 'Documento Registrado',
+            description: `El documento de venta ha sido guardado correctamente.`,
+          });
+          setOpen(false);
+        })
+        .catch((error) => {
+          console.error('Error writing to Firestore:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error al guardar',
+            description:
+              'No se pudo guardar el documento. Por favor, revise los datos e inténtelo de nuevo.',
+          });
+        })
+        .finally(() => {
+          // This will be handled by useTransition
+        });
+    });
   };
 
   return (
@@ -301,7 +312,7 @@ export function SaleDialog({
             <Textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
               placeholder="Ej. Factura por avance de obra..."
             />
           </div>
@@ -337,7 +348,7 @@ export function SaleDialog({
                 id="netAmount"
                 type="number"
                 value={netAmount}
-                onChange={(e) => setNetAmount(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setNetAmount(e.target.value)}
                 placeholder="0.00"
               />
             </div>
@@ -347,7 +358,7 @@ export function SaleDialog({
                 id="ivaAmount"
                 type="number"
                 value={ivaAmount}
-                onChange={(e) => setIvaAmount(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setIvaAmount(e.target.value)}
                 placeholder="0.00"
               />
             </div>

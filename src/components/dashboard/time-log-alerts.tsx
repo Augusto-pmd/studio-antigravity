@@ -41,7 +41,7 @@ export function TimeLogAlerts() {
         const lastWeek = subWeeks(today, 1);
         const start = startOfWeek(lastWeek, { weekStartsOn: 1 });
         const end = endOfWeek(lastWeek, { weekStartsOn: 1 });
-        const days = eachDayOfInterval({ start, end }).filter((day: any) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
+        const days = eachDayOfInterval({ start, end }).filter((day: Date) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
         return { lastWeekStart: start, lastWeekEnd: end, workDays: days };
     }, []);
 
@@ -68,18 +68,18 @@ export function TimeLogAlerts() {
             return;
         }
 
-        const employeesWhoDidntLog = employees.filter((employee: any) => {
+        const employeesWhoDidntLog = employees.filter((employee: TechnicalOfficeEmployee) => {
             // Exclude 'Augusto Menendez' as requested
             if (employee.fullName === 'Augusto Menendez') {
                 return false;
             }
             
-            const logsForEmployee = lastWeekLogs.filter((log: any) => log.userId === employee.userId);
-            const loggedDays = new Set(logsForEmployee.map((log: any) => log.date));
-            const requiredDays = workDays.map((day: any) => format(day, 'yyyy-MM-dd'));
+            const logsForEmployee = lastWeekLogs.filter((log: TimeLog) => log.userId === employee.userId);
+            const loggedDays = new Set(logsForEmployee.map((log: TimeLog) => log.date));
+            const requiredDays = workDays.map((day: Date) => format(day, 'yyyy-MM-dd'));
 
             // Check if all required workdays have at least one log entry
-            const hasLoggedAllDays = requiredDays.every((dayStr: any) => loggedDays.has(dayStr));
+            const hasLoggedAllDays = requiredDays.every((dayStr: string) => loggedDays.has(dayStr));
 
             return !hasLoggedAllDays;
         });

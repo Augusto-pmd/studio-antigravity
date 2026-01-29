@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { TechnicalOfficeEmployee, TimeLog } from '@/lib/types';
-import { startOfWeek, endOfWeek, subWeeks, format, eachDayOfInterval, addDays } from 'date-fns';
+import { startOfWeek, endOfWeek, subWeeks, format, eachDayOfInterval, addDays, Day } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ export function MyTimeLogReminder() {
         const today = new Date();
         const start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
         const end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
-        const days = eachDayOfInterval({ start, end }).filter((day: any) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
+        const days = eachDayOfInterval({ start, end }).filter((day: Date) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
         return { 
             weekToCheckStart: start, 
             workDays: days,
@@ -62,8 +62,8 @@ export function MyTimeLogReminder() {
     const isLogComplete = useMemo(() => {
         if (isLoadingLogs || !weekLogs) return null; // Still loading
         const loggedDays = new Set(weekLogs.map((log: TimeLog) => log.date));
-        const requiredDays = workDays.map((day: any) => format(day, 'yyyy-MM-dd'));
-        return requiredDays.every((dayStr: any) => loggedDays.has(dayStr));
+        const requiredDays = workDays.map((day: Date) => format(day, 'yyyy-MM-dd'));
+        return requiredDays.every((dayStr: string) => loggedDays.has(dayStr));
     }, [weekLogs, workDays, isLoadingLogs]);
 
     useEffect(() => {

@@ -229,7 +229,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map((c: any) => (
+                {expenseCategories.map((c: {id: string, name: string}) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -266,11 +266,11 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">Monto (ARS)</Label>
-            <Input id="amount" type="number" value={amount} onChange={(e: any) => setAmount(e.target.value)} placeholder="0.00" />
+            <Input id="amount" type="number" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Descripción del Gasto</Label>
-            <Textarea id="description" value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Ej: Compra de clavos y tornillos para..." />
+            <Textarea id="description" value={description} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Ej: Compra de clavos y tornillos para..." />
           </div>
            <div className="space-y-2">
             <Label htmlFor="receipt-file">Comprobante (Opcional)</Label>
