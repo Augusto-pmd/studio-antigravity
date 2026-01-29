@@ -10,7 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FundTransferDialog } from '@/components/cajas/fund-transfer-dialog';
 import { Button } from '@/components/ui/button';
-import { Landmark, Wallet } from 'lucide-react';
+import { Landmark, Wallet, Eye } from 'lucide-react';
+import { ViewUserTransactionsDialog } from './view-user-transactions-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -49,18 +50,23 @@ function UserCashAccountCard({ profile }: { profile: UserProfile }) {
             <CardContent className="grid gap-2">
                 {isLoading && (
                     <div className='space-y-2'>
-                        <Skeleton className="h-8 w-full" />
-                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
                     </div>
                 )}
                 {accounts && accounts.length > 0 ? accounts.map((account: CashAccount) => (
-                    <div key={account.id} className="flex items-center justify-between rounded-md border p-3">
-                        <div className='flex items-center gap-2'>
-                            <Wallet className="h-4 w-4 text-muted-foreground"/>
-                            <span className="font-semibold text-muted-foreground">{account.name}</span>
+                    <ViewUserTransactionsDialog key={account.id} userProfile={profile} account={account}>
+                        <div className="flex items-center justify-between rounded-md border p-3 hover:bg-muted/50 cursor-pointer">
+                            <div className='flex items-center gap-2'>
+                                <Wallet className="h-4 w-4 text-muted-foreground"/>
+                                <span className="font-semibold text-muted-foreground">{account.name}</span>
+                            </div>
+                            <div className='flex items-center gap-2'>
+                                <span className="font-mono text-lg font-bold">{formatCurrency(account.balance ?? 0, 'ARS')}</span>
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                            </div>
                         </div>
-                        <span className="font-mono text-lg font-bold">{formatCurrency(account.balance ?? 0, 'ARS')}</span>
-                    </div>
+                    </ViewUserTransactionsDialog>
                 )) : (
                     <div className="text-sm text-muted-foreground text-center p-4">Este usuario no tiene cajas.</div>
                 )}
