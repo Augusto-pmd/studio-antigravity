@@ -23,7 +23,6 @@ service cloud.firestore {
     function canManageSales() {
       let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         (userRole == 'Dirección' || userRole == 'Administración' || userRole == 'Supervisor');
     }
 
@@ -50,16 +49,9 @@ service cloud.firestore {
     match /projects/{projectId} {
       allow read, write: if isSignedIn();
 
-      match /sales/{saleId} {
-        allow read, write: if isSignedIn();
-      }
       match /contracts/{contractId} {
         allow read, write: if isSignedIn();
       }
-    }
-
-    match /projects/{projectId}/expenses/{expenseId} {
-        allow read, write: if isSignedIn();
     }
 
     match /suppliers/{supplierId} {
