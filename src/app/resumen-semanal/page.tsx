@@ -10,8 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Briefcase, Handshake, HardHat } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 
+// This function is the core of the fix. It ensures that any value we try to use
+// in a calculation is a valid number, otherwise it safely defaults to 0.
 const safeParseFloat = (value: any): number => {
-    if (value === null || value === undefined) return 0;
+    if (value === null || value === undefined || value === '') return 0;
     const num = parseFloat(value);
     return isNaN(num) ? 0 : num;
 }
@@ -23,6 +25,7 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
+// --- Converters (unchanged) ---
 const payrollWeekConverter = { toFirestore: (data: PayrollWeek): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
 const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
@@ -30,7 +33,6 @@ const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData =>
 const fundRequestConverter = { toFirestore: (data: FundRequest): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id } as FundRequest) };
 const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
 const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
-
 
 type SummaryData = {
     totalPersonal: number;
@@ -51,12 +53,8 @@ export default function ResumenSemanalPage() {
     const [summary, setSummary] = useState<SummaryData | null>(null);
     const [isCalculating, setIsCalculating] = useState(true);
 
-    const openWeekQuery = useMemo(() =>
-        firestore
-        ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1))
-        : null,
-        [firestore]
-    );
+    // --- Data Fetching Hooks (unchanged) ---
+    const openWeekQuery = useMemo(() => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null, [firestore]);
     const { data: openWeeks, isLoading: isLoadingWeek } = useCollection<PayrollWeek>(openWeekQuery);
     const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
 
@@ -65,13 +63,7 @@ export default function ResumenSemanalPage() {
     
     const fundRequestsQuery = useMemo(() => {
         if (!currentWeek || !firestore || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return null;
-        return query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), 
-            and(
-                where('status', '==', 'Aprobado'), 
-                where('date', '>=', currentWeek.startDate), 
-                where('date', '<=', currentWeek.endDate)
-            )
-        );
+        return query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', currentWeek.startDate), where('date', '<=', currentWeek.endDate)));
     }, [currentWeek, firestore]);
     const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
@@ -81,6 +73,7 @@ export default function ResumenSemanalPage() {
     
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
+    // --- REBUILT CALCULATION LOGIC ---
     useEffect(() => {
         if (isLoadingData) {
             setIsCalculating(true);
@@ -89,85 +82,105 @@ export default function ResumenSemanalPage() {
 
         const defaultResult: SummaryData = { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
 
-        if (!currentWeek || !attendances || !advances || !fundRequests || !certifications || !employees || !projects) {
-            setSummary(defaultResult);
-            setIsCalculating(false);
-            return;
-        }
-        
-        setIsCalculating(true);
+        // The try/catch block is the last line of defense. The core fix is the defensive programming within.
         try {
-            const employeeMap = new Map(employees.map(e => [e.id, { 
-                wage: safeParseFloat(e.dailyWage), 
-                hourlyRate: safeParseFloat(e.dailyWage) / 8 
-            }]));
-            
-            const grossWages = attendances.reduce((sum, att) => {
-                if (att.status === 'presente' && att.employeeId && employeeMap.has(att.employeeId)) {
-                    return sum + (employeeMap.get(att.employeeId)?.wage ?? 0);
-                }
-                return sum;
-            }, 0);
+            if (!currentWeek || !employees || !projects) {
+                setSummary(defaultResult);
+                setIsCalculating(false);
+                return;
+            }
 
-            const lateHoursDeductions = attendances.reduce((sum, att) => {
-                if (att.status === 'presente' && safeParseFloat(att.lateHours) > 0 && att.employeeId && employeeMap.has(att.employeeId)) {
-                    return sum + (safeParseFloat(att.lateHours) * (employeeMap.get(att.employeeId)?.hourlyRate ?? 0));
-                }
-                return sum;
-            }, 0);
-
-            const totalAdvances = advances.reduce((sum, adv) => sum + safeParseFloat(adv.amount), 0);
-            const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
-
-            const totalContratistas = certifications.reduce((sum, cert) => sum + safeParseFloat(cert.amount), 0);
-
-            const totalSolicitudes = fundRequests.reduce((sum, req) => {
-                const amount = safeParseFloat(req.amount);
-                const exchangeRate = safeParseFloat(req.exchangeRate) || 1;
-                return sum + (req.currency === 'USD' ? amount * exchangeRate : amount);
-            }, 0);
-
-            const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
-            
+            const employeeMap = new Map(employees.map(e => [e.id, { wage: safeParseFloat(e.dailyWage), hourlyRate: safeParseFloat(e.dailyWage) / 8 }]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
             });
+
+            // PERSONAL: Calculated only if all its dependencies are present.
+            let totalPersonal = 0;
+            if (attendances && advances) {
+                const grossWages = attendances.reduce((sum, att) => {
+                    const emp = employeeMap.get(att.employeeId);
+                    return (att.status === 'presente' && emp) ? sum + emp.wage : sum;
+                }, 0);
+
+                const lateHoursDeductions = attendances.reduce((sum, att) => {
+                    const emp = employeeMap.get(att.employeeId);
+                    const lateHours = safeParseFloat(att.lateHours);
+                    return (att.status === 'presente' && lateHours > 0 && emp) ? sum + (lateHours * emp.hourlyRate) : sum;
+                }, 0);
+
+                const totalAdvances = advances.reduce((sum, adv) => sum + safeParseFloat(adv.amount), 0);
+                totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
+                
+                // Breakdown for personal
+                 attendances.forEach(att => {
+                    const emp = employeeMap.get(att.employeeId);
+                    const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
+                    if (att.status === 'presente' && proj && emp) {
+                        proj.personal += (emp.wage - (safeParseFloat(att.lateHours) * emp.hourlyRate));
+                    }
+                });
+                advances.forEach(adv => {
+                    const proj = adv.projectId ? projectMap.get(adv.projectId) : undefined;
+                    if (proj) {
+                        proj.personal -= safeParseFloat(adv.amount);
+                    }
+                });
+            }
             
-            attendances.forEach(att => {
-                if (att.status === 'presente' && att.projectId && att.employeeId && projectMap.has(att.projectId) && employeeMap.has(att.employeeId)) {
-                    const projectEntry = projectMap.get(att.projectId)!;
-                    const emp = employeeMap.get(att.employeeId)!;
-                    projectEntry.personal += (emp.wage - (safeParseFloat(att.lateHours) * emp.hourlyRate));
-                }
-            });
-
-            advances.forEach(adv => {
-                 if (adv.projectId && projectMap.has(adv.projectId)) {
-                    projectMap.get(adv.projectId)!.personal -= safeParseFloat(adv.amount);
-                 }
-            });
-
-            certifications.forEach(cert => {
-                if (cert.projectId && projectMap.has(cert.projectId)) {
-                    projectMap.get(cert.projectId)!.contratistas += safeParseFloat(cert.amount);
-                }
-            });
-
-            fundRequests.forEach(req => {
-                if (req.projectId && projectMap.has(req.projectId)) {
+            // CONTRATISTAS: Calculated only if its dependency is present.
+            let totalContratistas = 0;
+            if (certifications) {
+                totalContratistas = certifications.reduce((sum, cert) => sum + safeParseFloat(cert.amount), 0);
+                 certifications.forEach(cert => {
+                    const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
+                    if (proj) {
+                        proj.contratistas += safeParseFloat(cert.amount);
+                    }
+                });
+            }
+            
+            // SOLICITUDES: Calculated only if its dependency is present.
+            let totalSolicitudes = 0;
+            if (fundRequests) {
+                totalSolicitudes = fundRequests.reduce((sum, req) => {
                     const amount = safeParseFloat(req.amount);
                     const exchangeRate = safeParseFloat(req.exchangeRate) || 1;
-                    projectMap.get(req.projectId)!.solicitudes += (req.currency === 'USD' ? amount * exchangeRate : amount);
-                }
-            });
+                    return sum + (req.currency === 'USD' ? amount * exchangeRate : amount);
+                }, 0);
+                 fundRequests.forEach(req => {
+                    const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
+                    if (proj) {
+                        const amount = safeParseFloat(req.amount);
+                        const exchangeRate = safeParseFloat(req.exchangeRate) || 1;
+                        proj.solicitudes += (req.currency === 'USD' ? amount * exchangeRate : amount);
+                    }
+                });
+            }
 
+            const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
             const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
+            
+            // Final check to prevent NaN from ever reaching the state
+            const finalSummary = {
+                totalPersonal: isNaN(totalPersonal) ? 0 : totalPersonal,
+                totalContratistas: isNaN(totalContratistas) ? 0 : totalContratistas,
+                totalSolicitudes: isNaN(totalSolicitudes) ? 0 : totalSolicitudes,
+                grandTotal: isNaN(grandTotal) ? 0 : grandTotal,
+                breakdown: breakdown.map(p => ({
+                    ...p,
+                    personal: isNaN(p.personal) ? 0 : p.personal,
+                    contratistas: isNaN(p.contratistas) ? 0 : p.contratistas,
+                    solicitudes: isNaN(p.solicitudes) ? 0 : p.solicitudes,
+                })),
+            };
 
-            setSummary({ totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown });
+            setSummary(finalSummary);
+
         } catch (error) {
-            console.error("FATAL: Calculation in ResumenSemanalPage failed.", error);
-            setSummary(defaultResult);
+            console.error("FATAL: Calculation logic in ResumenSemanalPage failed.", error);
+            setSummary(defaultResult); // On any unexpected error, safely reset to the default state.
         } finally {
             setIsCalculating(false);
         }
