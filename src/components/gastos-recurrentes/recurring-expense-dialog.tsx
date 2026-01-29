@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 import type { RecurringExpense } from "@/lib/types";
 import { useFirestore } from "@/firebase";
@@ -86,14 +86,14 @@ export function RecurringExpenseDialog({
 
   const handleSave = () => {
     if (!firestore) return;
-    if (!description || !category || !amount || !period || !nextDueDate) {
-      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Descripción, Categoría, Monto, Período y Próximo Vencimiento son obligatorios.' });
+    if (!description || !category || !amount || !period || !nextDueDate || !isValid(nextDueDate)) {
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Descripción, Categoría, Monto, Período y Próximo Vencimiento son obligatorios, y la fecha debe ser válida.' });
       return;
     }
 
     startTransition(() => {
       const collectionRef = collection(firestore, 'recurringExpenses');
-      const docRef = isEditMode ? doc(collectionRef, expense.id) : doc(collectionRef);
+      const docRef = isEditMode && expense ? doc(collectionRef, expense.id) : doc(collectionRef);
       
       const expenseData: RecurringExpense = {
         id: docRef.id,
@@ -105,7 +105,7 @@ export function RecurringExpenseDialog({
         paymentSource,
         nextDueDate: format(nextDueDate, 'yyyy-MM-dd'),
         status,
-        issueDate: issueDate ? format(issueDate, 'yyyy-MM-dd') : undefined,
+        issueDate: issueDate && isValid(issueDate) ? format(issueDate, 'yyyy-MM-dd') : undefined,
         notes: notes || undefined,
       };
       
@@ -260,4 +260,3 @@ export function RecurringExpenseDialog({
     </Dialog>
   );
 }
-    
