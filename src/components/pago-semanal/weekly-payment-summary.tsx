@@ -11,7 +11,7 @@ import { Briefcase, Handshake, HardHat } from 'lucide-react';
 import { format, parseISO, addDays } from 'date-fns';
 
 const formatCurrency = (amount: number) => {
-    if (typeof amount !== 'number') return 'ARS 0,00';
+    if (typeof amount !== 'number' || isNaN(amount)) return 'ARS 0,00';
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
@@ -29,8 +29,8 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
 
     const { data: attendances, isLoading: l1 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
     const { data: advances, isLoading: l2 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null);
-    const { data: fundRequests, isLoading: l3 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), where('status', '==', 'Aprobado'), where('date', '>=', currentWeek.startDate), where('date', '<=', currentWeek.endDate)) : null);
-    const { data: certifications, isLoading: l4 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado')) : null);
+    const { data: fundRequests, isLoading: l3 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', currentWeek.startDate), where('date', '<=', currentWeek.endDate))) : null);
+    const { data: certifications, isLoading: l4 } = useCollection(currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), and(where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado'))) : null);
     const { data: employees, isLoading: l5 } = useCollection(firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null);
     const { data: projects, isLoading: l6 } = useCollection(firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null);
     
@@ -41,47 +41,59 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
             return { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
         }
 
-        const employeeMap = new Map(employees.map((e: any) => [e.id, { wage: e.dailyWage || 0, hourlyRate: (e.dailyWage || 0) / 8 }]));
+        const employeeMap = new Map(employees.map((e: any) => [e.id, { 
+            wage: Number(e.dailyWage) || 0, 
+            hourlyRate: (Number(e.dailyWage) || 0) / 8 
+        }]));
         
-        const grossWages = attendances.reduce((sum: any, att: any) => {
+        const grossWages = attendances.reduce((sum: number, att: any) => {
             if (att.status === 'presente') {
-                return sum + (employeeMap.get(att.employeeId)?.wage || 0);
+                const empData = employeeMap.get(att.employeeId);
+                return sum + (empData?.wage || 0);
             }
             return sum;
         }, 0);
 
-        const lateHoursDeductions = attendances.reduce((sum: any, att: any) => {
-            if (att.status === 'presente' && att.lateHours > 0) {
-                return sum + ((att.lateHours || 0) * (employeeMap.get(att.employeeId)?.hourlyRate || 0));
+        const lateHoursDeductions = attendances.reduce((sum: number, att: any) => {
+            if (att.status === 'presente' && Number(att.lateHours) > 0) {
+                const empData = employeeMap.get(att.employeeId);
+                return sum + ((Number(att.lateHours) || 0) * (empData?.hourlyRate || 0));
             }
             return sum;
         }, 0);
 
-        const totalAdvances = advances.reduce((sum: any, adv: any) => sum + adv.amount, 0);
+        const totalAdvances = advances.reduce((sum: number, adv: any) => sum + (Number(adv.amount) || 0), 0);
 
         const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
 
-        const totalContratistas = certifications.reduce((sum: any, cert: any) => {
-            const amountInArs = cert.currency === 'USD' ? cert.amount * 1000 : cert.amount; // TODO: use real exchange rate
+        const totalContratistas = certifications.reduce((sum: number, cert: any) => {
+            const amount = Number(cert.amount) || 0;
+            const amountInArs = cert.currency === 'USD' ? amount * 1000 : amount;
             return sum + amountInArs;
         }, 0);
 
-        const totalSolicitudes = fundRequests.reduce((sum: any, req: any) => {
-            const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
+        const totalSolicitudes = fundRequests.reduce((sum: number, req: any) => {
+            const amount = Number(req.amount) || 0;
+            const exchangeRate = Number(req.exchangeRate) || 1;
+            const amountInArs = req.currency === 'USD' ? amount * exchangeRate : amount;
             return sum + amountInArs;
         }, 0);
 
         const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
         
         const projectMap = new Map<string, { name: string, personal: number, contratistas: number, solicitudes: number }>();
-        projects.forEach((p: any) => projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }));
+        projects.forEach((p: any) => {
+            if (p.id && p.name) {
+                projectMap.set(p.id, { name: p.name, personal: 0, contratistas: 0, solicitudes: 0 })
+            }
+        });
         
         attendances.forEach((att: any) => {
             if (att.status === 'presente' && att.projectId) {
                 const projectEntry = projectMap.get(att.projectId);
                 const emp = employeeMap.get(att.employeeId);
                 if (projectEntry && emp) {
-                     const dailyCost = emp.wage - ((att.lateHours || 0) * emp.hourlyRate);
+                     const dailyCost = emp.wage - ((Number(att.lateHours) || 0) * emp.hourlyRate);
                      projectEntry.personal += dailyCost;
                 }
             }
@@ -90,16 +102,19 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
              if (adv.projectId) {
                 const projectEntry = projectMap.get(adv.projectId);
                 if (projectEntry) {
-                    projectEntry.personal -= adv.amount;
+                    projectEntry.personal -= (Number(adv.amount) || 0);
                 }
              }
         });
 
         certifications.forEach((cert: any) => {
-            const projectEntry = projectMap.get(cert.projectId);
-            if (projectEntry) {
-                 const amountInArs = cert.currency === 'USD' ? cert.amount * 1000 : cert.amount; // TODO:
-                 projectEntry.contratistas += amountInArs;
+            if (cert.projectId) {
+                const projectEntry = projectMap.get(cert.projectId);
+                if (projectEntry) {
+                     const amount = Number(cert.amount) || 0;
+                     const amountInArs = cert.currency === 'USD' ? amount * 1000 : amount;
+                     projectEntry.contratistas += amountInArs;
+                }
             }
         });
 
@@ -107,7 +122,9 @@ export function WeeklyPaymentSummary({ currentWeek, isLoadingWeek }: { currentWe
             if (req.projectId) {
                 const projectEntry = projectMap.get(req.projectId);
                 if (projectEntry) {
-                    const amountInArs = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
+                    const amount = Number(req.amount) || 0;
+                    const exchangeRate = Number(req.exchangeRate) || 1;
+                    const amountInArs = req.currency === 'USD' ? amount * exchangeRate : amount;
                     projectEntry.solicitudes += amountInArs;
                 }
             }
