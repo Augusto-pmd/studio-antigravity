@@ -129,8 +129,28 @@ export function UserTimeLog() {
   }, [monthlyLogs, projects]);
   
   const totalMonthlyHours = useMemo(() => {
-    if (!monthlyLogs) return 0;
-    return monthlyLogs.reduce((sum, log) => sum + Number(log.hours || 0), 0);
+    if (!monthlyLogs || monthlyLogs.length === 0) {
+      return 0;
+    }
+
+    const total = monthlyLogs.reduce((sum: number, log: TimeLog) => {
+      const hours = log.hours;
+      // Ensure hours is a valid number before adding.
+      if (typeof hours === 'number' && !isNaN(hours)) {
+        return sum + hours;
+      }
+      // Try to parse if it's a string.
+      if (typeof hours === 'string') {
+        const parsedHours = parseFloat(hours);
+        if (!isNaN(parsedHours)) {
+          return sum + parsedHours;
+        }
+      }
+      // If not a valid number or string, add 0.
+      return sum;
+    }, 0);
+
+    return total;
   }, [monthlyLogs]);
   // --- End Monthly Summary Data ---
 
