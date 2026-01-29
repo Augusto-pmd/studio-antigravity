@@ -6,6 +6,7 @@ export const expenseCategories = [
     { id: 'CAT-13', name: 'Nafta' },
     { id: 'CAT-05', name: 'Tasas y Permisos Municipales' },
     { id: 'CAT-06', name: 'Servicios Profesionales (Arquitecto, Ingeniero)' },
+    { id: 'CAT-15', name: 'Servicios' },
     { id: 'CAT-07', name: 'Herramientas y Equipos Menores' },
     { id: 'CAT-08', name: 'Seguridad e Higiene' },
     { id: 'CAT-09', name: 'Viáticos y Comidas' },
