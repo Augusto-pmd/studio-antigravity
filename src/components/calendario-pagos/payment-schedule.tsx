@@ -23,12 +23,23 @@ export function PaymentSchedule() {
   const firestore = useFirestore();
 
   // --- Data Fetching ---
-  const { data: recurringExpenses, isLoading: l1 } = useCollection(firestore ? query(collection(firestore, 'recurringExpenses').withConverter(recurringExpenseConverter), where('status', '==', 'Activo')) : null);
-  const { data: moratorias, isLoading: l2 } = useCollection(firestore ? query(collection(firestore, 'moratorias').withConverter(moratoriaConverter), where('status', '==', 'Activa')) : null);
-  const { data: pendingExpenses, isLoading: l3 } = useCollection(firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter), where('status', '==', 'Pendiente de Pago')) : null);
-  const { data: pendingSalaries, isLoading: l4 } = useCollection(firestore ? query(collection(firestore, 'monthlySalaries').withConverter(monthlySalaryConverter), where('status', '==', 'Pendiente de Pago')) : null);
-  const { data: contractors, isLoading: l5 } = useCollection(firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null);
-  const { data: employees, isLoading: l6 } = useCollection(firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null);
+  const recurringExpensesQuery = useMemo(() => firestore ? query(collection(firestore, 'recurringExpenses').withConverter(recurringExpenseConverter), where('status', '==', 'Activo')) : null, [firestore]);
+  const { data: recurringExpenses, isLoading: l1 } = useCollection(recurringExpensesQuery);
+  
+  const moratoriasQuery = useMemo(() => firestore ? query(collection(firestore, 'moratorias').withConverter(moratoriaConverter), where('status', '==', 'Activa')) : null, [firestore]);
+  const { data: moratorias, isLoading: l2 } = useCollection(moratoriasQuery);
+  
+  const pendingExpensesQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter), where('status', '==', 'Pendiente de Pago')) : null, [firestore]);
+  const { data: pendingExpenses, isLoading: l3 } = useCollection(pendingExpensesQuery);
+
+  const pendingSalariesQuery = useMemo(() => firestore ? query(collection(firestore, 'monthlySalaries').withConverter(monthlySalaryConverter), where('status', '==', 'Pendiente de Pago')) : null, [firestore]);
+  const { data: pendingSalaries, isLoading: l4 } = useCollection(pendingSalariesQuery);
+
+  const contractorsQuery = useMemo(() => firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null, [firestore]);
+  const { data: contractors, isLoading: l5 } = useCollection(contractorsQuery);
+
+  const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
+  const { data: employees, isLoading: l6 } = useCollection(employeesQuery);
 
   const isLoading = l1 || l2 || l3 || l4 || l5 || l6;
 
