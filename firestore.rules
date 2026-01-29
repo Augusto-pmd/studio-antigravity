@@ -27,6 +27,14 @@ service cloud.firestore {
         (userRole == 'Dirección' || userRole == 'Administración' || userRole == 'Supervisor');
     }
 
+    match /{path=**}/sales/{saleId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /{path=**}/expenses/{expenseId} {
+      allow read, write: if isSignedIn();
+    }
+
     match /users/{userId} {
       allow read, write: if true;
       
