@@ -74,7 +74,7 @@ service cloud.firestore {
     }
     
     match /timeLogs/{logId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
       allow write: if request.auth != null;
     }
 

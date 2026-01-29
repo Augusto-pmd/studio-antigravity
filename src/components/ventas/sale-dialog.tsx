@@ -182,7 +182,12 @@ export function SaleDialog({
         retencionIIBB: sale?.retencionIIBB,
       };
 
-      await setDoc(saleRef, saleData, { merge: true });
+      // Remove undefined properties before sending to Firestore
+      const cleanData = Object.fromEntries(
+        Object.entries(saleData).filter(([, v]) => v !== undefined)
+      );
+
+      await setDoc(saleRef, cleanData, { merge: true });
 
       toast({
         title: isEditMode ? 'Documento Actualizado' : 'Documento Registrado',
@@ -195,7 +200,7 @@ export function SaleDialog({
         variant: 'destructive',
         title: 'Error al guardar',
         description:
-          'No se pudo guardar el documento. Es posible que no tengas permisos.',
+          'No se pudo guardar el documento. Por favor, revise los datos e inténtelo de nuevo.',
       });
     } finally {
       setIsSaving(false);
