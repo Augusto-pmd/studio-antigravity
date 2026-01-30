@@ -25,7 +25,7 @@ export function GenerateWeekDialog({ disabled }: { disabled: boolean }) {
     const [open, setOpen] = useState(false);
     const [isGenerating, startTransition] = useTransition();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-    const { firestore } = useFirestore();
+    const firestore = useFirestore();
     const { toast } = useToast();
 
     const handleGenerate = () => {
