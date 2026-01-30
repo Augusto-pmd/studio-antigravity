@@ -10,11 +10,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Briefcase, Handshake, HardHat } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 
-const safeParseFloat = (value: any): number => {
-    if (value === null || value === undefined || value === '') return 0;
-    const num = parseFloat(value);
-    return isNaN(num) ? 0 : num;
-}
+const parseNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    // If it's already a valid number, return it.
+    if (typeof value === 'number' && !isNaN(value)) {
+        return value;
+    }
+    // If it's a string, try to parse it.
+    if (typeof value === 'string') {
+        // Remove thousand separators (dots) and then replace decimal comma with a dot.
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleanedString);
+        return isNaN(num) ? 0 : num;
+    }
+    // For other types, or if parsing fails, return 0.
+    return 0;
+};
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number' || isNaN(amount)) {
@@ -169,59 +180,57 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, { wage: safeParseFloat(e.dailyWage), hourlyRate: safeParseFloat(e.dailyWage) / 8 }]));
+            const employeeMap = new Map(employees.map(e => [e.id, { wage: parseNumber(e.dailyWage), hourlyRate: parseNumber(e.dailyWage) / 8 }]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
             });
 
             // PERSONAL
-            let totalPersonal = 0;
             let grossWages = 0;
             let lateHoursDeductions = 0;
             let totalAdvances = 0;
 
             if (attendances) {
-                grossWages = attendances.reduce((sum, att) => {
-                    const emp = employeeMap.get(att.employeeId);
-                    return (att.status === 'presente' && emp) ? sum + emp.wage : sum;
-                }, 0);
-
-                lateHoursDeductions = attendances.reduce((sum, att) => {
-                    const emp = employeeMap.get(att.employeeId);
-                    const lateHours = safeParseFloat(att.lateHours);
-                    return (att.status === 'presente' && lateHours > 0 && emp) ? sum + (lateHours * emp.hourlyRate) : sum;
-                }, 0);
-                
                 attendances.forEach(att => {
                     const emp = employeeMap.get(att.employeeId);
-                    const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
-                    if (att.status === 'presente' && proj && emp) {
-                        proj.personal += (emp.wage - (safeParseFloat(att.lateHours) * emp.hourlyRate));
+                    if (att.status === 'presente' && emp) {
+                        const dailyGross = emp.wage;
+                        const dailyDeduction = parseNumber(att.lateHours) * emp.hourlyRate;
+                        
+                        grossWages += dailyGross;
+                        lateHoursDeductions += dailyDeduction;
+            
+                        const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
+                        if (proj) {
+                            proj.personal += (dailyGross - dailyDeduction);
+                        }
                     }
                 });
             }
             
             if (advances) {
-                totalAdvances = advances.reduce((sum, adv) => sum + safeParseFloat(adv.amount), 0);
                 advances.forEach(adv => {
+                    const advanceAmount = parseNumber(adv.amount);
+                    totalAdvances += advanceAmount;
+
                     const proj = adv.projectId ? projectMap.get(adv.projectId) : undefined;
                     if (proj) {
-                        proj.personal -= safeParseFloat(adv.amount);
+                        proj.personal -= advanceAmount;
                     }
                 });
             }
 
-            totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
+            const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
             
             // CONTRATISTAS
             let totalContratistas = 0;
             if (certifications) {
-                totalContratistas = certifications.reduce((sum, cert) => sum + safeParseFloat(cert.amount), 0);
+                totalContratistas = certifications.reduce((sum, cert) => sum + parseNumber(cert.amount), 0);
                  certifications.forEach(cert => {
                     const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
                     if (proj) {
-                        proj.contratistas += safeParseFloat(cert.amount);
+                        proj.contratistas += parseNumber(cert.amount);
                     }
                 });
             }
@@ -230,15 +239,15 @@ export default function ResumenSemanalPage() {
             let totalSolicitudes = 0;
             if (fundRequests) {
                 totalSolicitudes = fundRequests.reduce((sum, req) => {
-                    const amount = safeParseFloat(req.amount);
-                    const exchangeRate = safeParseFloat(req.exchangeRate) || 1;
+                    const amount = parseNumber(req.amount);
+                    const exchangeRate = parseNumber(req.exchangeRate) || 1;
                     return sum + (req.currency === 'USD' ? amount * exchangeRate : amount);
                 }, 0);
                  fundRequests.forEach(req => {
                     const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
                     if (proj) {
-                        const amount = safeParseFloat(req.amount);
-                        const exchangeRate = safeParseFloat(req.exchangeRate) || 1;
+                        const amount = parseNumber(req.amount);
+                        const exchangeRate = parseNumber(req.exchangeRate) || 1;
                         proj.solicitudes += (req.currency === 'USD' ? amount * exchangeRate : amount);
                     }
                 });
