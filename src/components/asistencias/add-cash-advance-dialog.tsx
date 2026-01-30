@@ -251,7 +251,6 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                     onSelect={setDate}
                     initialFocus
                     locale={es}
-                    disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
                     />
                 </PopoverContent>
                 </Popover>

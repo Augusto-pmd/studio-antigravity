@@ -238,7 +238,6 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
                   onSelect={setDate}
                   initialFocus
                   locale={es}
-                  disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
             </Popover>
