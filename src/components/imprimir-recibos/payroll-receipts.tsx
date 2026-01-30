@@ -217,7 +217,8 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                   <tbody>
                     <tr className="border-t">
                       {weekDays.map(day => {
-                        const attendanceRecord = data.attendance.find(a => format(parseISO(a.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
+                        const dayString = format(day, 'yyyy-MM-dd');
+                        const attendanceRecord = data.attendance.find(a => a.date === dayString);
                         return (
                           <td key={day.toString()} className="p-0.5 text-center leading-tight">
                             <div className="font-semibold capitalize text-[9px]">{attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}</div>
