@@ -25,6 +25,7 @@ import { parseISO, format } from "date-fns";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DeleteFundRequestDialog } from "./delete-fund-request-dialog";
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -38,7 +39,7 @@ const formatDate = (dateString?: string) => {
 
 
 export function FundRequestsTable({ requests, isLoading }: { requests: FundRequest[] | null, isLoading: boolean }) {
-  const { permissions, firestore } = useUser();
+  const { user, permissions, firestore } = useUser();
   const { toast } = useToast();
   const isAdmin = permissions.canSupervise;
 
@@ -73,7 +74,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
             <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
             <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
             <TableCell className="text-right hidden md:table-cell"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-            {isAdmin && <TableCell className="text-right"><Skeleton className="h-9 w-9 rounded-md ml-auto" /></TableCell>}
+            <TableCell className="text-right"><Skeleton className="h-9 w-9 rounded-md ml-auto" /></TableCell>
         </TableRow>
     ))
   );
@@ -88,21 +89,24 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                     <TableHead className="hidden md:table-cell">Fecha</TableHead>
                     <TableHead className="hidden md:table-cell">Estado</TableHead>
                     <TableHead className="text-right hidden md:table-cell">Monto</TableHead>
-                    {isAdmin && (
-                      <TableHead className="text-right w-[100px]">Acciones</TableHead>
-                    )}
+                    <TableHead className="text-right w-[100px]">Acciones</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {isLoading && renderSkeleton()}
                 {!isLoading && requests?.length === 0 && (
                   <TableRow>
-                      <TableCell colSpan={isAdmin ? 6 : 5} className="h-24 text-center">
+                      <TableCell colSpan={6} className="h-24 text-center">
                           No hay solicitudes de fondos registradas.
                       </TableCell>
                   </TableRow>
                 )}
-                {!isLoading && requests?.map(req => (
+                {!isLoading && requests?.map(req => {
+                    const isOwner = user?.uid === req.requesterId;
+                    const canChangeStatus = isAdmin && req.status !== 'Pagado';
+                    const canDelete = (isOwner || isAdmin) && req.status === 'Pendiente';
+
+                    return (
                     <TableRow key={req.id}>
                         <TableCell>
                           <div className="font-medium">{req.requesterName}</div>
@@ -141,9 +145,8 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono hidden md:table-cell">{formatCurrency(req.amount, req.currency)}</TableCell>
-                        {isAdmin && (
-                            <TableCell className="text-right">
-                                {req.status !== 'Pagado' ? (
+                         <TableCell className="text-right">
+                                {canChangeStatus || canDelete ? (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon">
@@ -151,54 +154,63 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            {req.status === 'Pendiente' && (
+                                            {canChangeStatus && (
                                                 <>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aprobado')}>
-                                                        <Check className="mr-2 h-4 w-4 text-green-500" />
-                                                        <span>Aprobar</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aplazado')}>
-                                                        <Archive className="mr-2 h-4 w-4" />
-                                                        <span>Aplazar</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Rechazado')}>
-                                                        <X className="mr-2 h-4 w-4 text-red-500" />
-                                                        <span>Rechazar</span>
-                                                    </DropdownMenuItem>
+                                                    {req.status === 'Pendiente' && (
+                                                        <>
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aprobado')}>
+                                                                <Check className="mr-2 h-4 w-4 text-green-500" />
+                                                                <span>Aprobar</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aplazado')}>
+                                                                <Archive className="mr-2 h-4 w-4" />
+                                                                <span>Aplazar</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Rechazado')} className="text-destructive focus:text-destructive">
+                                                                <X className="mr-2 h-4 w-4" />
+                                                                <span>Rechazar</span>
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                    {req.status === 'Aprobado' && (
+                                                        <>
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pagado')}>
+                                                                <Receipt className="mr-2 h-4 w-4 text-blue-500" />
+                                                                <span>Marcar como Pagado</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                             <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aplazado')}>
+                                                                <Archive className="mr-2 h-4 w-4" />
+                                                                <span>Aplazar</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pendiente')}>
+                                                                <Undo className="mr-2 h-4 w-4" />
+                                                                <span>Volver a Pendiente</span>
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                    {(req.status === 'Rechazado' || req.status === 'Aplazado') && (
+                                                        <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pendiente')}>
+                                                            <Undo className="mr-2 h-4 w-4" />
+                                                            <span>Reactivar (a Pendiente)</span>
+                                                        </DropdownMenuItem>
+                                                    )}
                                                 </>
                                             )}
-                                            {req.status === 'Aprobado' && (
+                                            {canDelete && (
                                                 <>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pagado')}>
-                                                        <Receipt className="mr-2 h-4 w-4 text-blue-500" />
-                                                        <span>Marcar como Pagado</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                     <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Aplazado')}>
-                                                        <Archive className="mr-2 h-4 w-4" />
-                                                        <span>Aplazar</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pendiente')}>
-                                                        <Undo className="mr-2 h-4 w-4" />
-                                                        <span>Volver a Pendiente</span>
-                                                    </DropdownMenuItem>
+                                                    {canChangeStatus && <DropdownMenuSeparator />}
+                                                    <DeleteFundRequestDialog request={req} />
                                                 </>
-                                            )}
-                                            {(req.status === 'Rechazado' || req.status === 'Aplazado') && (
-                                                <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'Pendiente')}>
-                                                    <Undo className="mr-2 h-4 w-4" />
-                                                    <span>Reactivar (a Pendiente)</span>
-                                                </DropdownMenuItem>
                                             )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 ) : (
-                                  <div className="flex h-9 w-9 items-center justify-center" /> // Placeholder to maintain alignment
+                                  <div className="flex h-9 w-9 items-center justify-center" /> // Placeholder for alignment
                                 )}
                             </TableCell>
-                        )}
                     </TableRow>
-                ))}
+                )})}
             </TableBody>
         </Table>
      </div>
