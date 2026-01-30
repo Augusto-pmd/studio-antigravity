@@ -11,6 +11,11 @@ import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
+import { DeleteTaskRequestDialog } from './delete-task-request-dialog';
+
 
 const taskRequestConverter = {
     toFirestore: (data: TaskRequest): DocumentData => data,
@@ -49,6 +54,7 @@ export function CreatedTasksList() {
             <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
             <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
             <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+            <TableCell><Skeleton className="h-9 w-9 rounded-md" /></TableCell>
         </TableRow>
     ))
   );
@@ -63,18 +69,21 @@ export function CreatedTasksList() {
             <TableHead className="hidden md:table-cell">Asignado a</TableHead>
             <TableHead className="hidden sm:table-cell">Fecha</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead className="w-[50px] text-right">Acción</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading && renderSkeleton()}
           {!isLoading && tasks?.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+              <TableCell colSpan={6} className="h-24 text-center">
                 No has creado ningún pedido todavía.
               </TableCell>
             </TableRow>
           )}
-          {tasks?.map((task: TaskRequest) => (
+          {tasks?.map((task: TaskRequest) => {
+            const canDelete = permissions.canSupervise || user?.uid === task.requesterId;
+            return (
             <TableRow key={task.id}>
               <TableCell>
                 <div className="font-medium">{task.title}</div>
@@ -107,8 +116,22 @@ export function CreatedTasksList() {
                   {task.status}
                 </Badge>
               </TableCell>
+              <TableCell className="text-right">
+                {canDelete && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DeleteTaskRequestDialog task={task} />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </TableCell>
             </TableRow>
-          ))}
+          )})}
         </TableBody>
       </Table>
     </div>

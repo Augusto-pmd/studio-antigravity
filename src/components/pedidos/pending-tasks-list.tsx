@@ -10,8 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DeleteTaskRequestDialog } from './delete-task-request-dialog';
 
 const taskRequestConverter = {
     toFirestore: (data: TaskRequest): DocumentData => data,
@@ -100,12 +102,14 @@ export function PendingTasksList() {
           {isLoading && renderSkeleton()}
           {!isLoading && tasks?.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+              <TableCell colSpan={4} className="h-24 text-center">
                 ¡Excelente! No tienes tareas pendientes.
               </TableCell>
             </TableRow>
           )}
-          {tasks?.map((task: TaskRequest) => (
+          {tasks?.map((task: TaskRequest) => {
+            const canDelete = permissions.canSupervise || user?.uid === task.requesterId;
+            return (
             <TableRow key={task.id}>
               <TableCell>
                 <div className="font-medium">{task.title}</div>
@@ -125,13 +129,27 @@ export function PendingTasksList() {
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button size="sm" onClick={() => handleCompleteTask(task.id)} disabled={isPending && updatingTaskId === task.id}>
-                  {isPending && updatingTaskId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                  Marcar como Finalizado
-                </Button>
+                <div className="flex justify-end items-center gap-1">
+                  <Button size="sm" onClick={() => handleCompleteTask(task.id)} disabled={isPending && updatingTaskId === task.id}>
+                    {isPending && updatingTaskId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                    Marcar como Finalizado
+                  </Button>
+                  {canDelete && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DeleteTaskRequestDialog task={task} />
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
-          ))}
+          )})}
         </TableBody>
       </Table>
     </div>
