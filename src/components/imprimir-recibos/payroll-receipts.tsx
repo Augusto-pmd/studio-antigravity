@@ -64,7 +64,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   }, [projects]);
 
   const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
-    if (isLoading || !week || !employees || !attendances || !advances) return [];
+    if (!week || !employees || !attendances || !advances) return [];
 
     return employees.map(employee => {
       const employeeAttendances = attendances.filter(a => a.employeeId === employee.id);
@@ -97,7 +97,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
         }
       };
     }).filter(data => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
-  }, [isLoading, week, employees, attendances, advances]);
+  }, [week, employees, attendances, advances]);
 
   const weekDays = useMemo(() => {
     if (!week) return [];
