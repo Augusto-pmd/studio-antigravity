@@ -30,10 +30,13 @@ import type { ContractorCertification, PayrollWeek, Expense } from '@/lib/types'
 import { Skeleton } from '@/components/ui/skeleton';
 import { parseISO, format } from 'date-fns';
 import { AddContractorCertificationDialog } from './add-contractor-certification-dialog';
-import { MoreHorizontal, Check, X, Undo, Receipt, Archive } from 'lucide-react';
+import { MoreHorizontal, Check, X, Undo, Receipt, Archive, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { EditContractorCertificationDialog } from './edit-contractor-certification-dialog';
+import { DeleteContractorCertificationDialog } from './delete-contractor-certification-dialog';
+
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -174,23 +177,33 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                 </TableCell>
                                 <TableCell className="text-right font-mono">{formatCurrency(cert.amount, cert.currency)}</TableCell>
                                 <TableCell className="text-right">
-                                    {cert.status !== 'Pagado' && permissions.canSupervise && (
+                                    {permissions.canSupervise && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                {cert.status === 'Pendiente' && (
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Aprobado')}><Check className="mr-2 h-4 w-4 text-green-500" /><span>Aprobar</span></DropdownMenuItem>
+                                                {cert.status === 'Pendiente' && <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Aprobado')}><Check className="mr-2 h-4 w-4 text-green-500" /><span>Aprobar</span></DropdownMenuItem>}
+                                                {cert.status === 'Aprobado' && <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Pagado')}><Receipt className="mr-2 h-4 w-4 text-blue-500" /><span>Marcar como Pagado</span></DropdownMenuItem>}
+                                                
+                                                {cert.status !== 'Pagado' && cert.status !== 'Rechazado' && (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Rechazado')} className="text-destructive focus:text-destructive"><X className="mr-2 h-4 w-4" /><span>Rechazar</span></DropdownMenuItem>
                                                 )}
-                                                {cert.status === 'Aprobado' && (
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Pagado')}><Receipt className="mr-2 h-4 w-4 text-blue-500" /><span>Marcar como Pagado</span></DropdownMenuItem>
-                                                )}
-                                                 {(cert.status === 'Aprobado' || cert.status === 'Rechazado') && <DropdownMenuSeparator />}
-                                                 {cert.status !== 'Pendiente' && (
+                                                
+                                                {(cert.status === 'Aprobado' || cert.status === 'Rechazado') && (
                                                     <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Pendiente')}><Undo className="mr-2 h-4 w-4" /><span>Volver a Pendiente</span></DropdownMenuItem>
-                                                 )}
-                                                 {cert.status !== 'Rechazado' && (
-                                                     <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Rechazado')}><X className="mr-2 h-4 w-4 text-red-500" /><span>Rechazar</span></DropdownMenuItem>
-                                                 )}
+                                                )}
+
+                                                {cert.status !== 'Pagado' && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <EditContractorCertificationDialog certification={cert}>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                                <Pencil className="mr-2 h-4 w-4" />
+                                                                <span>Editar</span>
+                                                            </DropdownMenuItem>
+                                                        </EditContractorCertificationDialog>
+                                                        <DeleteContractorCertificationDialog certification={cert} />
+                                                    </>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     )}
