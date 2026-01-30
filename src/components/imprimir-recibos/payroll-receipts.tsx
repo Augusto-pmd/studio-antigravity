@@ -220,15 +220,21 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                         const dayString = format(day, 'yyyy-MM-dd');
                         const attendanceRecord = data.attendance.find(a => a.date === dayString);
                         return (
-                          <td key={day.toString()} className="p-0.5 text-center leading-tight">
-                            <div className="font-semibold capitalize text-[9px]">{attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}</div>
-                            {attendanceRecord?.status === 'presente' && (
-                                <div className="text-[7px] text-gray-500 font-mono">
-                                    {attendanceRecord.projectId && projectsMap.get(attendanceRecord.projectId)
-                                        ? projectsMap.get(attendanceRecord.projectId)!.substring(0, 4).toUpperCase()
-                                        : '-'}
-                                </div>
-                            )}
+                          <td key={day.toString()} className="p-0.5 text-center leading-tight font-semibold text-[9px]">
+                            {attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr className="border-t bg-gray-50/50">
+                       {weekDays.map(day => {
+                        const dayString = format(day, 'yyyy-MM-dd');
+                        const attendanceRecord = data.attendance.find(a => a.date === dayString);
+                        return (
+                          <td key={day.toString()} className="p-0.5 text-center leading-tight text-[7px] text-gray-500 font-mono">
+                            {attendanceRecord?.status === 'presente' && attendanceRecord.projectId && projectsMap.get(attendanceRecord.projectId)
+                              ? projectsMap.get(attendanceRecord.projectId)!.substring(0, 4).toUpperCase()
+                              : '-'}
                           </td>
                         );
                       })}
