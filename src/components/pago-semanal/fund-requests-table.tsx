@@ -104,7 +104,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                 {!isLoading && requests?.map(req => {
                     const isOwner = user?.uid === req.requesterId;
                     const canChangeStatus = isAdmin && req.status !== 'Pagado';
-                    const canDelete = (isOwner || isAdmin) && req.status === 'Pendiente';
+                    const canDelete = (isOwner || isAdmin) && ['Pendiente', 'Rechazado', 'Aplazado'].includes(req.status);
 
                     return (
                     <TableRow key={req.id}>
