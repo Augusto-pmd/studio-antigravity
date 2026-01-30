@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Briefcase, Handshake, HardHat } from 'lucide-react';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, startOfDay, endOfDay } from 'date-fns';
 
 // This function is the core of the fix. It ensures that any value we try to use
 // in a calculation is a valid number, otherwise it safely defaults to 0.
@@ -66,7 +66,19 @@ export default function ResumenSemanalPage() {
     
     const fundRequestsQuery = useMemo(() => {
         if (!currentWeek || !firestore || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return null;
-        return query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), and(where('status', '==', 'Aprobado'), where('date', '>=', currentWeek.startDate), where('date', '<=', currentWeek.endDate)));
+        
+        // NORMALIZE DATES to start/end of day to ensure all requests within the week are included regardless of time.
+        const weekStart = startOfDay(parseISO(currentWeek.startDate)).toISOString();
+        const weekEnd = endOfDay(parseISO(currentWeek.endDate)).toISOString();
+
+        return query(
+            collection(firestore, 'fundRequests').withConverter(fundRequestConverter), 
+            and(
+                where('status', '==', 'Aprobado'), 
+                where('date', '>=', weekStart), 
+                where('date', '<=', weekEnd)
+            )
+        );
     }, [currentWeek, firestore]);
     const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
