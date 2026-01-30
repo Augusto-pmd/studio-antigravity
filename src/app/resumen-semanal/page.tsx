@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Briefcase, Handshake, HardHat } from 'lucide-react';
-import { format, parseISO, isValid, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 
 // This function is the core of the fix. It ensures that any value we try to use
 // in a calculation is a valid number, otherwise it safely defaults to 0.
@@ -26,17 +26,38 @@ const formatCurrency = (amount: number) => {
 };
 
 // --- Converters (Robust Date Handling) ---
+const convertFirestoreDate = (d: any): string => {
+    if (!d) return '';
+    // Handle Firestore Timestamp
+    if (d.toDate && typeof d.toDate === 'function') {
+        return format(d.toDate(), 'yyyy-MM-dd');
+    }
+    // Handle ISO string or existing Date object
+    if (typeof d === 'string' || d instanceof Date) {
+        try {
+            return format(parseISO(d.toString()), 'yyyy-MM-dd');
+        } catch (e) {
+            // This handles simple 'YYYY-MM-DD' strings that parseISO might fail on in some environments
+            if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+                return d;
+            }
+            console.warn("Could not parse date:", d);
+            return '';
+        }
+    }
+    return '';
+}
+
 const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
         const data = snapshot.data(options)!;
-        const convert = (d: any) => (d && typeof d.toDate === 'function' ? d.toDate().toISOString() : d);
         return {
             ...data,
             id: snapshot.id,
-            startDate: convert(data.startDate),
-            endDate: convert(data.endDate),
-            generatedAt: convert(data.generatedAt)
+            startDate: convertFirestoreDate(data.startDate),
+            endDate: convertFirestoreDate(data.endDate),
+            generatedAt: convertFirestoreDate(data.generatedAt)
         } as PayrollWeek;
     }
 };
@@ -48,7 +69,7 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
-            date: data.date && typeof data.date.toDate === 'function' ? data.date.toDate().toISOString() : data.date,
+            date: convertFirestoreDate(data.date),
         } as FundRequest;
     }
 };
@@ -100,15 +121,12 @@ export default function ResumenSemanalPage() {
     const { data: allApprovedFundRequests, isLoading: l3 } = useCollection(allApprovedFundRequestsQuery);
 
     const fundRequests = useMemo(() => {
-        if (!allApprovedFundRequests || !currentWeek || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return [];
+        if (!allApprovedFundRequests || !currentWeek || !currentWeek.startDate || !currentWeek.endDate) return [];
         
-        const weekStart = startOfDay(parseISO(currentWeek.startDate));
-        const weekEnd = endOfDay(parseISO(currentWeek.endDate));
-
         return allApprovedFundRequests.filter(req => {
-            if (!req.date || !isValid(parseISO(req.date))) return false;
-            const reqDate = parseISO(req.date);
-            return reqDate >= weekStart && reqDate <= weekEnd;
+            if (!req.date) return false;
+            // Simple, timezone-agnostic string comparison
+            return req.date >= currentWeek.startDate && req.date <= currentWeek.endDate;
         });
 
     }, [allApprovedFundRequests, currentWeek]);
