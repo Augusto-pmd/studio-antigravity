@@ -139,13 +139,6 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     }).filter(data => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
   }, [week, employees, attendances, advances]);
 
-  const weekDays = useMemo(() => {
-    if (!week) return [];
-    const start = parseISO(week.startDate);
-    const end = parseISO(week.endDate);
-    return eachDayOfInterval({ start, end });
-  }, [week]);
-
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Cargando datos de la planilla...</span></div>;
   }
@@ -291,10 +284,15 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                 data.attendance.reduce((acc, attendance) => {
                   if (attendance.status === 'presente' && attendance.projectId) {
                     const projectName = projectsMap.get(attendance.projectId) || 'Obra no asignada';
-                    acc[projectName] = (acc[projectName] || 0) + 1;
+                    const wage = data.employee.dailyWage || 0;
+                    if (!acc[projectName]) {
+                      acc[projectName] = { days: 0, earnings: 0 };
+                    }
+                    acc[projectName].days += 1;
+                    acc[projectName].earnings += wage;
                   }
                   return acc;
-                }, {} as Record<string, number>)
+                }, {} as Record<string, { days: number; earnings: number }>)
             );
             
             return (
@@ -316,30 +314,28 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               <h3 className="font-medium">Empleado: {data.employee.name}</h3>
               <p className="text-gray-500">Categoría: {data.employee.category}</p>
             </section>
-            
-            <section className="mt-2 print:mt-1">
-              <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Detalle de Asistencias por Obra</h4>
-              <div className="text-xs print:text-[9px] space-y-0.5 border-t pt-1">
-                {projectAttendanceSummary.length > 0 ? (
-                  projectAttendanceSummary.map(([projectName, days]) => (
-                    <div key={projectName} className="flex justify-between">
-                      <span>{projectName}:</span>
-                      <span className="font-semibold">{days} día{days > 1 ? 's' : ''}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-400">Sin asistencias a obras registradas.</p>
-                )}
-              </div>
-            </section>
 
             <section className="mt-2 print:mt-1 grid grid-cols-2 gap-x-2">
               <div>
                 <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Haberes</h4>
                 <div className="space-y-0.5 text-xs print:text-[9px]">
-                  <div className="flex justify-between"><span>Días Trab.:</span><span>{data.summary.daysPresent}</span></div>
-                  <div className="flex justify-between"><span>Jornal:</span><span>{formatCurrency(data.employee.dailyWage)}</span></div>
-                  <div className="flex justify-between font-semibold border-t pt-0.5 mt-0.5"><span>Bruto:</span><span>{formatCurrency(data.summary.grossPay)}</span></div>
+                  {projectAttendanceSummary.length > 0 ? (
+                    projectAttendanceSummary.map(([projectName, details]) => (
+                      <div key={projectName} className="flex justify-between">
+                        <span>{projectName} ({details.days}d):</span>
+                        <span>{formatCurrency(details.earnings)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex justify-between">
+                      <span>Días Trab.:</span>
+                      <span>{data.summary.daysPresent}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold border-t pt-0.5 mt-0.5">
+                    <span>Total Bruto:</span>
+                    <span>{formatCurrency(data.summary.grossPay)}</span>
+                  </div>
                 </div>
               </div>
               <div>
