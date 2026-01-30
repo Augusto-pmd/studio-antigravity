@@ -48,6 +48,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { HistoricalWeekViewDialog } from "./historical-week-view-dialog";
+import { GenerateWeekDialog } from "./generate-week-dialog";
 
 const employeeConverter = {
     toFirestore(employee: Employee): DocumentData {
@@ -195,57 +196,6 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
     const end = parseISO(endDate);
     return `${format(start, 'dd/MM/yyyy')} al ${format(end, 'dd/MM/yyyy')}`;
   };
-
-  const handleGenerateNewWeek = () => {
-    if (!firestore) return;
-    if (currentWeek) {
-      toast({
-        variant: "destructive",
-        title: "Semana Abierta",
-        description: `Ya existe una semana abierta (${formatDateRange(currentWeek.startDate, currentWeek.endDate)}). Debe cerrarla antes de generar una nueva.`,
-      });
-      return;
-    }
-
-    startTransition(() => {
-      (async () => {
-        try {
-            const lastWeekQuery = query(collection(firestore, 'payrollWeeks'), orderBy('startDate', 'desc'), limit(1));
-            const lastWeekSnap = await getDocs(lastWeekQuery);
-            const lastWeek = lastWeekSnap.docs.length > 0 ? lastWeekSnap.docs[0].data() as PayrollWeek : null;
-            
-            let nextStartDate: Date;
-
-            if (!lastWeek) {
-              nextStartDate = startOfWeek(new Date(), { weekStartsOn: 1 });
-            } else {
-              nextStartDate = addDays(parseISO(lastWeek.startDate), 7);
-            }
-
-            const nextEndDate = endOfWeek(nextStartDate, { weekStartsOn: 1 });
-
-            const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-            const newWeek: PayrollWeek = {
-              id: newWeekRef.id,
-              startDate: nextStartDate.toISOString(),
-              endDate: nextEndDate.toISOString(),
-              status: 'Abierta',
-              generatedAt: new Date().toISOString(),
-            };
-
-            await setDoc(newWeekRef, newWeek);
-            
-            toast({
-                title: "Nueva Semana Generada",
-                description: `Se ha creado la semana del ${format(nextStartDate, 'dd/MM')} al ${format(nextEndDate, 'dd/MM')}.`,
-            });
-        } catch (error: any) {
-            console.error("Error generating new week:", error);
-            toast({ variant: 'destructive', title: "Error al generar", description: `No se pudo generar la nueva semana. ${error.message}` });
-        }
-      })();
-    });
-  };
   
   const handleCloseWeek = (weekId: string, weekStartDate: string, weekEndDate: string) => {
       if (!firestore) return;
@@ -389,11 +339,7 @@ export function WeeklySummary({ currentWeek, historicalWeeks, isLoadingCurrentWe
                 <TabsTrigger value="historial">Historial</TabsTrigger>
             </TabsList>
             {permissions.canSupervise && (
-                <Button onClick={handleGenerateNewWeek} disabled={isPending || isLoadingCurrentWeek || !!currentWeek}>
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Generar Nueva Semana
-                </Button>
+                <GenerateWeekDialog disabled={isPending || isLoadingCurrentWeek || !!currentWeek} />
             )}
          </div>
         
