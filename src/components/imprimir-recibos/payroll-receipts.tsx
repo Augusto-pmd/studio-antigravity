@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification } from '@/lib/types';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification, FundRequest } from '@/lib/types';
 import { eachDayOfInterval, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,32 @@ const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => d
 const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
 const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
 const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
+const fundRequestConverter = {
+    toFirestore(request: FundRequest): DocumentData {
+        const { id, ...data } = request;
+        return data;
+    },
+    fromFirestore(
+        snapshot: QueryDocumentSnapshot,
+        options: SnapshotOptions
+    ): FundRequest {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            requesterId: data.requesterId,
+            requesterName: data.requesterName,
+            date: data.date,
+            category: data.category,
+            projectId: data.projectId,
+            projectName: data.projectName,
+            amount: data.amount,
+            currency: data.currency,
+            exchangeRate: data.exchangeRate,
+            status: data.status,
+            description: data.description,
+        };
+    }
+};
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 
@@ -35,7 +61,7 @@ interface EmployeeReceiptData {
   };
 }
 
-export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'employees' | 'contractors' }) {
+export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'employees' | 'contractors' | 'fund-requests' | null }) {
   const firestore = useFirestore();
 
   const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
@@ -56,7 +82,21 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   const certificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
   const { data: certifications, isLoading: isLoadingCerts } = useCollection<ContractorCertification>(certificationsQuery);
 
-  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts;
+  const fundRequestsQuery = useMemo(() => firestore ? query(
+    collection(firestore, 'fundRequests').withConverter(fundRequestConverter),
+    where('status', 'in', ['Aprobado', 'Pagado'])
+    ) : null, [firestore]);
+  const { data: allFundRequests, isLoading: isLoadingFundRequests } = useCollection<FundRequest>(fundRequestsQuery);
+
+  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts || isLoadingFundRequests;
+
+  const weeklyFundRequests = useMemo(() => {
+    if (!allFundRequests || !week) return [];
+    return allFundRequests.filter(req => {
+        const reqDate = parseISO(req.date);
+        return reqDate >= parseISO(week.startDate) && reqDate <= parseISO(week.endDate);
+    });
+  }, [allFundRequests, week]);
 
   const projectsMap = useMemo(() => {
     if (!projects) return new Map<string, string>();
@@ -112,6 +152,69 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   
   if (!week) {
     return <div className="flex h-screen items-center justify-center"><p>No se encontró la semana de pago.</p></div>;
+  }
+
+  if (type === 'fund-requests') {
+    return (
+        <div className="p-4 sm:p-8">
+            <div className="flex justify-between items-center mb-8 no-print">
+                <h1 className="text-2xl font-bold">Recibos de Solicitudes de Fondos</h1>
+                <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir Todo</Button>
+            </div>
+            <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
+              {weeklyFundRequests?.length === 0 ? (
+                <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay solicitudes aprobadas para esta semana.</div>
+              ) : weeklyFundRequests?.map(req => (
+                <div key={req.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border print:text-[10px]">
+                    <header className="flex justify-between items-start border-b pb-2 print:pb-1">
+                        <div>
+                            <Logo className="h-5 w-auto" />
+                            <p className="text-xs text-gray-500 mt-1 print:text-[8px] print:mt-0.5">PMD Arquitectura</p>
+                        </div>
+                        <div className="text-right">
+                            <h2 className="text-sm font-semibold print:text-[10px]">Recibo de Solicitud de Fondos</h2>
+                            <p className="text-xs text-gray-500 print:text-[8px]">
+                            Semana del {format(parseISO(week.startDate), 'dd/MM/yy')} al {format(parseISO(week.endDate), 'dd/MM/yy')}
+                            </p>
+                        </div>
+                    </header>
+
+                    <section className="mt-2 print:mt-1 text-xs print:text-[9px]">
+                      <h3 className="font-medium">Solicitante: {req.requesterName}</h3>
+                      <p className="text-gray-500">Fecha Solicitud: {format(parseISO(req.date), 'dd/MM/yyyy')}</p>
+                    </section>
+
+                    <section className="mt-2 print:mt-1 border-t pt-2 print:pt-1">
+                        <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Detalle</h4>
+                        <div className="text-xs print:text-[9px] space-y-0.5">
+                            <p><span className="font-semibold">Categoría:</span> {req.category}</p>
+                            {req.projectName && <p><span className="font-semibold">Obra:</span> {req.projectName}</p>}
+                            {req.description && <p className="italic">"{req.description}"</p>}
+                        </div>
+                    </section>
+                    
+                    <section className="mt-2 print:mt-1 border-t-2 border-dashed pt-1">
+                      <div className="flex justify-between items-center text-sm font-bold print:text-[10px]">
+                        <span>MONTO A RENDIR:</span>
+                        <span>{formatCurrency(req.amount, req.currency)}</span>
+                      </div>
+                    </section>
+                    
+                    <footer className="mt-4 print:mt-2 flex justify-between items-end">
+                        <div className="w-1/2 pt-4">
+                            <div className="border-t pt-1 text-center text-xs print:text-[8px]">
+                            Firma del Solicitante
+                            </div>
+                        </div>
+                        <div className="w-1/2 text-right text-xs text-gray-400 print:text-[8px]">
+                            Recibo generado el {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                        </div>
+                    </footer>
+                </div>
+              ))}
+            </div>
+        </div>
+    )
   }
   
   if (type === 'contractors') {

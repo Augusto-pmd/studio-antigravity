@@ -15,7 +15,7 @@ export default function ImprimirRecibosPage() {
 function ReceiptsContent() {
   const searchParams = useSearchParams();
   const weekId = searchParams.get('weekId');
-  const type = searchParams.get('type') as 'employees' | 'contractors' | null;
+  const type = searchParams.get('type') as 'employees' | 'contractors' | 'fund-requests' | null;
 
   if (!weekId || !type) {
     return (
