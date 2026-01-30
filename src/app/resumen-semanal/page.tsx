@@ -25,12 +25,37 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-// --- Converters (unchanged) ---
-const payrollWeekConverter = { toFirestore: (data: PayrollWeek): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
+// --- Converters (Robust Date Handling) ---
+const payrollWeekConverter = {
+    toFirestore: (data: PayrollWeek): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
+        const data = snapshot.data(options)!;
+        const convert = (d: any) => (d && typeof d.toDate === 'function' ? d.toDate().toISOString() : d);
+        return {
+            ...data,
+            id: snapshot.id,
+            startDate: convert(data.startDate),
+            endDate: convert(data.endDate),
+            generatedAt: convert(data.generatedAt)
+        } as PayrollWeek;
+    }
+};
+
+const fundRequestConverter = {
+    toFirestore: (data: FundRequest): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => {
+        const data = snapshot.data(options)!;
+        return {
+            ...data,
+            id: snapshot.id,
+            date: data.date && typeof data.date.toDate === 'function' ? data.date.toDate().toISOString() : data.date,
+        } as FundRequest;
+    }
+};
+
 const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
 const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
-const fundRequestConverter = { toFirestore: (data: FundRequest): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id } as FundRequest) };
 const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
 const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
 
@@ -76,11 +101,12 @@ export default function ResumenSemanalPage() {
 
     const fundRequests = useMemo(() => {
         if (!allApprovedFundRequests || !currentWeek || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return [];
-
+        
         const weekStart = startOfDay(parseISO(currentWeek.startDate));
         const weekEnd = endOfDay(parseISO(currentWeek.endDate));
 
         return allApprovedFundRequests.filter(req => {
+            if (!req.date || !isValid(parseISO(req.date))) return false;
             const reqDate = parseISO(req.date);
             return reqDate >= weekStart && reqDate <= weekEnd;
         });
