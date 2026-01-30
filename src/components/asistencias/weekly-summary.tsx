@@ -113,7 +113,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   const [isClosingWeek, startTransition] = useTransition();
   
   const attendanceQuery = useMemo(
-      () => firestore && currentWeek && currentWeek.status !== 'No Generada' ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
+      () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
       [firestore, currentWeek]
   );
   const { data: weekAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
@@ -122,7 +122,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
 
   const advancesQuery = useMemo(
-      () => firestore && currentWeek && currentWeek.status !== 'No Generada' ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
+      () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
       [firestore, currentWeek]
   );
   const { data: weekAdvances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
@@ -255,7 +255,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                   {isLoadingSummaryData || currentWeek.status === 'No Generada' ? (
+                   {isLoadingSummaryData ? (
                         <div className="grid gap-4 md:grid-cols-3">
                             <Skeleton className="h-24 w-full" />
                             <Skeleton className="h-24 w-full" />
@@ -289,8 +289,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
                         <span className={cn(
                             "font-semibold ml-1",
                             currentWeek.status === 'Abierta' && 'text-green-500',
-                            currentWeek.status === 'Cerrada' && 'text-red-500',
-                            currentWeek.status === 'No Generada' && 'text-yellow-500'
+                            currentWeek.status === 'Cerrada' && 'text-red-500'
                         )}>
                             {currentWeek.status}
                         </span>
@@ -319,19 +318,19 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
                                 </AlertDialogContent>
                             </AlertDialog>
                         )}
-                        <Button asChild variant="outline" disabled={currentWeek.status === 'No Generada'}>
+                        <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
                             <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=contractors`} target="_blank">
                                 <Download className="mr-2 h-4 w-4" />
                                 Recibos (Contratistas)
                             </Link>
                         </Button>
-                        <Button asChild variant="outline" disabled={currentWeek.status === 'No Generada'}>
+                        <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
                             <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=fund-requests`} target="_blank">
                                 <Download className="mr-2 h-4 w-4" />
                                 Recibos (Solicitudes)
                             </Link>
                         </Button>
-                        <Button asChild disabled={currentWeek.status === 'No Generada'}>
+                        <Button asChild disabled={currentWeek.id.startsWith('virtual_')}>
                             <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=employees`} target="_blank">
                                 <Download className="mr-2 h-4 w-4" />
                                 Recibos (Empleados)
