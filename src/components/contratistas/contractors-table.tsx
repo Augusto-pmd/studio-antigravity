@@ -12,15 +12,28 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Contractor } from "@/lib/types";
 import { differenceInDays, parseISO, isBefore, format as formatDateFns } from 'date-fns';
-import { TriangleAlert, Pencil, Users } from "lucide-react";
+import { TriangleAlert, Pencil, Users, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { ContractorDialog } from "@/components/contratistas/contractor-dialog";
 import { PersonnelDialog } from "@/components/contratistas/personnel-dialog";
 import { useFirestore, useCollection } from "@/firebase";
-import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast";
+
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -34,6 +47,7 @@ const contractorConverter = {
 
 export function ContractorsTable() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const contractorsQuery = useMemo(() => (firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null), [firestore]);
   const { data: contractors, isLoading } = useCollection<Contractor>(contractorsQuery);
 
@@ -52,6 +66,26 @@ export function ContractorsTable() {
         return { variant: 'warning', message: `Vence en ${daysLeft} días` };
     }
     return null;
+  };
+
+  const handleDelete = (contractorId: string, contractorName: string) => {
+    if (!firestore) return;
+    const contractorRef = doc(firestore, 'contractors', contractorId);
+    deleteDoc(contractorRef)
+        .then(() => {
+            toast({
+                title: "Contratista Eliminado",
+                description: `El contratista "${contractorName}" ha sido eliminado.`,
+            });
+        })
+        .catch((error) => {
+            console.error("Error deleting contractor: ", error);
+            toast({
+                variant: "destructive",
+                title: "Error al eliminar",
+                description: "No se pudo eliminar el contratista. Es posible que no tengas permisos.",
+            });
+        });
   };
 
   const renderSkeleton = () => (
@@ -152,6 +186,32 @@ export function ContractorsTable() {
                            <span className="sr-only">Editar</span>
                         </Button>
                       </ContractorDialog>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Eliminar</span>
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                              <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Se eliminará permanentemente al contratista
+                                  <span className="font-semibold"> {contractor.name}</span> del sistema.
+                              </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                  onClick={() => handleDelete(contractor.id, contractor.name)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                  Eliminar
+                              </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
