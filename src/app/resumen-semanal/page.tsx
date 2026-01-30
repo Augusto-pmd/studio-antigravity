@@ -53,7 +53,7 @@ export default function ResumenSemanalPage() {
     const [summary, setSummary] = useState<SummaryData | null>(null);
     const [isCalculating, setIsCalculating] = useState(true);
 
-    // --- Data Fetching Hooks (REBUILT WITH useMemo) ---
+    // --- Data Fetching Hooks ---
     const openWeekQuery = useMemo(() => firestore ? query(collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter), where('status', '==', 'Abierta'), limit(1)) : null, [firestore]);
     const { data: openWeeks, isLoading: isLoadingWeek } = useCollection<PayrollWeek>(openWeekQuery);
     const currentWeek = useMemo(() => openWeeks?.[0], [openWeeks]);
@@ -64,23 +64,29 @@ export default function ResumenSemanalPage() {
     const advancesQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null, [currentWeek, firestore]);
     const { data: advances, isLoading: l2 } = useCollection(advancesQuery);
     
-    const fundRequestsQuery = useMemo(() => {
-        if (!currentWeek || !firestore || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return null;
-        
-        // NORMALIZE DATES to start/end of day to ensure all requests within the week are included regardless of time.
-        const weekStart = startOfDay(parseISO(currentWeek.startDate)).toISOString();
-        const weekEnd = endOfDay(parseISO(currentWeek.endDate)).toISOString();
-
+    // Fetch all approved requests, then filter by date on the client to avoid composite index issues.
+    const allApprovedFundRequestsQuery = useMemo(() => {
+        if (!firestore) return null;
         return query(
             collection(firestore, 'fundRequests').withConverter(fundRequestConverter), 
-            and(
-                where('status', '==', 'Aprobado'), 
-                where('date', '>=', weekStart), 
-                where('date', '<=', weekEnd)
-            )
+            where('status', '==', 'Aprobado')
         );
-    }, [currentWeek, firestore]);
-    const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
+    }, [firestore]);
+    const { data: allApprovedFundRequests, isLoading: l3 } = useCollection(allApprovedFundRequestsQuery);
+
+    const fundRequests = useMemo(() => {
+        if (!allApprovedFundRequests || !currentWeek || !currentWeek.startDate || !currentWeek.endDate || !isValid(parseISO(currentWeek.startDate)) || !isValid(parseISO(currentWeek.endDate))) return [];
+
+        const weekStart = startOfDay(parseISO(currentWeek.startDate));
+        const weekEnd = endOfDay(parseISO(currentWeek.endDate));
+
+        return allApprovedFundRequests.filter(req => {
+            const reqDate = parseISO(req.date);
+            return reqDate >= weekStart && reqDate <= weekEnd;
+        });
+
+    }, [allApprovedFundRequests, currentWeek]);
+
 
     const certificationsQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), and(where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado'))) : null, [currentWeek, firestore]);
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
