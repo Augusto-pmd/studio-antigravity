@@ -23,8 +23,6 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-// This function is the core of the fix. It avoids timezone-related parsing errors
-// by standardizing dates to YYYY-MM-DD strings directly from their UTC components.
 const convertDateToYYYYMMDD = (d: any): string => {
     if (!d) return '';
     try {
@@ -33,25 +31,23 @@ const convertDateToYYYYMMDD = (d: any): string => {
         if (d.toDate && typeof d.toDate === 'function') {
             date = d.toDate();
         } 
-        // Handle ISO string or other string formats that Date constructor can parse
+        // Handle ISO string or other string formats that date-fns can parse
         else {
-            date = new Date(d);
+            date = parseISO(d.toString());
         }
 
-        // Check if the date is valid. If not, try a fallback parse.
+        // Check if the date is valid.
         if (isNaN(date.getTime())) {
-            const parsed = parseISO(d.toString());
-            if(isNaN(parsed.getTime())) {
-                console.warn("Could not parse date:", d);
-                return '';
-            }
-            date = parsed;
+             console.warn("Could not parse date:", d);
+             return '';
         }
 
-        // Get UTC components to avoid local timezone shifts
-        const year = date.getUTCFullYear();
-        const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-        const day = date.getUTCDate().toString().padStart(2, '0');
+        // Use local date components, as the user's context is local and dates
+        // stored in Firestore as Timestamps will be correctly converted to the
+        // user's timezone by the browser's Date object.
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
         
         return `${year}-${month}-${day}`;
 
