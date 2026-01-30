@@ -90,7 +90,7 @@ export default function PagoSemanalPage() {
                     id: `virtual_${weekStartISO}`,
                     startDate: weekStartISO,
                     endDate: weekEnd.toISOString(),
-                    status: 'No Generada',
+                    status: 'Abierta',
                     generatedAt: new Date().toISOString(),
                 };
                 setCurrentWeek(virtualWeek);
@@ -101,7 +101,7 @@ export default function PagoSemanalPage() {
     }, [selectedDate, firestore]);
 
     const handleCreateWeek = async () => {
-        if (!firestore || !currentWeek || currentWeek.status !== 'No Generada') return;
+        if (!firestore || !currentWeek || !currentWeek.id.startsWith('virtual_')) return;
 
         startTransition(async () => {
             try {
@@ -167,7 +167,7 @@ export default function PagoSemanalPage() {
                     <CardTitle>Selector de Semana</CardTitle>
                     <CardDescription>Elija una fecha para ver o cargar datos de esa semana.</CardDescription>
                 </div>
-                {currentWeek?.status === 'No Generada' && permissions.canSupervise && (
+                {currentWeek?.id.startsWith('virtual_') && permissions.canSupervise && (
                     <Button onClick={handleCreateWeek} disabled={isCreatingWeek}>
                         {isCreatingWeek ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                         Generar y Abrir Semana
