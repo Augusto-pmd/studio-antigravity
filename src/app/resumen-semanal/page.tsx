@@ -177,28 +177,33 @@ export default function ResumenSemanalPage() {
 
             // PERSONAL
             let totalPersonal = 0;
-            if (attendances && advances) {
-                const grossWages = attendances.reduce((sum, att) => {
+            let grossWages = 0;
+            let lateHoursDeductions = 0;
+            let totalAdvances = 0;
+
+            if (attendances) {
+                grossWages = attendances.reduce((sum, att) => {
                     const emp = employeeMap.get(att.employeeId);
                     return (att.status === 'presente' && emp) ? sum + emp.wage : sum;
                 }, 0);
 
-                const lateHoursDeductions = attendances.reduce((sum, att) => {
+                lateHoursDeductions = attendances.reduce((sum, att) => {
                     const emp = employeeMap.get(att.employeeId);
                     const lateHours = safeParseFloat(att.lateHours);
                     return (att.status === 'presente' && lateHours > 0 && emp) ? sum + (lateHours * emp.hourlyRate) : sum;
                 }, 0);
-
-                const totalAdvances = advances.reduce((sum, adv) => sum + safeParseFloat(adv.amount), 0);
-                totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
                 
-                 attendances.forEach(att => {
+                attendances.forEach(att => {
                     const emp = employeeMap.get(att.employeeId);
                     const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
                     if (att.status === 'presente' && proj && emp) {
                         proj.personal += (emp.wage - (safeParseFloat(att.lateHours) * emp.hourlyRate));
                     }
                 });
+            }
+            
+            if (advances) {
+                totalAdvances = advances.reduce((sum, adv) => sum + safeParseFloat(adv.amount), 0);
                 advances.forEach(adv => {
                     const proj = adv.projectId ? projectMap.get(adv.projectId) : undefined;
                     if (proj) {
@@ -206,6 +211,8 @@ export default function ResumenSemanalPage() {
                     }
                 });
             }
+
+            totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
             
             // CONTRATISTAS
             let totalContratistas = 0;
