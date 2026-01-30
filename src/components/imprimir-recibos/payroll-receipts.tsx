@@ -286,7 +286,18 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
       <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
         {employeeReceiptsData.length === 0 && <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay actividad registrada para empleados esta semana.</div>}
-        {employeeReceiptsData.map(data => (
+        {employeeReceiptsData.map(data => {
+            const projectAttendanceSummary = Object.entries(
+                data.attendance.reduce((acc, attendance) => {
+                  if (attendance.status === 'presente' && attendance.projectId) {
+                    const projectName = projectsMap.get(attendance.projectId) || 'Obra no asignada';
+                    acc[projectName] = (acc[projectName] || 0) + 1;
+                  }
+                  return acc;
+                }, {} as Record<string, number>)
+            );
+            
+            return (
           <div key={data.employee.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border print:text-[10px]">
             <header className="flex justify-between items-start border-b pb-2 print:pb-1">
               <div>
@@ -306,44 +317,19 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               <p className="text-gray-500">Categoría: {data.employee.category}</p>
             </section>
             
-            <section className="mt-1 print:mt-0.5">
-              <h4 className="font-medium text-[8px] mb-0.5 uppercase text-gray-500">Detalle de Asistencias</h4>
-              <div className="border rounded-sm overflow-hidden">
-                <table className="w-full text-[8px]">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      {weekDays.map(day => (
-                        <th key={day.toString()} className="p-0.5 font-medium text-center">{format(day, 'E dd', { locale: es })}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-t">
-                      {weekDays.map(day => {
-                        const dayString = format(day, 'yyyy-MM-dd');
-                        const attendanceRecord = data.attendance.find(a => a.date === dayString);
-                        return (
-                          <td key={day.toString()} className="p-0.5 text-center leading-tight font-semibold text-[9px]">
-                            {attendanceRecord ? attendanceRecord.status.charAt(0).toUpperCase() : '-'}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                    <tr className="border-t bg-gray-50/50">
-                       {weekDays.map(day => {
-                        const dayString = format(day, 'yyyy-MM-dd');
-                        const attendanceRecord = data.attendance.find(a => a.date === dayString);
-                        return (
-                          <td key={day.toString()} className="p-0.5 text-center leading-tight text-[7px] text-gray-500 font-mono">
-                            {attendanceRecord?.status === 'presente' && attendanceRecord.projectId && projectsMap.get(attendanceRecord.projectId)
-                              ? projectsMap.get(attendanceRecord.projectId)!.substring(0, 4).toUpperCase()
-                              : '-'}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
+            <section className="mt-2 print:mt-1">
+              <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Detalle de Asistencias por Obra</h4>
+              <div className="text-xs print:text-[9px] space-y-0.5 border-t pt-1">
+                {projectAttendanceSummary.length > 0 ? (
+                  projectAttendanceSummary.map(([projectName, days]) => (
+                    <div key={projectName} className="flex justify-between">
+                      <span>{projectName}:</span>
+                      <span className="font-semibold">{days} día{days > 1 ? 's' : ''}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400">Sin asistencias a obras registradas.</p>
+                )}
               </div>
             </section>
 
@@ -400,7 +386,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               </div>
             </footer>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );
