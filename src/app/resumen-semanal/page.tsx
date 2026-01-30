@@ -10,8 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Briefcase, Handshake, HardHat } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 
-// This function is the core of the fix. It ensures that any value we try to use
-// in a calculation is a valid number, otherwise it safely defaults to 0.
 const safeParseFloat = (value: any): number => {
     if (value === null || value === undefined || value === '') return 0;
     const num = parseFloat(value);
@@ -25,27 +23,42 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-// --- Converters (Robust Date Handling) ---
-const convertFirestoreDate = (d: any): string => {
+// This function is the core of the fix. It avoids timezone-related parsing errors
+// by standardizing dates to YYYY-MM-DD strings directly from their UTC components.
+const convertDateToYYYYMMDD = (d: any): string => {
     if (!d) return '';
-    // Handle Firestore Timestamp
-    if (d.toDate && typeof d.toDate === 'function') {
-        return format(d.toDate(), 'yyyy-MM-dd');
-    }
-    // Handle ISO string or existing Date object
-    if (typeof d === 'string' || d instanceof Date) {
-        try {
-            return format(parseISO(d.toString()), 'yyyy-MM-dd');
-        } catch (e) {
-            // This handles simple 'YYYY-MM-DD' strings that parseISO might fail on in some environments
-            if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
-                return d;
-            }
-            console.warn("Could not parse date:", d);
-            return '';
+    try {
+        let date: Date;
+        // Handle Firestore Timestamp object
+        if (d.toDate && typeof d.toDate === 'function') {
+            date = d.toDate();
+        } 
+        // Handle ISO string or other string formats that Date constructor can parse
+        else {
+            date = new Date(d);
         }
+
+        // Check if the date is valid. If not, try a fallback parse.
+        if (isNaN(date.getTime())) {
+            const parsed = parseISO(d.toString());
+            if(isNaN(parsed.getTime())) {
+                console.warn("Could not parse date:", d);
+                return '';
+            }
+            date = parsed;
+        }
+
+        // Get UTC components to avoid local timezone shifts
+        const year = date.getUTCFullYear();
+        const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+        const day = date.getUTCDate().toString().padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+
+    } catch (error) {
+        console.error("Error converting date:", d, error);
+        return '';
     }
-    return '';
 }
 
 const payrollWeekConverter = {
@@ -55,9 +68,9 @@ const payrollWeekConverter = {
         return {
             ...data,
             id: snapshot.id,
-            startDate: convertFirestoreDate(data.startDate),
-            endDate: convertFirestoreDate(data.endDate),
-            generatedAt: convertFirestoreDate(data.generatedAt)
+            startDate: convertDateToYYYYMMDD(data.startDate),
+            endDate: convertDateToYYYYMMDD(data.endDate),
+            generatedAt: convertDateToYYYYMMDD(data.generatedAt)
         } as PayrollWeek;
     }
 };
@@ -69,10 +82,11 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
-            date: convertFirestoreDate(data.date),
+            date: convertDateToYYYYMMDD(data.date),
         } as FundRequest;
     }
 };
+
 
 const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
@@ -143,7 +157,7 @@ export default function ResumenSemanalPage() {
     
     const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
 
-    // --- Calculation Logic (unchanged, but now fed by stable queries) ---
+    // --- Calculation Logic ---
     useEffect(() => {
         if (isLoadingData) {
             setIsCalculating(true);
