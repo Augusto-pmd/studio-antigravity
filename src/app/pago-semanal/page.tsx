@@ -217,11 +217,11 @@ export default function PagoSemanalPage() {
                         isLoadingCurrentWeek={isLoadingWeek}
                     />
                     <CashAdvances 
-                        currentWeek={currentWeek} 
+                        currentWeek={currentWeek ?? undefined} 
                         isLoadingWeek={isLoadingWeek} 
                     />
                     <DailyAttendance 
-                        currentWeek={currentWeek} 
+                        currentWeek={currentWeek ?? undefined} 
                         isLoadingWeek={isLoadingWeek} 
                     />
                 </div>
@@ -229,7 +229,7 @@ export default function PagoSemanalPage() {
 
             <TabsContent value="contratistas" className="mt-6">
               <ContractorCertifications 
-                currentWeek={currentWeek}
+                currentWeek={currentWeek ?? undefined}
                 isLoadingWeek={isLoadingWeek}
               />
             </TabsContent>
