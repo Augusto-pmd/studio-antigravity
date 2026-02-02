@@ -188,29 +188,23 @@ export default function ResumenSemanalPage() {
 
             // PERSONAL
             let grossWages = 0;
-            let lateHoursDeductions = 0;
             
             if (attendances) {
                 attendances.forEach(att => {
                     const emp = employeeMap.get(att.employeeId);
                     if (att.status === 'presente' && emp) {
                         const dailyGross = emp.wage;
-                        const dailyDeduction = parseNumber(att.lateHours) * emp.hourlyRate;
-                        
                         grossWages += dailyGross;
-                        lateHoursDeductions += dailyDeduction;
             
                         const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
                         if (proj) {
-                            proj.personal += (dailyGross - dailyDeduction);
+                            proj.personal += dailyGross;
                         }
                     }
                 });
             }
             
-            // Total Personal Cost = Gross wages based on attendance, minus deductions for late hours.
-            // Advances are a cash flow item, not a cost for the week, so they are not subtracted here.
-            const totalPersonal = grossWages - lateHoursDeductions;
+            const totalPersonal = grossWages;
             
             // CONTRATISTAS
             let totalContratistas = 0;
