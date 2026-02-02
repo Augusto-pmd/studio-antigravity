@@ -90,10 +90,12 @@ export function HoursReport() {
     const reportData = useMemo((): ReportData[] => {
         if (isLoading || !employees || !timeLogs || !projects) return [];
 
-        const monthStart = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
-        const monthEnd = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
+        const selectedMonthStr = format(selectedMonth, 'yyyy-MM');
         
-        const logsForMonth = timeLogs.filter((log: TimeLog) => log.date >= monthStart && log.date <= monthEnd);
+        const logsForMonth = timeLogs.filter((log: TimeLog) => {
+            if (!log.date) return false;
+            return log.date.startsWith(selectedMonthStr);
+        });
 
         if (logsForMonth.length === 0) return [];
 
