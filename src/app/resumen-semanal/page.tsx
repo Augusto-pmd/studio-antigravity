@@ -189,8 +189,7 @@ export default function ResumenSemanalPage() {
             // PERSONAL
             let grossWages = 0;
             let lateHoursDeductions = 0;
-            let totalAdvances = 0;
-
+            
             if (attendances) {
                 attendances.forEach(att => {
                     const emp = employeeMap.get(att.employeeId);
@@ -209,19 +208,9 @@ export default function ResumenSemanalPage() {
                 });
             }
             
-            if (advances) {
-                advances.forEach(adv => {
-                    const advanceAmount = parseNumber(adv.amount);
-                    totalAdvances += advanceAmount;
-
-                    const proj = adv.projectId ? projectMap.get(adv.projectId) : undefined;
-                    if (proj) {
-                        proj.personal -= advanceAmount;
-                    }
-                });
-            }
-
-            const totalPersonal = grossWages - lateHoursDeductions - totalAdvances;
+            // Total Personal Cost = Gross wages based on attendance, minus deductions for late hours.
+            // Advances are a cash flow item, not a cost for the week, so they are not subtracted here.
+            const totalPersonal = grossWages - lateHoursDeductions;
             
             // CONTRATISTAS
             let totalContratistas = 0;
@@ -330,7 +319,7 @@ export default function ResumenSemanalPage() {
             <div className="space-y-6">
                  <Card className="bg-primary text-primary-foreground">
                     <CardHeader>
-                        <CardTitle>Total a Pagar esta Semana</CardTitle>
+                        <CardTitle>Costo Total Estimado de la Semana</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-4xl font-bold">{formatCurrency(summary?.grandTotal ?? 0)}</p>
