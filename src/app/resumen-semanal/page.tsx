@@ -107,7 +107,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: data.dailyWage || 0,
+            dailyWage: parseNumber(data.dailyWage),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -196,7 +196,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, { wage: parseNumber(e.dailyWage), hourlyRate: parseNumber(e.dailyWage) / 8 }]));
+            const employeeMap = new Map(employees.map(e => [e.id, { wage: e.dailyWage, hourlyRate: e.dailyWage / 8 }]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
