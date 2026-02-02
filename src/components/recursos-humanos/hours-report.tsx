@@ -35,20 +35,13 @@ const timeLogConverter = {
         const data = snapshot.data(options)!;
         let dateStr: string = '';
         if (data.date) {
-            // Handle Firestore Timestamp objects
+            // If it's a Firestore Timestamp, convert it.
             if (data.date.toDate && typeof data.date.toDate === 'function') {
                 dateStr = format(data.date.toDate(), 'yyyy-MM-dd');
             } 
-            // Handle string dates (ISO or yyyy-MM-dd)
+            // Otherwise, trust the string value, stripping any time info.
             else if (typeof data.date === 'string') {
-                try {
-                    // Try parsing as ISO and re-formatting to normalize
-                    dateStr = format(parseISO(data.date), 'yyyy-MM-dd');
-                } catch {
-                    // If it fails, it might already be in yyyy-MM-dd format or invalid.
-                    // Trust the original string in case of failure.
-                    dateStr = data.date;
-                }
+                dateStr = data.date.split('T')[0];
             }
         }
         return { 
