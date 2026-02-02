@@ -20,6 +20,13 @@ service cloud.firestore {
          (userRole == 'Dirección' || userRole == 'Administración');
     }
 
+    function canSupervise() {
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isSignedIn() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         userRole in ['Dirección', 'Supervisor', 'Administración'];
+    }
+
     function canManageSales() {
       let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isSignedIn() &&
@@ -111,9 +118,9 @@ service cloud.firestore {
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
-      allow read, write: if isDirector();
+      allow read, write: if canSupervise();
       match /transactions/{transactionId} {
-        allow read, write: if isDirector();
+        allow read, write: if canSupervise();
       }
     }
     

@@ -104,7 +104,7 @@ export function AccountsPayable() {
                   <TableCell className="hidden md:table-cell">{projectsMap[expense.projectId] || expense.projectId}</TableCell>
                   <TableCell className="text-right font-mono hidden sm:table-cell">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                   <TableCell className="text-right">
-                    {permissions.canValidate && (
+                    {permissions.canSupervise && (
                       <PayExpenseDialog expense={expense}>
                         <Button size="sm">Pagar</Button>
                       </PayExpenseDialog>
