@@ -95,7 +95,26 @@ const fundRequestConverter = {
 };
 
 
-const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
+const employeeConverter = {
+    toFirestore: (data: Employee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => {
+        const data = snapshot.data(options)!;
+        return {
+            id: snapshot.id,
+            name: data.name || '',
+            email: data.email || undefined,
+            phone: data.phone || undefined,
+            status: data.status || 'Inactivo',
+            paymentType: data.paymentType || 'Semanal',
+            category: data.category || 'N/A',
+            dailyWage: data.dailyWage || 0,
+            artExpiryDate: data.artExpiryDate || undefined,
+            documents: data.documents || [],
+            emergencyContactName: data.emergencyContactName,
+            emergencyContactPhone: data.emergencyContactPhone,
+        } as Employee
+    }
+};
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
 const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
 const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
@@ -127,9 +146,6 @@ export default function ResumenSemanalPage() {
 
     const attendancesQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null, [currentWeek, firestore]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
-
-    const advancesQuery = useMemo(() => currentWeek && firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null, [currentWeek, firestore]);
-    const { data: advances, isLoading: l2 } = useCollection(advancesQuery);
     
     // Fetch all approved requests, then filter by date on the client to avoid composite index issues.
     const allApprovedFundRequestsQuery = useMemo(() => {
@@ -162,7 +178,7 @@ export default function ResumenSemanalPage() {
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
     
-    const isLoadingData = isLoadingWeek || l1 || l2 || l3 || l4 || l5 || l6;
+    const isLoadingData = isLoadingWeek || l1 || l3 || l4 || l5 || l6;
 
     // --- Calculation Logic ---
     useEffect(() => {
@@ -260,7 +276,7 @@ export default function ResumenSemanalPage() {
         } finally {
             setIsCalculating(false);
         }
-    }, [isLoadingData, currentWeek, attendances, advances, fundRequests, certifications, employees, projects]);
+    }, [isLoadingData, currentWeek, attendances, fundRequests, certifications, employees, projects]);
 
     if (isCalculating || isLoadingWeek) {
         return (
