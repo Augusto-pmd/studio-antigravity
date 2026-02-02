@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -19,12 +19,47 @@ const formatCurrency = (amount: number) => new Intl.NumberFormat('es-AR', { styl
 // Converters
 const techOfficeEmployeeConverter = {
     toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => {
+        const data = snapshot.data(options)!;
+        return { 
+            ...data,
+            id: snapshot.id,
+            monthlySalary: Number(data.monthlySalary || 0)
+        } as TechnicalOfficeEmployee
+    }
 };
+
 const timeLogConverter = {
     toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
+        const data = snapshot.data(options)!;
+        let dateStr: string = '';
+        if (data.date) {
+            // Handle Firestore Timestamp objects
+            if (data.date.toDate && typeof data.date.toDate === 'function') {
+                dateStr = format(data.date.toDate(), 'yyyy-MM-dd');
+            } 
+            // Handle string dates (ISO or yyyy-MM-dd)
+            else if (typeof data.date === 'string') {
+                try {
+                    // Try parsing as ISO and re-formatting to normalize
+                    dateStr = format(parseISO(data.date), 'yyyy-MM-dd');
+                } catch {
+                    // If it fails, it might already be in yyyy-MM-dd format or invalid.
+                    // Trust the original string in case of failure.
+                    dateStr = data.date;
+                }
+            }
+        }
+        return { 
+            ...data, 
+            id: snapshot.id,
+            date: dateStr,
+            hours: Number(data.hours || 0)
+        } as TimeLog;
+    }
 };
+
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
