@@ -32,6 +32,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+const parseNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleanedString);
+        return isNaN(num) ? 0 : num;
+    }
+    return 0;
+};
+
 const employeeConverter = {
     toFirestore(employee: Employee): DocumentData {
         const { id, ...data } = employee;
@@ -134,8 +145,8 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     if (!weekAttendances || !employees || !weekAdvances) return defaultResult;
     
     try {
-        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, Number(e.dailyWage) || 0]));
-        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (Number(e.dailyWage) || 0) / 8]));
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (parseNumber(e.dailyWage)) / 8]));
 
         const grossWages = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente') {
@@ -148,12 +159,12 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente' && Number(attendance.lateHours) > 0) {
                 const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-                return sum + ((Number(attendance.lateHours) || 0) * hourlyRate);
+                return sum + ((parseNumber(attendance.lateHours.toString())) * hourlyRate);
             }
             return sum;
         }, 0);
 
-        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + (Number(advance.amount) || 0), 0);
+        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + (parseNumber(advance.amount.toString())), 0);
 
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
 

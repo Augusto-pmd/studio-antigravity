@@ -36,6 +36,14 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc } from "firebase/firestore";
 
+const parseArgentinianNumber = (value: string): number => {
+    if (!value) return 0;
+    // Remove thousand separators (dots) and then replace decimal comma with a dot.
+    const cleanedString = value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleanedString);
+    return isNaN(num) ? 0 : num;
+}
+
 export function EmployeeDialog({
   employee,
   children,
@@ -103,7 +111,7 @@ export function EmployeeDialog({
         emergencyContactName: emergencyContactName || undefined,
         emergencyContactPhone: emergencyContactPhone || undefined,
         category,
-        dailyWage: parseFloat(dailyWage) || 0,
+        dailyWage: parseArgentinianNumber(dailyWage),
         paymentType,
         status,
         artExpiryDate: artExpiryDate ? artExpiryDate.toISOString() : undefined,
@@ -178,7 +186,7 @@ export function EmployeeDialog({
 
           <div className="space-y-2">
             <Label htmlFor="dailyWage">Salario Diario</Label>
-            <Input id="dailyWage" type="number" value={dailyWage} onChange={(e: ChangeEvent<HTMLInputElement>) => setDailyWage(e.target.value)} placeholder="ARS" />
+            <Input id="dailyWage" type="text" value={dailyWage} onChange={(e: ChangeEvent<HTMLInputElement>) => setDailyWage(e.target.value)} placeholder="ARS" />
           </div>
           
            <div className="space-y-2">

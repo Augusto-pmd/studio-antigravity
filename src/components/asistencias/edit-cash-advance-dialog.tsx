@@ -36,6 +36,14 @@ import { collection, doc, updateDoc, type DocumentData, type QueryDocumentSnapsh
 import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
+const parseArgentinianNumber = (value: string): number => {
+    if (!value) return 0;
+    // Remove thousand separators (dots) and then replace decimal comma with a dot.
+    const cleanedString = value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleanedString);
+    return isNaN(num) ? 0 : num;
+}
+
 const employeeConverter = {
     toFirestore(employee: Employee): DocumentData {
         const { id, ...data } = employee;
@@ -150,7 +158,7 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
           projectId: selectedProject?.id,
           projectName: selectedProject?.name,
           date: date.toISOString(),
-          amount: parseFloat(amount) || 0,
+          amount: parseArgentinianNumber(amount),
           reason: reason || undefined,
       };
 
@@ -245,7 +253,7 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
           
           <div className="space-y-2">
             <Label htmlFor="amount">Monto</Label>
-            <Input id="amount" type="number" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
+            <Input id="amount" type="text" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
           </div>
 
           <div className="space-y-2">
