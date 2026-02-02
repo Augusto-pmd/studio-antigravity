@@ -196,7 +196,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, { wage: e.dailyWage, hourlyRate: e.dailyWage / 8 }]));
+            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage)]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -207,9 +207,9 @@ export default function ResumenSemanalPage() {
             
             if (attendances) {
                 attendances.forEach(att => {
-                    const emp = employeeMap.get(att.employeeId);
-                    if (att.status === 'presente' && emp) {
-                        const dailyGross = emp.wage;
+                    const wage = employeeMap.get(att.employeeId);
+                    if (att.status === 'presente' && wage !== undefined) {
+                        const dailyGross = parseNumber(wage);
                         grossWages += dailyGross;
             
                         const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
