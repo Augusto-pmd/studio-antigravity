@@ -92,10 +92,10 @@ export function EmployeeDialog({
 
     startTransition(() => {
       const employeesCollection = collection(firestore, 'employees');
-      const employeeRef = isEditMode ? doc(employeesCollection, employee.id) : doc(employeesCollection);
+      const employeeRef = isEditMode && employee ? doc(employeesCollection, employee.id) : doc(employeesCollection);
       const employeeId = employeeRef.id;
 
-      const employeeData: Partial<Employee> = {
+      const employeeData: { [key: string]: any } = {
         id: employeeId,
         name,
         email: email || undefined,
@@ -106,11 +106,15 @@ export function EmployeeDialog({
         dailyWage: parseFloat(dailyWage) || 0,
         paymentType,
         status,
+        artExpiryDate: artExpiryDate ? artExpiryDate.toISOString() : undefined,
       };
 
-      if (artExpiryDate) {
-        employeeData.artExpiryDate = artExpiryDate.toISOString();
-      }
+      // Clean object of undefined values before sending to Firestore
+      Object.keys(employeeData).forEach(key => {
+        if (employeeData[key] === undefined) {
+          delete employeeData[key];
+        }
+      });
       
       setDoc(employeeRef, employeeData, { merge: true })
         .then(() => {
