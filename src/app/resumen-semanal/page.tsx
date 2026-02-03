@@ -16,23 +16,6 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
-    // If it's already a valid number, return it.
-    if (typeof value === 'number' && !isNaN(value)) {
-        return value;
-    }
-    // If it's a string, try to parse it.
-    if (typeof value === 'string') {
-        // Remove thousand separators (dots) and then replace decimal comma with a dot.
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    // For other types, or if parsing fails, return 0.
-    return 0;
-};
-
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number' || isNaN(amount)) {
         return 'ARS 0,00';
@@ -76,7 +59,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: parseNumber(data.dailyWage),
+            dailyWage: Number(data.dailyWage || 0),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -201,7 +184,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage)]));
+            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -210,8 +193,7 @@ export default function ResumenSemanalPage() {
             // PERSONAL
             const grossWages = (attendances || []).reduce((sum, att) => {
                 if (att.status === 'presente') {
-                    const wage = employeeMap.get(att.employeeId) || 0;
-                    const dailyGross = parseNumber(wage);
+                    const dailyGross = employeeMap.get(att.employeeId) || 0;
                     
                     const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
                     if (proj) {
@@ -227,11 +209,11 @@ export default function ResumenSemanalPage() {
             // CONTRATISTAS
             let totalContratistas = 0;
             if (certifications) {
-                totalContratistas = certifications.reduce((sum, cert) => sum + parseNumber(cert.amount), 0);
+                totalContratistas = certifications.reduce((sum, cert) => sum + (cert.amount || 0), 0);
                  certifications.forEach(cert => {
                     const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
                     if (proj) {
-                        proj.contratistas += parseNumber(cert.amount);
+                        proj.contratistas += (cert.amount || 0);
                     }
                 });
             }
@@ -240,15 +222,15 @@ export default function ResumenSemanalPage() {
             let totalSolicitudes = 0;
             if (fundRequests) {
                 totalSolicitudes = fundRequests.reduce((sum, req) => {
-                    const amount = parseNumber(req.amount);
-                    const exchangeRate = parseNumber(req.exchangeRate) || 1;
+                    const amount = req.amount || 0;
+                    const exchangeRate = req.exchangeRate || 1;
                     return sum + (req.currency === 'USD' ? amount * exchangeRate : amount);
                 }, 0);
                  fundRequests.forEach(req => {
                     const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
                     if (proj) {
-                        const amount = parseNumber(req.amount);
-                        const exchangeRate = parseNumber(req.exchangeRate) || 1;
+                        const amount = req.amount || 0;
+                        const exchangeRate = req.exchangeRate || 1;
                         proj.solicitudes += (req.currency === 'USD' ? amount * exchangeRate : amount);
                     }
                 });
