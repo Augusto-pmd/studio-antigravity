@@ -85,7 +85,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
     if (!allApprovedCerts) return paidMap;
 
     allApprovedCerts.forEach((cert: DocumentData) => {
-        const key = `${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`;
+        const key = `\'\'\'${cert.contractorId}-${cert.projectId}\'\'\'`;
         const currentPaid = paidMap.get(key) || 0;
         paidMap.set(key, currentPaid + cert.amount);
     });
@@ -147,7 +147,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
         <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-9 w-20 rounded-md ml-auto" /></TableCell>
       </TableRow>
     ))
   );
@@ -194,8 +194,9 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                         {!isLoading && certifications?.map(cert => {
                              const contractor = allContractors?.find(c => c.id === cert.contractorId);
                              const budgetData = contractor?.budgets?.[cert.projectId];
-                             const totalBudget = (budgetData?.initial || 0) + (budgetData?.additional || 0);
-                             const totalPaid = totalPaidByContractorProject.get(`${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`) || 0;
+                             const additionalsTotal = budgetData?.additionals?.reduce((sum, ad) => sum + (ad.amount || 0), 0) || 0;
+                             const totalBudget = (budgetData?.initial || 0) + additionalsTotal;
+                             const totalPaid = totalPaidByContractorProject.get(`\'\'\'${cert.contractorId}-${cert.projectId}\'\'\'`) || 0;
                              const remainingBalance = totalBudget - totalPaid;
 
                             return(

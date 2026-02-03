@@ -28,7 +28,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Separator } from "@/components/ui/separator";
@@ -36,6 +36,7 @@ import type { Contractor, Project } from "@/lib/types";
 import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, setDoc, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -74,8 +75,9 @@ export function ContractorDialog({
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
   const [insuranceExpiryDate, setInsuranceExpiryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState('');
-  const [budgets, setBudgets] = useState<{ [key: string]: { initial: string; additional: string } }>({});
-
+  
+  const [budgets, setBudgets] = useState<{ [projectId: string]: { initial: string; additionals: { id: string; amount: string; description: string }[] } }>({});
+  const [newBudgetAlloc, setNewBudgetAlloc] = useState<{projectId: string, initial: string} | null>(null);
 
   const resetForm = () => {
     setName(contractor?.name || '');
@@ -90,17 +92,22 @@ export function ContractorDialog({
     setInsuranceExpiryDate(contractor?.insuranceExpiryDate ? parseISO(contractor.insuranceExpiryDate) : undefined);
     setNotes(contractor?.notes || '');
     
-    // Transform the budgets from numbers to strings for the form state
-    const initialBudgets: { [key: string]: { initial: string; additional: string } } = {};
+    const initialBudgets: { [projectId: string]: { initial: string; additionals: { id: string; amount: string; description: string }[] } } = {};
     if (contractor?.budgets) {
         for (const projectId in contractor.budgets) {
+            const projectBudget = contractor.budgets[projectId];
             initialBudgets[projectId] = {
-                initial: contractor.budgets[projectId]?.initial?.toString() || '',
-                additional: contractor.budgets[projectId]?.additional?.toString() || ''
+                initial: projectBudget?.initial?.toString() || '',
+                additionals: projectBudget?.additionals?.map(ad => ({
+                    ...ad,
+                    id: doc(collection(firestore!, 'dummy')).id, 
+                    amount: ad.amount.toString(),
+                })) || []
             };
         }
     }
     setBudgets(initialBudgets);
+    setNewBudgetAlloc(null);
   };
 
   useEffect(() => {
@@ -108,16 +115,6 @@ export function ContractorDialog({
       resetForm();
     }
   }, [open, contractor]);
-
-  const handleBudgetChange = (projectId: string, field: 'initial' | 'additional', value: string) => {
-    setBudgets(prev => ({
-      ...prev,
-      [projectId]: {
-        ...prev[projectId],
-        [field]: value
-      }
-    }));
-  };
 
   const handleSave = () => {
     if (!firestore) {
@@ -145,20 +142,24 @@ export function ContractorDialog({
             phone,
             status,
             notes,
-            budgets: Object.entries(budgets).reduce((acc: {[key: string]: { initial?: number; additional?: number }}, [key, value]) => {
-                const initial = parseFloat(value.initial);
-                const additional = parseFloat(value.additional);
+            budgets: Object.entries(budgets).reduce((acc, [projectId, budgetData]) => {
+                const initial = parseFloat(budgetData.initial);
+                const additionals = budgetData.additionals
+                    .map(ad => ({
+                        amount: parseFloat(ad.amount) || 0,
+                        description: ad.description
+                    }))
+                    .filter(ad => ad.amount > 0);
+
+                const budgetEntry: { initial?: number, additionals?: { amount: number; description: string }[] } = {};
+                if (!isNaN(initial) && initial > 0) budgetEntry.initial = initial;
+                if (additionals.length > 0) budgetEntry.additionals = additionals;
                 
-                const budgetEntry: { initial?: number; additional?: number } = {};
-                if (!isNaN(initial)) budgetEntry.initial = initial;
-                if (!isNaN(additional)) budgetEntry.additional = additional;
-
                 if (Object.keys(budgetEntry).length > 0) {
-                    acc[key] = budgetEntry;
+                    acc[projectId] = budgetEntry;
                 }
-
                 return acc;
-            }, {}),
+            }, {} as Exclude<Contractor['budgets'], undefined>),
         };
 
         if (artExpiryDate) {
@@ -182,6 +183,76 @@ export function ContractorDialog({
             });
     });
   };
+
+    const handleAddProjectBudget = () => {
+        if (newBudgetAlloc && newBudgetAlloc.projectId && newBudgetAlloc.initial) {
+        setBudgets(prev => ({
+            ...prev,
+            [newBudgetAlloc.projectId]: {
+            initial: newBudgetAlloc.initial,
+            additionals: []
+            }
+        }));
+        setNewBudgetAlloc(null);
+        }
+    };
+
+    const handleRemoveProjectBudget = (projectId: string) => {
+        setBudgets(prev => {
+        const newBudgets = { ...prev };
+        delete newBudgets[projectId];
+        return newBudgets;
+        });
+    };
+
+    const handleAddAdditional = (projectId: string) => {
+        setBudgets(prev => ({
+        ...prev,
+        [projectId]: {
+            ...prev[projectId],
+            additionals: [
+            ...(prev[projectId]?.additionals || []),
+            { id: doc(collection(firestore!, 'dummy')).id, amount: '', description: '' }
+            ]
+        }
+        }));
+    };
+    
+    const handleRemoveAdditional = (projectId: string, additionalId: string) => {
+        setBudgets(prev => ({
+        ...prev,
+        [projectId]: {
+            ...prev[projectId],
+            additionals: prev[projectId].additionals.filter(ad => ad.id !== additionalId)
+        }
+        }));
+    };
+    
+    const handleBudgetChange = (projectId: string, field: 'initial', value: string) => {
+        setBudgets(prev => ({
+        ...prev,
+        [projectId]: { ...prev[projectId], [field]: value }
+        }));
+    };
+
+    const handleAdditionalChange = (projectId: string, additionalId: string, field: 'amount' | 'description', value: string) => {
+        setBudgets(prev => ({
+        ...prev,
+        [projectId]: {
+            ...prev[projectId],
+            additionals: prev[projectId].additionals.map(ad => 
+            ad.id === additionalId ? { ...ad, [field]: value } : ad
+            )
+        }
+        }));
+    };
+
+    const getProjectName = (projectId: string) => {
+        return projects?.find(p => p.id === projectId)?.name || 'Obra desconocida';
+    }
+  
+    const unassignedProjects = projects?.filter(p => !Object.keys(budgets).includes(p.id)) || [];
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -292,38 +363,79 @@ export function ContractorDialog({
           
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Presupuestos por Obra</h4>
-             <div className="grid md:grid-cols-1 gap-6">
-                {isLoadingProjects ? <p>Cargando obras...</p> : projects?.map(project => (
-                    <div className="space-y-3 p-3 border rounded-md" key={project.id}>
-                        <Label htmlFor={`budget-initial-${project.id}`} className="font-semibold">{project.name}</Label>
-                         <div className="grid grid-cols-2 gap-3">
-                           <div className="space-y-1">
-                                <Label htmlFor={`budget-initial-${project.id}`} className="text-xs">Ppto. Inicial</Label>
-                                <Input 
-                                    id={`budget-initial-${project.id}`}
-                                    type="number"
-                                    placeholder="Monto"
-                                    value={budgets[project.id]?.initial || ''}
-                                    onChange={e => handleBudgetChange(project.id, 'initial', e.target.value)}
-                                />
-                           </div>
-                           <div className="space-y-1">
-                                <Label htmlFor={`budget-additional-${project.id}`} className="text-xs">Adicionales</Label>
-                                <Input 
-                                    id={`budget-additional-${project.id}`}
-                                    type="number"
-                                    placeholder="Monto"
-                                    value={budgets[project.id]?.additional || ''}
-                                    onChange={e => handleBudgetChange(project.id, 'additional', e.target.value)}
-                                />
-                           </div>
-                         </div>
-                    </div>
+                {Object.entries(budgets).map(([projectId, budgetData]) => (
+                    <Card key={projectId}>
+                        <CardHeader>
+                            <CardTitle className="flex justify-between items-center">
+                                {getProjectName(projectId)}
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveProjectBudget(projectId)} className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor={`initial-${projectId}`}>Presupuesto Inicial</Label>
+                                <Input id={`initial-${projectId}`} type="number" placeholder="Monto inicial" value={budgetData.initial} onChange={(e) => handleBudgetChange(projectId, 'initial', e.target.value)} />
+                            </div>
+                            <Separator />
+                            <div className="space-y-2">
+                                <Label>Adicionales</Label>
+                                {budgetData.additionals.length === 0 && <p className="text-xs text-muted-foreground">No hay adicionales para esta obra.</p>}
+                                {budgetData.additionals.map(ad => (
+                                    <div key={ad.id} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+                                        <Input type="text" placeholder="Descripción del adicional" value={ad.description} onChange={e => handleAdditionalChange(projectId, ad.id, 'description', e.target.value)} />
+                                        <Input type="number" placeholder="Monto" value={ad.amount} onChange={e => handleAdditionalChange(projectId, ad.id, 'amount', e.target.value)} className="w-32" />
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveAdditional(projectId, ad.id)} className="text-destructive hover:text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button variant="outline" size="sm" onClick={() => handleAddAdditional(projectId)}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Agregar Adicional
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 ))}
-                {projects && projects.length === 0 && (
-                    <p className="text-sm text-muted-foreground col-span-2">No hay obras en curso para asignar presupuestos.</p>
-                )}
-            </div>
+                
+                <Card className="bg-muted/50">
+                    <CardHeader>
+                        <CardTitle>Asignar Presupuesto a Nueva Obra</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        <div className="space-y-2">
+                            <Label>Obra</Label>
+                            <Select 
+                                value={newBudgetAlloc?.projectId || ''} 
+                                onValueChange={pid => setNewBudgetAlloc(prev => ({...(prev || {initial: ''}), projectId: pid}))}
+                                disabled={isLoadingProjects || unassignedProjects.length === 0}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={unassignedProjects.length > 0 ? "Seleccionar obra" : "No hay más obras para asignar"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {unassignedProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Presupuesto Inicial</Label>
+                            <Input 
+                                type="number" 
+                                placeholder="Monto inicial" 
+                                value={newBudgetAlloc?.initial || ''}
+                                onChange={e => setNewBudgetAlloc(prev => ({...(prev || {projectId: ''}), initial: e.target.value}))}
+                                disabled={!newBudgetAlloc?.projectId}
+                            />
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button onClick={handleAddProjectBudget} disabled={!newBudgetAlloc?.projectId || !newBudgetAlloc?.initial}>
+                            Asignar Presupuesto
+                        </Button>
+                    </CardFooter>
+                </Card>
           </div>
 
           <Separator />

@@ -89,7 +89,7 @@ export interface Contractor {
   notes?: string;
   insuranceExpiryDate?: string;
   artExpiryDate?: string;
-  budgets?: { [key: string]: { initial?: number; additional?: number } };
+  budgets?: { [projectId: string]: { initial?: number; additionals?: { amount: number; description: string }[] } };
 }
 
 export interface DocumentRecord {
