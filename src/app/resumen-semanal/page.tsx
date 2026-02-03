@@ -15,6 +15,16 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+const parseNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleanedString);
+        return isNaN(num) ? 0 : num;
+    }
+    return 0;
+};
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number' || isNaN(amount)) {
@@ -41,11 +51,11 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
-            date: data.date,
+            amount: parseNumber(data.amount),
+            exchangeRate: parseNumber(data.exchangeRate || 1),
         } as FundRequest;
     }
 };
-
 
 const employeeConverter = {
     toFirestore: (data: Employee): DocumentData => data,
@@ -59,7 +69,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: Number(data.dailyWage || 0),
+            dailyWage: parseNumber(data.dailyWage),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -69,7 +79,17 @@ const employeeConverter = {
 };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
 const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
-const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
+const certificationConverter = {
+    toFirestore: (data: ContractorCertification): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
+        const data = snapshot.data(options)!;
+        return {
+            ...data,
+            id: snapshot.id,
+            amount: parseNumber(data.amount),
+        } as ContractorCertification;
+    }
+};
 const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
 
 type SummaryData = {
@@ -209,11 +229,11 @@ export default function ResumenSemanalPage() {
             // CONTRATISTAS
             let totalContratistas = 0;
             if (certifications) {
-                totalContratistas = certifications.reduce((sum, cert) => sum + (cert.amount || 0), 0);
+                totalContratistas = certifications.reduce((sum, cert) => sum + cert.amount, 0);
                  certifications.forEach(cert => {
                     const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
                     if (proj) {
-                        proj.contratistas += (cert.amount || 0);
+                        proj.contratistas += cert.amount;
                     }
                 });
             }
@@ -222,16 +242,12 @@ export default function ResumenSemanalPage() {
             let totalSolicitudes = 0;
             if (fundRequests) {
                 totalSolicitudes = fundRequests.reduce((sum, req) => {
-                    const amount = req.amount || 0;
-                    const exchangeRate = req.exchangeRate || 1;
-                    return sum + (req.currency === 'USD' ? amount * exchangeRate : amount);
+                    return sum + (req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount);
                 }, 0);
                  fundRequests.forEach(req => {
                     const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
                     if (proj) {
-                        const amount = req.amount || 0;
-                        const exchangeRate = req.exchangeRate || 1;
-                        proj.solicitudes += (req.currency === 'USD' ? amount * exchangeRate : amount);
+                        proj.solicitudes += (req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount);
                     }
                 });
             }
@@ -240,16 +256,11 @@ export default function ResumenSemanalPage() {
             const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
             
             const finalSummary = {
-                totalPersonal: isNaN(totalPersonal) ? 0 : totalPersonal,
-                totalContratistas: isNaN(totalContratistas) ? 0 : totalContratistas,
-                totalSolicitudes: isNaN(totalSolicitudes) ? 0 : totalSolicitudes,
-                grandTotal: isNaN(grandTotal) ? 0 : grandTotal,
-                breakdown: breakdown.map(p => ({
-                    ...p,
-                    personal: isNaN(p.personal) ? 0 : p.personal,
-                    contratistas: isNaN(p.contratistas) ? 0 : p.contratistas,
-                    solicitudes: isNaN(p.solicitudes) ? 0 : p.solicitudes,
-                })),
+                totalPersonal,
+                totalContratistas,
+                totalSolicitudes,
+                grandTotal,
+                breakdown,
             };
 
             setSummary(finalSummary);
@@ -389,3 +400,4 @@ export default function ResumenSemanalPage() {
         </div>
     );
 }
+
