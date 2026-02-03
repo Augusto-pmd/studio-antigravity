@@ -444,6 +444,13 @@
         "artExpiryDate": {
           "type": "string",
           "format": "date-time"
+        },
+        "budgets": {
+          "type": "object",
+          "description": "A map of project IDs to budget amounts for this contractor.",
+          "additionalProperties": {
+            "type": "number"
+          }
         }
       },
       "required": [

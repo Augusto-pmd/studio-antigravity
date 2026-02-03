@@ -89,6 +89,7 @@ export interface Contractor {
   notes?: string;
   insuranceExpiryDate?: string;
   artExpiryDate?: string;
+  budgets?: { [key: string]: number };
 }
 
 export interface DocumentRecord {
