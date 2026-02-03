@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -78,7 +77,7 @@ const contractorConverter = {
 
 
 export function ContractorCertifications({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
-  const { firestore, permissions } = useUser();
+  const { firestore, permissions, role } = useUser();
   const { toast } = useToast();
 
   const certificationsQuery = useMemo(
@@ -105,7 +104,8 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
         if (!cert.contractorId || !cert.projectId) return;
         const key = `${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`;
         const currentPaid = paidMap.get(key) || 0;
-        paidMap.set(key, currentPaid + cert.amount);
+        const certAmount = parseNumber(cert.amount);
+        paidMap.set(key, currentPaid + certAmount);
     });
     return paidMap;
   }, [allApprovedCerts]);
@@ -275,8 +275,10 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                                 <span>Editar</span>
                                                             </DropdownMenuItem>
                                                         </EditContractorCertificationDialog>
-                                                        <DeleteContractorCertificationDialog certification={cert} />
                                                     </>
+                                                )}
+                                                {role === 'Supervisor' && cert.status !== 'Pagado' && (
+                                                  <DeleteContractorCertificationDialog certification={cert} />
                                                 )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
