@@ -40,40 +40,6 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-const convertDateToYYYYMMDD = (d: any): string => {
-    if (!d) return '';
-    try {
-        let date: Date;
-        // Handle Firestore Timestamp object
-        if (d.toDate && typeof d.toDate === 'function') {
-            date = d.toDate();
-        } 
-        // Handle ISO string or other string formats that date-fns can parse
-        else {
-            date = parseISO(d.toString());
-        }
-
-        // Check if the date is valid.
-        if (isNaN(date.getTime())) {
-             console.warn("Could not parse date:", d);
-             return '';
-        }
-
-        // Use local date components, as the user's context is local and dates
-        // stored in Firestore as Timestamps will be correctly converted to the
-        // user's timezone by the browser's Date object.
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-        
-        return `${year}-${month}-${day}`;
-
-    } catch (error) {
-        console.error("Error converting date:", d, error);
-        return '';
-    }
-}
-
 const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
@@ -81,9 +47,6 @@ const payrollWeekConverter = {
         return {
             ...data,
             id: snapshot.id,
-            startDate: convertDateToYYYYMMDD(data.startDate),
-            endDate: convertDateToYYYYMMDD(data.endDate),
-            generatedAt: convertDateToYYYYMMDD(data.generatedAt)
         } as PayrollWeek;
     }
 };
@@ -95,7 +58,7 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
-            date: convertDateToYYYYMMDD(data.date),
+            date: data.date,
         } as FundRequest;
     }
 };
@@ -173,7 +136,7 @@ export default function ResumenSemanalPage() {
                     id: `virtual_${weekStartISO}`,
                     startDate: weekStartISO,
                     endDate: weekEnd.toISOString(),
-                    status: 'No Generada',
+                    status: 'Abierta',
                     generatedAt: new Date().toISOString(),
                 };
                 setCurrentWeek(virtualWeek);
@@ -202,7 +165,10 @@ export default function ResumenSemanalPage() {
         return allApprovedFundRequests.filter(req => {
             if (!req.date) return false;
             const reqDate = parseISO(req.date);
-            return reqDate >= parseISO(currentWeek.startDate) && reqDate <= parseISO(currentWeek.endDate);
+            const startDate = parseISO(currentWeek.startDate);
+            const endDate = parseISO(currentWeek.endDate);
+            if (!isValid(reqDate) || !isValid(startDate) || !isValid(endDate)) return false;
+            return reqDate >= startDate && reqDate <= endDate;
         });
 
     }, [allApprovedFundRequests, currentWeek]);
