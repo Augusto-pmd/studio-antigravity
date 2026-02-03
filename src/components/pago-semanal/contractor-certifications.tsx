@@ -39,6 +39,16 @@ import { EditContractorCertificationDialog } from './edit-contractor-certificati
 import { DeleteContractorCertificationDialog } from './delete-contractor-certification-dialog';
 import { PaymentHistoryDialog } from './payment-history-dialog';
 
+const parseNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleanedString);
+        return isNaN(num) ? 0 : num;
+    }
+    return 0;
+};
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => {
   if (typeof amount !== 'number' || isNaN(amount)) return '';
@@ -51,7 +61,14 @@ const formatDate = (dateString?: string) => {
 
 const certificationConverter = {
     toFirestore: (cert: ContractorCertification): DocumentData => cert,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
+        const data = snapshot.data(options)!;
+        return {
+            ...data,
+            id: snapshot.id,
+            amount: parseNumber(data.amount),
+        } as ContractorCertification;
+    }
 };
 
 const contractorConverter = {
@@ -75,8 +92,8 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const { data: allContractors, isLoading: isLoadingContractors } = useCollection<Contractor>(allContractorsQuery);
 
   // Fetch all approved/paid certifications to calculate total paid amounts
-  const allApprovedCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications'), where('status', 'in', ['Aprobado', 'Pagado'])) : null, [firestore]);
-  const { data: allApprovedCerts, isLoading: isLoadingAllCerts } = useCollection(allApprovedCertsQuery);
+  const allApprovedCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Aprobado', 'Pagado'])) : null, [firestore]);
+  const { data: allApprovedCerts, isLoading: isLoadingAllCerts } = useCollection<ContractorCertification>(allApprovedCertsQuery);
 
   const isLoading = isLoadingWeek || isLoadingCerts || isLoadingContractors || isLoadingAllCerts;
 
@@ -84,7 +101,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
     const paidMap = new Map<string, number>();
     if (!allApprovedCerts) return paidMap;
 
-    allApprovedCerts.forEach((cert: DocumentData) => {
+    allApprovedCerts.forEach((cert: ContractorCertification) => {
         if (!cert.contractorId || !cert.projectId) return;
         const key = `${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`;
         const currentPaid = paidMap.get(key) || 0;
@@ -195,7 +212,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                         {!isLoading && certifications?.map(cert => {
                              const contractor = allContractors?.find(c => c.id === cert.contractorId);
                              const budgetData = contractor?.budgets?.[cert.projectId];
-                             const additionalsTotal = budgetData?.additionals?.reduce((sum, ad) => sum + (ad.amount || 0), 0) || 0;
+                             const additionalsTotal = budgetData?.additionals?.reduce((sum, ad) => sum + (Number(ad.amount) || 0), 0) || 0;
                              const totalBudget = (budgetData?.initial || 0) + additionalsTotal;
                              const totalPaid = totalPaidByContractorProject.get(`${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`) || 0;
                              const remainingBalance = totalBudget - totalPaid;
