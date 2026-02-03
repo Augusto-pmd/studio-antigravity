@@ -84,7 +84,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
     if (!allApprovedCerts) return paidMap;
 
     allApprovedCerts.forEach((cert: DocumentData) => {
-        const key = `${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`;
+        const key = `\'\'\'${cert.contractorId}-${cert.projectId}\'\'\'`;
         const currentPaid = paidMap.get(key) || 0;
         paidMap.set(key, currentPaid + cert.amount);
     });
@@ -192,9 +192,10 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                         )}
                         {!isLoading && certifications?.map(cert => {
                              const contractor = allContractors?.find(c => c.id === cert.contractorId);
-                             const budget = contractor?.budgets?.[cert.projectId] ?? 0;
-                             const totalPaid = totalPaidByContractorProject.get(`${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`) || 0;
-                             const remainingBalance = budget - totalPaid;
+                             const budgetData = contractor?.budgets?.[cert.projectId];
+                             const totalBudget = (budgetData?.initial || 0) + (budgetData?.additional || 0);
+                             const totalPaid = totalPaidByContractorProject.get(`\'\'\'${cert.contractorId}-${cert.projectId}\'\'\'`) || 0;
+                             const remainingBalance = totalBudget - totalPaid;
 
                             return(
                             <TableRow key={cert.id}>
@@ -213,7 +214,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                 </TableCell>
                                 <TableCell className="text-right font-mono">{formatCurrency(cert.amount, cert.currency)}</TableCell>
                                 <TableCell className="text-right font-mono hidden xl:table-cell">
-                                    {budget > 0 ? formatCurrency(remainingBalance, cert.currency) : <span className="text-muted-foreground">-</span>}
+                                    {totalBudget > 0 ? formatCurrency(remainingBalance, cert.currency) : <span className="text-muted-foreground">-</span>}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {permissions.canSupervise && (

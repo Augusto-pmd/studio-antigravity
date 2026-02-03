@@ -449,7 +449,17 @@
           "type": "object",
           "description": "A map of project IDs to budget amounts for this contractor.",
           "additionalProperties": {
-            "type": "number"
+            "type": "object",
+            "properties": {
+              "initial": {
+                "type": "number",
+                "description": "The initial budget amount."
+              },
+              "additional": {
+                "type": "number",
+                "description": "Any additional budget amounts."
+              }
+            }
           }
         }
       },

@@ -35,7 +35,7 @@ import { Separator } from "@/components/ui/separator";
 import type { Contractor, Project } from "@/lib/types";
 import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, doc, setDoc, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -55,10 +55,12 @@ export function ContractorDialog({
   const [isPending, startTransition] = useTransition();
   const firestore = useFirestore();
   const { toast } = useToast();
+  
+  const projectsQuery = useMemo(() => (
+    firestore ? query(collection(firestore, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso')) : null
+  ), [firestore]);
 
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(
-    firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null
-  );
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   // Form State
   const [name, setName] = useState('');
@@ -72,7 +74,7 @@ export function ContractorDialog({
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
   const [insuranceExpiryDate, setInsuranceExpiryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState('');
-  const [budgets, setBudgets] = useState<{ [key: string]: string }>({});
+  const [budgets, setBudgets] = useState<{ [key: string]: { initial: string; additional: string } }>({});
 
 
   const resetForm = () => {
@@ -87,12 +89,18 @@ export function ContractorDialog({
     setArtExpiryDate(contractor?.artExpiryDate ? parseISO(contractor.artExpiryDate) : undefined);
     setInsuranceExpiryDate(contractor?.insuranceExpiryDate ? parseISO(contractor.insuranceExpiryDate) : undefined);
     setNotes(contractor?.notes || '');
-    setBudgets(
-      Object.entries(contractor?.budgets || {}).reduce(
-        (acc, [key, value]) => ({ ...acc, [key]: value.toString() }),
-        {}
-      )
-    );
+    
+    // Transform the budgets from numbers to strings for the form state
+    const initialBudgets: { [key: string]: { initial: string; additional: string } } = {};
+    if (contractor?.budgets) {
+        for (const projectId in contractor.budgets) {
+            initialBudgets[projectId] = {
+                initial: contractor.budgets[projectId]?.initial?.toString() || '',
+                additional: contractor.budgets[projectId]?.additional?.toString() || ''
+            };
+        }
+    }
+    setBudgets(initialBudgets);
   };
 
   useEffect(() => {
@@ -100,6 +108,16 @@ export function ContractorDialog({
       resetForm();
     }
   }, [open, contractor]);
+
+  const handleBudgetChange = (projectId: string, field: 'initial' | 'additional', value: string) => {
+    setBudgets(prev => ({
+      ...prev,
+      [projectId]: {
+        ...prev[projectId],
+        [field]: value
+      }
+    }));
+  };
 
   const handleSave = () => {
     if (!firestore) {
@@ -127,11 +145,18 @@ export function ContractorDialog({
             phone,
             status,
             notes,
-            budgets: Object.entries(budgets).reduce((acc: {[key: string]: number}, [key, value]) => {
-                const numValue = parseFloat(value);
-                if (!isNaN(numValue)) {
-                    acc[key] = numValue;
+            budgets: Object.entries(budgets).reduce((acc: {[key: string]: { initial?: number; additional?: number }}, [key, value]) => {
+                const initial = parseFloat(value.initial);
+                const additional = parseFloat(value.additional);
+                
+                const budgetEntry: { initial?: number; additional?: number } = {};
+                if (!isNaN(initial)) budgetEntry.initial = initial;
+                if (!isNaN(additional)) budgetEntry.additional = additional;
+
+                if (Object.keys(budgetEntry).length > 0) {
+                    acc[key] = budgetEntry;
                 }
+
                 return acc;
             }, {}),
         };
@@ -267,20 +292,35 @@ export function ContractorDialog({
           
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">Presupuestos por Obra</h4>
-             <div className="grid md:grid-cols-2 gap-4">
-                {isLoadingProjects ? <p>Cargando obras...</p> : projects?.filter(p => p.status === 'En Curso').map(project => (
-                    <div className="space-y-2" key={project.id}>
-                        <Label htmlFor={`budget-${project.id}`}>{project.name}</Label>
-                        <Input 
-                            id={`budget-${project.id}`}
-                            type="number"
-                            placeholder="Monto Presupuestado"
-                            value={budgets[project.id] || ''}
-                            onChange={e => setBudgets(prev => ({...prev, [project.id]: e.target.value}))}
-                        />
+             <div className="grid md:grid-cols-1 gap-6">
+                {isLoadingProjects ? <p>Cargando obras...</p> : projects?.map(project => (
+                    <div className="space-y-3 p-3 border rounded-md" key={project.id}>
+                        <Label htmlFor={`budget-initial-${project.id}`} className="font-semibold">{project.name}</Label>
+                         <div className="grid grid-cols-2 gap-3">
+                           <div className="space-y-1">
+                                <Label htmlFor={`budget-initial-${project.id}`} className="text-xs">Ppto. Inicial</Label>
+                                <Input 
+                                    id={`budget-initial-${project.id}`}
+                                    type="number"
+                                    placeholder="Monto"
+                                    value={budgets[project.id]?.initial || ''}
+                                    onChange={e => handleBudgetChange(project.id, 'initial', e.target.value)}
+                                />
+                           </div>
+                           <div className="space-y-1">
+                                <Label htmlFor={`budget-additional-${project.id}`} className="text-xs">Adicionales</Label>
+                                <Input 
+                                    id={`budget-additional-${project.id}`}
+                                    type="number"
+                                    placeholder="Monto"
+                                    value={budgets[project.id]?.additional || ''}
+                                    onChange={e => handleBudgetChange(project.id, 'additional', e.target.value)}
+                                />
+                           </div>
+                         </div>
                     </div>
                 ))}
-                {projects && projects.filter(p => p.status === 'En Curso').length === 0 && (
+                {projects && projects.length === 0 && (
                     <p className="text-sm text-muted-foreground col-span-2">No hay obras en curso para asignar presupuestos.</p>
                 )}
             </div>
