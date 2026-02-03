@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Project, Supplier, Expense, TimeLog, TechnicalOfficeEmployee } from '@/lib/types';
@@ -49,6 +50,7 @@ export default function GastosPage() {
   const [selectedProject, setSelectedProject] = useState<string | undefined>();
   const [selectedSupplier, setSelectedSupplier] = useState<string | undefined>();
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch all data sources
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
@@ -113,17 +115,21 @@ export default function GastosPage() {
       const projectMatch = !selectedProject || expense.projectId === selectedProject;
       const supplierMatch = !selectedSupplier || expense.supplierId === selectedSupplier;
       const categoryMatch = !selectedCategory || expense.categoryId === selectedCategory;
-      return projectMatch && supplierMatch && categoryMatch;
+      const searchMatch = !searchQuery ||
+                          (expense.description && expense.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                          (expense.invoiceNumber && expense.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+      return projectMatch && supplierMatch && categoryMatch && searchMatch;
     });
-  }, [allExpenses, officeExpenses, selectedProject, selectedSupplier, selectedCategory]);
+  }, [allExpenses, officeExpenses, selectedProject, selectedSupplier, selectedCategory, searchQuery]);
 
   const resetFilters = () => {
     setSelectedProject(undefined);
     setSelectedSupplier(undefined);
     setSelectedCategory(undefined);
+    setSearchQuery('');
   }
 
-  const hasActiveFilters = selectedProject || selectedSupplier || selectedCategory;
+  const hasActiveFilters = selectedProject || selectedSupplier || selectedCategory || searchQuery;
 
   return (
     <div className="flex flex-col gap-6">
@@ -137,9 +143,15 @@ export default function GastosPage() {
         {permissions.canLoadExpenses && <AddExpenseDialog />}
       </div>
       
-      <div className="flex flex-col gap-4 rounded-lg border p-4 md:flex-row">
-        <h3 className="hidden shrink-0 font-semibold tracking-tight md:block mt-2">Filtros:</h3>
-        <div className="grid flex-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-col gap-4 rounded-lg border p-4">
+        <h3 className="font-semibold tracking-tight">Filtros</h3>
+        <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <Input 
+                placeholder="Buscar por descripción, n°..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="xl:col-span-2"
+            />
             <Select onValueChange={(value) => setSelectedProject(value === 'all' ? undefined : value)} value={selectedProject}>
                 <SelectTrigger>
                     <SelectValue placeholder="Filtrar por Obra" />
@@ -181,13 +193,13 @@ export default function GastosPage() {
                     ))}
                 </SelectContent>
             </Select>
-            {hasActiveFilters && (
-                <Button variant="ghost" onClick={resetFilters}>
-                    <X className="mr-2 h-4 w-4" />
-                    Limpiar Filtros
-                </Button>
-            )}
         </div>
+         {hasActiveFilters && (
+            <Button variant="ghost" onClick={resetFilters} className="w-fit self-start">
+                <X className="mr-2 h-4 w-4" />
+                Limpiar Filtros
+            </Button>
+        )}
       </div>
 
       <ExpensesTable 
