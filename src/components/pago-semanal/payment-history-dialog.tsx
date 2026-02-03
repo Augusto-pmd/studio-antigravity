@@ -19,10 +19,21 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection, useFirestore } from "@/firebase";
-import type { ContractorCertification } from "@/lib/types";
+import type { ContractorCertification, PayrollWeek } from "@/lib/types";
 import { collection, query, orderBy, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
 import { es } from "date-fns/locale";
+
+const parseNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleanedString);
+        return isNaN(num) ? 0 : num;
+    }
+    return 0;
+};
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -30,7 +41,6 @@ const formatCurrency = (amount: number, currency: string) => {
 };
 const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    // Handle potential ISO strings from new certs vs. string dates from older ones
     try {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) throw new Error("Invalid date");
@@ -42,8 +52,21 @@ const formatDate = (dateString?: string) => {
 
 const certificationConverter = {
     toFirestore: (cert: ContractorCertification): DocumentData => cert,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
+        const data = snapshot.data(options)!;
+        return {
+            ...data,
+            id: snapshot.id,
+            amount: parseNumber(data.amount),
+        } as ContractorCertification;
+    }
 };
+
+const payrollWeekConverter = { 
+    toFirestore: (data: PayrollWeek): DocumentData => data, 
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) 
+};
+
 
 interface PaymentHistoryDialogProps {
   contractorId: string;
@@ -67,7 +90,17 @@ export function PaymentHistoryDialog({ contractorId, projectId, contractorName, 
     ).withConverter(certificationConverter);
   }, [firestore, contractorId, projectId]);
 
-  const { data: history, isLoading } = useCollection<ContractorCertification>(historyQuery);
+  const { data: history, isLoading: isLoadingHistory } = useCollection<ContractorCertification>(historyQuery);
+  
+  const weeksQuery = useMemo(() => firestore ? collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter) : null, [firestore]);
+  const { data: weeks, isLoading: isLoadingWeeks } = useCollection<PayrollWeek>(weeksQuery);
+
+  const weekDateMap = useMemo(() => {
+      if (!weeks) return new Map<string, string>();
+      return new Map(weeks.map(w => [w.id, w.startDate]));
+  }, [weeks]);
+
+  const isLoading = isLoadingHistory || isLoadingWeeks;
   
   const totalPaid = useMemo(() => history?.reduce((sum, cert) => sum + cert.amount, 0) || 0, [history]);
 
@@ -103,7 +136,7 @@ export function PaymentHistoryDialog({ contractorId, projectId, contractorName, 
                     )}
                     {history?.map((cert: ContractorCertification) => (
                         <TableRow key={cert.id}>
-                            <TableCell>{formatDate(cert.payrollWeekId)}</TableCell>
+                            <TableCell>{formatDate(weekDateMap.get(cert.payrollWeekId))}</TableCell>
                             <TableCell>{cert.notes || 'Certificación semanal'}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(cert.amount, cert.currency)}</TableCell>
                         </TableRow>
