@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,10 +32,16 @@ import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Separator } from "@/components/ui/separator";
-import type { Contractor } from "@/lib/types";
-import { useFirestore } from "@/firebase";
+import type { Contractor, Project } from "@/lib/types";
+import { useFirestore, useCollection } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+
+const projectConverter = {
+    toFirestore: (data: Project): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+};
+
 
 export function ContractorDialog({
   contractor,
@@ -50,6 +56,10 @@ export function ContractorDialog({
   const firestore = useFirestore();
   const { toast } = useToast();
 
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(
+    firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null
+  );
+
   // Form State
   const [name, setName] = useState('');
   const [cuit, setCuit] = useState('');
@@ -62,6 +72,8 @@ export function ContractorDialog({
   const [artExpiryDate, setArtExpiryDate] = useState<Date | undefined>();
   const [insuranceExpiryDate, setInsuranceExpiryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState('');
+  const [budgets, setBudgets] = useState<{ [key: string]: string }>({});
+
 
   const resetForm = () => {
     setName(contractor?.name || '');
@@ -75,6 +87,12 @@ export function ContractorDialog({
     setArtExpiryDate(contractor?.artExpiryDate ? parseISO(contractor.artExpiryDate) : undefined);
     setInsuranceExpiryDate(contractor?.insuranceExpiryDate ? parseISO(contractor.insuranceExpiryDate) : undefined);
     setNotes(contractor?.notes || '');
+    setBudgets(
+      Object.entries(contractor?.budgets || {}).reduce(
+        (acc, [key, value]) => ({ ...acc, [key]: value.toString() }),
+        {}
+      )
+    );
   };
 
   useEffect(() => {
@@ -109,6 +127,13 @@ export function ContractorDialog({
             phone,
             status,
             notes,
+            budgets: Object.entries(budgets).reduce((acc: {[key: string]: number}, [key, value]) => {
+                const numValue = parseFloat(value);
+                if (!isNaN(numValue)) {
+                    acc[key] = numValue;
+                }
+                return acc;
+            }, {}),
         };
 
         if (artExpiryDate) {
@@ -190,8 +215,8 @@ export function ContractorDialog({
           <Separator />
           
           <div className="space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">Estado</h4>
-            <div className="grid md:grid-cols-2 gap-4">
+            <h4 className="text-sm font-medium text-muted-foreground">Estado y Documentación</h4>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Estado del Contratista *</Label>
                 <Select value={status} onValueChange={(v: any) => setStatus(v)}>
@@ -205,15 +230,7 @@ export function ContractorDialog({
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
-
-          <Separator />
-          
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">Documentación</h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="artExpiryDate">Vencimiento ART</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -246,6 +263,29 @@ export function ContractorDialog({
             </div>
           </div>
           
+          <Separator />
+          
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground">Presupuestos por Obra</h4>
+             <div className="grid md:grid-cols-2 gap-4">
+                {isLoadingProjects ? <p>Cargando obras...</p> : projects?.filter(p => p.status === 'En Curso').map(project => (
+                    <div className="space-y-2" key={project.id}>
+                        <Label htmlFor={`budget-${project.id}`}>{project.name}</Label>
+                        <Input 
+                            id={`budget-${project.id}`}
+                            type="number"
+                            placeholder="Monto Presupuestado"
+                            value={budgets[project.id] || ''}
+                            onChange={e => setBudgets(prev => ({...prev, [project.id]: e.target.value}))}
+                        />
+                    </div>
+                ))}
+                {projects && projects.filter(p => p.status === 'En Curso').length === 0 && (
+                    <p className="text-sm text-muted-foreground col-span-2">No hay obras en curso para asignar presupuestos.</p>
+                )}
+            </div>
+          </div>
+
           <Separator />
           
           <div className="space-y-2">

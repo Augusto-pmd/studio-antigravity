@@ -26,20 +26,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUser, useCollection } from '@/firebase';
 import { collection, query, where, doc, updateDoc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { ContractorCertification, PayrollWeek, Expense } from '@/lib/types';
+import type { ContractorCertification, PayrollWeek, Expense, Contractor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { parseISO, format } from 'date-fns';
 import { AddContractorCertificationDialog } from './add-contractor-certification-dialog';
-import { MoreHorizontal, Check, X, Undo, Receipt, Archive, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Check, X, Undo, Receipt, Archive, Pencil, Trash2, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { EditContractorCertificationDialog } from './edit-contractor-certification-dialog';
 import { DeleteContractorCertificationDialog } from './delete-contractor-certification-dialog';
+import { PaymentHistoryDialog } from './payment-history-dialog';
 
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => {
-  if (typeof amount !== 'number') return '';
+  if (typeof amount !== 'number' || isNaN(amount)) return '';
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 };
 const formatDate = (dateString?: string) => {
@@ -52,6 +53,12 @@ const certificationConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification)
 };
 
+const contractorConverter = {
+    toFirestore: (data: Contractor): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => ({ ...snapshot.data(options), id: snapshot.id } as Contractor)
+};
+
+
 export function ContractorCertifications({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
   const { firestore, permissions } = useUser();
   const { toast } = useToast();
@@ -62,7 +69,28 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   );
   const { data: certifications, isLoading: isLoadingCerts } = useCollection<ContractorCertification>(certificationsQuery);
   
-  const isLoading = isLoadingWeek || isLoadingCerts;
+  // Fetch all contractors to get budget info
+  const allContractorsQuery = useMemo(() => firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null, [firestore]);
+  const { data: allContractors, isLoading: isLoadingContractors } = useCollection<Contractor>(allContractorsQuery);
+
+  // Fetch all approved/paid certifications to calculate total paid amounts
+  const allApprovedCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications'), where('status', 'in', ['Aprobado', 'Pagado'])) : null, [firestore]);
+  const { data: allApprovedCerts, isLoading: isLoadingAllCerts } = useCollection(allApprovedCertsQuery);
+
+  const isLoading = isLoadingWeek || isLoadingCerts || isLoadingContractors || isLoadingAllCerts;
+
+  const totalPaidByContractorProject = useMemo(() => {
+    const paidMap = new Map<string, number>();
+    if (!allApprovedCerts) return paidMap;
+
+    allApprovedCerts.forEach((cert: DocumentData) => {
+        const key = `${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`;
+        const currentPaid = paidMap.get(key) || 0;
+        paidMap.set(key, currentPaid + cert.amount);
+    });
+    return paidMap;
+  }, [allApprovedCerts]);
+
   
   const handleStatusChange = async (cert: ContractorCertification, status: ContractorCertification['status']) => {
     if (!firestore) {
@@ -117,6 +145,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
       </TableRow>
     ))
@@ -148,6 +177,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                             <TableHead className='hidden md:table-cell'>Obra</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
+                            <TableHead className="text-right hidden xl:table-cell">Saldo Restante</TableHead>
                             <TableHead className="text-right w-[100px]">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -155,12 +185,18 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                         {isLoading && renderSkeleton()}
                         {!isLoading && certifications?.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     No hay certificaciones registradas para esta semana.
                                 </TableCell>
                             </TableRow>
                         )}
-                        {!isLoading && certifications?.map(cert => (
+                        {!isLoading && certifications?.map(cert => {
+                             const contractor = allContractors?.find(c => c.id === cert.contractorId);
+                             const budget = contractor?.budgets?.[cert.projectId] ?? 0;
+                             const totalPaid = totalPaidByContractorProject.get(`${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`) || 0;
+                             const remainingBalance = budget - totalPaid;
+
+                            return(
                             <TableRow key={cert.id}>
                                 <TableCell className="font-medium">{cert.contractorName}</TableCell>
                                 <TableCell className='hidden md:table-cell'>{cert.projectName}</TableCell>
@@ -176,6 +212,9 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right font-mono">{formatCurrency(cert.amount, cert.currency)}</TableCell>
+                                <TableCell className="text-right font-mono hidden xl:table-cell">
+                                    {budget > 0 ? formatCurrency(remainingBalance, cert.currency) : <span className="text-muted-foreground">-</span>}
+                                </TableCell>
                                 <TableCell className="text-right">
                                     {permissions.canSupervise && (
                                         <DropdownMenu>
@@ -192,6 +231,20 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                     <DropdownMenuItem onClick={() => handleStatusChange(cert, 'Pendiente')}><Undo className="mr-2 h-4 w-4" /><span>Volver a Pendiente</span></DropdownMenuItem>
                                                 )}
 
+                                                <DropdownMenuSeparator />
+                                                
+                                                <PaymentHistoryDialog
+                                                    contractorId={cert.contractorId}
+                                                    projectId={cert.projectId}
+                                                    contractorName={cert.contractorName}
+                                                    projectName={cert.projectName}
+                                                >
+                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                        <History className="mr-2 h-4 w-4" />
+                                                        <span>Historial de Pagos</span>
+                                                    </DropdownMenuItem>
+                                                </PaymentHistoryDialog>
+                                                
                                                 {cert.status !== 'Pagado' && (
                                                     <>
                                                         <DropdownMenuSeparator />
@@ -209,7 +262,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )})}
                     </TableBody>
                 </Table>
             </div>
