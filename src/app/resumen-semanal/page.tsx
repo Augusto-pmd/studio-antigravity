@@ -52,8 +52,8 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
-            amount: parseNumber(data.amount),
-            exchangeRate: parseNumber(data.exchangeRate || 1),
+            amount: data.amount,
+            exchangeRate: data.exchangeRate || 1,
         } as FundRequest;
     }
 };
@@ -70,7 +70,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: parseNumber(data.dailyWage),
+            dailyWage: data.dailyWage,
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -87,7 +87,7 @@ const certificationConverter = {
         return {
             ...data,
             id: snapshot.id,
-            amount: parseNumber(data.amount),
+            amount: data.amount,
         } as ContractorCertification;
     }
 };
@@ -202,14 +202,14 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage || 0]));
+            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage) || 0]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
             });
 
             // PERSONAL
-            const grossWages = (attendances || []).reduce((sum, att) => {
+            const totalPersonal = (attendances || []).reduce((sum, att) => {
                 if (att.status === 'presente') {
                     const dailyGross = employeeMap.get(att.employeeId) || 0;
                     
@@ -222,16 +222,14 @@ export default function ResumenSemanalPage() {
                 return sum;
             }, 0);
             
-            const totalPersonal = grossWages;
-            
             // CONTRATISTAS
             let totalContratistas = 0;
             if (certifications) {
-                totalContratistas = certifications.reduce((sum, cert) => sum + (cert.amount || 0), 0);
+                totalContratistas = certifications.reduce((sum, cert) => sum + (parseNumber(cert.amount) || 0), 0);
                  certifications.forEach(cert => {
                     const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
                     if (proj) {
-                        proj.contratistas += (cert.amount || 0);
+                        proj.contratistas += (parseNumber(cert.amount) || 0);
                     }
                 });
             }
@@ -240,13 +238,13 @@ export default function ResumenSemanalPage() {
             let totalSolicitudes = 0;
             if (fundRequests) {
                 totalSolicitudes = fundRequests.reduce((sum, req) => {
-                    const amount = req.currency === 'USD' ? (req.amount || 0) * (req.exchangeRate || 1) : (req.amount || 0);
+                    const amount = req.currency === 'USD' ? (parseNumber(req.amount) || 0) * (parseNumber(req.exchangeRate) || 1) : (parseNumber(req.amount) || 0);
                     return sum + amount;
                 }, 0);
                  fundRequests.forEach(req => {
                     const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
                     if (proj) {
-                        const amount = req.currency === 'USD' ? (req.amount || 0) * (req.exchangeRate || 1) : (req.amount || 0);
+                        const amount = req.currency === 'USD' ? (parseNumber(req.amount) || 0) * (parseNumber(req.exchangeRate) || 1) : (parseNumber(req.amount) || 0);
                         proj.solicitudes += amount;
                     }
                 });
