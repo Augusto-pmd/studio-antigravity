@@ -322,6 +322,22 @@
         },
         "operatorName": {
           "type": "string"
+        },
+        "isInternalLoan": {
+          "type": "boolean",
+          "description": "Set to true if this transaction is part of an internal loan between user's cash accounts."
+        },
+        "loanStatus": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Saldado"
+          ],
+          "description": "The status of the loan, if it is one."
+        },
+        "transferId": {
+          "type": "string",
+          "description": "A common ID to link the two transactions of an internal loan."
         }
       },
       "required": [
@@ -1536,6 +1552,11 @@
             "USD"
           ]
         },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the certification was created."
+        },
         "notes": {
           "type": "string",
           "description": "Optional notes about the certification."
@@ -1560,7 +1581,8 @@
         "projectName",
         "amount",
         "currency",
-        "status"
+        "status",
+        "date"
       ]
     },
     "ClientFollowUp": {

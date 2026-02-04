@@ -155,6 +155,9 @@ export interface CashTransaction {
     relatedProjectName?: string;
     operatorId?: string;
     operatorName?: string;
+    isInternalLoan?: boolean;
+    loanStatus?: 'Pendiente' | 'Saldado';
+    transferId?: string;
 }
 
 export interface FundRequest {

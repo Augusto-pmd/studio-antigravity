@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet, Trash2 } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet, Trash2, ArrowRightLeft } from 'lucide-react';
 import { FundTransferDialog } from '@/components/cajas/fund-transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -20,6 +20,8 @@ import { AddCashAccountDialog } from '@/components/caja/add-cash-account-dialog'
 import { EditCashAccountDialog } from '@/components/caja/edit-cash-account-dialog';
 import { DeleteCashAccountDialog } from '@/components/caja/delete-cash-account-dialog';
 import { DeleteTransactionDialog } from '@/components/caja/delete-transaction-dialog';
+import { InternalTransferDialog } from './internal-transfer-dialog';
+import { SettleLoanDialog } from './settle-loan-dialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -39,7 +41,7 @@ const cashAccountConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => ({ ...snapshot.data(options), id: snapshot.id } as CashAccount)
 };
 
-function MyTransactionsTable({ account }: { account: CashAccount }) {
+function MyTransactionsTable({ account, allAccounts }: { account: CashAccount, allAccounts: CashAccount[] }) {
     const { user, firestore } = useUser();
     const transactionsQuery = useMemo(
         () => firestore && user ? query(collection(firestore, `users/${user.uid}/cashAccounts/${account.id}/transactions`).withConverter(cashTransactionConverter), orderBy('date', 'desc')) : null,
@@ -77,6 +79,8 @@ function MyTransactionsTable({ account }: { account: CashAccount }) {
                     )}
                     {transactions?.map((tx: CashTransaction) => {
                         const isIncome = ['Ingreso', 'Refuerzo'].includes(tx.type);
+                        const isLoan = tx.isInternalLoan;
+
                         return (
                             <TableRow key={tx.id}>
                                 <TableCell className="text-xs text-muted-foreground">{formatDate(tx.date)}</TableCell>
@@ -85,7 +89,12 @@ function MyTransactionsTable({ account }: { account: CashAccount }) {
                                         {isIncome ? <ArrowUpCircle className="h-4 w-4 text-green-500" /> : <ArrowDownCircle className="h-4 w-4 text-destructive" />}
                                         <div>
                                             <p className="font-medium">{tx.description}</p>
-                                            <p className="text-xs text-muted-foreground">{tx.type}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs text-muted-foreground">{tx.type}</p>
+                                                {isLoan && (
+                                                    <Badge variant={tx.loanStatus === 'Pendiente' ? 'destructive' : 'default'} className="text-xs">{tx.loanStatus}</Badge>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </TableCell>
@@ -95,6 +104,9 @@ function MyTransactionsTable({ account }: { account: CashAccount }) {
                                 <TableCell className="text-right">
                                   {tx.type === 'Egreso' && tx.relatedExpenseId && (
                                     <DeleteTransactionDialog transaction={tx} cashAccount={account} />
+                                  )}
+                                  {isLoan && tx.loanStatus === 'Pendiente' && (
+                                    <SettleLoanDialog transaction={tx} accounts={allAccounts} />
                                   )}
                                 </TableCell>
                             </TableRow>
@@ -136,12 +148,20 @@ export function MyCashView() {
             Gestiona tus cajas de efectivo en ARS. Puedes tener hasta 3 cajas diferentes.
           </p>
         </div>
-        <AddCashAccountDialog>
-            <Button disabled={(accounts?.length ?? 0) >= 3}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Crear Nueva Caja
-            </Button>
-        </AddCashAccountDialog>
+        <div className="flex gap-2">
+            <InternalTransferDialog accounts={accounts || []}>
+                <Button variant="outline" disabled={(accounts?.length ?? 0) < 2}>
+                    <ArrowRightLeft className="mr-2 h-4 w-4" />
+                    Préstamo entre Cajas
+                </Button>
+            </InternalTransferDialog>
+            <AddCashAccountDialog>
+                <Button disabled={(accounts?.length ?? 0) >= 3}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Crear Nueva Caja
+                </Button>
+            </AddCashAccountDialog>
+        </div>
       </div>
 
       {accounts && accounts.length > 0 ? (
@@ -182,7 +202,7 @@ export function MyCashView() {
                                 )}
                                 <QuickExpenseDialog cashAccount={account} />
                             </div>
-                            <MyTransactionsTable account={account} />
+                            <MyTransactionsTable account={account} allAccounts={accounts} />
                         </AccordionContent>
                     </AccordionItem>
                 </Card>
