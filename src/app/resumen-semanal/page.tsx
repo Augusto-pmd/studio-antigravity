@@ -191,7 +191,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage]));
+            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage || 0]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -216,11 +216,11 @@ export default function ResumenSemanalPage() {
             // CONTRATISTAS
             let totalContratistas = 0;
             if (certifications) {
-                totalContratistas = certifications.reduce((sum, cert) => sum + cert.amount, 0);
+                totalContratistas = certifications.reduce((sum, cert) => sum + (cert.amount || 0), 0);
                  certifications.forEach(cert => {
                     const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
                     if (proj) {
-                        proj.contratistas += cert.amount;
+                        proj.contratistas += (cert.amount || 0);
                     }
                 });
             }
@@ -229,12 +229,14 @@ export default function ResumenSemanalPage() {
             let totalSolicitudes = 0;
             if (fundRequests) {
                 totalSolicitudes = fundRequests.reduce((sum, req) => {
-                    return sum + (req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount);
+                    const amount = req.currency === 'USD' ? (req.amount || 0) * (req.exchangeRate || 1) : (req.amount || 0);
+                    return sum + amount;
                 }, 0);
                  fundRequests.forEach(req => {
                     const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
                     if (proj) {
-                        proj.solicitudes += (req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount);
+                        const amount = req.currency === 'USD' ? (req.amount || 0) * (req.exchangeRate || 1) : (req.amount || 0);
+                        proj.solicitudes += amount;
                     }
                 });
             }

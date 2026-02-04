@@ -126,11 +126,13 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   
   const weeklySummaryData = useMemo(() => {
     const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
-    if (!weekAttendances || !employees || !weekAdvances) return defaultResult;
+    if (!weekAttendances || !employees || !weekAdvances) {
+        return defaultResult;
+    }
     
     try {
-        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
-        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage / 8]));
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage || 0]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (e.dailyWage || 0) / 8]));
 
         const grossWages = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente') {
@@ -143,16 +145,21 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente' && attendance.lateHours > 0) {
                 const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-                return sum + (attendance.lateHours * hourlyRate);
+                const lateHours = Number(attendance.lateHours) || 0;
+                return sum + (lateHours * hourlyRate);
             }
             return sum;
         }, 0);
 
-        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
+        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + (advance.amount || 0), 0);
 
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
+        
+        if (isNaN(grossWages) || isNaN(totalAdvances) || isNaN(totalLateHoursDeduction) || isNaN(netPay)) {
+            console.error("NaN detected in weekly summary calculation", { grossWages, totalAdvances, totalLateHoursDeduction });
+            return defaultResult;
+       }
 
-        if (isNaN(netPay)) return defaultResult;
         return { grossWages, totalAdvances, totalLateHoursDeduction, netPay };
     } catch(error) {
         console.error("Error calculating weekly summary:", error);
