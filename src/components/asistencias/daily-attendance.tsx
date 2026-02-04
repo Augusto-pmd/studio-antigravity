@@ -420,7 +420,10 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
               ))}
             </div>
           </div>
-          {!currentWeek && !isLoadingWeek && (
+           {isLoadingWeek && (
+             <div className="text-center text-sm text-muted-foreground p-2">Cargando semana...</div>
+          )}
+          {!isLoadingWeek && !currentWeek && (
              <div className="text-center text-sm text-destructive p-2 rounded-md border border-destructive/50 bg-destructive/10">
                 No hay una semana de pagos abierta. No se puede guardar la asistencia.
              </div>

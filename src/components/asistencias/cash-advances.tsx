@@ -93,7 +93,12 @@ export function CashAdvances({ currentWeek, isLoadingWeek }: { currentWeek?: Pay
         <AddCashAdvanceDialog currentWeek={currentWeek} />
       </CardHeader>
       <CardContent>
-        {!currentWeek && !isLoadingWeek && (
+        {isLoadingWeek && (
+             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Cargando semana...</p>
+            </div>
+        )}
+        {!isLoadingWeek && !currentWeek && (
             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
                 <p className="text-muted-foreground">No hay una semana de pagos abierta. Genere una para poder registrar adelantos.</p>
             </div>
@@ -112,15 +117,15 @@ export function CashAdvances({ currentWeek, isLoadingWeek }: { currentWeek?: Pay
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading && renderSkeleton()}
-                        {!isLoading && advances?.length === 0 && (
+                        {isLoadingAdvances && renderSkeleton()}
+                        {!isLoadingAdvances && advances?.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center">
                                     No hay adelantos registrados para esta semana.
                                 </TableCell>
                             </TableRow>
                         )}
-                        {!isLoading && advances?.map((advance: CashAdvance) => (
+                        {!isLoadingAdvances && advances?.map((advance: CashAdvance) => (
                                 <TableRow key={advance.id}>
                                     <TableCell>
                                       <div className='font-medium'>{advance.employeeName}</div>

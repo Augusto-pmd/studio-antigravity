@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, getDocs, limit, doc, setDoc } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
@@ -54,21 +54,40 @@ export default function PagoSemanalPage() {
     
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
+    const [isLoadingCurrentWeek, setIsLoadingCurrentWeek] = useState(true);
 
     useEffect(() => {
-        // Monday is the start of the week
-        const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-        const weekStartISO = weekStart.toISOString();
+        if (!firestore) return;
 
-        // Create a week object on the client side
-        const newWeek: PayrollWeek = {
-            id: `virtual_${weekStartISO}`,
-            startDate: weekStartISO,
-            endDate: weekEnd.toISOString(),
+        const findOrCreateWeek = async () => {
+            setIsLoadingCurrentWeek(true);
+            const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+            const weekStartISO = weekStart.toISOString();
+            
+            const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartISO), limit(1));
+            const weekSnap = await getDocs(q);
+
+            let weekData: PayrollWeek;
+
+            if (!weekSnap.empty) {
+                const doc = weekSnap.docs[0];
+                weekData = { id: doc.id, ...doc.data() } as PayrollWeek;
+            } else {
+                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+                const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
+                weekData = {
+                    id: newWeekRef.id,
+                    startDate: weekStartISO,
+                    endDate: weekEnd.toISOString(),
+                };
+                await setDoc(newWeekRef, weekData);
+            }
+            setCurrentWeek(weekData);
+            setIsLoadingCurrentWeek(false);
         };
-        setCurrentWeek(newWeek);
-    }, [selectedDate]);
+        
+        findOrCreateWeek();
+    }, [selectedDate, firestore]);
 
      const fundRequestsQuery = useMemo(() => {
         if (!firestore) return null;
@@ -140,15 +159,15 @@ export default function PagoSemanalPage() {
                 <div className="flex flex-col gap-6">
                     <WeeklySummary 
                         currentWeek={currentWeek}
-                        isLoadingCurrentWeek={false}
+                        isLoadingCurrentWeek={isLoadingCurrentWeek}
                     />
                     <CashAdvances 
                         currentWeek={currentWeek ?? undefined} 
-                        isLoadingWeek={false} 
+                        isLoadingWeek={isLoadingCurrentWeek} 
                     />
                     <DailyAttendance 
                         currentWeek={currentWeek ?? undefined} 
-                        isLoadingWeek={false} 
+                        isLoadingWeek={isLoadingCurrentWeek} 
                     />
                 </div>
             </TabsContent>
@@ -156,7 +175,7 @@ export default function PagoSemanalPage() {
             <TabsContent value="contratistas" className="mt-6">
               <ContractorCertifications 
                 currentWeek={currentWeek ?? undefined}
-                isLoadingWeek={false}
+                isLoadingWeek={isLoadingCurrentWeek}
               />
             </TabsContent>
 

@@ -188,7 +188,12 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
         <AddContractorCertificationDialog currentWeek={currentWeek} />
       </CardHeader>
       <CardContent>
-        {!currentWeek && !isLoadingWeek && (
+        {isLoadingWeek && (
+             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
+                <p className="text-muted-foreground">Cargando semana...</p>
+            </div>
+        )}
+        {!isLoadingWeek && !currentWeek && (
             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
                 <p className="text-muted-foreground">No hay una semana de pagos abierta.</p>
             </div>

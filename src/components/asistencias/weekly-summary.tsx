@@ -141,9 +141,9 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         }, 0);
 
         const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
-            if (attendance.status === 'presente' && Number(attendance.lateHours) > 0) {
+            if (attendance.status === 'presente' && attendance.lateHours > 0) {
                 const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-                return sum + (parseNumber(attendance.lateHours.toString()) * hourlyRate);
+                return sum + (attendance.lateHours * hourlyRate);
             }
             return sum;
         }, 0);
@@ -222,19 +222,19 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         </CardContent>
         <CardFooter className="justify-end">
             <div className="flex gap-2 flex-wrap justify-end">
-                <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
+                <Button asChild variant="outline" disabled={!currentWeek}>
                     <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=contractors`} target="_blank">
                         <Download className="mr-2 h-4 w-4" />
                         Recibos (Contratistas)
                     </Link>
                 </Button>
-                <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
+                <Button asChild variant="outline" disabled={!currentWeek}>
                     <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=fund-requests`} target="_blank">
                         <Download className="mr-2 h-4 w-4" />
                         Recibos (Solicitudes)
                     </Link>
                 </Button>
-                <Button asChild disabled={currentWeek.id.startsWith('virtual_')}>
+                <Button asChild disabled={!currentWeek}>
                     <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=employees`} target="_blank">
                         <Download className="mr-2 h-4 w-4" />
                         Recibos (Empleados)
