@@ -7,13 +7,14 @@ import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, Contr
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Briefcase, Handshake, HardHat, Calendar as CalendarIcon } from 'lucide-react';
+import { Briefcase, Handshake, HardHat, Calendar as CalendarIcon, Printer } from 'lucide-react';
 import { format, parseISO, isValid, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const parseNumber = (value: any): number => {
     if (value === null || value === undefined) return 0;
@@ -269,11 +270,21 @@ export default function ResumenSemanalPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="text-3xl font-headline">Resumen Semanal de Pagos</h1>
-                <p className="mt-1 text-muted-foreground">
-                    Vista consolidada de todos los pagos proyectados para la semana seleccionada.
-                </p>
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-3xl font-headline">Resumen Semanal de Pagos</h1>
+                    <p className="mt-1 text-muted-foreground">
+                        Vista consolidada de todos los pagos proyectados para la semana seleccionada.
+                    </p>
+                </div>
+                {currentWeek && (
+                     <Button asChild>
+                        <Link href={`/imprimir-resumen?startDate=${currentWeek.startDate}&endDate=${currentWeek.endDate}`} target="_blank">
+                            <Printer className="mr-2 h-4 w-4" />
+                            Imprimir Resumen
+                        </Link>
+                    </Button>
+                )}
             </div>
 
             <Card>

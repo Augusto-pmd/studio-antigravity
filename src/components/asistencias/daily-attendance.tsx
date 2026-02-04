@@ -160,7 +160,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     } else {
         activeEmployees.forEach(emp => {
             newAttendanceState[emp.id] = {
-                status: 'presente',
+                status: 'ausente',
                 lateHours: 0,
                 notes: '',
                 projectId: null,

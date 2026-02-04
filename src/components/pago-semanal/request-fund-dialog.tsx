@@ -138,8 +138,8 @@ export function RequestFundDialog() {
         projectName: selectedProject?.name,
         amount: parseFloat(amount),
         currency,
-        exchangeRate: parseFloat(exchangeRate),
-        status: 'Pendiente',
+        exchangeRate: parseFloat(exchangeRate) || 1,
+        status: 'Aprobado',
         description: description || undefined,
       };
 

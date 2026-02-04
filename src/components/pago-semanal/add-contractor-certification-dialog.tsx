@@ -105,7 +105,7 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
             currency,
             date: format(new Date(), 'yyyy-MM-dd'),
             notes: notes || undefined,
-            status: 'Pendiente',
+            status: 'Aprobado',
         };
 
         await setDoc(docRef, newCertification);
