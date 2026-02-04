@@ -261,14 +261,19 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     startTransition(async () => {
         try {
             const dateStr = format(dateToSave, 'yyyy-MM-dd');
+            const activeEmployeeIds = new Set(activeEmployees.map(e => e.id));
             
             const existingLogsQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
             const existingLogsSnap = await getDocs(existingLogsQuery);
 
             const batch = writeBatch(firestore);
 
+            // CRITICAL FIX: Only delete documents for employees that are currently active and being managed.
+            // This prevents deleting attendance data for inactive employees or other potential errors.
             existingLogsSnap.forEach(doc => {
-                batch.delete(doc.ref);
+                if (activeEmployeeIds.has(doc.data().employeeId)) {
+                    batch.delete(doc.ref);
+                }
             });
 
             for (const employee of activeEmployees) {
