@@ -69,8 +69,8 @@ export function TimeLogAlerts() {
         }
 
         const employeesWhoDidntLog = employees.filter((employee: TechnicalOfficeEmployee) => {
-            // Exclude 'Augusto Menendez' as requested
-            if (employee.fullName === 'Augusto Menendez') {
+            // Exclude 'Augusto Menendez' and 'Fabrizio Franceschini' as requested
+            if (employee.fullName === 'Augusto Menendez' || employee.fullName === 'Fabrizio Franceschini') {
                 return false;
             }
             

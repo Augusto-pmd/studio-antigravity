@@ -88,7 +88,7 @@ export function MyTimeLogReminder() {
     };
 
     const shouldShowAlert = useMemo(() => {
-        if (!isClient || isLoadingEmployee || isLoadingLogs || !employee || employee.status !== 'Activo' || employee.fullName === 'Augusto Menendez' || isLogComplete === true || isLogComplete === null) {
+        if (!isClient || isLoadingEmployee || isLoadingLogs || !employee || employee.status !== 'Activo' || employee.fullName === 'Augusto Menendez' || employee.fullName === 'Fabrizio Franceschini' || isLogComplete === true || isLogComplete === null) {
             return false;
         }
         if (snoozeUntil && new Date().getTime() < snoozeUntil) {
