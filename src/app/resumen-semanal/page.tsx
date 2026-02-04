@@ -144,18 +144,29 @@ export default function ResumenSemanalPage() {
     }, [currentWeek, firestore]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
     
-    const fundRequestsQuery = useMemo(() => {
-        if (!currentWeek || !firestore) return null;
-        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-        const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
-        return query(
-            collection(firestore, 'fundRequests').withConverter(fundRequestConverter),
-            where('date', '>=', startDate),
-            where('date', '<=', endDate),
-            where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
-        );
-    }, [currentWeek, firestore]);
-    const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
+    const allFundRequestsQuery = useMemo(() => firestore ? query(
+        collection(firestore, 'fundRequests').withConverter(fundRequestConverter),
+        where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
+    ) : null, [firestore]);
+    const { data: allFundRequests, isLoading: l3 } = useCollection(allFundRequestsQuery);
+
+    const fundRequests = useMemo(() => {
+        if (!allFundRequests || !currentWeek) return [];
+        const weekStart = parseISO(currentWeek.startDate);
+        const weekEnd = parseISO(currentWeek.endDate);
+        weekEnd.setHours(23, 59, 59, 999); // Include the whole last day
+
+        return allFundRequests.filter(req => {
+            if (!req.date) return false;
+            try {
+                const reqDate = parseISO(req.date);
+                return reqDate >= weekStart && reqDate <= weekEnd;
+            } catch (e) {
+                console.error(`Invalid date format for fund request ${req.id}: ${req.date}`);
+                return false;
+            }
+        });
+    }, [allFundRequests, currentWeek]);
 
     const allCertificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
     const { data: allCerts, isLoading: l4 } = useCollection(allCertificationsQuery);
