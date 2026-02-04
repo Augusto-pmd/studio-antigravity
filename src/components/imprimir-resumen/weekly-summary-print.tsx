@@ -62,8 +62,13 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
     const fundRequestsQuery = useMemo(() => firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), where('date', '>=', formattedStartDate), where('date', '<=', formattedEndDate), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, formattedStartDate, formattedEndDate]);
     const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
-    const certificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('date', '>=', formattedStartDate), where('date', '<=', formattedEndDate), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, formattedStartDate, formattedEndDate]);
-    const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
+    const allCertificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
+    const { data: allCerts, isLoading: l4 } = useCollection(allCertificationsQuery);
+
+    const certifications = useMemo(() => {
+        if (!allCerts) return [];
+        return allCerts.filter(c => c.date && c.date >= formattedStartDate && c.date <= formattedEndDate);
+    }, [allCerts, formattedStartDate, formattedEndDate]);
 
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
     const { data: employees, isLoading: l5 } = useCollection(employeesQuery);

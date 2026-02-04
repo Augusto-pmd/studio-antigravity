@@ -157,17 +157,15 @@ export default function ResumenSemanalPage() {
     }, [currentWeek, firestore]);
     const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
-    const certificationsQuery = useMemo(() => {
-        if (!currentWeek || !firestore) return null;
+    const allCertificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
+    const { data: allCerts, isLoading: l4 } = useCollection(allCertificationsQuery);
+
+    const certifications = useMemo(() => {
+        if (!allCerts || !currentWeek) return [];
         const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
         const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
-        return query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), 
-            where('date', '>=', startDate), 
-            where('date', '<=', endDate), 
-            where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
-        );
-    }, [currentWeek, firestore]);
-    const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
+        return allCerts.filter(c => c.date && c.date >= startDate && c.date <= endDate);
+    }, [allCerts, currentWeek]);
 
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
     const { data: employees, isLoading: l5 } = useCollection(employeesQuery);
