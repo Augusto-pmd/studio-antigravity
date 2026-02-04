@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { Employee, Attendance, FundRequest, ContractorCertification, Project } from '@/lib/types';
+import { collection, query, where, and, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import type { Employee, Attendance, FundRequest, ContractorCertification, Project, PayrollWeek } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -11,7 +11,7 @@ import { es } from 'date-fns/locale';
 import { Logo } from '@/components/icons/logo';
 
 const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
+    if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number' && !isNaN(value)) return value;
     if (typeof value === 'string') {
         const cleanedString = value.replace(/\./g, '').replace(',', '.');
@@ -28,7 +28,7 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-// Converters
+// --- Robust Converters ---
 const fundRequestConverter = { toFirestore: (data: FundRequest): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options).amount), exchangeRate: parseNumber(snapshot.data(options).exchangeRate || 1) } as FundRequest) };
 const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ id: snapshot.id, ...snapshot.data(options), dailyWage: parseNumber(snapshot.data(options).dailyWage) } as Employee) };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
@@ -51,32 +51,52 @@ type SummaryData = {
 
 export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, endDate: string }) {
     const firestore = useFirestore();
-
-    const formattedStartDate = format(parseISO(startDate), 'yyyy-MM-dd');
-    const formattedEndDate = format(parseISO(endDate), 'yyyy-MM-dd');
+    const [weekId, setWeekId] = useState<string | null>(null);
 
     // --- Data Fetching Hooks ---
-    const attendancesQuery = useMemo(() => firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '>=', formattedStartDate), where('date', '<=', formattedEndDate)) : null, [firestore, formattedStartDate, formattedEndDate]);
-    const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
-    
-    const fundRequestsQuery = useMemo(() => firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), where('date', '>=', formattedStartDate), where('date', '<=', formattedEndDate), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, formattedStartDate, formattedEndDate]);
-    const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
-
-    const allCertificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
-    const { data: allCerts, isLoading: l4 } = useCollection(allCertificationsQuery);
-
-    const certifications = useMemo(() => {
-        if (!allCerts) return [];
-        return allCerts.filter(c => c.date && c.date >= formattedStartDate && c.date <= formattedEndDate);
-    }, [allCerts, formattedStartDate, formattedEndDate]);
-
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
     const { data: employees, isLoading: l5 } = useCollection(employeesQuery);
 
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
     
-    const isLoading = l1 || l3 || l4 || l5 || l6;
+    // Find weekId based on start date
+    useEffect(() => {
+        if (!firestore) return;
+        const findWeek = async () => {
+            const weekQuery = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', startDate), limit(1));
+            const weekSnap = await getDocs(weekQuery);
+            if (!weekSnap.empty) {
+                setWeekId(weekSnap.docs[0].id);
+            }
+        };
+        findWeek();
+    }, [firestore, startDate]);
+
+    const attendancesQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
+    const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
+    
+    const fundRequestsQuery = useMemo(() => firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
+    const { data: allFundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
+
+    const certificationsQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', weekId), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, weekId]);
+    const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
+
+    const fundRequests = useMemo(() => {
+        if (!allFundRequests) return [];
+        const start = parseISO(startDate);
+        const end = parseISO(endDate);
+        end.setHours(23, 59, 59, 999); 
+        return allFundRequests.filter(req => {
+            if (!req.date) return false;
+            try {
+                const reqDate = parseISO(req.date);
+                return reqDate >= start && reqDate <= end;
+            } catch { return false; }
+        });
+    }, [allFundRequests, startDate, endDate]);
+
+    const isLoading = l1 || l3 || l4 || l5 || l6 || !weekId;
 
     // --- Calculation Logic ---
     const summary = useMemo((): SummaryData | null => {
@@ -86,7 +106,6 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
         projects.forEach(p => { if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }); });
 
-        // PERSONAL
         const totalPersonal = (attendances || []).reduce((sum, att) => {
             if (att.status === 'presente') {
                 const dailyGross = employeeMap.get(att.employeeId) || 0;
@@ -98,15 +117,14 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
             return sum;
         }, 0);
         
-        // CONTRATISTAS
         const totalContratistas = (certifications || []).reduce((sum, cert) => {
+            const amount = cert.amount;
             if (cert.projectId && projectMap.has(cert.projectId)) {
-                 projectMap.get(cert.projectId)!.contratistas += cert.amount;
+                 projectMap.get(cert.projectId)!.contratistas += amount;
             }
-            return sum + cert.amount;
+            return sum + amount;
         }, 0);
         
-        // SOLICITUDES
         const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
             const amount = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
             if (req.projectId && projectMap.has(req.projectId)) {

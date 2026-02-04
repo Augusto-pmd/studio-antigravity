@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
+    if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number' && !isNaN(value)) return value;
     if (typeof value === 'string') {
         const cleanedString = value.replace(/\./g, '').replace(',', '.');
@@ -30,37 +30,22 @@ const parseNumber = (value: any): number => {
 };
 
 const employeeConverter = {
-    toFirestore(employee: Employee): DocumentData {
-        const { id, ...data } = employee;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Employee {
+    toFirestore: (data: Employee): DocumentData => data,
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee {
         const data = snapshot.data(options)!;
         return {
             id: snapshot.id,
             name: data.name || '',
-            email: data.email || undefined,
-            phone: data.phone || undefined,
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
             dailyWage: parseNumber(data.dailyWage),
-            artExpiryDate: data.artExpiryDate || undefined,
-            documents: data.documents || [],
-            emergencyContactName: data.emergencyContactName,
-            emergencyContactPhone: data.emergencyContactPhone,
-        };
+        } as Employee
     }
 };
 
 const attendanceConverter = {
-  toFirestore(attendance: Attendance): DocumentData {
-      const { id, ...data } = attendance;
-      return data;
-  },
+  toFirestore: (data: Attendance): DocumentData => data,
   fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
       const data = snapshot.data(options)!;
       return {
@@ -77,23 +62,17 @@ const attendanceConverter = {
 };
 
 const cashAdvanceConverter = {
-    toFirestore(advance: CashAdvance): DocumentData {
-        const { id, ...data } = advance;
-        return data;
-    },
+    toFirestore: (data: CashAdvance): DocumentData => data,
     fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
         const data = snapshot.data(options)!;
         return {
             id: snapshot.id,
             employeeId: data.employeeId,
             employeeName: data.employeeName,
-            projectId: data.projectId,
-            projectName: data.projectName,
             date: data.date,
             amount: parseNumber(data.amount),
-            reason: data.reason,
             payrollWeekId: data.payrollWeekId,
-        };
+        } as CashAdvance;
     }
 };
 

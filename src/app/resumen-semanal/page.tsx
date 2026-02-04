@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc } from 'firebase/firestore';
+import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
+    if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number' && !isNaN(value)) return value;
     if (typeof value === 'string') {
         const cleanedString = value.replace(/\./g, '').replace(',', '.');
@@ -34,15 +34,10 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
+// --- Robust Converters ---
 const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
-        const data = snapshot.data(options)!;
-        return {
-            ...data,
-            id: snapshot.id,
-        } as PayrollWeek;
-    }
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
 };
 
 const fundRequestConverter = {
@@ -53,7 +48,7 @@ const fundRequestConverter = {
             ...data,
             id: snapshot.id,
             amount: parseNumber(data.amount),
-            exchangeRate: parseNumber(data.exchangeRate)
+            exchangeRate: parseNumber(data.exchangeRate || 1)
         } as FundRequest;
     }
 };
@@ -63,22 +58,18 @@ const employeeConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => {
         const data = snapshot.data(options)!;
         return {
+            ...data,
             id: snapshot.id,
-            name: data.name || '',
-            email: data.email || undefined,
-            phone: data.phone || undefined,
-            status: data.status || 'Inactivo',
-            paymentType: data.paymentType || 'Semanal',
-            category: data.category || 'N/A',
             dailyWage: parseNumber(data.dailyWage),
-            artExpiryDate: data.artExpiryDate || undefined,
-            documents: data.documents || [],
-            emergencyContactName: data.emergencyContactName,
-            emergencyContactPhone: data.emergencyContactPhone,
         } as Employee
     }
 };
-const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
+
+const attendanceConverter = { 
+    toFirestore: (data: Attendance): DocumentData => data, 
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) 
+};
+
 const certificationConverter = {
     toFirestore: (data: ContractorCertification): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
@@ -90,7 +81,12 @@ const certificationConverter = {
         } as ContractorCertification;
     }
 };
-const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
+
+const projectConverter = { 
+    toFirestore: (data: Project): DocumentData => data, 
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) 
+};
+
 
 type SummaryData = {
     totalPersonal: number;
@@ -130,8 +126,7 @@ export default function ResumenSemanalPage() {
             let weekData: PayrollWeek;
 
             if (!weekSnap.empty) {
-                const doc = weekSnap.docs[0];
-                weekData = { id: doc.id, ...doc.data() } as PayrollWeek;
+                weekData = { id: weekSnap.docs[0].id, ...weekSnap.docs[0].data() } as PayrollWeek;
             } else {
                 const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
                 const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
@@ -140,7 +135,7 @@ export default function ResumenSemanalPage() {
                     startDate: weekStartISO,
                     endDate: weekEnd.toISOString(),
                 };
-                // Let pago-semanal handle creation if needed, but have a valid object here.
+                 await setDoc(newWeekRef, weekData);
             }
             setCurrentWeek(weekData);
             setIsLoadingWeek(false);
@@ -221,9 +216,8 @@ export default function ResumenSemanalPage() {
                 if (att.status === 'presente') {
                     const dailyGross = employeeMap.get(att.employeeId) || 0;
                     
-                    const proj = att.projectId ? projectMap.get(att.projectId) : undefined;
-                    if (proj) {
-                        proj.personal += dailyGross;
+                    if (att.projectId && projectMap.has(att.projectId)) {
+                        projectMap.get(att.projectId)!.personal += dailyGross;
                     }
                     return sum + dailyGross;
                 }
@@ -233,9 +227,8 @@ export default function ResumenSemanalPage() {
             // CONTRATISTAS
             const totalContratistas = (certifications || []).reduce((sum, cert) => {
                 const amount = cert.amount;
-                const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
-                if (proj) {
-                    proj.contratistas += amount;
+                if (cert.projectId && projectMap.has(cert.projectId)) {
+                    projectMap.get(cert.projectId)!.contratistas += amount;
                 }
                 return sum + amount;
             }, 0);
@@ -243,9 +236,8 @@ export default function ResumenSemanalPage() {
             // SOLICITUDES
             const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
                 const amount = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
-                const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
-                if (proj) {
-                    proj.solicitudes += amount;
+                if (req.projectId && projectMap.has(req.projectId)) {
+                    projectMap.get(req.projectId)!.solicitudes += amount;
                 }
                 return sum + amount;
             }, 0);
