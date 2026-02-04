@@ -47,7 +47,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: data.dailyWage, // Keep as is, will be parsed in calculation
+            dailyWage: parseNumber(data.dailyWage),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -90,7 +90,7 @@ const cashAdvanceConverter = {
             projectId: data.projectId,
             projectName: data.projectName,
             date: data.date,
-            amount: data.amount, // Keep as is, will be parsed in calculation
+            amount: parseNumber(data.amount),
             reason: data.reason,
             payrollWeekId: data.payrollWeekId,
         };
@@ -131,8 +131,8 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     }
     
     try {
-        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
-        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage) / 8]));
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage / 8]));
 
         const grossWages = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente') {
@@ -143,19 +143,18 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         }, 0);
 
         const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
-          if (attendance.status === 'presente' && (Number(attendance.lateHours) || 0) > 0) {
+          if (attendance.status === 'presente' && attendance.lateHours > 0) {
               const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-              const lateHours = Number(attendance.lateHours) || 0;
-              return sum + (lateHours * hourlyRate);
+              return sum + (attendance.lateHours * hourlyRate);
           }
           return sum;
         }, 0);
 
-        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + (parseNumber(advance.amount) || 0), 0);
+        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
         
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
         
-       if (isNaN(netPay)) {
+       if (isNaN(grossWages) || isNaN(totalAdvances) || isNaN(totalLateHoursDeduction) || isNaN(netPay)) {
             console.error("NaN detected in weekly summary calculation", { grossWages, totalAdvances, totalLateHoursDeduction });
             return defaultResult;
        }

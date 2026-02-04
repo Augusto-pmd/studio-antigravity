@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,8 +52,8 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
-            amount: data.amount,
-            exchangeRate: data.exchangeRate || 1,
+            amount: parseNumber(data.amount),
+            exchangeRate: parseNumber(data.exchangeRate) || 1,
         } as FundRequest;
     }
 };
@@ -70,7 +70,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: data.dailyWage,
+            dailyWage: parseNumber(data.dailyWage),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -79,7 +79,6 @@ const employeeConverter = {
     }
 };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
-const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
 const certificationConverter = {
     toFirestore: (data: ContractorCertification): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
@@ -87,7 +86,7 @@ const certificationConverter = {
         return {
             ...data,
             id: snapshot.id,
-            amount: data.amount,
+            amount: parseNumber(data.amount),
         } as ContractorCertification;
     }
 };
@@ -120,41 +119,55 @@ export default function ResumenSemanalPage() {
     useEffect(() => {
         if (!firestore) return;
 
-        const loadWeek = async () => {
+        const findOrCreateWeek = async () => {
             setIsLoadingWeek(true);
             const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-            const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-            const virtualWeek: PayrollWeek = {
-                id: `virtual_${weekStart.toISOString()}`,
-                startDate: weekStart.toISOString(),
-                endDate: weekEnd.toISOString(),
-            };
-            setCurrentWeek(virtualWeek);
+            const weekStartISO = weekStart.toISOString();
+            
+            const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartISO), limit(1));
+            const weekSnap = await getDocs(q);
+
+            let weekData: PayrollWeek;
+
+            if (!weekSnap.empty) {
+                const doc = weekSnap.docs[0];
+                weekData = { id: doc.id, ...doc.data() } as PayrollWeek;
+            } else {
+                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+                const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
+                weekData = {
+                    id: newWeekRef.id,
+                    startDate: weekStartISO,
+                    endDate: weekEnd.toISOString(),
+                };
+                // Do not create the week here, let the pago-semanal page handle creation.
+                // await setDoc(newWeekRef, weekData);
+            }
+            setCurrentWeek(weekData);
             setIsLoadingWeek(false);
         };
-        loadWeek();
+        
+        findOrCreateWeek();
     }, [selectedDate, firestore]);
 
     // --- Data Fetching Hooks ---
     const attendancesQuery = useMemo(() => {
         if (!currentWeek || !firestore) return null;
-        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-        const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
-        return query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '>=', startDate), where('date', '<=', endDate));
+        return query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id));
     }, [currentWeek, firestore]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
     
-    const allFundRequestsQuery = useMemo(() => firestore ? query(
+    const fundRequestsQuery = useMemo(() => firestore ? query(
         collection(firestore, 'fundRequests').withConverter(fundRequestConverter),
         where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
     ) : null, [firestore]);
-    const { data: allFundRequests, isLoading: l3 } = useCollection(allFundRequestsQuery);
+    const { data: allFundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
     const fundRequests = useMemo(() => {
         if (!allFundRequests || !currentWeek) return [];
         const weekStart = parseISO(currentWeek.startDate);
         const weekEnd = parseISO(currentWeek.endDate);
-        weekEnd.setHours(23, 59, 59, 999); // Include the whole last day
+        weekEnd.setHours(23, 59, 59, 999); 
 
         return allFundRequests.filter(req => {
             if (!req.date) return false;
@@ -168,15 +181,11 @@ export default function ResumenSemanalPage() {
         });
     }, [allFundRequests, currentWeek]);
 
-    const allCertificationsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
-    const { data: allCerts, isLoading: l4 } = useCollection(allCertificationsQuery);
-
-    const certifications = useMemo(() => {
-        if (!allCerts || !currentWeek) return [];
-        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
-        const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
-        return allCerts.filter(c => c.date && c.date >= startDate && c.date <= endDate);
-    }, [allCerts, currentWeek]);
+    const certificationsQuery = useMemo(() => {
+        if (!currentWeek || !firestore) return null;
+        return query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado']));
+    }, [currentWeek, firestore]);
+    const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
 
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
     const { data: employees, isLoading: l5 } = useCollection(employeesQuery);
@@ -202,7 +211,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage) || 0]));
+            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -223,32 +232,23 @@ export default function ResumenSemanalPage() {
             }, 0);
             
             // CONTRATISTAS
-            let totalContratistas = 0;
-            if (certifications) {
-                totalContratistas = certifications.reduce((sum, cert) => sum + (parseNumber(cert.amount) || 0), 0);
-                 certifications.forEach(cert => {
-                    const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
-                    if (proj) {
-                        proj.contratistas += (parseNumber(cert.amount) || 0);
-                    }
-                });
-            }
+            const totalContratistas = (certifications || []).reduce((sum, cert) => {
+                const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
+                if (proj) {
+                    proj.contratistas += cert.amount;
+                }
+                return sum + cert.amount;
+            }, 0);
             
             // SOLICITUDES
-            let totalSolicitudes = 0;
-            if (fundRequests) {
-                totalSolicitudes = fundRequests.reduce((sum, req) => {
-                    const amount = req.currency === 'USD' ? (parseNumber(req.amount) || 0) * (parseNumber(req.exchangeRate) || 1) : (parseNumber(req.amount) || 0);
-                    return sum + amount;
-                }, 0);
-                 fundRequests.forEach(req => {
-                    const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
-                    if (proj) {
-                        const amount = req.currency === 'USD' ? (parseNumber(req.amount) || 0) * (parseNumber(req.exchangeRate) || 1) : (parseNumber(req.amount) || 0);
-                        proj.solicitudes += amount;
-                    }
-                });
-            }
+            const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
+                const amount = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
+                const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
+                if (proj) {
+                    proj.solicitudes += amount;
+                }
+                return sum + amount;
+            }, 0);
 
             const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
             const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
@@ -286,7 +286,7 @@ export default function ResumenSemanalPage() {
                         Vista consolidada de todos los pagos proyectados para la semana seleccionada.
                     </p>
                 </div>
-                {currentWeek && (
+                {currentWeek && !currentWeek.id.startsWith('virtual_') && (
                      <Button asChild>
                         <Link href={`/imprimir-resumen?startDate=${currentWeek.startDate}&endDate=${currentWeek.endDate}`} target="_blank">
                             <Printer className="mr-2 h-4 w-4" />
