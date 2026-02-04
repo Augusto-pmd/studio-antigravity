@@ -90,19 +90,37 @@ export default function PagoSemanalPage() {
         findOrCreateWeek();
     }, [selectedDate, firestore]);
 
-     const fundRequestsQuery = useMemo(() => {
-        if (!firestore) return null;
-        
-        let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), orderBy('date', 'desc'));
+    const allFundRequestsQuery = useMemo(() => {
+      if (!firestore) return null;
+      
+      let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), orderBy('date', 'desc'));
 
-        if (!isAdmin && user) {
-          q = query(q, where('requesterId', '==', user.uid));
-        }
-        
-        return q;
-      }, [firestore, user, isAdmin]);
+      if (!isAdmin && user) {
+        q = query(q, where('requesterId', '==', user.uid));
+      }
+      
+      return q;
+    }, [firestore, user, isAdmin]);
 
-    const { data: requests, isLoading: isLoadingRequests } = useCollection<FundRequest>(fundRequestsQuery);
+    const { data: allRequests, isLoading: isLoadingRequests } = useCollection<FundRequest>(allFundRequestsQuery);
+
+    const requests = useMemo(() => {
+        if (!allRequests || !currentWeek) return [];
+        const weekStart = parseISO(currentWeek.startDate);
+        const weekEnd = parseISO(currentWeek.endDate);
+        weekEnd.setHours(23, 59, 59, 999); // Include the whole last day
+
+        return allRequests.filter(req => {
+            if (!req.date) return false;
+            try {
+                const reqDate = parseISO(req.date);
+                return reqDate >= weekStart && reqDate <= weekEnd;
+            } catch (e) {
+                console.error(`Invalid date format for fund request ${req.id}: ${req.date}`);
+                return false;
+            }
+        });
+    }, [allRequests, currentWeek]);
 
   return (
     <div className="flex flex-col gap-6">
