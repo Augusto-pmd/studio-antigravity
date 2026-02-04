@@ -140,8 +140,7 @@ export default function ResumenSemanalPage() {
                     startDate: weekStartISO,
                     endDate: weekEnd.toISOString(),
                 };
-                // Do not create the week here, let the pago-semanal page handle creation.
-                // await setDoc(newWeekRef, weekData);
+                // Let pago-semanal handle creation if needed, but have a valid object here.
             }
             setCurrentWeek(weekData);
             setIsLoadingWeek(false);
@@ -286,7 +285,7 @@ export default function ResumenSemanalPage() {
                         Vista consolidada de todos los pagos proyectados para la semana seleccionada.
                     </p>
                 </div>
-                {currentWeek && !currentWeek.id.startsWith('virtual_') && (
+                {currentWeek && (
                      <Button asChild>
                         <Link href={`/imprimir-resumen?startDate=${currentWeek.startDate}&endDate=${currentWeek.endDate}`} target="_blank">
                             <Printer className="mr-2 h-4 w-4" />

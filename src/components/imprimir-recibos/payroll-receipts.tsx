@@ -10,12 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
 
+const parseNumber = (value: any): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleanedString);
+        return isNaN(num) ? 0 : num;
+    }
+    return 0;
+};
+
 const payrollWeekConverter = { toFirestore: (data: PayrollWeek): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
-const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee) };
+const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id, dailyWage: parseNumber(snapshot.data(options)!.dailyWage) } as Employee) };
 const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
-const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id } as CashAdvance) };
+const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options)!.amount) } as CashAdvance) };
 const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
-const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id } as ContractorCertification) };
+const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options)!.amount) } as ContractorCertification) };
 const fundRequestConverter = {
     toFirestore(request: FundRequest): DocumentData {
         const { id, ...data } = request;
@@ -34,9 +45,9 @@ const fundRequestConverter = {
             category: data.category,
             projectId: data.projectId,
             projectName: data.projectName,
-            amount: data.amount,
+            amount: parseNumber(data.amount),
             currency: data.currency,
-            exchangeRate: data.exchangeRate,
+            exchangeRate: parseNumber(data.exchangeRate || 1),
             status: data.status,
             description: data.description,
         };

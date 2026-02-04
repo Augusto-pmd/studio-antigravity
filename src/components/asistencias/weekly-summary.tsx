@@ -228,19 +228,19 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         </CardContent>
         <CardFooter className="justify-end">
             <div className="flex gap-2 flex-wrap justify-end">
-                <Button asChild variant="outline" disabled={!currentWeek}>
+                <Button asChild variant="outline" disabled={!currentWeek?.id}>
                     <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=contractors`} target="_blank">
                         <Download className="mr-2 h-4 w-4" />
                         Recibos (Contratistas)
                     </Link>
                 </Button>
-                <Button asChild variant="outline" disabled={!currentWeek}>
+                <Button asChild variant="outline" disabled={!currentWeek?.id}>
                     <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=fund-requests`} target="_blank">
                         <Download className="mr-2 h-4 w-4" />
                         Recibos (Solicitudes)
                     </Link>
                 </Button>
-                <Button asChild disabled={!currentWeek}>
+                <Button asChild disabled={!currentWeek?.id}>
                     <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=employees`} target="_blank">
                         <Download className="mr-2 h-4 w-4" />
                         Recibos (Empleados)
