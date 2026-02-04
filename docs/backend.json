@@ -1575,6 +1575,85 @@
         "currency",
         "status"
       ]
+    },
+    "ClientFollowUp": {
+      "title": "Client Follow-Up",
+      "type": "object",
+      "description": "Represents a follow-up interaction with a potential or existing client.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the follow-up record."
+        },
+        "clientName": {
+          "type": "string",
+          "description": "The name of the client or company."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The name of the contact person."
+        },
+        "contactDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the contact was made."
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "Llamada",
+            "Email",
+            "Reunión",
+            "WhatsApp",
+            "Otro"
+          ],
+          "description": "The channel through which the contact was made."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Primer Contacto",
+            "En Seguimiento",
+            "Propuesta Enviada",
+            "En Negociación",
+            "Cerrado - Ganado",
+            "Cerrado - Perdido",
+            "Stand-by"
+          ],
+          "description": "The current status of the follow-up."
+        },
+        "summary": {
+          "type": "string",
+          "description": "A summary of the interaction."
+        },
+        "nextStep": {
+          "type": "string",
+          "description": "The next action to be taken."
+        },
+        "nextContactDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date for the next follow-up."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "The ID of the user responsible for this follow-up."
+        },
+        "assignedToName": {
+          "type": "string",
+          "description": "The name of the user responsible for this follow-up."
+        }
+      },
+      "required": [
+        "id",
+        "clientName",
+        "contactDate",
+        "channel",
+        "status",
+        "summary",
+        "assignedTo",
+        "assignedToName"
+      ]
     }
   },
   "auth": {
@@ -2048,6 +2127,22 @@
             {
               "name": "certificationId",
               "description": "The unique identifier for the certification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clientFollowUps/{followUpId}",
+        "definition": {
+          "entityName": "ClientFollowUp",
+          "schema": {
+            "$ref": "#/backend/entities/ClientFollowUp"
+          },
+          "description": "Stores client follow-up records. Only accessible by 'Dirección' role.",
+          "params": [
+            {
+              "name": "followUpId",
+              "description": "The unique identifier for the follow-up record."
             }
           ]
         }

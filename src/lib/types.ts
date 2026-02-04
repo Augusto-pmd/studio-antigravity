@@ -361,3 +361,17 @@ export interface ContractorCertification {
   notes?: string;
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
 }
+
+export interface ClientFollowUp {
+  id: string;
+  clientName: string;
+  contactPerson?: string;
+  contactDate: string;
+  channel: 'Llamada' | 'Email' | 'Reunión' | 'WhatsApp' | 'Otro';
+  status: 'Primer Contacto' | 'En Seguimiento' | 'Propuesta Enviada' | 'En Negociación' | 'Cerrado - Ganado' | 'Cerrado - Perdido' | 'Stand-by';
+  summary: string;
+  nextStep?: string;
+  nextContactDate?: string;
+  assignedTo: string;
+  assignedToName: string;
+}

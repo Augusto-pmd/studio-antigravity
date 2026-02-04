@@ -144,5 +144,9 @@ service cloud.firestore {
     match /contractorCertifications/{certificationId} {
       allow read, write: if true;
     }
+
+    match /clientFollowUps/{followUpId} {
+      allow read, write: if isDirector();
+    }
   }
 }
