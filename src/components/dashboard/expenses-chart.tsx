@@ -20,6 +20,7 @@ import type { Expense } from "@/lib/types";
 import { parseISO, getMonth, getYear, type Month } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
+import { expenseConverter } from "@/lib/converters";
 
 const chartConfig = {
   total: {
@@ -28,41 +29,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const expenseConverter = {
-    toFirestore(expense: Expense): DocumentData {
-        const { id, ...data } = expense;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Expense {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            projectId: data.projectId,
-            date: data.date,
-            status: data.status,
-            supplierId: data.supplierId,
-            categoryId: data.categoryId,
-            documentType: data.documentType,
-            invoiceNumber: data.invoiceNumber,
-            paymentMethod: data.paymentMethod,
-            amount: data.amount,
-            iva: data.iva,
-            iibb: data.iibb,
-            iibbJurisdiction: data.iibbJurisdiction,
-            currency: data.currency,
-            exchangeRate: data.exchangeRate,
-            receiptUrl: data.receiptUrl,
-            description: data.description,
-            retencionGanancias: data.retencionGanancias,
-            retencionIVA: data.retencionIVA,
-            retencionIIBB: data.retencionIIBB,
-            retencionSUSS: data.retencionSUSS,
-        };
-    }
-};
 
 export function ExpensesChart() {
     const firestore = useFirestore();

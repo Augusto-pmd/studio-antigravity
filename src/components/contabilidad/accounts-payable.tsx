@@ -10,21 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { parseISO, format } from 'date-fns';
 import { PayExpenseDialog } from '@/components/contabilidad/pay-expense-dialog';
-
-const expenseConverter = {
-  toFirestore: (data: Expense): DocumentData => data,
-  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(), id: snapshot.id } as Expense)
-};
-
-const projectConverter = {
-  toFirestore: (data: Project): DocumentData => data,
-  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(), id: snapshot.id } as Project)
-};
-
-const supplierConverter = {
-  toFirestore: (data: Supplier): DocumentData => data,
-  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(), id: snapshot.id } as Supplier)
-};
+import { expenseConverter, projectConverter, supplierConverter } from '@/lib/converters';
 
 const formatCurrency = (amount: number, currency: string) => {
   if (typeof amount !== 'number') return '';

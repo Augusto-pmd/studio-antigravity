@@ -14,74 +14,7 @@ import { collection, query, where, type DocumentData, type QueryDocumentSnapshot
 import type { PayrollWeek, Employee, Attendance, CashAdvance } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const employeeConverter = {
-    toFirestore(employee: Employee): DocumentData {
-        const { id, ...data } = employee;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Employee {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name || '',
-            email: data.email || undefined,
-            phone: data.phone || undefined,
-            status: data.status || 'Inactivo',
-            paymentType: data.paymentType || 'Semanal',
-            category: data.category || 'N/A',
-            dailyWage: data.dailyWage || 0,
-            artExpiryDate: data.artExpiryDate || undefined,
-            documents: data.documents || [],
-            emergencyContactName: data.emergencyContactName,
-            emergencyContactPhone: data.emergencyContactPhone,
-        };
-    }
-};
-
-const attendanceConverter = {
-    toFirestore(attendance: Attendance): DocumentData {
-        const { id, ...data } = attendance;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            employeeId: data.employeeId,
-            date: data.date,
-            status: data.status,
-            lateHours: data.lateHours || 0,
-            notes: data.notes || '',
-            projectId: data.projectId || null,
-            payrollWeekId: data.payrollWeekId,
-        };
-    }
-};
-
-const cashAdvanceConverter = {
-    toFirestore(advance: CashAdvance): DocumentData {
-        const { id, ...data } = advance;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            employeeId: data.employeeId,
-            employeeName: data.employeeName,
-            projectId: data.projectId || undefined,
-            projectName: data.projectName || undefined,
-            date: data.date,
-            amount: data.amount || 0,
-            reason: data.reason || undefined,
-            payrollWeekId: data.payrollWeekId,
-        };
-    }
-};
+import { employeeConverter, attendanceConverter, cashAdvanceConverter } from '@/lib/converters';
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number') return '';

@@ -10,16 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { CollectSaleDialog } from '@/components/contabilidad/collect-sale-dialog';
-
-const saleConverter = {
-  toFirestore: (data: Sale): DocumentData => data,
-  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => ({ ...snapshot.data(), id: snapshot.id } as Sale)
-};
-
-const projectConverter = {
-  toFirestore: (data: Project): DocumentData => data,
-  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(), id: snapshot.id } as Project)
-};
+import { saleConverter, projectConverter } from '@/lib/converters';
 
 const formatCurrency = (amount: number) => {
   if (typeof amount !== 'number') return '';

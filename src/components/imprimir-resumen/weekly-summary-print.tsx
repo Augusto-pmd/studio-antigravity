@@ -9,17 +9,8 @@ import { Loader2, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Logo } from '@/components/icons/logo';
+import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter } from '@/lib/converters';
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined || value === '') return 0;
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number' || isNaN(amount)) {
@@ -28,12 +19,6 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
 
-// --- Robust Converters ---
-const fundRequestConverter = { toFirestore: (data: FundRequest): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options).amount), exchangeRate: parseNumber(snapshot.data(options).exchangeRate || 1) } as FundRequest) };
-const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ id: snapshot.id, ...snapshot.data(options), dailyWage: parseNumber(snapshot.data(options).dailyWage) } as Employee) };
-const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
-const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options).amount) } as ContractorCertification) };
-const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
 
 type SummaryData = {
     totalPersonal: number;
@@ -68,10 +53,17 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
             const weekSnap = await getDocs(weekQuery);
             if (!weekSnap.empty) {
                 setWeekId(weekSnap.docs[0].id);
+            } else {
+                // If week is not found after a delay, stop loading, as it may not exist.
+                setTimeout(() => {
+                    if (!weekId) {
+                        setWeekId(null); // Explicitly set to null to stop loading
+                    }
+                }, 3000);
             }
         };
         findWeek();
-    }, [firestore, startDate]);
+    }, [firestore, startDate, weekId]);
 
     const attendancesQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
@@ -96,7 +88,7 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         });
     }, [allFundRequests, startDate, endDate]);
 
-    const isLoading = l1 || l3 || l4 || l5 || l6 || !weekId;
+    const isLoading = l1 || l3 || l4 || l5 || l6 || weekId === undefined;
 
     // --- Calculation Logic ---
     const summary = useMemo((): SummaryData | null => {
@@ -145,7 +137,7 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
     }
 
     if (!summary) {
-        return <div>Error al calcular el resumen.</div>;
+        return <div className="flex h-screen items-center justify-center">Error al calcular el resumen. No se encontró la semana de pago.</div>;
     }
 
     return (

@@ -15,17 +15,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter } from '@/lib/converters';
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined || value === '') return 0;
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number' || isNaN(amount)) {
@@ -33,60 +24,6 @@ const formatCurrency = (amount: number) => {
     }
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 };
-
-// --- Robust Converters ---
-const payrollWeekConverter = {
-    toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
-};
-
-const fundRequestConverter = {
-    toFirestore: (data: FundRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => {
-        const data = snapshot.data(options)!;
-        return {
-            ...data,
-            id: snapshot.id,
-            amount: parseNumber(data.amount),
-            exchangeRate: parseNumber(data.exchangeRate || 1)
-        } as FundRequest;
-    }
-};
-
-const employeeConverter = {
-    toFirestore: (data: Employee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => {
-        const data = snapshot.data(options)!;
-        return {
-            ...data,
-            id: snapshot.id,
-            dailyWage: parseNumber(data.dailyWage),
-        } as Employee
-    }
-};
-
-const attendanceConverter = { 
-    toFirestore: (data: Attendance): DocumentData => data, 
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) 
-};
-
-const certificationConverter = {
-    toFirestore: (data: ContractorCertification): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
-        const data = snapshot.data(options)!;
-        return {
-            ...data,
-            id: snapshot.id,
-            amount: parseNumber(data.amount)
-        } as ContractorCertification;
-    }
-};
-
-const projectConverter = { 
-    toFirestore: (data: Project): DocumentData => data, 
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) 
-};
-
 
 type SummaryData = {
     totalPersonal: number;

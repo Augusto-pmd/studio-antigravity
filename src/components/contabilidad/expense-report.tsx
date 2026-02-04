@@ -20,6 +20,7 @@ import type { Project, Supplier } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { expenseCategories } from '@/lib/data';
+import { projectConverter, supplierConverter } from '@/lib/converters';
 
 const formatCurrency = (amount: number | undefined, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -34,60 +35,6 @@ const formatDate = (dateString?: string) => {
   return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
 };
 
-const projectConverter = {
-    toFirestore(project: Project): DocumentData {
-        const { id, ...data } = project;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Project {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            client: data.client,
-            address: data.address,
-            currency: data.currency,
-            projectType: data.projectType,
-            status: data.status,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            supervisor: data.supervisor,
-            budget: data.budget,
-            balance: data.balance,
-            progress: data.progress,
-            description: data.description,
-        };
-    }
-};
-
-const supplierConverter = {
-    toFirestore(supplier: Supplier): DocumentData {
-        const { id, ...data } = supplier;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Supplier {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            cuit: data.cuit,
-            status: data.status,
-            type: data.type,
-            email: data.email,
-            phone: data.phone,
-            contactPerson: data.contactPerson,
-            address: data.address,
-            fiscalCondition: data.fiscalCondition,
-            notes: data.notes,
-        };
-    }
-};
 
 export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; isLoading: boolean }) {
   const firestore = useFirestore();

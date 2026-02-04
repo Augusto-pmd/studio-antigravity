@@ -23,17 +23,8 @@ import type { ContractorCertification, PayrollWeek } from "@/lib/types";
 import { collection, query, orderBy, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
 import { es } from "date-fns/locale";
+import { certificationConverter, payrollWeekConverter } from "@/lib/converters";
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -49,24 +40,6 @@ const formatDate = (dateString?: string) => {
         return dateString; // fallback
     }
 };
-
-const certificationConverter = {
-    toFirestore: (cert: ContractorCertification): DocumentData => cert,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
-        const data = snapshot.data(options)!;
-        return {
-            ...data,
-            id: snapshot.id,
-            amount: parseNumber(data.amount),
-        } as ContractorCertification;
-    }
-};
-
-const payrollWeekConverter = { 
-    toFirestore: (data: PayrollWeek): DocumentData => data, 
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) 
-};
-
 
 interface PaymentHistoryDialogProps {
   contractorId: string;

@@ -4,55 +4,13 @@ import { useMemo } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification, FundRequest } from '@/lib/types';
-import { eachDayOfInterval, format, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
+import { payrollWeekConverter, employeeConverter, attendanceConverter, cashAdvanceConverter, projectConverter, certificationConverter, fundRequestConverter } from '@/lib/converters';
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
-
-const payrollWeekConverter = { toFirestore: (data: PayrollWeek): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
-const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id, dailyWage: parseNumber(snapshot.data(options)!.dailyWage) } as Employee) };
-const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance) };
-const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options)!.amount) } as CashAdvance) };
-const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
-const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options)!.amount) } as ContractorCertification) };
-const fundRequestConverter = {
-    toFirestore(request: FundRequest): DocumentData {
-        const { id, ...data } = request;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): FundRequest {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            requesterId: data.requesterId,
-            requesterName: data.requesterName,
-            date: data.date,
-            category: data.category,
-            projectId: data.projectId,
-            projectName: data.projectName,
-            amount: parseNumber(data.amount),
-            currency: data.currency,
-            exchangeRate: parseNumber(data.exchangeRate || 1),
-            status: data.status,
-            description: data.description,
-        };
-    }
-};
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 
@@ -103,9 +61,18 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
   const weeklyFundRequests = useMemo(() => {
     if (!allFundRequests || !week) return [];
+    const weekStart = parseISO(week.startDate);
+    const weekEnd = parseISO(week.endDate);
+    weekEnd.setHours(23, 59, 59, 999); 
+    
     return allFundRequests.filter(req => {
-        const reqDate = parseISO(req.date);
-        return reqDate >= parseISO(week.startDate) && reqDate <= parseISO(week.endDate);
+        if (!req.date) return false;
+        try {
+            const reqDate = parseISO(req.date);
+            return reqDate >= weekStart && reqDate <= weekEnd;
+        } catch (e) {
+            return false;
+        }
     });
   }, [allFundRequests, week]);
 
@@ -123,7 +90,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
       const daysPresent = employeeAttendances.filter(a => a.status === 'presente').length;
       const daysAbsent = employeeAttendances.filter(a => a.status === 'ausente').length;
-      const totalLateHours = employeeAttendances.reduce((sum, a) => sum + (a.lateHours || 0), 0);
+      const totalLateHours = employeeAttendances.reduce((sum, a) => sum + a.lateHours, 0);
       
       const hourlyRate = (employee.dailyWage || 0) / 8; // Assuming 8-hour day
       const lateHoursDeduction = totalLateHours * hourlyRate;

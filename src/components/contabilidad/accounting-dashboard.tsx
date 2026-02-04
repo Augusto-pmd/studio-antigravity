@@ -19,62 +19,8 @@ import { PlanDePagoDialog } from '@/components/planes-de-pago/plan-de-pago-dialo
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { PlanesDePagoTable } from '@/components/planes-de-pago/planes-de-pago-table';
+import { expenseConverter, saleConverter } from '@/lib/converters';
 
-const expenseConverter = {
-    toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            projectId: data.projectId,
-            date: data.date,
-            supplierId: data.supplierId,
-            categoryId: data.categoryId,
-            documentType: data.documentType,
-            amount: data.amount,
-            currency: data.currency,
-            exchangeRate: data.exchangeRate,
-            status: data.status,
-            invoiceNumber: data.invoiceNumber,
-            paymentMethod: data.paymentMethod,
-            iva: data.iva,
-            iibb: data.iibb,
-            iibbJurisdiction: data.iibbJurisdiction,
-            receiptUrl: data.receiptUrl,
-            description: data.description,
-            retencionGanancias: data.retencionGanancias,
-            retencionIVA: data.retencionIVA,
-            retencionIIBB: data.retencionIIBB,
-            retencionSUSS: data.retencionSUSS,
-            paidDate: data.paidDate,
-            treasuryAccountId: data.treasuryAccountId,
-        };
-    }
-};
-
-const saleConverter = {
-    toFirestore: (data: Sale): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            projectId: data.projectId,
-            date: data.date,
-            description: data.description,
-            documentType: data.documentType,
-            netAmount: data.netAmount,
-            ivaAmount: data.ivaAmount,
-            totalAmount: data.totalAmount,
-            status: data.status,
-            invoiceUrl: data.invoiceUrl,
-            collectedDate: data.collectedDate,
-            treasuryAccountId: data.treasuryAccountId,
-            retencionGanancias: data.retencionGanancias,
-            retencionIVA: data.retencionIVA,
-            retencionIIBB: data.retencionIIBB,
-        };
-    }
-};
 
 export function AccountingDashboard() {
   const firestore = useFirestore();

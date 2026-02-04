@@ -17,64 +17,8 @@ import type { PayrollWeek, Employee, Attendance, CashAdvance } from "@/lib/types
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { employeeConverter, attendanceConverter, cashAdvanceConverter } from "@/lib/converters";
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined || value === '') return 0;
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
-
-const employeeConverter = {
-    toFirestore: (data: Employee): DocumentData => data,
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name || '',
-            status: data.status || 'Inactivo',
-            paymentType: data.paymentType || 'Semanal',
-            category: data.category || 'N/A',
-            dailyWage: parseNumber(data.dailyWage),
-        } as Employee
-    }
-};
-
-const attendanceConverter = {
-  toFirestore: (data: Attendance): DocumentData => data,
-  fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance {
-      const data = snapshot.data(options)!;
-      return {
-          id: snapshot.id,
-          employeeId: data.employeeId,
-          date: data.date,
-          status: data.status,
-          lateHours: parseNumber(data.lateHours),
-          notes: data.notes,
-          projectId: data.projectId,
-          payrollWeekId: data.payrollWeekId
-      };
-  }
-};
-
-const cashAdvanceConverter = {
-    toFirestore: (data: CashAdvance): DocumentData => data,
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            employeeId: data.employeeId,
-            employeeName: data.employeeName,
-            date: data.date,
-            amount: parseNumber(data.amount),
-            payrollWeekId: data.payrollWeekId,
-        } as CashAdvance;
-    }
-};
 
 const formatCurrency = (amount: number) => {
     if (typeof amount !== 'number' || isNaN(amount)) {

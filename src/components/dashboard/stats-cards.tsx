@@ -13,6 +13,7 @@ import { useCollection, useFirestore } from "@/firebase";
 import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { Sale, Expense, Asset } from "@/lib/types";
 import { getYear, parseISO } from "date-fns";
+import { saleConverter, expenseConverter, assetConverter } from "@/lib/converters";
 
 
 const formatCurrency = (amount: number, currency?: string) => {
@@ -24,20 +25,6 @@ const formatCurrency = (amount: number, currency?: string) => {
     };
     return new Intl.NumberFormat('es-AR', options).format(amount);
 };
-
-const saleConverter = {
-    toFirestore: (data: Sale): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => ({ ...snapshot.data(options), id: snapshot.id } as Sale)
-};
-const expenseConverter = {
-    toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
-};
-const assetConverter = {
-    toFirestore: (data: Asset): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Asset => ({ ...snapshot.data(options), id: snapshot.id } as Asset)
-};
-
 
 interface StatCard {
     title: string;

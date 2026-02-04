@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import { EditCashAdvanceDialog } from './edit-cash-advance-dialog';
 import { DeleteCashAdvanceDialog } from './delete-cash-advance-dialog';
+import { cashAdvanceConverter } from '@/lib/converters';
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -36,26 +37,6 @@ const formatDate = (dateString?: string) => {
     return format(parseISO(dateString), 'dd/MM/yyyy');
 };
 
-const cashAdvanceConverter = {
-    toFirestore(advance: CashAdvance): DocumentData {
-        const { id, ...data } = advance;
-        return data;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            employeeId: data.employeeId,
-            employeeName: data.employeeName,
-            projectId: data.projectId,
-            projectName: data.projectName,
-            date: data.date,
-            amount: data.amount,
-            reason: data.reason,
-            payrollWeekId: data.payrollWeekId,
-        };
-    }
-};
 
 export function CashAdvances({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
   const { firestore } = useUser();
