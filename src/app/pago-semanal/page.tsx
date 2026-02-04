@@ -14,11 +14,12 @@ import { ContractorCertifications } from '@/components/pago-semanal/contractor-c
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 
 const fundRequestConverter = {
@@ -105,11 +106,21 @@ export default function PagoSemanalPage() {
 
   return (
     <div className="flex flex-col gap-6">
-        <div>
-            <h1 className="text-3xl font-headline">Gestión de Pago Semanal</h1>
-            <p className="mt-1 text-muted-foreground">
-                Consolide la planilla de pagos de personal y las solicitudes de fondos para la semana.
-            </p>
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 className="text-3xl font-headline">Gestión de Pago Semanal</h1>
+                <p className="mt-1 text-muted-foreground">
+                    Consolide la planilla de pagos de personal y las solicitudes de fondos para la semana.
+                </p>
+            </div>
+            {currentWeek && (
+                <Button asChild>
+                    <Link href={`/imprimir-resumen?startDate=${currentWeek.startDate}&endDate=${currentWeek.endDate}`} target="_blank">
+                        <Printer className="mr-2 h-4 w-4" />
+                        Imprimir Resumen Semanal
+                    </Link>
+                </Button>
+            )}
         </div>
 
         <Card>
