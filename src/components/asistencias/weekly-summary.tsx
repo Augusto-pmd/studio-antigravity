@@ -47,7 +47,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: data.dailyWage || 0,
+            dailyWage: parseNumber(data.dailyWage),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -90,7 +90,7 @@ const cashAdvanceConverter = {
             projectId: data.projectId,
             projectName: data.projectName,
             date: data.date,
-            amount: data.amount,
+            amount: parseNumber(data.amount),
             reason: data.reason,
             payrollWeekId: data.payrollWeekId,
         };
@@ -129,8 +129,8 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     if (!weekAttendances || !employees || !weekAdvances) return defaultResult;
     
     try {
-        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
-        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, (parseNumber(e.dailyWage)) / 8]));
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage / 8]));
 
         const grossWages = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente') {
@@ -143,12 +143,12 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente' && Number(attendance.lateHours) > 0) {
                 const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-                return sum + ((parseNumber(attendance.lateHours.toString())) * hourlyRate);
+                return sum + (parseNumber(attendance.lateHours.toString()) * hourlyRate);
             }
             return sum;
         }, 0);
 
-        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + (parseNumber(advance.amount.toString())), 0);
+        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
 
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
 
