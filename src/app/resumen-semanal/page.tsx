@@ -122,33 +122,25 @@ export default function ResumenSemanalPage() {
         const loadWeek = async () => {
             setIsLoadingWeek(true);
             const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-            const weekStartISO = weekStart.toISOString();
-
-            const q = query(
-                collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter),
-                where('startDate', '==', weekStartISO),
-                limit(1)
-            );
-            const weekSnapshot = await getDocs(q);
-
-            if (!weekSnapshot.empty) {
-                setCurrentWeek(weekSnapshot.docs[0].data() as PayrollWeek);
-            } else {
-                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-                const virtualWeek: PayrollWeek = {
-                    id: `virtual_${weekStartISO}`,
-                    startDate: weekStartISO,
-                    endDate: weekEnd.toISOString(),
-                };
-                setCurrentWeek(virtualWeek);
-            }
+            const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+            const virtualWeek: PayrollWeek = {
+                id: `virtual_${weekStart.toISOString()}`,
+                startDate: weekStart.toISOString(),
+                endDate: weekEnd.toISOString(),
+            };
+            setCurrentWeek(virtualWeek);
             setIsLoadingWeek(false);
         };
         loadWeek();
     }, [selectedDate, firestore]);
 
     // --- Data Fetching Hooks ---
-    const attendancesQuery = useMemo(() => currentWeek && !currentWeek.id.startsWith('virtual_') && firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null, [currentWeek, firestore]);
+    const attendancesQuery = useMemo(() => {
+        if (!currentWeek || !firestore) return null;
+        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+        const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
+        return query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '>=', startDate), where('date', '<=', endDate));
+    }, [currentWeek, firestore]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
     
     const allApprovedFundRequestsQuery = useMemo(() => {
@@ -175,7 +167,12 @@ export default function ResumenSemanalPage() {
     }, [allApprovedFundRequests, currentWeek]);
 
 
-    const certificationsQuery = useMemo(() => currentWeek && !currentWeek.id.startsWith('virtual_') && firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), and(where('payrollWeekId', '==', currentWeek.id), where('status', '==', 'Aprobado'))) : null, [currentWeek, firestore]);
+    const certificationsQuery = useMemo(() => {
+        if (!currentWeek || !firestore) return null;
+        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+        const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
+        return query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('date', '>=', startDate), where('date', '<=', endDate), where('status', '==', 'Aprobado'));
+    }, [currentWeek, firestore]);
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
 
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);

@@ -28,6 +28,7 @@ import { useUser, useCollection } from '@/firebase';
 import { collection, doc, setDoc, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Contractor, Project, ContractorCertification, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { format } from "date-fns";
 
 const contractorConverter = {
     toFirestore: (data: Contractor): DocumentData => data,
@@ -102,6 +103,7 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
             projectName: selectedProject.name,
             amount: parseFloat(amount) || 0,
             currency,
+            date: format(new Date(), 'yyyy-MM-dd'),
             notes: notes || undefined,
             status: 'Pendiente',
         };

@@ -80,10 +80,17 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const { firestore, permissions, role } = useUser();
   const { toast } = useToast();
 
-  const certificationsQuery = useMemo(
-    () => firestore && currentWeek ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
-    [firestore, currentWeek]
-  );
+  const certificationsQuery = useMemo(() => {
+    if (!firestore || !currentWeek) return null;
+    const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+    const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
+    return query(
+        collection(firestore, 'contractorCertifications').withConverter(certificationConverter),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate)
+    );
+  }, [firestore, currentWeek]);
+
   const { data: certifications, isLoading: isLoadingCerts } = useCollection<ContractorCertification>(certificationsQuery);
   
   // Fetch all contractors to get budget info

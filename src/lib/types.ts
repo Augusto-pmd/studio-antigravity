@@ -356,6 +356,7 @@ export interface ContractorCertification {
   projectName: string;
   amount: number;
   currency: 'ARS' | 'USD';
+  date: string; // YYYY-MM-DD
   notes?: string;
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
 }
