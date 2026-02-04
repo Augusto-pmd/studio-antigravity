@@ -188,7 +188,7 @@ export function AddExpenseDialog({
             if (extractedData.iibb) setIibb(extractedData.iibb.toString());
             if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
             if (extractedData.date) {
-                const utcDate = new Date(`${'\'\'\''}${extractedData.date}${'\'\'\''}T00:00:00`);
+                const utcDate = new Date(`${extractedData.date}T00:00:00`);
                 setDate(utcDate);
             }
 
@@ -196,13 +196,13 @@ export function AddExpenseDialog({
                 const matchedSupplier = suppliers.find(s => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
                 if (matchedSupplier) {
                     setSelectedSupplier(matchedSupplier.id);
-                    toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${'\'\'\''}${matchedSupplier.name}${'\'\'\''}".` });
+                    toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
                 }
             } else if (extractedData.supplierName && suppliers) {
                  const matchedSupplier = suppliers.find(s => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
                  if (matchedSupplier) {
                      setSelectedSupplier(matchedSupplier.id);
-                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${'\'\'\''}${matchedSupplier.name}${'\'\'\''}".` });
+                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
                  }
             }
         };

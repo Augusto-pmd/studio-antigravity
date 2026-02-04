@@ -102,7 +102,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
 
     allApprovedCerts.forEach((cert: ContractorCertification) => {
         if (!cert.contractorId || !cert.projectId) return;
-        const key = `${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`;
+        const key = `${cert.contractorId}-${cert.projectId}`;
         const currentPaid = paidMap.get(key) || 0;
         const certAmount = parseNumber(cert.amount);
         paidMap.set(key, currentPaid + certAmount);
@@ -214,7 +214,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                              const budgetData = contractor?.budgets?.[cert.projectId];
                              const additionalsTotal = budgetData?.additionals?.reduce((sum, ad) => sum + (Number(ad.amount) || 0), 0) || 0;
                              const totalBudget = (budgetData?.initial || 0) + additionalsTotal;
-                             const totalPaid = totalPaidByContractorProject.get(`${'\'\'\''}${cert.contractorId}-${cert.projectId}${'\'\'\''}`) || 0;
+                             const totalPaid = totalPaidByContractorProject.get(`${cert.contractorId}-${cert.projectId}`) || 0;
                              const remainingBalance = totalBudget - totalPaid;
 
                             return(
