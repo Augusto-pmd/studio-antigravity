@@ -167,79 +167,81 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     return `${format(start, 'dd/MM/yyyy')} al ${format(end, 'dd/MM/yyyy')}`;
   };
   
+  if (isLoadingCurrentWeek) {
+      return <Skeleton className="h-80 w-full" />;
+  }
+
+  if (!currentWeek) {
+      return (
+          <Card>
+              <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
+                  <p className="text-lg font-medium text-muted-foreground">No hay una semana seleccionada.</p>
+                  <p className="text-sm text-muted-foreground">Utilice el selector de semana para comenzar.</p>
+              </CardContent>
+          </Card>
+      );
+  }
+  
   return (
-    <>
-        {isLoadingCurrentWeek && <Skeleton className="h-80 w-full" />}
-        {!isLoadingCurrentWeek && !currentWeek && (
-             <Card>
-                <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
-                    <p className="text-lg font-medium text-muted-foreground">No hay una semana seleccionada.</p>
-                    <p className="text-sm text-muted-foreground">Utilice el selector de semana para comenzar.</p>
-                </CardContent>
-             </Card>
-        )}
-        {!isLoadingCurrentWeek && currentWeek && (
-             <Card>
-                <CardHeader>
-                    <CardTitle>Planilla de Pagos: {formatDateRange(currentWeek.startDate, currentWeek.endDate)}</CardTitle>
-                    <CardDescription>
-                    Resumen de pagos a empleados para la semana seleccionada.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                   {isLoadingSummaryData ? (
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <Skeleton className="h-24 w-full" />
-                            <Skeleton className="h-24 w-full" />
-                            <Skeleton className="h-24 w-full" />
-                        </div>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <div className="rounded-lg border p-4">
-                                <p className="text-sm font-medium text-muted-foreground">Sueldos Brutos (Asistencias)</p>
-                                <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.grossWages)}</p>
-                            </div>
-                            <div className="rounded-lg border p-4 space-y-2">
-                                <p className="text-sm font-medium text-muted-foreground">Total Deducciones</p>
-                                <p className="text-2xl font-bold text-destructive">
-                                    {formatCurrency((weeklySummaryData.totalAdvances + weeklySummaryData.totalLateHoursDeduction) * -1)}
-                                </p>
-                                <div className="text-xs text-muted-foreground pt-1">
-                                    <div className="flex justify-between"><span>Adelantos:</span><span>{formatCurrency(weeklySummaryData.totalAdvances * -1)}</span></div>
-                                    <div className="flex justify-between"><span>Horas Tarde:</span><span>{formatCurrency(weeklySummaryData.totalLateHoursDeduction * -1)}</span></div>
-                                </div>
-                            </div>
-                            <div className="rounded-lg border bg-muted p-4">
-                                <p className="text-sm font-medium text-muted-foreground">Neto a Pagar</p>
-                                <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.netPay)}</p>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-                <CardFooter className="justify-end">
-                    <div className="flex gap-2 flex-wrap justify-end">
-                        <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
-                            <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=contractors`} target="_blank">
-                                <Download className="mr-2 h-4 w-4" />
-                                Recibos (Contratistas)
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
-                            <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=fund-requests`} target="_blank">
-                                <Download className="mr-2 h-4 w-4" />
-                                Recibos (Solicitudes)
-                            </Link>
-                        </Button>
-                        <Button asChild disabled={currentWeek.id.startsWith('virtual_')}>
-                            <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=employees`} target="_blank">
-                                <Download className="mr-2 h-4 w-4" />
-                                Recibos (Empleados)
-                            </Button>
-                        </Button>
+    <Card>
+        <CardHeader>
+            <CardTitle>Planilla de Pagos: {formatDateRange(currentWeek.startDate, currentWeek.endDate)}</CardTitle>
+            <CardDescription>
+            Resumen de pagos a empleados para la semana seleccionada.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isLoadingSummaryData ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                </div>
+            ) : (
+                <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-lg border p-4">
+                        <p className="text-sm font-medium text-muted-foreground">Sueldos Brutos (Asistencias)</p>
+                        <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.grossWages)}</p>
                     </div>
-                </CardFooter>
-            </Card>
-        )}
-    </>
+                    <div className="rounded-lg border p-4 space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Total Deducciones</p>
+                        <p className="text-2xl font-bold text-destructive">
+                            {formatCurrency((weeklySummaryData.totalAdvances + weeklySummaryData.totalLateHoursDeduction) * -1)}
+                        </p>
+                        <div className="text-xs text-muted-foreground pt-1">
+                            <div className="flex justify-between"><span>Adelantos:</span><span>{formatCurrency(weeklySummaryData.totalAdvances * -1)}</span></div>
+                            <div className="flex justify-between"><span>Horas Tarde:</span><span>{formatCurrency(weeklySummaryData.totalLateHoursDeduction * -1)}</span></div>
+                        </div>
+                    </div>
+                    <div className="rounded-lg border bg-muted p-4">
+                        <p className="text-sm font-medium text-muted-foreground">Neto a Pagar</p>
+                        <p className="text-2xl font-bold">{formatCurrency(weeklySummaryData.netPay)}</p>
+                    </div>
+                </div>
+            )}
+        </CardContent>
+        <CardFooter className="justify-end">
+            <div className="flex gap-2 flex-wrap justify-end">
+                <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
+                    <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=contractors`} target="_blank">
+                        <Download className="mr-2 h-4 w-4" />
+                        Recibos (Contratistas)
+                    </Link>
+                </Button>
+                <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
+                    <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=fund-requests`} target="_blank">
+                        <Download className="mr-2 h-4 w-4" />
+                        Recibos (Solicitudes)
+                    </Link>
+                </Button>
+                <Button asChild disabled={currentWeek.id.startsWith('virtual_')}>
+                    <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=employees`} target="_blank">
+                        <Download className="mr-2 h-4 w-4" />
+                        Recibos (Empleados)
+                    </Link>
+                </Button>
+            </div>
+        </CardFooter>
+    </Card>
   );
 }
