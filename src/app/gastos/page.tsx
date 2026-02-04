@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import type { Project, Supplier, Expense, TimeLog, TechnicalOfficeEmployee } from '@/lib/types';
+import type { Project, Supplier, Expense, TimeLog, TechnicalOfficeEmployee, Employee, Attendance } from '@/lib/types';
 import { expenseCategories } from '@/lib/data';
 
 const projectConverter = {
@@ -43,6 +43,17 @@ const techOfficeEmployeeConverter = {
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
 };
 
+const employeeConverter = {
+    toFirestore: (data: Employee): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id } as Employee)
+};
+
+const attendanceConverter = {
+    toFirestore: (data: Attendance): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id } as Attendance)
+};
+
+
 export default function GastosPage() {
   const { permissions } = useUser();
   const firestore = useFirestore();
@@ -68,7 +79,14 @@ export default function GastosPage() {
   const techOfficeEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
   const { data: techOfficeEmployees, isLoading: isLoadingTechOffice } = useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
 
-  const isLoading = isLoadingProjects || isLoadingSuppliers || isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice;
+  const siteEmployeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
+  const { data: siteEmployees, isLoading: isLoadingSiteEmployees } = useCollection<Employee>(siteEmployeesQuery);
+
+  const attendancesQuery = useMemo(() => (firestore ? collection(firestore, 'attendances').withConverter(attendanceConverter) : null), [firestore]);
+  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
+
+
+  const isLoading = isLoadingProjects || isLoadingSuppliers || isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice || isLoadingSiteEmployees || isLoadingAttendances;
 
   // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
@@ -100,17 +118,48 @@ export default function GastosPage() {
     }).filter((e): e is Expense => e !== null);
   }, [allTimeLogs, techOfficeEmployees]);
 
+  // Create virtual expenses for site payroll
+  const payrollExpenses = useMemo((): Expense[] => {
+    if (!attendances || !siteEmployees) return [];
+    
+    const employeeWageMap = new Map(siteEmployees.map(e => [e.id, { wage: e.dailyWage, name: e.name }]));
+
+    return attendances.map((att: Attendance) => {
+        if (att.status !== 'presente' || !att.projectId) return null;
+        
+        const employeeData = employeeWageMap.get(att.employeeId);
+        if (!employeeData) return null;
+
+        return {
+            id: `payroll-${att.id}`, // Unique ID for virtual expense
+            projectId: att.projectId,
+            date: att.date, // Attendance date is already YYYY-MM-DD
+            supplierId: 'personal-propio',
+            categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
+            documentType: 'Recibo Común',
+            amount: employeeData.wage,
+            currency: 'ARS',
+            exchangeRate: 1,
+            status: 'Pagado',
+            description: `Costo Jornal: ${employeeData.name}`,
+        } as Expense;
+    }).filter((e): e is Expense => e !== null);
+  }, [attendances, siteEmployees]);
+
+
   // Create maps for display names
   const projectsMap = useMemo(() => projects?.reduce((acc: Record<string, string>, p: any) => ({ ...acc, [p.id]: p.name }), {} as Record<string, string>) || {}, [projects]);
   const suppliersMap = useMemo(() => {
     const map = suppliers?.reduce((acc: Record<string, string>, s: any) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
-    map['OFICINA-TECNICA'] = 'Oficina Técnica'; // Add virtual supplier
+    map['OFICINA-TECNICA'] = 'Oficina Técnica';
+    map['personal-propio'] = 'Personal Propio';
+    map['solicitudes-fondos'] = 'Solicitudes de Fondos (Interno)';
     return map;
   }, [suppliers]);
 
   // Combine real and virtual expenses, then filter
   const displayedExpenses = useMemo(() => {
-    const combined = [...(allExpenses || []), ...officeExpenses];
+    const combined = [...(allExpenses || []), ...officeExpenses, ...payrollExpenses];
     return combined.filter(expense => {
       const projectMatch = !selectedProject || expense.projectId === selectedProject;
       const supplierMatch = !selectedSupplier || expense.supplierId === selectedSupplier;
@@ -120,7 +169,7 @@ export default function GastosPage() {
                           (expense.invoiceNumber && expense.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()));
       return projectMatch && supplierMatch && categoryMatch && searchMatch;
     });
-  }, [allExpenses, officeExpenses, selectedProject, selectedSupplier, selectedCategory, searchQuery]);
+  }, [allExpenses, officeExpenses, payrollExpenses, selectedProject, selectedSupplier, selectedCategory, searchQuery]);
 
   const resetFilters = () => {
     setSelectedProject(undefined);

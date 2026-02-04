@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect, useTransition } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, orderBy, doc, getDocs, setDoc, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
@@ -14,12 +14,11 @@ import { ContractorCertifications } from '@/components/pago-semanal/contractor-c
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Loader2, PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 
 
 const fundRequestConverter = {
@@ -49,94 +48,27 @@ const fundRequestConverter = {
     }
 };
 
-const payrollWeekConverter = {
-    toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
-};
-
-
 export default function PagoSemanalPage() {
     const { user, firestore, permissions } = useUser();
     const isAdmin = permissions.canSupervise;
-    const { toast } = useToast();
     
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date('2026-01-30T12:00:00.000Z'));
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
-    const [isLoadingWeek, setIsLoadingWeek] = useState(true);
-    const [isCreatingWeek, startTransition] = useTransition();
 
     useEffect(() => {
-        if (!firestore) return;
+        // Monday is the start of the week
+        const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+        const weekStartISO = weekStart.toISOString();
 
-        const loadWeek = async () => {
-            setIsLoadingWeek(true);
-            // Monday is the start of the week
-            const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-            const weekStartISO = weekStart.toISOString();
-
-            const q = query(
-                collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter),
-                where('startDate', '==', weekStartISO),
-                limit(1)
-            );
-            const weekSnapshot = await getDocs(q);
-
-            if (!weekSnapshot.empty) {
-                setCurrentWeek(weekSnapshot.docs[0].data() as PayrollWeek);
-            } else {
-                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-                // Create a virtual week object if it doesn't exist in Firestore
-                const virtualWeek: PayrollWeek = {
-                    id: `virtual_${weekStartISO}`,
-                    startDate: weekStartISO,
-                    endDate: weekEnd.toISOString(),
-                    status: 'Abierta',
-                    generatedAt: new Date().toISOString(),
-                };
-                setCurrentWeek(virtualWeek);
-            }
-            setIsLoadingWeek(false);
+        // Create a week object on the client side
+        const newWeek: PayrollWeek = {
+            id: `virtual_${weekStartISO}`,
+            startDate: weekStartISO,
+            endDate: weekEnd.toISOString(),
         };
-        loadWeek();
-    }, [selectedDate, firestore]);
-
-    const handleCreateWeek = async () => {
-        if (!firestore || !currentWeek || !currentWeek.id.startsWith('virtual_')) return;
-
-        startTransition(async () => {
-            try {
-                const openWeekQuery = query(collection(firestore, 'payrollWeeks'), where('status', '==', 'Abierta'), limit(1));
-                const openWeekSnap = await getDocs(openWeekQuery);
-                if (!openWeekSnap.empty) {
-                    toast({
-                        variant: "destructive",
-                        title: "Semana Abierta Existente",
-                        description: `Ya existe una semana abierta. Debe cerrarla antes de generar una nueva.`,
-                    });
-                    return;
-                }
-
-                const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-                const newWeekData: PayrollWeek = {
-                    id: newWeekRef.id,
-                    startDate: currentWeek.startDate,
-                    endDate: currentWeek.endDate,
-                    status: 'Abierta',
-                    generatedAt: new Date().toISOString(),
-                };
-
-                await setDoc(newWeekRef, newWeekData);
-                setCurrentWeek(newWeekData);
-                toast({
-                    title: "Nueva Semana Generada",
-                    description: `La semana ha sido creada y ahora está activa.`,
-                });
-            } catch (error) {
-                console.error("Error creating week:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'No se pudo crear la semana.' });
-            }
-        });
-    };
+        setCurrentWeek(newWeek);
+    }, [selectedDate]);
 
      const fundRequestsQuery = useMemo(() => {
         if (!firestore) return null;
@@ -162,17 +94,11 @@ export default function PagoSemanalPage() {
         </div>
 
         <Card>
-            <CardHeader className="flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader>
                 <div>
                     <CardTitle>Selector de Semana</CardTitle>
                     <CardDescription>Elija una fecha para ver o cargar datos de esa semana.</CardDescription>
                 </div>
-                {currentWeek?.id.startsWith('virtual_') && permissions.canSupervise && (
-                    <Button onClick={handleCreateWeek} disabled={isCreatingWeek}>
-                        {isCreatingWeek ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                        Generar y Abrir Semana
-                    </Button>
-                )}
             </CardHeader>
             <CardContent>
                 <Popover>
@@ -214,15 +140,15 @@ export default function PagoSemanalPage() {
                 <div className="flex flex-col gap-6">
                     <WeeklySummary 
                         currentWeek={currentWeek}
-                        isLoadingCurrentWeek={isLoadingWeek}
+                        isLoadingCurrentWeek={false}
                     />
                     <CashAdvances 
                         currentWeek={currentWeek ?? undefined} 
-                        isLoadingWeek={isLoadingWeek} 
+                        isLoadingWeek={false} 
                     />
                     <DailyAttendance 
                         currentWeek={currentWeek ?? undefined} 
-                        isLoadingWeek={isLoadingWeek} 
+                        isLoadingWeek={false} 
                     />
                 </div>
             </TabsContent>
@@ -230,7 +156,7 @@ export default function PagoSemanalPage() {
             <TabsContent value="contratistas" className="mt-6">
               <ContractorCertifications 
                 currentWeek={currentWeek ?? undefined}
-                isLoadingWeek={isLoadingWeek}
+                isLoadingWeek={false}
               />
             </TabsContent>
 

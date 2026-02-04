@@ -20,9 +20,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase";
 import { MoreHorizontal, Check, X, Undo, Receipt, Archive } from "lucide-react";
-import type { FundRequest } from "@/lib/types";
+import type { FundRequest, Expense } from "@/lib/types";
 import { parseISO, format } from "date-fns";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, writeBatch, collection, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteFundRequestDialog } from "./delete-fund-request-dialog";
@@ -49,19 +49,58 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
       return;
     }
     
-    const requestRef = doc(firestore, 'fundRequests', requestId);
-    const updatedData = { status };
+    const request = requests?.find(r => r.id === requestId);
+    if (!request) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Solicitud no encontrada.' });
+        return;
+    }
 
-    updateDoc(requestRef, updatedData)
+    const batch = writeBatch(firestore);
+    const requestRef = doc(firestore, 'fundRequests', requestId);
+    batch.update(requestRef, { status });
+
+    // If approved and has a project, create an expense
+    if (status === 'Aprobado' && request.projectId) {
+        const supplierId = 'solicitudes-fondos'; // Generic supplier for fund requests
+        const expenseRef = doc(collection(firestore, `projects/${request.projectId}/expenses`));
+        const amountInARS = request.currency === 'USD' ? request.amount * request.exchangeRate : request.amount;
+        
+        let categoryId = 'CAT-12'; // Default to "Otros"
+        if (request.category === 'Materiales') categoryId = 'CAT-01';
+        if (request.category === 'Logística y PMD') categoryId = 'CAT-04';
+        if (request.category === 'Viáticos') categoryId = 'CAT-09';
+        
+        const newExpense: Omit<Expense, 'id'> = {
+            projectId: request.projectId,
+            date: new Date().toISOString(), // Use current date for the expense
+            supplierId,
+            categoryId,
+            documentType: 'Recibo Común',
+            description: `Solicitud de Fondos: ${request.description || request.category}`,
+            amount: amountInARS,
+            currency: 'ARS',
+            exchangeRate: 1, // Already converted to ARS
+            status: 'Pagado', // Assume it's paid from a cash box, not tesoreria
+            paymentMethod: 'Caja Chica',
+            paidDate: new Date().toISOString(),
+        };
+        batch.set(expenseRef, newExpense);
+
+        // Also ensure the generic supplier exists
+        const supplierRef = doc(firestore, 'suppliers', supplierId);
+        batch.set(supplierRef, { name: 'Solicitudes de Fondos (Interno)', cuit: '00-00000000-0', status: 'Aprobado', type: 'Servicios' }, { merge: true });
+    }
+    
+    batch.commit()
         .then(() => {
-            toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}.` });
+            toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}${status === 'Aprobado' && request.projectId ? ' y se ha generado el gasto correspondiente.' : '.'}` });
         })
         .catch((error) => {
-            console.error("Error writing to Firestore:", error);
+            console.error("Error processing request:", error);
             toast({
                 variant: "destructive",
                 title: "Error al actualizar",
-                description: "No se pudo cambiar el estado de la solicitud. Es posible que no tengas permisos.",
+                description: "No se pudo cambiar el estado. Es posible que no tengas permisos.",
             });
         });
   };

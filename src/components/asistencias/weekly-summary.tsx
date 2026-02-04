@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition, useMemo } from "react";
+import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -9,27 +9,13 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
-import { useUser } from "@/firebase";
-import { useCollection } from "@/firebase";
-import { collection, query, doc, getDocs, setDoc, updateDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, writeBatch, where, getDoc, collectionGroup } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
-import type { PayrollWeek, Employee, Attendance, CashAdvance, Expense } from "@/lib/types";
+import { Download } from "lucide-react";
+import { useUser, useCollection } from "@/firebase";
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import type { PayrollWeek, Employee, Attendance, CashAdvance } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const parseNumber = (value: any): number => {
@@ -119,9 +105,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWeek?: PayrollWeek | null, isLoadingCurrentWeek: boolean }) {
-  const { firestore, permissions } = useUser();
-  const { toast } = useToast();
-  const [isClosingWeek, startTransition] = useTransition();
+  const { firestore } = useUser();
   
   const attendanceQuery = useMemo(
       () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
@@ -183,69 +167,6 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     return `${format(start, 'dd/MM/yyyy')} al ${format(end, 'dd/MM/yyyy')}`;
   };
   
-  const handleCloseWeek = (weekId: string, weekStartDate: string, weekEndDate: string) => {
-      if (!firestore) return;
-      
-      startTransition(() => {
-        (async () => {
-            toast({ title: "Cerrando semana...", description: "Calculando costos y generando gastos. Esto puede tardar un momento." });
-
-            try {
-                const batch = writeBatch(firestore);
-
-                const supplierId = 'personal-propio';
-                const supplierRef = doc(firestore, 'suppliers', supplierId);
-                const supplierSnap = await getDoc(supplierRef);
-
-                if (!supplierSnap.exists()) {
-                    batch.set(supplierRef, { id: supplierId, name: 'Personal Propio', cuit: '00-00000000-0', status: 'Aprobado', type: 'Servicios' });
-                }
-                
-                const employeesQueryToFetch = query(collection(firestore, 'employees').withConverter(employeeConverter));
-                const attendanceQueryToFetch = query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId));
-                
-                const [employeesSnap, attendanceSnap] = await Promise.all([ getDocs(employeesQueryToFetch), getDocs(attendanceQueryToFetch) ]);
-
-                const employeesData = employeesSnap.docs.map((d: any) => d.data());
-                const attendancesData = attendanceSnap.docs.map((d: any) => d.data());
-                
-                const employeeWages = new Map(employeesData.map((e: any) => [e.id, e.dailyWage]));
-                const costsByProject = new Map<string, number>();
-
-                for (const attendance of attendancesData) {
-                    if (attendance.status === 'presente' && attendance.projectId) {
-                        const wage = employeeWages.get(attendance.employeeId) || 0;
-                        costsByProject.set(attendance.projectId, (costsByProject.get(attendance.projectId) || 0) + wage);
-                    }
-                }
-
-                const weekEndDateISO = parseISO(weekEndDate).toISOString();
-                const weekRange = formatDateRange(weekStartDate, weekEndDate);
-
-                for (const [projectId, cost] of costsByProject.entries()) {
-                    if (cost > 0) {
-                        const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
-                        const newExpense: Omit<Expense, 'id'> = {
-                            projectId: projectId, date: weekEndDateISO, supplierId: supplierId, categoryId: 'CAT-02', documentType: 'Recibo Común', description: `Costo de mano de obra - Semana ${weekRange}`, amount: cost, currency: 'ARS', exchangeRate: 1, status: 'Pagado', paymentMethod: 'Planilla Semanal', paidDate: new Date().toISOString(),
-                        };
-                        batch.set(expenseRef, newExpense);
-                    }
-                }
-
-                const weekRef = doc(firestore, 'payrollWeeks', weekId);
-                batch.update(weekRef, { status: 'Cerrada' });
-
-                await batch.commit();
-
-                toast({ title: "Semana Cerrada Exitosamente", description: "Se han imputado los costos de personal a cada obra correspondiente." });
-            } catch (error) {
-                console.error("Error closing week:", error);
-                toast({ variant: 'destructive', title: "Error al cerrar", description: "No se pudo cerrar la semana y generar los gastos. Es posible que no tengas permisos." });
-            }
-        })();
-      });
-  };
-  
   return (
     <>
         {isLoadingCurrentWeek && <Skeleton className="h-80 w-full" />}
@@ -295,40 +216,8 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="justify-between">
-                    <p className="text-sm text-muted-foreground">Estado de la semana: 
-                        <span className={cn(
-                            "font-semibold ml-1",
-                            currentWeek.status === 'Abierta' && 'text-green-500',
-                            currentWeek.status === 'Cerrada' && 'text-red-500'
-                        )}>
-                            {currentWeek.status}
-                        </span>
-                    </p>
+                <CardFooter className="justify-end">
                     <div className="flex gap-2 flex-wrap justify-end">
-                         {currentWeek.status === 'Abierta' && permissions.canSupervise && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline" disabled={isClosingWeek}>
-                                      {isClosingWeek ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                      Cerrar y Contabilizar
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Está seguro que desea cerrar la semana?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta acción es irreversible y generará los gastos de mano de obra en cada obra. Una vez cerrada, no se podrán registrar más asistencias
-                                        ni adelantos para este período.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleCloseWeek(currentWeek.id, currentWeek.startDate, currentWeek.endDate)}>Confirmar Cierre</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
                         <Button asChild variant="outline" disabled={currentWeek.id.startsWith('virtual_')}>
                             <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=contractors`} target="_blank">
                                 <Download className="mr-2 h-4 w-4" />
@@ -345,7 +234,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
                             <Link href={`/imprimir-recibos?weekId=${currentWeek.id}&type=employees`} target="_blank">
                                 <Download className="mr-2 h-4 w-4" />
                                 Recibos (Empleados)
-                            </Link>
+                            </Button>
                         </Button>
                     </div>
                 </CardFooter>

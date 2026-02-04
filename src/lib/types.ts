@@ -176,8 +176,6 @@ export interface PayrollWeek {
     id: string;
     startDate: string;
     endDate: string;
-    status: 'Abierta' | 'Cerrada';
-    generatedAt: string;
 }
 
 export interface CashAdvance {
