@@ -17,7 +17,24 @@ const techOfficeEmployeeConverter = {
 
 const timeLogConverter = {
     toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
+        const data = snapshot.data(options)!;
+        let dateStr: string = '';
+        if (data.date) {
+            // Handle both Firestore Timestamps and string dates
+            if (data.date.toDate && typeof data.date.toDate === 'function') {
+                dateStr = format(data.date.toDate(), 'yyyy-MM-dd');
+            } else if (typeof data.date === 'string') {
+                // Take only the date part if it's a full ISO string
+                dateStr = data.date.split('T')[0];
+            }
+        }
+        return { 
+            ...data, 
+            id: snapshot.id,
+            date: dateStr,
+        } as TimeLog;
+    }
 };
 
 export function TimeLogAlerts() {
@@ -69,11 +86,6 @@ export function TimeLogAlerts() {
         }
 
         const employeesWhoDidntLog = employees.filter((employee: TechnicalOfficeEmployee) => {
-            // Exclude 'Augusto Menendez' and 'Fabrizio Franceschini' as requested
-            if (employee.fullName === 'Augusto Menendez' || employee.fullName === 'Fabrizio Franceschini') {
-                return false;
-            }
-            
             const logsForEmployee = lastWeekLogs.filter((log: TimeLog) => log.userId === employee.userId);
             const loggedDays = new Set(logsForEmployee.map((log: TimeLog) => log.date));
             const requiredDays = workDays.map((day: Date) => format(day, 'yyyy-MM-dd'));

@@ -8,7 +8,7 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import Link from 'next/link';
 
 const techOfficeEmployeeConverter = {
@@ -16,7 +16,25 @@ const techOfficeEmployeeConverter = {
 };
 
 const timeLogConverter = {
-    toFirestore: (data: any) => data, fromFirestore: (snapshot: any): TimeLog => ({ ...snapshot.data(), id: snapshot.id })
+    toFirestore: (data: TimeLog): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
+        const data = snapshot.data(options)!;
+        let dateStr: string = '';
+        if (data.date) {
+            // Handle both Firestore Timestamps and string dates
+            if (data.date.toDate && typeof data.date.toDate === 'function') {
+                dateStr = format(data.date.toDate(), 'yyyy-MM-dd');
+            } else if (typeof data.date === 'string') {
+                // Take only the date part if it's a full ISO string
+                dateStr = data.date.split('T')[0];
+            }
+        }
+        return {
+            ...data,
+            id: snapshot.id,
+            date: dateStr,
+        } as TimeLog;
+    }
 };
 
 
@@ -88,7 +106,7 @@ export function MyTimeLogReminder() {
     };
 
     const shouldShowAlert = useMemo(() => {
-        if (!isClient || isLoadingEmployee || isLoadingLogs || !employee || employee.status !== 'Activo' || employee.fullName === 'Augusto Menendez' || employee.fullName === 'Fabrizio Franceschini' || isLogComplete === true || isLogComplete === null) {
+        if (!isClient || isLoadingEmployee || isLoadingLogs || !employee || employee.status !== 'Activo' || isLogComplete === true || isLogComplete === null) {
             return false;
         }
         if (snoozeUntil && new Date().getTime() < snoozeUntil) {
