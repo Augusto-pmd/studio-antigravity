@@ -143,35 +143,28 @@ export default function ResumenSemanalPage() {
     }, [currentWeek, firestore]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
     
-    const allApprovedFundRequestsQuery = useMemo(() => {
-        if (!firestore) return null;
+    const fundRequestsQuery = useMemo(() => {
+        if (!currentWeek || !firestore) return null;
+        const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
+        const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
         return query(
-            collection(firestore, 'fundRequests').withConverter(fundRequestConverter), 
-            where('status', '==', 'Aprobado')
+            collection(firestore, 'fundRequests').withConverter(fundRequestConverter),
+            where('date', '>=', startDate),
+            where('date', '<=', endDate),
+            where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
         );
-    }, [firestore]);
-    const { data: allApprovedFundRequests, isLoading: l3 } = useCollection(allApprovedFundRequestsQuery);
-
-    const fundRequests = useMemo(() => {
-        if (!allApprovedFundRequests || !currentWeek || !currentWeek.startDate || !currentWeek.endDate) return [];
-        
-        return allApprovedFundRequests.filter(req => {
-            if (!req.date) return false;
-            const reqDate = parseISO(req.date);
-            const startDate = parseISO(currentWeek.startDate);
-            const endDate = parseISO(currentWeek.endDate);
-            if (!isValid(reqDate) || !isValid(startDate) || !isValid(endDate)) return false;
-            return reqDate >= startDate && reqDate <= endDate;
-        });
-
-    }, [allApprovedFundRequests, currentWeek]);
-
+    }, [currentWeek, firestore]);
+    const { data: fundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
     const certificationsQuery = useMemo(() => {
         if (!currentWeek || !firestore) return null;
         const startDate = format(parseISO(currentWeek.startDate), 'yyyy-MM-dd');
         const endDate = format(parseISO(currentWeek.endDate), 'yyyy-MM-dd');
-        return query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('date', '>=', startDate), where('date', '<=', endDate), where('status', '==', 'Aprobado'));
+        return query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), 
+            where('date', '>=', startDate), 
+            where('date', '<=', endDate), 
+            where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
+        );
     }, [currentWeek, firestore]);
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
 
@@ -395,5 +388,3 @@ export default function ResumenSemanalPage() {
         </div>
     );
 }
-
-    
