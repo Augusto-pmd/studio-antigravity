@@ -52,6 +52,8 @@ const fundRequestConverter = {
         return {
             ...data,
             id: snapshot.id,
+            amount: parseNumber(data.amount),
+            exchangeRate: parseNumber(data.exchangeRate)
         } as FundRequest;
     }
 };
@@ -68,7 +70,7 @@ const employeeConverter = {
             status: data.status || 'Inactivo',
             paymentType: data.paymentType || 'Semanal',
             category: data.category || 'N/A',
-            dailyWage: data.dailyWage,
+            dailyWage: parseNumber(data.dailyWage),
             artExpiryDate: data.artExpiryDate || undefined,
             documents: data.documents || [],
             emergencyContactName: data.emergencyContactName,
@@ -84,6 +86,7 @@ const certificationConverter = {
         return {
             ...data,
             id: snapshot.id,
+            amount: parseNumber(data.amount)
         } as ContractorCertification;
     }
 };
@@ -207,7 +210,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage)]));
+            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -229,7 +232,7 @@ export default function ResumenSemanalPage() {
             
             // CONTRATISTAS
             const totalContratistas = (certifications || []).reduce((sum, cert) => {
-                const amount = parseNumber(cert.amount);
+                const amount = cert.amount;
                 const proj = cert.projectId ? projectMap.get(cert.projectId) : undefined;
                 if (proj) {
                     proj.contratistas += amount;
@@ -239,7 +242,7 @@ export default function ResumenSemanalPage() {
             
             // SOLICITUDES
             const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
-                const amount = req.currency === 'USD' ? parseNumber(req.amount) * parseNumber(req.exchangeRate) : parseNumber(req.amount);
+                const amount = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
                 const proj = req.projectId ? projectMap.get(req.projectId) : undefined;
                 if (proj) {
                     proj.solicitudes += amount;
