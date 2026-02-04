@@ -139,8 +139,6 @@ export default function ResumenSemanalPage() {
                     id: `virtual_${weekStartISO}`,
                     startDate: weekStartISO,
                     endDate: weekEnd.toISOString(),
-                    status: 'Abierta',
-                    generatedAt: new Date().toISOString(),
                 };
                 setCurrentWeek(virtualWeek);
             }
@@ -401,3 +399,4 @@ export default function ResumenSemanalPage() {
     );
 }
 
+    
