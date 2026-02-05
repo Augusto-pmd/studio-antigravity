@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -82,7 +82,7 @@ export function PlanDePagoDialog({
 
     startTransition(() => {
       const collectionRef = collection(firestore, 'moratorias');
-      const docRef = isEditMode ? doc(collectionRef, plan.id) : doc(collectionRef);
+      const docRef = isEditMode && plan ? doc(collectionRef, plan.id) : doc(collectionRef);
       
       const planData: Moratoria = {
         id: docRef.id,

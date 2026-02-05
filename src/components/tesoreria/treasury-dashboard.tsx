@@ -57,7 +57,7 @@ export function TreasuryDashboard() {
 
   const isLoading = loadingTxs || loadingAccs || loadingProjs;
 
-  const accountsMap = useMemo(() => accounts?.reduce((map: any, acc) => { map[acc.id] = acc.name; return map; }, {} as Record<string, string>) || {}, [accounts]);
+  const accountsMap = useMemo(() => accounts?.reduce((map: any, acc: TreasuryAccount) => { map[acc.id] = acc.name; return map; }, {} as Record<string, string>) || {}, [accounts]);
 
   const filteredTransactions = useMemo(() => {
     return transactions?.filter((tx: TreasuryTransaction) => {
@@ -78,7 +78,7 @@ export function TreasuryDashboard() {
   };
   const hasActiveFilters = dateRange || selectedAccount || selectedProject || searchDescription;
 
-  const renderSkeleton = () => Array.from({ length: 5 }).map((_, i) => (
+  const renderSkeleton = () => Array.from({ length: 5 }).map((_, i: number) => (
     <TableRow key={`skel-tx-${i}`}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell><Skeleton className="h-5 w-32" /></TableCell>

@@ -79,8 +79,8 @@ export function EditContractorCertificationDialog({ certification, children }: {
         return;
     }
     
-    const selectedContractor = contractors?.find(c => c.id === contractorId);
-    const selectedProject = projects?.find(p => p.id === projectId);
+    const selectedContractor = contractors?.find((c: Contractor) => c.id === contractorId);
+    const selectedProject = projects?.find((p: Project) => p.id === projectId);
 
     if (!selectedContractor || !selectedProject) {
         toast({ variant: 'destructive', title: 'Error', description: 'Contratista o Proyecto no válido.' });
@@ -136,7 +136,7 @@ export function EditContractorCertificationDialog({ certification, children }: {
             <Select onValueChange={setContractorId} value={contractorId} disabled={isLoadingContractors}>
               <SelectTrigger id="contractor"><SelectValue placeholder="Seleccione un contratista" /></SelectTrigger>
               <SelectContent>
-                {contractors?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {contractors?.map((c: Contractor) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -146,7 +146,7 @@ export function EditContractorCertificationDialog({ certification, children }: {
             <Select onValueChange={setProjectId} value={projectId} disabled={isLoadingProjects}>
               <SelectTrigger id="project"><SelectValue placeholder="Seleccione una obra" /></SelectTrigger>
               <SelectContent>
-                {projects?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                {projects?.map((p: Project) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

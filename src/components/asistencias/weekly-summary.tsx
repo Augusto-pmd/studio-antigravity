@@ -57,7 +57,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
         const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage) / 8]));
 
-        const grossWages = weekAttendances.reduce((sum, attendance) => {
+        const grossWages = weekAttendances.reduce((sum: number, attendance: Attendance) => {
             if (attendance.status === 'presente') {
                 const wage = employeeWageMap.get(attendance.employeeId) || 0;
                 return sum + wage;
@@ -65,7 +65,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
             return sum;
         }, 0);
 
-        const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
+        const totalLateHoursDeduction = weekAttendances.reduce((sum: number, attendance: Attendance) => {
           if (attendance.status === 'presente' && parseNumber(attendance.lateHours) > 0) {
               const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
               return sum + (parseNumber(attendance.lateHours) * hourlyRate);
@@ -73,7 +73,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
           return sum;
         }, 0);
 
-        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + parseNumber(advance.amount), 0);
+        const totalAdvances = weekAdvances.reduce((sum: number, advance: CashAdvance) => sum + parseNumber(advance.amount), 0);
         
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
         

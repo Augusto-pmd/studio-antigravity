@@ -4,55 +4,13 @@ import { useMemo } from 'react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification, FundRequest } from '@/lib/types';
-import { eachDayOfInterval, format, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
+import { payrollWeekConverter, employeeConverter, attendanceConverter, cashAdvanceConverter, projectConverter, certificationConverter, fundRequestConverter } from '@/lib/converters';
 
-const parseNumber = (value: any): number => {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const num = parseFloat(cleanedString);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
-
-const payrollWeekConverter = { toFirestore: (data: PayrollWeek): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek) };
-const employeeConverter = { toFirestore: (data: Employee): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => ({ ...snapshot.data(options), id: snapshot.id, dailyWage: parseNumber(snapshot.data(options)!.dailyWage) } as Employee) };
-const attendanceConverter = { toFirestore: (data: Attendance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => ({ ...snapshot.data(options), id: snapshot.id, lateHours: parseNumber(snapshot.data(options)!.lateHours) } as Attendance) };
-const cashAdvanceConverter = { toFirestore: (data: CashAdvance): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options)!.amount) } as CashAdvance) };
-const projectConverter = { toFirestore: (data: Project): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project) };
-const certificationConverter = { toFirestore: (data: ContractorCertification): DocumentData => data, fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => ({ ...snapshot.data(options), id: snapshot.id, amount: parseNumber(snapshot.data(options)!.amount) } as ContractorCertification) };
-const fundRequestConverter = {
-    toFirestore(request: FundRequest): DocumentData {
-        const { id, ...data } = request;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): FundRequest {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            requesterId: data.requesterId,
-            requesterName: data.requesterName,
-            date: data.date,
-            category: data.category,
-            projectId: data.projectId,
-            projectName: data.projectName,
-            amount: parseNumber(data.amount),
-            currency: data.currency,
-            exchangeRate: parseNumber(data.exchangeRate || 1),
-            status: data.status,
-            description: data.description,
-        };
-    }
-};
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 
@@ -103,33 +61,42 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
   const weeklyFundRequests = useMemo(() => {
     if (!allFundRequests || !week) return [];
-    return allFundRequests.filter(req => {
-        const reqDate = parseISO(req.date);
-        return reqDate >= parseISO(week.startDate) && reqDate <= parseISO(week.endDate);
+    const weekStart = parseISO(week.startDate);
+    const weekEnd = parseISO(week.endDate);
+    weekEnd.setHours(23, 59, 59, 999); 
+    
+    return allFundRequests.filter((req: FundRequest) => {
+        if (!req.date) return false;
+        try {
+            const reqDate = parseISO(req.date);
+            return reqDate >= weekStart && reqDate <= weekEnd;
+        } catch (e) {
+            return false;
+        }
     });
   }, [allFundRequests, week]);
 
   const projectsMap = useMemo(() => {
     if (!projects) return new Map<string, string>();
-    return new Map(projects.map(p => [p.id, p.name]));
+    return new Map(projects.map((p: Project) => [p.id, p.name]));
   }, [projects]);
 
   const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
     if (!week || !employees || !attendances || !advances) return [];
 
-    return employees.map(employee => {
-      const employeeAttendances = attendances.filter(a => a.employeeId === employee.id);
-      const employeeAdvances = advances.filter(a => a.employeeId === employee.id);
+    return employees.map((employee: Employee) => {
+      const employeeAttendances = attendances.filter((a: Attendance) => a.employeeId === employee.id);
+      const employeeAdvances = advances.filter((a: CashAdvance) => a.employeeId === employee.id);
 
-      const daysPresent = employeeAttendances.filter(a => a.status === 'presente').length;
-      const daysAbsent = employeeAttendances.filter(a => a.status === 'ausente').length;
-      const totalLateHours = employeeAttendances.reduce((sum, a) => sum + a.lateHours, 0);
+      const daysPresent = employeeAttendances.filter((a: Attendance) => a.status === 'presente').length;
+      const daysAbsent = employeeAttendances.filter((a: Attendance) => a.status === 'ausente').length;
+      const totalLateHours = employeeAttendances.reduce((sum: number, a: Attendance) => sum + a.lateHours, 0);
       
       const hourlyRate = (employee.dailyWage || 0) / 8; // Assuming 8-hour day
       const lateHoursDeduction = totalLateHours * hourlyRate;
       
       const grossPay = daysPresent * (employee.dailyWage || 0);
-      const totalAdvances = employeeAdvances.reduce((sum, ad) => sum + ad.amount, 0);
+      const totalAdvances = employeeAdvances.reduce((sum: number, ad: CashAdvance) => sum + ad.amount, 0);
       const netPay = grossPay - totalAdvances - lateHoursDeduction;
 
       return {
@@ -147,7 +114,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
           netPay,
         }
       };
-    }).filter(data => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
+    }).filter((data: EmployeeReceiptData) => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
   }, [week, employees, attendances, advances]);
 
   if (isLoading) {
@@ -168,7 +135,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
             <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
               {weeklyFundRequests?.length === 0 ? (
                 <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay solicitudes aprobadas para esta semana.</div>
-              ) : weeklyFundRequests?.map(req => (
+              ) : weeklyFundRequests?.map((req: FundRequest) => (
                 <div key={req.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border print:text-[10px]">
                     <header className="flex justify-between items-start border-b pb-2 print:pb-1">
                         <div>
@@ -222,7 +189,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   }
   
   if (type === 'contractors') {
-    const contractorReceipts = certifications?.filter(c => c.status === 'Aprobado' || c.status === 'Pagado');
+    const contractorReceipts = certifications?.filter((c: ContractorCertification) => c.status === 'Aprobado' || c.status === 'Pagado');
     return (
         <div className="p-4 sm:p-8">
             <div className="flex justify-between items-center mb-8 no-print">
@@ -232,7 +199,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
             <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
               {contractorReceipts?.length === 0 ? (
                 <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay certificaciones aprobadas para esta semana.</div>
-              ) : contractorReceipts?.map(cert => (
+              ) : contractorReceipts?.map((cert: ContractorCertification) => (
                 <div key={cert.id} className="p-4 bg-white rounded-lg shadow-md break-inside-avoid print:p-2 print:shadow-none print:border print:text-[10px]">
                     <header className="flex justify-between items-start border-b pb-2 print:pb-1">
                         <div>
@@ -290,9 +257,9 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
       <div className="grid grid-cols-1 gap-4 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
         {employeeReceiptsData.length === 0 && <div className="flex h-64 items-center justify-center rounded-md border border-dashed col-span-full">No hay actividad registrada para empleados esta semana.</div>}
-        {employeeReceiptsData.map(data => {
+        {employeeReceiptsData.map((data: EmployeeReceiptData) => {
             const projectAttendanceSummary = Object.entries(
-                data.attendance.reduce((acc, attendance) => {
+                data.attendance.reduce((acc: Record<string, { days: number; earnings: number }>, attendance: Attendance) => {
                   if (attendance.status === 'presente' && attendance.projectId) {
                     const projectName = projectsMap.get(attendance.projectId) || 'Obra no asignada';
                     const wage = data.employee.dailyWage || 0;
@@ -352,7 +319,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
               <div>
                 <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Deducciones</h4>
                  <div className="space-y-0.5 text-xs print:text-[9px]">
-                    {data.advances.length > 0 && data.advances.map(adv => (
+                    {data.advances.length > 0 && data.advances.map((adv: CashAdvance) => (
                        <div key={adv.id} className="flex justify-between">
                          <span>Adelanto ({format(parseISO(adv.date), 'dd/MM')}):</span>
                          <span>({formatCurrency(adv.amount)})</span>

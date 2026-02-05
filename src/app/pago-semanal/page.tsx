@@ -110,7 +110,7 @@ export default function PagoSemanalPage() {
         const weekEnd = parseISO(currentWeek.endDate);
         weekEnd.setHours(23, 59, 59, 999); // Include the whole last day
 
-        return allRequests.filter(req => {
+        return allRequests.filter((req: FundRequest) => {
             if (!req.date) return false;
             try {
                 const reqDate = parseISO(req.date);

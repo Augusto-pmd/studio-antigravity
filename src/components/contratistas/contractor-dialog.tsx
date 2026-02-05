@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition, useMemo } from "react";
 import {
@@ -98,7 +98,7 @@ export function ContractorDialog({
             const projectBudget = contractor.budgets[projectId];
             initialBudgets[projectId] = {
                 initial: projectBudget?.initial?.toString() || '',
-                additionals: projectBudget?.additionals?.map(ad => ({
+                additionals: projectBudget?.additionals?.map((ad: { amount: number; description: string }) => ({
                     ...ad,
                     id: doc(collection(firestore!, 'dummy')).id, 
                     amount: ad.amount.toString(),
@@ -145,11 +145,11 @@ export function ContractorDialog({
             budgets: Object.entries(budgets).reduce((acc, [projectId, budgetData]) => {
                 const initial = parseFloat(budgetData.initial);
                 const additionals = budgetData.additionals
-                    .map(ad => ({
+                    .map((ad: { amount: string; description: string }) => ({
                         amount: parseFloat(ad.amount) || 0,
                         description: ad.description
                     }))
-                    .filter(ad => ad.amount > 0);
+                    .filter((ad: { amount: number; description: string }) => ad.amount > 0);
 
                 const budgetEntry: { initial?: number, additionals?: { amount: number; description: string }[] } = {};
                 if (!isNaN(initial) && initial > 0) budgetEntry.initial = initial;
@@ -223,7 +223,7 @@ export function ContractorDialog({
         ...prev,
         [projectId]: {
             ...prev[projectId],
-            additionals: prev[projectId].additionals.filter(ad => ad.id !== additionalId)
+            additionals: prev[projectId].additionals.filter((ad: { id: string; }) => ad.id !== additionalId)
         }
         }));
     };
@@ -240,7 +240,7 @@ export function ContractorDialog({
         ...prev,
         [projectId]: {
             ...prev[projectId],
-            additionals: prev[projectId].additionals.map(ad => 
+            additionals: prev[projectId].additionals.map((ad: { id: string; amount: string; description: string }) => 
             ad.id === additionalId ? { ...ad, [field]: value } : ad
             )
         }
@@ -248,10 +248,10 @@ export function ContractorDialog({
     };
 
     const getProjectName = (projectId: string) => {
-        return projects?.find(p => p.id === projectId)?.name || 'Obra desconocida';
+        return projects?.find((p: Project) => p.id === projectId)?.name || 'Obra desconocida';
     }
   
-    const unassignedProjects = projects?.filter(p => !Object.keys(budgets).includes(p.id)) || [];
+    const unassignedProjects = projects?.filter((p: Project) => !Object.keys(budgets).includes(p.id)) || [];
 
 
   return (
@@ -382,7 +382,7 @@ export function ContractorDialog({
                             <div className="space-y-2">
                                 <Label>Adicionales</Label>
                                 {budgetData.additionals.length === 0 && <p className="text-xs text-muted-foreground">No hay adicionales para esta obra.</p>}
-                                {budgetData.additionals.map(ad => (
+                                {budgetData.additionals.map((ad: { id: string; description: string; amount: string; }) => (
                                     <div key={ad.id} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
                                         <Input type="text" placeholder="Descripción del adicional" value={ad.description} onChange={e => handleAdditionalChange(projectId, ad.id, 'description', e.target.value)} />
                                         <Input type="number" placeholder="Monto" value={ad.amount} onChange={e => handleAdditionalChange(projectId, ad.id, 'amount', e.target.value)} className="w-32" />
@@ -415,7 +415,7 @@ export function ContractorDialog({
                                     <SelectValue placeholder={unassignedProjects.length > 0 ? "Seleccionar obra" : "No hay más obras para asignar"} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {unassignedProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    {unassignedProjects.map((p: Project) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

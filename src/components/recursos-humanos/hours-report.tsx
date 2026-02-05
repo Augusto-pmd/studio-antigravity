@@ -131,7 +131,7 @@ export function HoursReport() {
             projectReport.totalHours += (log.hours || 0);
             projectReport.totalCost += cost;
 
-            let employeeEntry = projectReport.employees.find(e => e.employeeId === log.userId);
+            let employeeEntry = projectReport.employees.find((e: { employeeId: string; }) => e.employeeId === log.userId);
             if (!employeeEntry) {
                 employeeEntry = {
                     employeeId: log.userId,
@@ -148,7 +148,7 @@ export function HoursReport() {
             reportByProject.set(log.projectId, projectReport);
         });
         
-        return Array.from(reportByProject.values()).sort((a,b) => b.totalCost - a.totalCost);
+        return Array.from(reportByProject.values()).sort((a: ReportData, b: ReportData) => b.totalCost - a.totalCost);
 
     }, [isLoading, employees, timeLogs, projects, selectedMonth]);
 
@@ -183,7 +183,7 @@ export function HoursReport() {
                     </div>
                 ) : (
                     <Accordion type="single" collapsible className="w-full space-y-4">
-                        {reportData.map((projectData) => (
+                        {reportData.map((projectData: ReportData) => (
                             <AccordionItem value={projectData.projectId} key={projectData.projectId} className="border rounded-lg bg-background">
                                 <AccordionTrigger className="px-4 hover:no-underline text-left">
                                     <div className="flex items-center justify-between w-full flex-wrap gap-4">
@@ -211,7 +211,7 @@ export function HoursReport() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {projectData.employees.sort((a,b) => b.cost - a.cost).map(emp => (
+                                                {projectData.employees.sort((a: any, b: any) => b.cost - a.cost).map((emp: any) => (
                                                     <TableRow key={emp.employeeId}>
                                                         <TableCell className="font-medium">{emp.employeeName}</TableCell>
                                                         <TableCell className="text-right font-mono">{emp.hours.toFixed(1)}</TableCell>

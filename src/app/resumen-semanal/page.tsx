@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -100,7 +100,7 @@ export default function ResumenSemanalPage() {
         const weekEnd = parseISO(currentWeek.endDate);
         weekEnd.setHours(23, 59, 59, 999); 
 
-        return allFundRequests.filter(req => {
+        return allFundRequests.filter((req: FundRequest) => {
             if (!req.date) return false;
             try {
                 const reqDate = parseISO(req.date);
@@ -142,9 +142,9 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage)]));
+            const employeeMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
-            projects.forEach(p => {
+            projects.forEach((p: Project) => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
             });
 
@@ -180,7 +180,7 @@ export default function ResumenSemanalPage() {
             }, 0);
 
             const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
-            const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
+            const breakdown = Array.from(projectMap.values()).filter((p: any) => p.personal || p.contratistas || p.solicitudes);
             
             const finalSummary = {
                 totalPersonal,
@@ -314,7 +314,7 @@ export default function ResumenSemanalPage() {
                                         {summary?.breakdown.length === 0 ? (
                                             <TableRow><TableCell colSpan={5} className="h-24 text-center">No hay costos imputados a obras esta semana.</TableCell></TableRow>
                                         ) : (
-                                            summary?.breakdown.map((item) => {
+                                            summary?.breakdown.map((item: any) => {
                                                 const subtotal = item.personal + item.contratistas + item.solicitudes;
                                                 return (
                                                     <TableRow key={item.id}>

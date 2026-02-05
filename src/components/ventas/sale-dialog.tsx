@@ -312,7 +312,7 @@ export function SaleDialog({
             <Textarea
               id="description"
               value={description}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+              onChange={(e: any) => setDescription(e.target.value)}
               placeholder="Ej. Factura por avance de obra..."
             />
           </div>

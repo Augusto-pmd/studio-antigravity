@@ -87,7 +87,7 @@ export function ViewTreasuryTransactionsDialog({ account, children }: { account:
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                    {isLoading && Array.from({ length: 5 }).map((_: any, i: number) => (
                         <TableRow key={`skel-${i}`}>
                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-full" /></TableCell>

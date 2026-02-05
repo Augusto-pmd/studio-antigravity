@@ -59,14 +59,14 @@ export function StatsCards() {
             return { annualRevenue: 0, annualResult: 0, totalAssets: 0 };
         }
 
-        const annualRevenue = allSales.reduce((sum, sale) => {
+        const annualRevenue = allSales.reduce((sum: number, sale: Sale) => {
             if (getYear(parseISO(sale.date)) === currentYear && sale.status === 'Cobrado') {
                 return sum + sale.totalAmount;
             }
             return sum;
         }, 0);
 
-        const annualExpenses = allExpenses.reduce((sum, expense) => {
+        const annualExpenses = allExpenses.reduce((sum: number, expense: Expense) => {
              if (getYear(parseISO(expense.date)) === currentYear && expense.status === 'Pagado') {
                 const amountInARS = expense.currency === 'USD' ? expense.amount * expense.exchangeRate : expense.amount;
                 return sum + amountInARS;
@@ -76,7 +76,7 @@ export function StatsCards() {
         
         const annualResult = annualRevenue - annualExpenses;
 
-        const totalAssets = allAssets.reduce((sum, asset) => {
+        const totalAssets = allAssets.reduce((sum: number, asset: Asset) => {
             if (asset.currency === 'ARS') {
                 return sum + asset.purchaseValue;
             }

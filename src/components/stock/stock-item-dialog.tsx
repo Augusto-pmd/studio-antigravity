@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -77,7 +77,7 @@ export function StockItemDialog({
 
     startTransition(() => {
       const collectionRef = collection(firestore, 'stockItems');
-      const docRef = isEditMode ? doc(collectionRef, item.id) : doc(collectionRef);
+      const docRef = isEditMode && item ? doc(collectionRef, item.id) : doc(collectionRef);
       
       if (!category) {
           toast({ variant: 'destructive', title: 'Error Interno', description: 'La categoría no fue seleccionada.' });

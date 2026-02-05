@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useTransition } from "react";
 import {
@@ -86,7 +86,7 @@ export function SupplierDialog({
 
     startTransition(() => {
       const suppliersCollection = collection(firestore, 'suppliers');
-      const supplierRef = isEditMode ? doc(suppliersCollection, supplier.id) : doc(suppliersCollection);
+      const supplierRef = isEditMode && supplier ? doc(suppliersCollection, supplier.id) : doc(suppliersCollection);
       const supplierId = supplierRef.id;
 
       const supplierData: Supplier = {

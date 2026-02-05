@@ -122,7 +122,7 @@ export function RequestFundDialog() {
 
     setIsPending(true);
     try {
-      const selectedProject = projects?.find((p) => p.id === projectId);
+      const selectedProject = projects?.find((p: Project) => p.id === projectId);
 
       const fundRequestsCollection = collection(firestore, 'fundRequests');
       const requestRef = doc(fundRequestsCollection);
@@ -188,7 +188,7 @@ export function RequestFundDialog() {
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {fundRequestCategories.map((c) => (
+                {fundRequestCategories.map((c: string) => (
                   <SelectItem key={c} value={c}>
                     {c}
                   </SelectItem>
@@ -205,8 +205,8 @@ export function RequestFundDialog() {
               </SelectTrigger>
               <SelectContent>
                 {projects
-                  ?.filter((p) => p.status === 'En Curso')
-                  .map((p) => (
+                  ?.filter((p: Project) => p.status === 'En Curso')
+                  .map((p: Project) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name}
                     </SelectItem>
@@ -220,7 +220,7 @@ export function RequestFundDialog() {
             <Textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e: any) => setDescription(e.target.value)}
               placeholder="Añada un detalle o motivo para la solicitud."
             />
           </div>
@@ -260,7 +260,7 @@ export function RequestFundDialog() {
             <Label>Moneda</Label>
             <RadioGroup
               value={currency}
-              onValueChange={(value) => setCurrency(value as 'ARS' | 'USD')}
+              onValueChange={(value: any) => setCurrency(value as 'ARS' | 'USD')}
               className="flex items-center gap-6 pt-1"
             >
               <div className="flex items-center space-x-2">

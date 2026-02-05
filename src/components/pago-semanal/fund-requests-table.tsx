@@ -49,7 +49,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
       return;
     }
     
-    const request = requests?.find(r => r.id === requestId);
+    const request = requests?.find((r: FundRequest) => r.id === requestId);
     if (!request) {
         toast({ variant: 'destructive', title: 'Error', description: 'Solicitud no encontrada.' });
         return;
@@ -140,7 +140,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                       </TableCell>
                   </TableRow>
                 )}
-                {!isLoading && requests?.map(req => {
+                {!isLoading && requests?.map((req: FundRequest) => {
                     const isOwner = user?.uid === req.requesterId;
                     const canChangeStatus = isAdmin && req.status !== 'Pagado';
                     const canDelete = (isOwner || isAdmin) && ['Pendiente', 'Rechazado', 'Aplazado'].includes(req.status);

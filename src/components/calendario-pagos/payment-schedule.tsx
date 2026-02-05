@@ -123,7 +123,7 @@ export function PaymentSchedule() {
     })
 
     // Filter out items with invalid dates before sorting
-    const validItems = processedItems.filter(item => item.date && !isNaN(item.date.getTime()));
+    const validItems = processedItems.filter((item: any) => item.date && !isNaN(item.date.getTime()));
 
     // Sort all valid items by date
     return validItems.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -140,7 +140,7 @@ export function PaymentSchedule() {
 
     if (!allItems) return groups;
 
-    return allItems.reduce((acc, item) => {
+    return allItems.reduce((acc: any, item: any) => {
       // This check is now safer because allItems only contains valid dates
       if (isBefore(item.date, todayStart)) {
         acc.overdue.push(item);

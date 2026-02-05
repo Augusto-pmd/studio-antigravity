@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useTransition, useEffect, ChangeEvent, useMemo, useRef } from "react";
 import {
@@ -110,7 +110,7 @@ export function AddExpenseDialog({
   const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
-  const project = useMemo(() => projects?.find(p => p.id === selectedProject), [selectedProject, projects]);
+  const project = useMemo(() => projects?.find((p: Project) => p.id === selectedProject), [selectedProject, projects]);
   const isContractBlocked = project?.balance === 0;
   const isSupplierBlocked = false; 
 
@@ -193,13 +193,13 @@ export function AddExpenseDialog({
             }
 
             if (extractedData.supplierCuit && suppliers) {
-                const matchedSupplier = suppliers.find(s => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
+                const matchedSupplier = suppliers.find((s: Supplier) => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
                 if (matchedSupplier) {
                     setSelectedSupplier(matchedSupplier.id);
                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
                 }
             } else if (extractedData.supplierName && suppliers) {
-                 const matchedSupplier = suppliers.find(s => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
+                 const matchedSupplier = suppliers.find((s: Supplier) => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
                  if (matchedSupplier) {
                      setSelectedSupplier(matchedSupplier.id);
                      toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
@@ -233,7 +233,7 @@ export function AddExpenseDialog({
     startTransition(() => {
       setIsSaving(true);
       const saveData = async () => {
-        const projectId = isEditMode ? expense.projectId : selectedProject;
+        const projectId = isEditMode && expense ? expense.projectId : selectedProject;
         const expenseRef = isEditMode
           ? doc(firestore, 'projects', projectId, 'expenses', expense.id)
           : doc(collection(firestore, 'projects', projectId, 'expenses'));
@@ -384,7 +384,7 @@ export function AddExpenseDialog({
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>
               <SelectContent>
-                {projects?.map((p) => (
+                {projects?.map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
@@ -426,7 +426,7 @@ export function AddExpenseDialog({
                 <SelectValue placeholder="Seleccione un proveedor" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers?.map((s) => (
+                {suppliers?.map((s: Supplier) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
                   </SelectItem>
@@ -441,7 +441,7 @@ export function AddExpenseDialog({
                 <SelectValue placeholder="Seleccione un rubro" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map((c) => (
+                {expenseCategories.map((c: {id: string; name: string}) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>

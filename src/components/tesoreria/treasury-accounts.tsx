@@ -58,7 +58,7 @@ export function TreasuryAccounts() {
             )}
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {accounts?.map(account => (
+                {accounts?.map((account: TreasuryAccount) => (
                     <Card key={account.id}>
                         <CardHeader>
                             <div className="flex items-start justify-between">

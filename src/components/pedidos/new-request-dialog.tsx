@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useTransition, useMemo } from "react";
 import {
@@ -68,7 +68,7 @@ export function NewRequestDialog() {
       const taskRef = doc(tasksCollection);
       const taskId = taskRef.id;
 
-      const selectedAssignee = users?.find(u => u.id === assigneeId);
+      const selectedAssignee = users?.find((u: UserProfile) => u.id === assigneeId);
 
       if (!selectedAssignee) {
           toast({ variant: 'destructive', title: 'Error', description: 'El usuario asignado no es válido.' });
@@ -140,7 +140,7 @@ export function NewRequestDialog() {
                 <SelectValue placeholder={isLoadingUsers ? "Cargando usuarios..." : "Seleccione un usuario"} />
               </SelectTrigger>
               <SelectContent>
-                {users?.filter(u => u.id !== user?.uid).map((profile) => (
+                {users?.filter((u: UserProfile) => u.id !== user?.uid).map((profile: UserProfile) => (
                   <SelectItem key={profile.id} value={profile.id}>
                     {profile.fullName} ({profile.role})
                   </SelectItem>
@@ -168,7 +168,7 @@ export function NewRequestDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Ninguna</SelectItem>
-                {(projects || []).filter(p => p.status === 'En Curso').map((p) => (
+                {(projects || []).filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>

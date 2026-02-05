@@ -123,7 +123,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
   const activeEmployees = useMemo(() => {
     if (!employees) return [];
     return employees.filter(
-      (emp) => emp.status === 'Activo'
+      (emp: Employee) => emp.status === 'Activo'
     );
   }, [employees]);
 
@@ -149,7 +149,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     const newAttendanceState: Record<string, AttendanceRecord> = {};
     
     if (dayAttendances && dayAttendances.length > 0) {
-        dayAttendances.forEach(att => {
+        dayAttendances.forEach((att: Attendance) => {
             newAttendanceState[att.employeeId] = {
                 status: att.status,
                 lateHours: att.lateHours || 0,
@@ -158,7 +158,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
             };
         });
     } else {
-        activeEmployees.forEach(emp => {
+        activeEmployees.forEach((emp: Employee) => {
             newAttendanceState[emp.id] = {
                 status: 'ausente',
                 lateHours: 0,
@@ -196,13 +196,13 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
       'unassigned': { name: 'Sin Asignar a Obra', employees: [] }
     };
     
-    projects.forEach(p => {
+    projects.forEach((p: Project) => {
         if (p.status === 'En Curso') {
             initialGroups[p.id] = { name: p.name, employees: [] };
         }
     });
 
-    activeEmployees.forEach(employee => {
+    activeEmployees.forEach((employee: Employee) => {
         const employeeAttendance = getEmployeeAttendance(employee.id);
         const projectId = employeeAttendance?.projectId;
 
@@ -214,8 +214,8 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     });
 
     const sortedGroupEntries = Object.entries(initialGroups)
-        .filter(([_, groupData]) => groupData.employees.length > 0)
-        .sort(([idA, groupDataA], [idB, groupDataB]) => {
+        .filter(([_, groupData]: [string, any]) => groupData.employees.length > 0)
+        .sort(([idA, groupDataA]: [string, any], [idB, groupDataB]: [string, any]) => {
             if (idA === 'unassigned') return -1;
             if (idB === 'unassigned') return 1;
             return groupDataA.name.localeCompare(groupDataB.name);
@@ -261,7 +261,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     startTransition(async () => {
         try {
             const dateStr = format(dateToSave, 'yyyy-MM-dd');
-            const activeEmployeeIds = new Set(activeEmployees.map(e => e.id));
+            const activeEmployeeIds = new Set(activeEmployees.map((e: Employee) => e.id));
             
             const existingLogsQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
             const existingLogsSnap = await getDocs(existingLogsQuery);
@@ -270,7 +270,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
 
             // CRITICAL FIX: Only delete documents for employees that are currently active and being managed.
             // This prevents deleting attendance data for inactive employees or other potential errors.
-            existingLogsSnap.forEach(doc => {
+            existingLogsSnap.forEach((doc: any) => {
                 if (activeEmployeeIds.has(doc.data().employeeId)) {
                     batch.delete(doc.ref);
                 }
@@ -406,7 +406,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
               </PopoverContent>
             </Popover>
             <div className="flex-1 flex justify-center items-center gap-1 rounded-md bg-muted p-1 flex-wrap">
-              {isClient && weekDays.map(day => (
+              {isClient && weekDays.map((day: Date) => (
                 <Button
                   key={day.toISOString()}
                   variant={selectedDate && isSameDay(day, selectedDate) ? 'default' : 'ghost'}
@@ -446,7 +446,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
                 </div>
             ) : Object.keys(groupedEmployees).length > 0 ? (
                 <Accordion type="multiple" defaultValue={['unassigned']} className="w-full space-y-4">
-                {Object.entries(groupedEmployees).map(([projectId, groupData]) => {
+                {Object.entries(groupedEmployees).map(([projectId, groupData]: [string, any]) => {
                     if (groupData.employees.length === 0) return null;
                     
                     return (
@@ -460,7 +460,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
                             <AccordionContent className="p-0 md:p-4">
                                 {/* Mobile View */}
                                 <div className="md:hidden flex flex-col gap-4 p-4">
-                                    {groupData.employees.map((employee) => (
+                                    {groupData.employees.map((employee: Employee) => (
                                         <Card key={employee.id}>
                                             <CardHeader>
                                                 <CardTitle>{employee.name}</CardTitle>
@@ -484,7 +484,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {groupData.employees.map((employee) => {
+                                        {groupData.employees.map((employee: Employee) => {
                                             const employeeAttendance = getEmployeeAttendance(employee.id);
                                             const isPresent = employeeAttendance.status === 'presente';
 
