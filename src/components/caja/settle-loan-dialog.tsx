@@ -40,7 +40,7 @@ export function SettleLoanDialog({ transaction, accounts }: { transaction: CashT
         let account2: CashAccount | undefined;
 
         // Find account1 (the account of the current transaction)
-        const currentAccount = accounts.find(acc => {
+        const currentAccount = accounts.find((acc: CashAccount) => {
             // This is a bit of a hack since transaction doesn't have accountId
             // We find the account whose accordion is open, which is passed down
             // In a more complex app, we might need a better way to find this.
@@ -52,7 +52,7 @@ export function SettleLoanDialog({ transaction, accounts }: { transaction: CashT
         for (const acc of accounts) {
             const q = query(collection(firestore, `users/${user.uid}/cashAccounts/${acc.id}/transactions`), where('transferId', '==', transaction.transferId));
             const snap = await getDocs(q);
-            if (!snap.empty && snap.docs.some(d => d.id === transaction.id)) {
+            if (!snap.empty && snap.docs.some((d: any) => d.id === transaction.id)) {
                 account1 = acc;
                 break;
             }

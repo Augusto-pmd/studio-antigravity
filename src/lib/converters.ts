@@ -7,7 +7,7 @@ import {
   type Timestamp,
   type DocumentSnapshot,
 } from 'firebase/firestore';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import type {
   Project,
   Expense,
@@ -83,6 +83,7 @@ export const expenseConverter = {
       retencionIVA: parseNumber(data.retencionIVA),
       retencionIIBB: parseNumber(data.retencionIIBB),
       retencionSUSS: parseNumber(data.retencionSUSS),
+      status: data.status,
     } as Expense;
   },
 };

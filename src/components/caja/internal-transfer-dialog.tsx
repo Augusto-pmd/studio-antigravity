@@ -43,10 +43,10 @@ export function InternalTransferDialog({
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   
-  const sourceAccount = useMemo(() => accounts.find(a => a.id === sourceAccountId), [accounts, sourceAccountId]);
+  const sourceAccount = useMemo(() => accounts.find((a: CashAccount) => a.id === sourceAccountId), [accounts, sourceAccountId]);
 
   const availableDestinationAccounts = useMemo(() => {
-      return accounts.filter(a => a.id !== sourceAccountId);
+      return accounts.filter((a: CashAccount) => a.id !== sourceAccountId);
   }, [accounts, sourceAccountId]);
 
   useEffect(() => {
@@ -85,8 +85,8 @@ export function InternalTransferDialog({
         const batch = writeBatch(firestore);
         const transferId = doc(collection(firestore, 'dummy')).id;
 
-        const sourceAccount = accounts.find(a => a.id === sourceAccountId)!;
-        const destAccount = accounts.find(a => a.id === destinationAccountId)!;
+        const sourceAccount = accounts.find((a: CashAccount) => a.id === sourceAccountId)!;
+        const destAccount = accounts.find((a: CashAccount) => a.id === destinationAccountId)!;
 
         // Transaction 1: Egreso from source
         const egresoRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${sourceAccountId}/transactions`));
@@ -157,7 +157,7 @@ export function InternalTransferDialog({
                 <Select onValueChange={setSourceAccountId} value={sourceAccountId}>
                     <SelectTrigger id="source-account"><SelectValue placeholder="Seleccione una caja" /></SelectTrigger>
                     <SelectContent>
-                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance, acc.currency)})</SelectItem>)}
+                        {accounts.map((acc: CashAccount) => <SelectItem key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance, acc.currency)})</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>
@@ -166,7 +166,7 @@ export function InternalTransferDialog({
                 <Select onValueChange={setDestinationAccountId} value={destinationAccountId} disabled={!sourceAccountId}>
                     <SelectTrigger id="destination-account"><SelectValue placeholder="Seleccione una caja" /></SelectTrigger>
                     <SelectContent>
-                        {availableDestinationAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance, acc.currency)})</SelectItem>)}
+                        {availableDestinationAccounts.map((acc: CashAccount) => <SelectItem key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance, acc.currency)})</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>

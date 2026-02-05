@@ -30,7 +30,7 @@ const supplierConverter = {
 
 const expenseConverter = {
     toFirestore: (data: Expense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id } as Expense)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => ({ ...snapshot.data(options), id: snapshot.id, status: snapshot.data(options)!.status } as Expense)
 };
 
 const timeLogConverter = {
@@ -92,9 +92,9 @@ export default function GastosPage() {
   const officeExpenses = useMemo((): Expense[] => {
     if (!allTimeLogs || !techOfficeEmployees) return [];
 
-    const employeeSalaryMap = new Map(techOfficeEmployees.map((e) => [e.userId, { salary: e.monthlySalary, name: e.fullName }]));
+    const employeeSalaryMap = new Map(techOfficeEmployees.map((e: TechnicalOfficeEmployee) => [e.userId, { salary: e.monthlySalary, name: e.fullName }]));
 
-    return allTimeLogs.map((log: any) => {
+    return allTimeLogs.map((log: any): Expense | null => {
       const employeeData = employeeSalaryMap.get(log.userId);
       if (!employeeData) return null;
 
@@ -122,9 +122,9 @@ export default function GastosPage() {
   const payrollExpenses = useMemo((): Expense[] => {
     if (!attendances || !siteEmployees) return [];
     
-    const employeeWageMap = new Map(siteEmployees.map(e => [e.id, { wage: e.dailyWage, name: e.name }]));
+    const employeeWageMap = new Map(siteEmployees.map((e: Employee) => [e.id, { wage: e.dailyWage, name: e.name }]));
 
-    return attendances.map((att: Attendance) => {
+    return attendances.map((att: Attendance): Expense | null => {
         if (att.status !== 'presente' || !att.projectId) return null;
         
         const employeeData = employeeWageMap.get(att.employeeId);
@@ -160,7 +160,7 @@ export default function GastosPage() {
   // Combine real and virtual expenses, then filter
   const displayedExpenses = useMemo(() => {
     const combined = [...(allExpenses || []), ...officeExpenses, ...payrollExpenses];
-    return combined.filter(expense => {
+    return combined.filter((expense: Expense) => {
       const projectMatch = !selectedProject || expense.projectId === selectedProject;
       const supplierMatch = !selectedSupplier || expense.supplierId === selectedSupplier;
       const categoryMatch = !selectedCategory || expense.categoryId === selectedCategory;
