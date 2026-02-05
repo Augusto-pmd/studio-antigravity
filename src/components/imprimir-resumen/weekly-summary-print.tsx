@@ -36,7 +36,7 @@ type SummaryData = {
 
 export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, endDate: string }) {
     const firestore = useFirestore();
-    const [weekId, setWeekId] = useState<string | null>(null);
+    const [weekId, setWeekId] = useState<string | null | undefined>(undefined);
 
     // --- Data Fetching Hooks ---
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
@@ -47,23 +47,23 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
     
     // Find weekId based on start date
     useEffect(() => {
-        if (!firestore) return;
+        if (!firestore || !startDate) return;
+        let isMounted = true;
         const findWeek = async () => {
+            setWeekId(undefined); // Set to loading state
             const weekQuery = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', startDate), limit(1));
             const weekSnap = await getDocs(weekQuery);
-            if (!weekSnap.empty) {
-                setWeekId(weekSnap.docs[0].id);
-            } else {
-                // If week is not found after a delay, stop loading, as it may not exist.
-                setTimeout(() => {
-                    if (!weekId) {
-                        setWeekId(null); // Explicitly set to null to stop loading
-                    }
-                }, 3000);
+            if (isMounted) {
+                if (!weekSnap.empty) {
+                    setWeekId(weekSnap.docs[0].id);
+                } else {
+                    setWeekId(null); // Not found
+                }
             }
         };
         findWeek();
-    }, [firestore, startDate, weekId]);
+        return () => { isMounted = false; }
+    }, [firestore, startDate]);
 
     const attendancesQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
@@ -79,7 +79,7 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         const start = parseISO(startDate);
         const end = parseISO(endDate);
         end.setHours(23, 59, 59, 999); 
-        return allFundRequests.filter(req => {
+        return allFundRequests.filter((req: FundRequest) => {
             if (!req.date) return false;
             try {
                 const reqDate = parseISO(req.date);
@@ -94,9 +94,9 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
     const summary = useMemo((): SummaryData | null => {
         if (isLoading || !employees || !projects) return null;
 
-        const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage]));
+        const employeeMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
         const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
-        projects.forEach(p => { if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }); });
+        projects.forEach((p: Project) => { if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }); });
 
         const totalPersonal = (attendances || []).reduce((sum, att) => {
             if (att.status === 'presente') {
@@ -136,8 +136,8 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Generando resumen...</span></div>;
     }
 
-    if (!summary) {
-        return <div className="flex h-screen items-center justify-center">Error al calcular el resumen. No se encontró la semana de pago.</div>;
+    if (!summary || weekId === null) {
+        return <div className="flex h-screen items-center justify-center">Error al calcular el resumen. No se encontró la semana de pago o no hay datos para el rango de fechas seleccionado.</div>;
     }
 
     return (
