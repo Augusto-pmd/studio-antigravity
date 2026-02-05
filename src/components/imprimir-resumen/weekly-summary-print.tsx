@@ -101,8 +101,11 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         const totalPersonal = (attendances || []).reduce((sum, att) => {
             if (att.status === 'presente') {
                 const dailyGross = employeeMap.get(att.employeeId) || 0;
-                if (att.projectId && projectMap.has(att.projectId)) {
-                    projectMap.get(att.projectId)!.personal += dailyGross;
+                if (att.projectId) {
+                    const projectData = projectMap.get(att.projectId);
+                    if (projectData) {
+                        projectData.personal += dailyGross;
+                    }
                 }
                 return sum + dailyGross;
             }
@@ -111,16 +114,22 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         
         const totalContratistas = (certifications || []).reduce((sum, cert) => {
             const amount = cert.amount;
-            if (cert.projectId && projectMap.has(cert.projectId)) {
-                 projectMap.get(cert.projectId)!.contratistas += amount;
+            if (cert.projectId) {
+                const projectData = projectMap.get(cert.projectId);
+                if (projectData) {
+                    projectData.contratistas += amount;
+                }
             }
             return sum + amount;
         }, 0);
         
         const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
             const amount = req.currency === 'USD' ? req.amount * req.exchangeRate : req.amount;
-            if (req.projectId && projectMap.has(req.projectId)) {
-                projectMap.get(req.projectId)!.solicitudes += amount;
+            if (req.projectId) {
+                const projectData = projectMap.get(req.projectId);
+                if (projectData) {
+                    projectData.solicitudes += amount;
+                }
             }
             return sum + amount;
         }, 0);
