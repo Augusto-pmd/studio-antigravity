@@ -57,7 +57,7 @@ export const parseNumber = (value: any): number => {
 export const projectConverter = {
   toFirestore: (data: Project): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -71,7 +71,7 @@ export const projectConverter = {
 export const expenseConverter = {
   toFirestore: (data: Expense): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Expense => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -89,13 +89,13 @@ export const expenseConverter = {
 
 export const supplierConverter = {
     toFirestore: (data: Supplier): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(), id: snapshot.id } as Supplier)
 };
 
 export const employeeConverter = {
   toFirestore: (data: Employee): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Employee => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -107,7 +107,7 @@ export const employeeConverter = {
 export const attendanceConverter = {
   toFirestore: (data: Attendance): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Attendance => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -119,7 +119,7 @@ export const attendanceConverter = {
 export const cashAdvanceConverter = {
   toFirestore: (data: CashAdvance): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAdvance => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -131,7 +131,7 @@ export const cashAdvanceConverter = {
 export const fundRequestConverter = {
   toFirestore: (data: FundRequest): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -144,7 +144,7 @@ export const fundRequestConverter = {
 export const certificationConverter = {
   toFirestore: (data: ContractorCertification): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -155,13 +155,13 @@ export const certificationConverter = {
 
 export const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(options), id: snapshot.id } as PayrollWeek)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(), id: snapshot.id } as PayrollWeek)
 };
 
 export const techOfficeEmployeeConverter = {
     toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return { 
             ...data,
             id: snapshot.id,
@@ -173,7 +173,7 @@ export const techOfficeEmployeeConverter = {
 export const timeLogConverter = {
     toFirestore: (data: TimeLog): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         let dateStr: string = '';
         if (data.date) {
             if ((data.date as Timestamp)?.toDate && typeof (data.date as Timestamp).toDate === 'function') {
@@ -198,7 +198,7 @@ export const userProfileConverter = {
         return data;
     },
     fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions): UserProfile => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return {
             id: snapshot.id,
             role: data.role as Role,
@@ -212,7 +212,7 @@ export const userProfileConverter = {
 export const cashAccountConverter = {
     toFirestore: (data: CashAccount): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => {
-      const data = snapshot.data(options)!;
+      const data = snapshot.data()!;
       return {
         ...data,
         id: snapshot.id,
@@ -224,7 +224,7 @@ export const cashAccountConverter = {
 export const cashTransactionConverter = {
     toFirestore: (data: CashTransaction): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashTransaction => {
-      const data = snapshot.data(options)!;
+      const data = snapshot.data()!;
       return {
         ...data,
         id: snapshot.id,
@@ -236,7 +236,7 @@ export const cashTransactionConverter = {
 export const saleConverter = {
     toFirestore: (data: Sale): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return {
             ...data,
             id: snapshot.id,
@@ -253,7 +253,7 @@ export const saleConverter = {
 export const assetConverter = {
     toFirestore: (data: Asset): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Asset => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return {
             ...data,
             id: snapshot.id,
@@ -265,7 +265,7 @@ export const assetConverter = {
 export const contractorConverter = {
     toFirestore: (data: Contractor): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         const budgets = data.budgets || {};
         for(const projectId in budgets) {
             budgets[projectId].initial = parseNumber(budgets[projectId].initial);
@@ -281,19 +281,22 @@ export const contractorConverter = {
 
 export const contractorEmployeeConverter = {
     toFirestore: (data: ContractorEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => ({
-        id: snapshot.id,
-        name: snapshot.data().name,
-        contractorId: snapshot.data().contractorId,
-        artExpiryDate: snapshot.data().artExpiryDate,
-        documents: snapshot.data().documents || [],
-    } as ContractorEmployee)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => {
+        const data = snapshot.data()!;
+        return {
+            id: snapshot.id,
+            name: data.name,
+            contractorId: data.contractorId,
+            artExpiryDate: data.artExpiryDate,
+            documents: data.documents || [],
+        } as ContractorEmployee
+    }
 };
 
 export const monthlySalaryConverter = {
   toFirestore: (data: MonthlySalary): DocumentData => data,
   fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): MonthlySalary => {
-    const data = snapshot.data(options)!;
+    const data = snapshot.data()!;
     return {
       ...data,
       id: snapshot.id,
@@ -307,7 +310,7 @@ export const monthlySalaryConverter = {
 export const moratoriaConverter = {
     toFirestore: (data: Moratoria): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Moratoria => {
-      const data = snapshot.data(options)!;
+      const data = snapshot.data()!;
       return {
         ...data,
         id: snapshot.id,
@@ -323,7 +326,7 @@ export const moratoriaConverter = {
 export const recurringExpenseConverter = {
     toFirestore: (data: RecurringExpense): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): RecurringExpense => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return {
             ...data,
             id: snapshot.id,
@@ -335,7 +338,7 @@ export const recurringExpenseConverter = {
 export const stockItemConverter = {
     toFirestore: (data: StockItem): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): StockItem => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return {
             ...data,
             id: snapshot.id,
@@ -348,7 +351,7 @@ export const stockItemConverter = {
 export const stockMovementConverter = {
     toFirestore: (data: StockMovement): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): StockMovement => {
-        const data = snapshot.data(options)!;
+        const data = snapshot.data()!;
         return {
             ...data,
             id: snapshot.id,
@@ -359,13 +362,16 @@ export const stockMovementConverter = {
 
 export const taskRequestConverter = {
     toFirestore: (data: TaskRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => ({ ...snapshot.data(options), id: snapshot.id } as TaskRequest)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => {
+        const data = snapshot.data()!;
+        return { ...data, id: snapshot.id } as TaskRequest
+    }
 };
 
 export const treasuryAccountConverter = {
     toFirestore: (data: TreasuryAccount): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryAccount => {
-      const data = snapshot.data(options)!;
+      const data = snapshot.data()!;
       return {
         ...data,
         id: snapshot.id,
@@ -377,7 +383,7 @@ export const treasuryAccountConverter = {
 export const treasuryTransactionConverter = {
     toFirestore: (data: TreasuryTransaction): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryTransaction => {
-      const data = snapshot.data(options)!;
+      const data = snapshot.data()!;
       return {
         ...data,
         id: snapshot.id,
@@ -388,6 +394,8 @@ export const treasuryTransactionConverter = {
 
 export const clientFollowUpConverter = {
   toFirestore: (data: ClientFollowUp): DocumentData => data,
-  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ClientFollowUp =>
-    ({ ...snapshot.data(options), id: snapshot.id } as ClientFollowUp),
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ClientFollowUp => {
+    const data = snapshot.data()!;
+    return { ...data, id: snapshot.id } as ClientFollowUp
+  }
 };
