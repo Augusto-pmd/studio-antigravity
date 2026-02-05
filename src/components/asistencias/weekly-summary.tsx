@@ -17,7 +17,7 @@ import type { PayrollWeek, Employee, Attendance, CashAdvance } from "@/lib/types
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { employeeConverter, attendanceConverter, cashAdvanceConverter } from "@/lib/converters";
+import { employeeConverter, attendanceConverter, cashAdvanceConverter, parseNumber } from "@/lib/converters";
 
 
 const formatCurrency = (amount: number) => {
@@ -54,8 +54,8 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     }
     
     try {
-        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
-        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage / 8]));
+        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
+        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage) / 8]));
 
         const grossWages = weekAttendances.reduce((sum, attendance) => {
             if (attendance.status === 'presente') {
@@ -66,14 +66,14 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         }, 0);
 
         const totalLateHoursDeduction = weekAttendances.reduce((sum, attendance) => {
-          if (attendance.status === 'presente' && attendance.lateHours > 0) {
+          if (attendance.status === 'presente' && parseNumber(attendance.lateHours) > 0) {
               const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
-              return sum + (attendance.lateHours * hourlyRate);
+              return sum + (parseNumber(attendance.lateHours) * hourlyRate);
           }
           return sum;
         }, 0);
 
-        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + advance.amount, 0);
+        const totalAdvances = weekAdvances.reduce((sum, advance) => sum + parseNumber(advance.amount), 0);
         
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
         
