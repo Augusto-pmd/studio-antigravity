@@ -15,7 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter } from '@/lib/converters';
+import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, parseNumber } from '@/lib/converters';
 
 
 const formatCurrency = (amount: number) => {
@@ -142,7 +142,7 @@ export default function ResumenSemanalPage() {
                 return;
             }
 
-            const employeeMap = new Map(employees.map(e => [e.id, e.dailyWage]));
+            const employeeMap = new Map(employees.map(e => [e.id, parseNumber(e.dailyWage)]));
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach(p => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
