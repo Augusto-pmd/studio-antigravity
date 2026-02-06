@@ -1,15 +1,15 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { useCollection, useFirestore, useDoc } from '@/firebase';
+import { collection, query, where, and, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc } from 'firebase/firestore';
 import type { Employee, Attendance, FundRequest, ContractorCertification, Project, PayrollWeek } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Logo } from '@/components/icons/logo';
-import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter } from '@/lib/converters';
+import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, payrollWeekConverter } from '@/lib/converters';
 
 
 const formatCurrency = (amount: number) => {
@@ -34,37 +34,19 @@ type SummaryData = {
     }[];
 };
 
-export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, endDate: string }) {
+export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     const firestore = useFirestore();
-    const [weekId, setWeekId] = useState<string | null | undefined>(undefined);
 
     // --- Data Fetching Hooks ---
+    const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
+    const { data: week, isLoading: isLoadingWeek } = useDoc<PayrollWeek>(weekDocRef);
+    
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
     const { data: employees, isLoading: l5 } = useCollection(employeesQuery);
 
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
     
-    // Find weekId based on start date
-    useEffect(() => {
-        if (!firestore || !startDate) return;
-        let isMounted = true;
-        const findWeek = async () => {
-            setWeekId(undefined); // Set to loading state
-            const weekQuery = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', startDate), limit(1));
-            const weekSnap = await getDocs(weekQuery);
-            if (isMounted) {
-                if (!weekSnap.empty) {
-                    setWeekId(weekSnap.docs[0].id);
-                } else {
-                    setWeekId(null); // Not found
-                }
-            }
-        };
-        findWeek();
-        return () => { isMounted = false; }
-    }, [firestore, startDate]);
-
     const attendancesQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
     
@@ -75,9 +57,9 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
 
     const fundRequests = useMemo(() => {
-        if (!allFundRequests) return [];
-        const start = parseISO(startDate);
-        const end = parseISO(endDate);
+        if (!allFundRequests || !week) return [];
+        const start = parseISO(week.startDate);
+        const end = parseISO(week.endDate);
         end.setHours(23, 59, 59, 999); 
         return allFundRequests.filter((req: FundRequest) => {
             if (!req.date) return false;
@@ -86,9 +68,9 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
                 return reqDate >= start && reqDate <= end;
             } catch { return false; }
         });
-    }, [allFundRequests, startDate, endDate]);
+    }, [allFundRequests, week]);
 
-    const isLoading = l1 || l3 || l4 || l5 || l6 || weekId === undefined;
+    const isLoading = isLoadingWeek || l1 || l3 || l4 || l5 || l6;
 
     // --- Calculation Logic ---
     const summary = useMemo((): SummaryData | null => {
@@ -145,8 +127,8 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Generando resumen...</span></div>;
     }
 
-    if (!summary || weekId === null) {
-        return <div className="flex h-screen items-center justify-center">Error al calcular el resumen. No se encontró la semana de pago o no hay datos para el rango de fechas seleccionado.</div>;
+    if (!summary || !week) {
+        return <div className="flex h-screen items-center justify-center">Error al calcular el resumen. No se encontró la semana de pago o no hay datos.</div>;
     }
 
     return (
@@ -155,7 +137,7 @@ export function WeeklySummaryPrint({ startDate, endDate }: { startDate: string, 
                 <div>
                     <Logo className="h-8 w-auto" />
                     <h1 className="text-2xl font-bold mt-2">Resumen Semanal de Pagos</h1>
-                    <p className="text-muted-foreground">Semana del {format(parseISO(startDate), 'dd/MM/yyyy')} al {format(parseISO(endDate), 'dd/MM/yyyy')}</p>
+                    <p className="text-muted-foreground">Semana del {format(parseISO(week.startDate), 'dd/MM/yyyy')} al {format(parseISO(week.endDate), 'dd/MM/yyyy')}</p>
                 </div>
                 <Button onClick={() => window.print()} className="no-print"><Printer className="mr-2 h-4 w-4" /> Imprimir</Button>
             </header>

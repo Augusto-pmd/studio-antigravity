@@ -14,16 +14,15 @@ export default function ImprimirResumenPage() {
 
 function PrintContent() {
   const searchParams = useSearchParams();
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
+  const weekId = searchParams.get('weekId');
 
-  if (!startDate || !endDate) {
+  if (!weekId) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p>Faltan parámetros para generar el resumen.</p>
+        <p>Falta el identificador de la semana para generar el resumen.</p>
       </div>
     );
   }
 
-  return <WeeklySummaryPrint startDate={startDate} endDate={endDate} />;
+  return <WeeklySummaryPrint weekId={weekId} />;
 }

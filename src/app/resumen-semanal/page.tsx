@@ -224,14 +224,12 @@ export default function ResumenSemanalPage() {
                         Vista consolidada de todos los pagos proyectados para la semana seleccionada.
                     </p>
                 </div>
-                {currentWeek && (
-                     <Button asChild>
-                        <Link href={`/imprimir-resumen?startDate=${currentWeek.startDate}&endDate=${currentWeek.endDate}`} target="_blank">
-                            <Printer className="mr-2 h-4 w-4" />
-                            Imprimir Resumen
-                        </Link>
-                    </Button>
-                )}
+                <Button asChild disabled={!currentWeek}>
+                    <Link href={currentWeek ? `/imprimir-resumen?weekId=${currentWeek.id}` : '#'} target="_blank">
+                        <Printer className="mr-2 h-4 w-4" />
+                        Imprimir Resumen
+                    </Link>
+                </Button>
             </div>
 
             <Card>

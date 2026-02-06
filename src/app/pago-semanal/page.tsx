@@ -131,14 +131,12 @@ export default function PagoSemanalPage() {
                     Consolide la planilla de pagos de personal y las solicitudes de fondos para la semana.
                 </p>
             </div>
-            {currentWeek && (
-                <Button asChild>
-                    <Link href={`/imprimir-resumen?startDate=${currentWeek.startDate}&endDate=${currentWeek.endDate}`} target="_blank">
-                        <Printer className="mr-2 h-4 w-4" />
-                        Imprimir Resumen Semanal
-                    </Link>
-                </Button>
-            )}
+            <Button asChild disabled={!currentWeek}>
+              <Link href={currentWeek ? `/imprimir-resumen?weekId=${currentWeek.id}` : '#'} target="_blank">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Imprimir Resumen Semanal
+              </Link>
+            </Button>
         </div>
 
         <Card>
