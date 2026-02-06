@@ -30,11 +30,11 @@ const formatDate = (dateString?: string) => {
 export function ClientFollowUpsTable() {
   const firestore = useFirestore();
 
-  const followUpsQuery = useMemo(() => firestore ? query(collection(firestore, 'clientFollowUps').withConverter(followUpConverter), orderBy('nextContactDate', 'desc')) : null, [firestore]);
+  const followUpsQuery = useMemo(() => firestore ? query(collection(firestore, 'clientFollowUps').withConverter(followUpConverter), orderBy('contactDate', 'desc')) : null, [firestore]);
   const { data: followUps, isLoading } = useCollection<ClientFollowUp>(followUpsQuery);
 
   const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, i) => (
+    Array.from({ length: 3 }).map((_, i: number) => (
         <TableRow key={`skel-fu-${i}`}>
             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
             <TableCell><Skeleton className="h-6 w-28 rounded-full" /></TableCell>
