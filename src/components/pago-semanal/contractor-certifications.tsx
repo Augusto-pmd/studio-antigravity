@@ -94,17 +94,17 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const allContractorsQuery = useMemo(() => firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null, [firestore]);
   const { data: allContractors, isLoading: isLoadingContractors } = useCollection<Contractor>(allContractorsQuery);
 
-  // Fetch all approved/paid certifications to calculate total paid amounts
-  const allApprovedCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', 'in', ['Aprobado', 'Pagado'])) : null, [firestore]);
-  const { data: allApprovedCerts, isLoading: isLoadingAllCerts } = useCollection<ContractorCertification>(allApprovedCertsQuery);
+  // Fetch all paid certifications to calculate total paid amounts
+  const allPaidCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', '==', 'Pagado')) : null, [firestore]);
+  const { data: allPaidCerts, isLoading: isLoadingAllCerts } = useCollection<ContractorCertification>(allPaidCertsQuery);
 
   const isLoading = isLoadingWeek || isLoadingCerts || isLoadingContractors || isLoadingAllCerts;
 
   const totalPaidByContractorProject = useMemo(() => {
     const paidMap = new Map<string, number>();
-    if (!allApprovedCerts) return paidMap;
+    if (!allPaidCerts) return paidMap;
 
-    allApprovedCerts.forEach((cert: ContractorCertification) => {
+    allPaidCerts.forEach((cert: ContractorCertification) => {
         if (!cert.contractorId || !cert.projectId) return;
         const key = `${cert.contractorId}-${cert.projectId}`;
         const currentPaid = paidMap.get(key) || 0;
@@ -112,7 +112,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
         paidMap.set(key, currentPaid + certAmount);
     });
     return paidMap;
-  }, [allApprovedCerts]);
+  }, [allPaidCerts]);
 
   
   const handleStatusChange = async (cert: ContractorCertification, status: ContractorCertification['status']) => {
@@ -163,7 +163,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
 
 
   const renderSkeleton = () => (
-    Array.from({ length: 2 }).map((_, i) => (
+    Array.from({ length: 2 }).map((_: any, i: number) => (
       <TableRow key={`skel-cert-${i}`}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
@@ -218,10 +218,10 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                 </TableCell>
                             </TableRow>
                         )}
-                        {!isLoading && certifications?.map(cert => {
-                             const contractor = allContractors?.find(c => c.id === cert.contractorId);
+                        {!isLoading && certifications?.map((cert: ContractorCertification) => {
+                             const contractor = allContractors?.find((c: Contractor) => c.id === cert.contractorId);
                              const budgetData = contractor?.budgets?.[cert.projectId];
-                             const additionalsTotal = budgetData?.additionals?.reduce((sum, ad) => sum + (Number(ad.amount) || 0), 0) || 0;
+                             const additionalsTotal = budgetData?.additionals?.reduce((sum: number, ad: { amount: string; description: string; }) => sum + (Number(ad.amount) || 0), 0) || 0;
                              const totalBudget = (budgetData?.initial || 0) + additionalsTotal;
                              const totalPaid = totalPaidByContractorProject.get(`${cert.contractorId}-${cert.projectId}`) || 0;
                              const remainingBalance = totalBudget - totalPaid;
@@ -269,7 +269,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                     contractorName={cert.contractorName}
                                                     projectName={cert.projectName}
                                                 >
-                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                     <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
                                                         <History className="mr-2 h-4 w-4" />
                                                         <span>Historial de Pagos</span>
                                                     </DropdownMenuItem>
@@ -279,7 +279,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                     <>
                                                         <DropdownMenuSeparator />
                                                         <EditContractorCertificationDialog certification={cert}>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                            <DropdownMenuItem onSelect={(e: any) => e.preventDefault()}>
                                                                 <Pencil className="mr-2 h-4 w-4" />
                                                                 <span>Editar</span>
                                                             </DropdownMenuItem>
