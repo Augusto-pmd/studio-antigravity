@@ -8,6 +8,8 @@
  */
 
 import {setGlobalOptions} from "firebase-functions";
+import {onFlow} from "@genkit-ai/firebase/functions";
+import {pmdAssistant} from "./genkit-sample";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -24,7 +26,14 @@ import {setGlobalOptions} from "firebase-functions";
 // this will be the maximum concurrent request count.
 setGlobalOptions({maxInstances: 10});
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+export const pmdAssistantFlow = onFlow(
+    {
+        name: "pmdAssistant",
+        flow: pmdAssistant,
+        authPolicy: (user) => {
+            if (!user) {
+                throw new Error("Solo usuarios autenticados pueden usar este asistente.");
+            }
+        },
+    },
+);
