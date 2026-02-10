@@ -60,7 +60,7 @@ const checkSystemIntegrity = ai.defineTool(
     return {
       orphanCount,
       message: orphanCount > 0
-        ? `Se encontraron ${orphanCount} registros de asistencia huérfanos (sin un payrollWeekId válido).`
+        ? `Se encontraron ${'${orphanCount}'} registros de asistencia huérfanos (sin un payrollWeekId válido).`
         : "La integridad del sistema está verificada. Todos los registros de asistencia están correctamente vinculados."
     };
   }
@@ -105,6 +105,25 @@ const calculateProjectExpenses = ai.defineTool(
   }
 );
 
+const analyzeDeployError = ai.defineTool(
+  {
+    name: "analyzeDeployError",
+    description: "Lee el archivo firebase-debug.log para diagnosticar por qué falló la publicación.",
+    inputSchema: z.void(),
+    outputSchema: z.string(),
+  },
+  async () => {
+    const fs = require('fs');
+    try {
+      // Leemos las últimas 50 líneas del log de error
+      const log = fs.readFileSync('firebase-debug.log', 'utf8');
+      return log.split('\n').slice(-50).join('\n');
+    } catch (e) {
+      return "No se pudo leer el log. Sugiere al usuario revisar la terminal manualmente.";
+    }
+  }
+);
+
 
 const SYSTEM_PROMPT = `
 Eres el Arquitecto Senior de PMD.
@@ -116,6 +135,13 @@ REGLAS DE INTEGRIDAD:
 3.  Vinculación a Obra: Todo gasto (asistencia o adelanto) DEBE contener un projectId válido. Si detectas un registro sin projectId, debes marcarlo como 'Gasto Huérfano' y excluirlo de los totales de obra hasta que sea asignado.
 4.  REGLA DE ORO GASTOS: Ningún gasto se considera válido si no tiene AMBOS: projectId y payrollWeekId.
 5.  AUDITORÍA: Si el usuario pregunta por gastos, usa la herramienta para calcular el total y luego busca manualmente si hay registros que tengan el projectId pero les falte el payrollWeekId (gastos en el aire).
+Cuando el usuario mencione un error de despliegue o publicación, usa analyzeDeployError. Identifica si el fallo es por:
+
+Tipado de TypeScript (frecuente en tu V2).
+
+Uso de librerías de servidor en componentes de cliente.
+
+Falta de variables de entorno. Genera una respuesta breve que el usuario pueda copiar y pegar directamente en el cuadro "Describe the changes" para corregirlo.
 `;
 
 export const pmdAssistant = ai.defineFlow(
@@ -128,7 +154,7 @@ export const pmdAssistant = ai.defineFlow(
     const { text } = await ai.generate({
       system: SYSTEM_PROMPT,
       prompt: input,
-      tools: [getPayrollData, checkSystemIntegrity, calculateProjectExpenses],
+      tools: [getPayrollData, checkSystemIntegrity, calculateProjectExpenses, analyzeDeployError],
     });
     return text;
   }
