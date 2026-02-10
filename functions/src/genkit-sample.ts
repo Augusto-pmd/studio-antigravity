@@ -2,6 +2,7 @@
 import { genkit, z } from "genkit";
 import { vertexAI, gemini25Pro } from "@genkit-ai/vertexai";
 import * as admin from "firebase-admin";
+import * as fs from "fs";
 
 // Inicializamos Firebase Admin si no está inicializado
 if (admin.apps.length === 0) {
@@ -113,7 +114,6 @@ const analyzeDeployError = ai.defineTool(
     outputSchema: z.string(),
   },
   async () => {
-    const fs = require('fs');
     try {
       const logPath = fs.existsSync('firebase-debug.log') 
         ? 'firebase-debug.log' 
