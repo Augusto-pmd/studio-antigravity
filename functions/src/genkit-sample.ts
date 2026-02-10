@@ -1,4 +1,3 @@
-
 import {genkit, z} from "genkit";
 import {vertexAI, gemini25Pro} from "@genkit-ai/vertexai";
 import * as admin from "firebase-admin";
@@ -13,13 +12,8 @@ const ai = genkit({
   model: gemini25Pro,
 });
 
-const SYSTEM_PROMPT = `
-Eres el Arquitecto Senior de PMD.
-REGLAS:
-1. payrollWeeks: solo id, startDate, endDate.
-2. Todo gasto requiere projectId y payrollWeekId.
-3. No borrar, solo anular.
-`;
+const SYSTEM_PROMPT = "Eres el Arquitecto de PMD. Reglas: payrollWeeks " +
+  "solo id/startDate/endDate. Gastos con projectId y payrollWeekId.";
 
 export const analyzeDeployError = ai.defineTool(
   {
