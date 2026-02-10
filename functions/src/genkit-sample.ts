@@ -3,7 +3,9 @@ import {vertexAI, gemini15Pro} from "@genkit-ai/vertexai";
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 
 const ai = genkit({
   plugins: [vertexAI({location: "us-central1"})],
