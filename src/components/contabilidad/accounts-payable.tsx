@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useUser, useCollection, useFirestore } from '@/firebase';
-import { collection, collectionGroup, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, doc, updateDoc } from 'firebase/firestore';
 import type { Expense, Project, Supplier } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +11,10 @@ import { Button } from '@/components/ui/button';
 import { parseISO, format } from 'date-fns';
 import { PayExpenseDialog } from '@/components/contabilidad/pay-expense-dialog';
 import { expenseConverter, projectConverter, supplierConverter } from '@/lib/converters';
+import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, CreditCard, Archive, Loader2 } from 'lucide-react';
+
 
 const formatCurrency = (amount: number, currency: string) => {
   if (typeof amount !== 'number') return '';
@@ -25,6 +29,8 @@ const formatDate = (dateString?: string) => {
 export function AccountsPayable() {
   const firestore = useFirestore();
   const { permissions } = useUser();
+  const { toast } = useToast();
+  const [isArchiving, setIsArchiving] = useState<string | null>(null);
 
   const pendingExpensesQuery = useMemo(() => (
     firestore ? query(
@@ -46,6 +52,32 @@ export function AccountsPayable() {
   const suppliersMap = useMemo(() => suppliers?.reduce((acc: Record<string, string>, s: Supplier) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {}, [suppliers]);
 
   const isLoading = isLoadingExpenses || isLoadingProjects || isLoadingSuppliers;
+
+  const handleArchive = async (expense: Expense) => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error de conexión' });
+      return;
+    }
+    setIsArchiving(expense.id);
+    try {
+      const expenseRef = doc(firestore, `projects/${expense.projectId}/expenses`, expense.id);
+      await updateDoc(expenseRef, {
+        status: 'Pagado',
+        paymentMethod: 'Histórico',
+        paidDate: expense.date,
+      });
+      toast({
+        title: "Gasto Archivado",
+        description: "El gasto ha sido marcado como pagado (histórico).",
+      });
+    } catch (error) {
+      console.error("Error archiving expense:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo archivar el gasto.' });
+    } finally {
+      setIsArchiving(null);
+    }
+  };
+
 
   const renderSkeleton = () => Array.from({ length: 2 }).map((_, i) => (
     <TableRow key={`skel-ap-${i}`}>
@@ -91,9 +123,25 @@ export function AccountsPayable() {
                   <TableCell className="text-right font-mono hidden sm:table-cell">{formatCurrency(expense.amount, expense.currency)}</TableCell>
                   <TableCell className="text-right">
                     {permissions.canSupervise && (
-                      <PayExpenseDialog expense={expense}>
-                        <Button size="sm">Pagar</Button>
-                      </PayExpenseDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <PayExpenseDialog expense={expense}>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center cursor-pointer">
+                              <CreditCard className="mr-2 h-4 w-4" />
+                              <span>Registrar Pago</span>
+                            </DropdownMenuItem>
+                          </PayExpenseDialog>
+                          <DropdownMenuItem onSelect={() => handleArchive(expense)} disabled={isArchiving === expense.id} className="flex items-center cursor-pointer">
+                            {isArchiving === expense.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
+                            <span>Archivar (Pago Histórico)</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </TableCell>
                 </TableRow>
