@@ -81,8 +81,11 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     return sum + amount;
   }, 0);
 
+  const isBudgetInARS = project.currency === 'ARS';
+  const budgetInARS = isBudgetInARS ? project.budget : null;
   const budgetUtilization =
-    project.budget > 0 ? (totalCostARS / project.budget) * 100 : 0;
+    budgetInARS && budgetInARS > 0 ? (totalCostARS / budgetInARS) * 100 : 0;
+  const remainingBalance = budgetInARS ? budgetInARS - totalCostARS : null;
 
   return (
     <div className="space-y-6">
@@ -146,9 +149,13 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(project.budget - totalCostARS, 'ARS')}
-            </div>
+             {remainingBalance !== null ? (
+                <div className="text-2xl font-bold">
+                {formatCurrency(remainingBalance, 'ARS')}
+                </div>
+            ) : (
+                <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -158,10 +165,16 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {budgetUtilization.toFixed(1)}%
-            </div>
-            <Progress value={budgetUtilization} className="mt-1 h-2" />
+             {isBudgetInARS ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {budgetUtilization.toFixed(1)}%
+                </div>
+                <Progress value={budgetUtilization} className="mt-1 h-2" />
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
+            )}
           </CardContent>
         </Card>
       </div>
