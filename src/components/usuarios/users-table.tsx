@@ -10,13 +10,14 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import type { UserProfile, Role } from "@/lib/types";
-import { Pencil } from "lucide-react";
-import { useFirestore, useCollection } from "@/firebase";
+import { Pencil, Trash2 } from "lucide-react";
+import { useFirestore, useCollection, useUser } from "@/firebase";
 import { collection, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EditUserDialog } from "@/components/usuarios/edit-user-dialog";
 import { useMemo } from "react";
+import { DeleteUserDialog } from "./delete-user-dialog";
 
 const userProfileConverter = {
     toFirestore(profile: UserProfile): DocumentData {
@@ -40,6 +41,7 @@ const userProfileConverter = {
 
 export function UsersTable() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
   const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users').withConverter(userProfileConverter) : null), [firestore]);
   const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
 
@@ -102,12 +104,20 @@ export function UsersTable() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{user.role}</TableCell>
                   <TableCell className="text-right">
-                    <EditUserDialog userProfile={user}>
-                        <Button variant="ghost" size="icon">
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Editar Rol</span>
+                    <div className="flex items-center justify-end">
+                      <EditUserDialog userProfile={user}>
+                          <Button variant="ghost" size="icon">
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar Rol</span>
+                          </Button>
+                      </EditUserDialog>
+                      <DeleteUserDialog userProfile={user}>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" disabled={currentUser?.uid === user.id}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Eliminar Usuario</span>
                         </Button>
-                    </EditUserDialog>
+                      </DeleteUserDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
