@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
-import { collection, query, where, and, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc } from 'firebase/firestore';
 import type { Employee, Attendance, FundRequest, ContractorCertification, Project, PayrollWeek } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
@@ -117,7 +117,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         }, 0);
         
         const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
-        const breakdown = Array.from(projectMap.values()).filter(p => p.personal || p.contratistas || p.solicitudes);
+        const breakdown = Array.from(projectMap.values()).filter((p: any) => p.personal || p.contratistas || p.solicitudes);
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
     }, [isLoading, attendances, fundRequests, certifications, employees, projects]);
@@ -179,7 +179,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
                             {summary.breakdown.length === 0 ? (
                                 <tr><td colSpan={5} className="p-8 text-center text-gray-500">No hay costos imputados a obras esta semana.</td></tr>
                             ) : (
-                                summary.breakdown.map((item) => {
+                                summary.breakdown.map((item: any) => {
                                     const subtotal = item.personal + item.contratistas + item.solicitudes;
                                     return (
                                         <tr key={item.id} className="border-b">

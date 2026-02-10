@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc, collectionGroup } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project, DailyWageHistory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -153,7 +153,7 @@ export default function ResumenSemanalPage() {
                 if (histories.length > 0) {
                     return histories[0].amount;
                 }
-                const employee = employees.find(e => e.id === employeeId);
+                const employee = employees.find((e: Employee) => e.id === employeeId);
                 return employee?.dailyWage || 0;
             };
 
@@ -270,7 +270,7 @@ export default function ResumenSemanalPage() {
                             <Calendar
                             mode="single"
                             selected={selectedDate}
-                            onSelect={(date) => date && setSelectedDate(date)}
+                            onSelect={(date: any) => date && setSelectedDate(date)}
                             initialFocus
                             locale={es}
                             />
