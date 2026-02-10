@@ -1,0 +1,172 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { Project } from '@/lib/types';
+import { projectConverter } from '@/lib/converters';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { ProjectExpenseSummary } from './project-expense-summary';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useProjectExpenses } from '@/hooks/use-project-expenses';
+
+const formatCurrency = (amount: number, currency: 'ARS' | 'USD') =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+
+export function ProjectDetailView({ projectId }: { projectId: string }) {
+  const firestore = useFirestore();
+
+  const projectDocRef = useMemo(
+    () =>
+      firestore
+        ? doc(firestore, 'projects', projectId).withConverter(projectConverter)
+        : null,
+    [firestore, projectId]
+  );
+  const { data: project, isLoading: isLoadingProject } = useDoc<Project>(projectDocRef);
+
+  const { expenses, isLoading: isLoadingExpenses } =
+    useProjectExpenses(projectId);
+
+  const isLoading = isLoadingProject || isLoadingExpenses;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/2" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+        <p className="text-lg font-medium text-muted-foreground">
+          Obra no encontrada
+        </p>
+        <p className="text-sm text-muted-foreground">
+          La obra que busca no existe o fue eliminada.
+        </p>
+        <Button asChild>
+          <Link href="/obras">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver a Obras
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const totalCostARS = expenses.reduce((sum, exp) => {
+    const amount =
+      exp.currency === 'USD' ? exp.amount * exp.exchangeRate : exp.amount;
+    return sum + amount;
+  }, 0);
+
+  const budgetUtilization =
+    project.budget > 0 ? (totalCostARS / project.budget) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <Button asChild variant="ghost" className="mb-2 -ml-4">
+            <Link href="/obras">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Obras
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-headline">{project.name}</h1>
+          <p className="text-muted-foreground">
+            {project.client} - {project.address}
+          </p>
+        </div>
+        <Badge
+          variant="outline"
+          className={cn(
+            'w-fit capitalize',
+            project.status === 'En Curso' &&
+              'bg-green-900/40 text-green-300 border-green-700',
+            project.status === 'Pausado' &&
+              'bg-yellow-900/40 text-yellow-300 border-yellow-700',
+            project.status === 'Completado' &&
+              'bg-blue-900/40 text-blue-300 border-blue-700',
+            project.status === 'Cancelado' &&
+              'bg-red-900/40 text-red-300 border-red-700'
+          )}
+        >
+          {project.status}
+        </Badge>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Presupuesto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(project.budget, project.currency)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Gasto Total (ARS)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalCostARS, 'ARS')}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Saldo Restante (ARS)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(project.budget - totalCostARS, 'ARS')}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Utilización Presupuesto
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {budgetUtilization.toFixed(1)}%
+            </div>
+            <Progress value={budgetUtilization} className="mt-1 h-2" />
+          </CardContent>
+        </Card>
+      </div>
+
+      <ProjectExpenseSummary expenses={expenses} />
+    </div>
+  );
+}

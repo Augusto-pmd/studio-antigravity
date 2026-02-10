@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/types";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddProjectDialog } from "@/components/obras/add-project-dialog";
 import { useCollection, useUser, useFirestore } from "@/firebase";
@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import Link from 'next/link';
 
 
 const formatCurrency = (amount: number, currency: 'ARS' | 'USD') => {
@@ -126,7 +127,7 @@ export function ProjectsTable() {
           {projects?.map((project: Project) => (
             <TableRow key={project.id}>
               <TableCell>
-                <div className="font-medium">{project.name}</div>
+                <Link href={`/obras/${project.id}`} className="font-medium hover:underline">{project.name}</Link>
                 <div className="text-sm text-muted-foreground">{project.client}</div>
                 <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
                    <div>
@@ -166,42 +167,50 @@ export function ProjectsTable() {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                {permissions.canManageProjects && (
-                  <div className="flex items-center justify-end">
-                      <AddProjectDialog project={project}>
-                        <Button variant="ghost" size="icon">
-                          <Pencil className="h-4 w-4" />
-                          <span className="sr-only">Editar</span>
-                        </Button>
-                      </AddProjectDialog>
-                      <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Eliminar</span>
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                              <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. Se eliminará permanentemente la obra
-                                  <span className="font-semibold"> {project.name}</span> y todos sus gastos asociados.
-                              </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                  onClick={() => handleDelete(project.id, project.name)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                  Eliminar
-                              </AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                  </div>
-                )}
+                <div className="flex items-center justify-end gap-0">
+                    <Button asChild variant="ghost" size="icon">
+                        <Link href={`/obras/${project.id}`}>
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver Detalle</span>
+                        </Link>
+                    </Button>
+                    {permissions.canManageProjects && (
+                    <>
+                        <AddProjectDialog project={project}>
+                            <Button variant="ghost" size="icon">
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                            </Button>
+                        </AddProjectDialog>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Eliminar</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Se eliminará permanentemente la obra
+                                    <span className="font-semibold"> {project.name}</span> y todos sus gastos asociados.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={() => handleDelete(project.id, project.name)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Eliminar
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
+                    )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
