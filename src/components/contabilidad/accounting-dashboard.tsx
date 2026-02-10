@@ -39,8 +39,8 @@ export function AccountingDashboard() {
   
   const formalExpenses = useMemo(() => {
     if (!allExpenses) return [];
-    // Exclude expenses paid with "Efectivo" from formal accounting
-    return allExpenses.filter((e: any) => e.paymentMethod !== 'Efectivo');
+    // Only include formal documents for accounting summaries
+    return allExpenses.filter((e: Expense) => e.documentType === 'Factura' || e.documentType === 'Nota de Crédito');
   }, [allExpenses]);
 
 
