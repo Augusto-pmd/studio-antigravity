@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow, parseISO, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Clock, CheckCircle, PlusCircle, Calendar } from 'lucide-react';
+import { Clock, CheckCircle, PlusCircle, Calendar, CircleDollarSign } from 'lucide-react';
 
 interface UserActivityCardProps {
     user: UserProfile;
@@ -49,6 +49,7 @@ export function UserActivityCard({ user, timeLogs, createdTasks, assignedTasks, 
     const stats = [
         { label: 'Tareas Completadas', value: metrics.tasksCompleted, icon: CheckCircle },
         { label: 'Pedidos Creados', value: metrics.tasksCreated, icon: PlusCircle },
+        { label: 'Solicitudes de Fondos', value: metrics.fundsRequested, icon: CircleDollarSign },
         { label: 'Horas (últ. 7 días)', value: `${metrics.totalHoursLast7Days.toFixed(1)} hs`, icon: Clock },
     ];
 
