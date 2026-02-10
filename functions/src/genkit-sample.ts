@@ -23,14 +23,17 @@ const getPayrollData = ai.defineTool(
   },
   async (input) => {
     const snapshot = await admin.firestore().collection(input.collection).limit(10).get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
   }
 );
 
 const SYSTEM_PROMPT = `
 Eres el Arquitecto Senior de PMD.
 Tienes permiso para usar la herramienta 'getPayrollData' para verificar el estado real de las colecciones antes de dar una recomendación.
-Recuerda: Si detectas que falta un payrollWeekId en 'attendances', debes reportarlo como un error crítico de integridad.
+
+REGLAS DE INTEGRIDAD:
+1.  Formato de Fecha: Todas las fechas, especialmente 'startDate' y 'endDate' en 'payrollWeeks', DEBEN estar en formato ISO 8601. Si encuentras un formato inválido, repórtalo como un error crítico.
+2.  Vinculación: Si detectas que falta un payrollWeekId en 'attendances', debes reportarlo como un error crítico de integridad.
 `;
 
 export const pmdAssistant = ai.defineFlow(
