@@ -154,6 +154,7 @@ export default function GastosPage() {
     map['OFICINA-TECNICA'] = 'Oficina Técnica';
     map['personal-propio'] = 'Personal Propio';
     map['solicitudes-fondos'] = 'Solicitudes de Fondos (Interno)';
+    map['logistica-vial'] = 'Gastos de Caja (Rápidos)';
     return map;
   }, [suppliers]);
 

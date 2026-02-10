@@ -81,7 +81,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
             currency: 'ARS',
             exchangeRate: 1, // Already converted to ARS
             status: 'Pagado', // Assume it's paid from a cash box, not tesoreria
-            paymentMethod: 'Caja Chica',
+            paymentMethod: 'Efectivo',
             paidDate: new Date().toISOString(),
         };
         batch.set(expenseRef, newExpense);
