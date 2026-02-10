@@ -16,7 +16,6 @@ import { ProjectExpenseSummary } from './project-expense-summary';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProjectExpenses } from '@/hooks/use-project-expenses';
@@ -45,8 +44,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-1/2" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Skeleton className="h-24" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
@@ -83,8 +81,6 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
 
   const isBudgetInARS = project.currency === 'ARS';
   const budgetInARS = isBudgetInARS ? project.budget : null;
-  const budgetUtilization =
-    budgetInARS && budgetInARS > 0 ? (totalCostARS / budgetInARS) * 100 : 0;
   const remainingBalance = budgetInARS ? budgetInARS - totalCostARS : null;
 
   return (
@@ -119,7 +115,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         </Badge>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Presupuesto</CardTitle>
@@ -155,25 +151,6 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
                 </div>
             ) : (
                 <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Utilización Presupuesto
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-             {isBudgetInARS ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {budgetUtilization.toFixed(1)}%
-                </div>
-                <Progress value={budgetUtilization} className="mt-1 h-2" />
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
             )}
           </CardContent>
         </Card>

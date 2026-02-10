@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,6 @@ export function ProjectsOverview() {
         <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
       </TableRow>
     ))
   );
@@ -79,14 +77,13 @@ export function ProjectsOverview() {
               <TableHead>Obra</TableHead>
               <TableHead>Supervisor</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Progreso</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && renderSkeleton()}
             {!isLoading && activeProjects.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={3} className="h-24 text-center">
                   No hay obras activas en este momento.
                 </TableCell>
               </TableRow>
@@ -108,12 +105,6 @@ export function ProjectsOverview() {
                   >
                     {project.status}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                        <span className="text-sm text-muted-foreground w-10">{project.progress}%</span>
-                        <Progress value={project.progress} className="w-[100px]" />
-                    </div>
                 </TableCell>
               </TableRow>
             ))}

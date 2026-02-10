@@ -9,7 +9,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/types";
 import { Pencil, Trash2, Eye } from "lucide-react";
@@ -145,11 +144,6 @@ export function ProjectsTable() {
                       </Badge>
                    </div>
                     <p><span className="font-medium text-foreground">Saldo:</span> {formatCurrency(project.balance, project.currency)}</p>
-                   <div className="flex items-center gap-2">
-                       <span className="font-medium text-foreground">Progreso:</span>
-                        <Progress value={project.progress} className="w-[100px]" />
-                        <span>{project.progress}%</span>
-                   </div>
                 </div>
               </TableCell>
               <TableCell className="hidden md:table-cell">
