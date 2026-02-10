@@ -111,7 +111,7 @@ export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap }
                 </TableRow>
               )}
               {!isLoading && expenses.map((expense: Expense) => {
-                const isVirtual = expense.categoryId === 'CAT-14';
+                const isVirtual = expense.supplierId === 'OFICINA-TECNICA' || expense.supplierId === 'personal-propio';
                 return (
                 <TableRow key={expense.id}>
                   <TableCell>
