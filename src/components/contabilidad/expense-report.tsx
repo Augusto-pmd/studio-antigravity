@@ -123,8 +123,10 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
     <Card>
       <CardHeader className="flex-col items-start gap-y-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Reporte de Gastos</CardTitle>
-          <CardDescription>Detalle de todos los gastos registrados con información fiscal.</CardDescription>
+          <CardTitle>Libro de IVA Compras</CardTitle>
+          <CardDescription>
+            Detalle de facturas y notas de crédito que componen el crédito fiscal. Puede exportar esta vista a formato CSV.
+          </CardDescription>
         </div>
         <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !expenses || expenses.length === 0}>
           <Download className="mr-2 h-4 w-4" />
