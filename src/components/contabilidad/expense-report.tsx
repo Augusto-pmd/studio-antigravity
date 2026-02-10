@@ -139,6 +139,7 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
+                <TableHead>Comprobante</TableHead>
                 <TableHead className='hidden sm:table-cell'>Obra</TableHead>
                 <TableHead className="hidden md:table-cell">Proveedor</TableHead>
                 <TableHead className="text-right hidden lg:table-cell">IVA</TableHead>
@@ -161,11 +162,13 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
                   <TableCell>
                     <div className="font-medium">{formatDate(expense.date)}</div>
                     <div className="space-y-1 text-sm text-muted-foreground sm:hidden mt-2">
+                        <p className="font-semibold text-foreground">{expense.documentType}</p>
                         <p><span className='font-medium'>Obra:</span> {projectsMap[expense.projectId] || expense.projectId}</p>
                         <p><span className='font-medium'>Prov:</span> {suppliersMap[expense.supplierId] || expense.supplierId}</p>
                         <div className='font-mono pt-1 font-semibold text-foreground'>{formatCurrency(expense.amount, expense.currency)}</div>
                     </div>
                   </TableCell>
+                  <TableCell className="hidden sm:table-cell">{expense.documentType}</TableCell>
                   <TableCell className="font-medium hidden sm:table-cell">{projectsMap[expense.projectId] || expense.projectId}</TableCell>
                   <TableCell className='hidden md:table-cell'>{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
                   <TableCell className="text-right font-mono hidden lg:table-cell">{formatCurrency(expense.iva)}</TableCell>
