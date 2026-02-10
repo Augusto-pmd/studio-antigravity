@@ -109,17 +109,19 @@ const analyzeDeployError = ai.defineTool(
   {
     name: "analyzeDeployError",
     description: "Lee el archivo firebase-debug.log para diagnosticar por qué falló la publicación.",
-    inputSchema: z.object({}),
+    inputSchema: z.object({}), 
     outputSchema: z.string(),
   },
   async () => {
     const fs = require('fs');
     try {
-      // Leemos las últimas 50 líneas del log de error
-      const log = fs.readFileSync('firebase-debug.log', 'utf8');
-      return log.split('\n').slice(-50).join('\n');
+      const logPath = fs.existsSync('firebase-debug.log') 
+        ? 'firebase-debug.log' 
+        : '../firebase-debug.log';
+      const log = fs.readFileSync(logPath, 'utf8');
+      return log.split('\n').slice(-100).join('\n');
     } catch (e) {
-      return "No se pudo leer el log. Sugiere al usuario revisar la terminal manualmente.";
+      return "No se pudo localizar el archivo firebase-debug.log.";
     }
   }
 );
