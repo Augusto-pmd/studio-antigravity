@@ -75,12 +75,33 @@ const calculateProjectExpenses = ai.defineTool(
   },
   async (input) => {
     const db = admin.firestore();
-    const atts = await db.collection('attendances').where('projectId', '==', input.projectId).get();
-    const ads = await db.collection('cashAdvances').where('projectId', '==', input.projectId).get();
+    
+    // 1. Fetch employees to get their daily wages
+    const employeesSnapshot = await db.collection('employees').get();
+    const employeeWages = new Map<string, number>();
+    employeesSnapshot.forEach(doc => {
+      employeeWages.set(doc.id, doc.data().dailyWage || 0);
+    });
+
     let total = 0;
-    atts.forEach(d => total += (d.data().dias_trabajados * 500));
-    ads.forEach(d => total += (d.data().monto || 0));
-    return { totalGasto: total, detalle: 'Cálculo de nómina + adelantos' };
+
+    // 2. Calculate total from attendances
+    const atts = await db.collection('attendances').where('projectId', '==', input.projectId).get();
+    atts.forEach(doc => {
+      const data = doc.data();
+      if (data.status === 'presente') {
+        const wage = employeeWages.get(data.employeeId) || 0;
+        total += wage;
+      }
+    });
+
+    // 3. Calculate total from cash advances
+    const ads = await db.collection('cashAdvances').where('projectId', '==', input.projectId).get();
+    ads.forEach(d => {
+      total += (d.data().amount || 0);
+    });
+
+    return { totalGasto: total, detalle: 'Cálculo de nómina (jornales) + adelantos.' };
   }
 );
 
