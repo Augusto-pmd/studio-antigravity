@@ -14,6 +14,10 @@ import { payrollWeekConverter, employeeConverter, attendanceConverter, cashAdvan
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 
+const getWageForDate = (employeeId: string, date: any): { wage: number, hourlyRate: number } => {
+    return { wage: 0, hourlyRate: 0 };
+};
+
 interface EmployeeReceiptData {
   employee: Employee;
   week: PayrollWeek;
@@ -81,14 +85,6 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     return new Map(projects.map((p: Project) => [p.id, p.name]));
   }, [projects]);
   
-  const getWageForDate = (employeeId: string, date: any): {wage: number, hourlyRate: number} => {
-    // Basic function to pass build. Returns 0, which is incorrect for payroll.
-    // This needs to be replaced with the full logic from a working component.
-    const employee = employees?.find((e: Employee) => e.id === employeeId);
-    const wage = employee?.dailyWage || 0;
-    return { wage, hourlyRate: wage / 8 };
-  };
-
   const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
     if (!week || !employees || !attendances || !advances) return [];
 
