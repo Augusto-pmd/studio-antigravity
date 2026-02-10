@@ -1,5 +1,5 @@
 import {genkit, z} from "genkit";
-import {vertexAI, gemini25Pro} from "@genkit-ai/vertexai";
+import {vertexAI, gemini15Pro} from "@genkit-ai/vertexai";
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 
@@ -9,7 +9,7 @@ if (admin.apps.length === 0) {
 
 const ai = genkit({
   plugins: [vertexAI({location: "us-central1"})],
-  model: gemini25Pro,
+  model: gemini15Pro,
 });
 
 const SYSTEM_PROMPT = "Eres el Arquitecto de PMD. Reglas: payrollWeeks " +
