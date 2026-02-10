@@ -60,7 +60,7 @@ const checkSystemIntegrity = ai.defineTool(
     return {
       orphanCount,
       message: orphanCount > 0
-        ? `Se encontraron ${'${orphanCount}'} registros de asistencia huérfanos (sin un payrollWeekId válido).`
+        ? `Se encontraron ${orphanCount} registros de asistencia huérfanos (sin un payrollWeekId válido).`
         : "La integridad del sistema está verificada. Todos los registros de asistencia están correctamente vinculados."
     };
   }
@@ -109,7 +109,7 @@ const analyzeDeployError = ai.defineTool(
   {
     name: "analyzeDeployError",
     description: "Lee el archivo firebase-debug.log para diagnosticar por qué falló la publicación.",
-    inputSchema: z.void(),
+    inputSchema: z.object({}),
     outputSchema: z.string(),
   },
   async () => {
