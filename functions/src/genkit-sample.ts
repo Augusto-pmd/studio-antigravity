@@ -66,17 +66,35 @@ const checkSystemIntegrity = ai.defineTool(
   }
 );
 
+const calculateProjectExpenses = ai.defineTool(
+  {
+    name: "calculateProjectExpenses",
+    description: "Suma nómina y adelantos de una obra específica.",
+    inputSchema: z.object({ projectId: z.string() }),
+    outputSchema: z.any(),
+  },
+  async (input) => {
+    const db = admin.firestore();
+    const atts = await db.collection('attendances').where('projectId', '==', input.projectId).get();
+    const ads = await db.collection('cashAdvances').where('projectId', '==', input.projectId).get();
+    let total = 0;
+    atts.forEach(d => total += (d.data().dias_trabajados * 500));
+    ads.forEach(d => total += (d.data().monto || 0));
+    return { totalGasto: total, detalle: 'Cálculo de nómina + adelantos' };
+  }
+);
+
 
 const SYSTEM_PROMPT = `
 Eres el Arquitecto Senior de PMD.
-Tienes acceso a dos herramientas para diagnosticar el sistema:
-1. 'getPayrollData': Para inspeccionar datos de una colección específica. Úsala para revisiones rápidas.
-2. 'checkSystemIntegrity': Para realizar una auditoría completa de la vinculación entre 'attendances' y 'payrollWeeks'. Úsala cuando el usuario te pida explícitamente "verificar la integridad", "revisar registros huérfanos" o un análisis de consistencia de datos.
+Tienes acceso a herramientas para diagnosticar el sistema. Úsalas para verificar el estado real de las colecciones antes de dar una recomendación.
 
 REGLAS DE INTEGRIDAD:
 1.  Formato de Fecha: Todas las fechas, especialmente 'startDate' y 'endDate' en 'payrollWeeks', DEBEN estar en formato ISO 8601. Si encuentras un formato inválido, repórtalo como un error crítico.
 2.  Vinculación Semanal: Si detectas que falta un payrollWeekId en 'attendances', debes reportarlo como un error crítico de integridad.
 3.  Vinculación a Obra: Todo gasto (asistencia o adelanto) DEBE contener un projectId válido. Si detectas un registro sin projectId, debes marcarlo como 'Gasto Huérfano' y excluirlo de los totales de obra hasta que sea asignado.
+4.  REGLA DE ORO GASTOS: Ningún gasto se considera válido si no tiene AMBOS: projectId y payrollWeekId.
+5.  AUDITORÍA: Si el usuario pregunta por gastos, usa la herramienta para calcular el total y luego busca manualmente si hay registros que tengan el projectId pero les falte el payrollWeekId (gastos en el aire).
 `;
 
 export const pmdAssistant = ai.defineFlow(
@@ -89,7 +107,7 @@ export const pmdAssistant = ai.defineFlow(
     const { text } = await ai.generate({
       system: SYSTEM_PROMPT,
       prompt: input,
-      tools: [getPayrollData, checkSystemIntegrity], // Le pasamos AMBAS herramientas
+      tools: [getPayrollData, checkSystemIntegrity, calculateProjectExpenses],
     });
     return text;
   }
