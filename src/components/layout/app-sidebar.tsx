@@ -50,6 +50,7 @@ import {
   CalendarDays,
   Warehouse,
   PieChart,
+  BarChart,
 } from "lucide-react";
 import type { Role, TaskRequest } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -97,6 +98,13 @@ const menuItems = [
     href: "/tesoreria",
     label: "Tesorería",
     icon: Scale,
+    adminOnly: true,
+    pañoleroHidden: true,
+  },
+   {
+    href: "/auditoria",
+    label: "Auditoría",
+    icon: BarChart,
     adminOnly: true,
     pañoleroHidden: true,
   },
