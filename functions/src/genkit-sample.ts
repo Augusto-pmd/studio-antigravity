@@ -75,7 +75,8 @@ Tienes acceso a dos herramientas para diagnosticar el sistema:
 
 REGLAS DE INTEGRIDAD:
 1.  Formato de Fecha: Todas las fechas, especialmente 'startDate' y 'endDate' en 'payrollWeeks', DEBEN estar en formato ISO 8601. Si encuentras un formato inválido, repórtalo como un error crítico.
-2.  Vinculación: Si detectas que falta un payrollWeekId en 'attendances', debes reportarlo como un error crítico de integridad.
+2.  Vinculación Semanal: Si detectas que falta un payrollWeekId en 'attendances', debes reportarlo como un error crítico de integridad.
+3.  Vinculación a Obra: Todo gasto (asistencia o adelanto) DEBE contener un projectId válido. Si detectas un registro sin projectId, debes marcarlo como 'Gasto Huérfano' y excluirlo de los totales de obra hasta que sea asignado.
 `;
 
 export const pmdAssistant = ai.defineFlow(
