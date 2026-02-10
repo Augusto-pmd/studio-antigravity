@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { onSnapshot, type DocumentReference, type DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function useDoc<T extends DocumentData>(ref: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
@@ -27,7 +29,11 @@ export function useDoc<T extends DocumentData>(ref: DocumentReference<T> | null)
         setError(null);
       },
       (err) => {
-        console.error(err);
+        const permissionError = new FirestorePermissionError({
+            path: ref.path,
+            operation: 'get',
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
         setIsLoading(false);
         setError(err);
       }

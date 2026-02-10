@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { onSnapshot, type Query, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function useCollection<T extends DocumentData>(q: Query<T> | null) {
   const [data, setData] = useState<T[]>([]);
@@ -30,7 +32,13 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
         setError(null);
       },
       (err) => {
-        console.error(err);
+        // Emitting the contextual error instead of just logging it.
+        const permissionError = new FirestorePermissionError({
+            path: '(unknown collection)',
+            operation: 'list',
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
+
         setIsLoading(false);
         setError(err);
       }
@@ -41,5 +49,3 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
 
   return { data, isLoading, error };
 }
-
-    
