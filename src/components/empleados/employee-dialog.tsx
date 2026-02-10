@@ -34,7 +34,7 @@ import { es } from "date-fns/locale";
 import type { Employee } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { collection, doc, writeBatch } from "firebase/firestore";
 
 const parseArgentinianNumber = (value: string): number => {
     if (!value) return 0;
@@ -99,32 +99,51 @@ export function EmployeeDialog({
     }
 
     startTransition(() => {
-      const employeesCollection = collection(firestore, 'employees');
-      const employeeRef = isEditMode && employee ? doc(employeesCollection, employee.id) : doc(employeesCollection);
-      const employeeId = employeeRef.id;
+      const saveData = async () => {
+        const batch = writeBatch(firestore);
+        const employeesCollection = collection(firestore, 'employees');
+        const employeeRef = isEditMode && employee ? doc(employeesCollection, employee.id) : doc(employeesCollection);
+        const employeeId = employeeRef.id;
 
-      const employeeData: { [key: string]: any } = {
-        id: employeeId,
-        name,
-        email: email || undefined,
-        phone: phone || undefined,
-        emergencyContactName: emergencyContactName || undefined,
-        emergencyContactPhone: emergencyContactPhone || undefined,
-        category,
-        dailyWage: parseArgentinianNumber(dailyWage),
-        paymentType,
-        status,
-        artExpiryDate: artExpiryDate ? artExpiryDate.toISOString() : undefined,
-      };
+        const newWage = parseArgentinianNumber(dailyWage);
+        const hasWageChanged = isEditMode ? employee.dailyWage !== newWage : true;
 
-      // Clean object of undefined values before sending to Firestore
-      Object.keys(employeeData).forEach(key => {
-        if (employeeData[key] === undefined) {
-          delete employeeData[key];
+        if (hasWageChanged) {
+          const wageHistoryRef = doc(collection(firestore, `employees/${employeeId}/dailyWageHistory`));
+          const newWageHistoryEntry = {
+              amount: newWage,
+              effectiveDate: new Date().toISOString(),
+          };
+          batch.set(wageHistoryRef, newWageHistoryEntry);
         }
-      });
+
+        const employeeData: { [key: string]: any } = {
+          id: employeeId,
+          name,
+          email: email || undefined,
+          phone: phone || undefined,
+          emergencyContactName: emergencyContactName || undefined,
+          emergencyContactPhone: emergencyContactPhone || undefined,
+          category,
+          dailyWage: newWage,
+          paymentType,
+          status,
+          artExpiryDate: artExpiryDate ? artExpiryDate.toISOString() : undefined,
+        };
+
+        // Clean object of undefined values before sending to Firestore
+        Object.keys(employeeData).forEach(key => {
+          if (employeeData[key] === undefined) {
+            delete employeeData[key];
+          }
+        });
+        
+        batch.set(employeeRef, employeeData, { merge: true });
+        
+        await batch.commit();
+      };
       
-      setDoc(employeeRef, employeeData, { merge: true })
+      saveData()
         .then(() => {
             toast({
               title: isEditMode ? 'Empleado Actualizado' : 'Empleado Creado',

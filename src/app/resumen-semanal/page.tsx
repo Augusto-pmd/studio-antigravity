@@ -2,8 +2,8 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project } from '@/lib/types';
+import { collection, query, where, and, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc, collectionGroup } from 'firebase/firestore';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project, DailyWageHistory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,7 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, parseNumber } from '@/lib/converters';
+import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, parseNumber, dailyWageHistoryConverter } from '@/lib/converters';
 
 
 const formatCurrency = (amount: number) => {
@@ -124,7 +124,10 @@ export default function ResumenSemanalPage() {
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
     
-    const isLoadingData = isLoadingWeek || l1 || l3 || l4 || l5 || l6;
+    const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+    const { data: wageHistories, isLoading: l7 } = useCollection(wageHistoriesQuery);
+
+    const isLoadingData = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
 
     // --- Calculation Logic ---
     useEffect(() => {
@@ -136,13 +139,24 @@ export default function ResumenSemanalPage() {
         const defaultResult: SummaryData = { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
 
         try {
-            if (!currentWeek || !employees || !projects) {
+            if (!currentWeek || !employees || !projects || !wageHistories) {
                 setSummary(defaultResult);
                 setIsCalculating(false);
                 return;
             }
 
-            const employeeMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
+            const getWageForDate = (employeeId: string, date: string): number => {
+                const histories = wageHistories
+                    .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+                    .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+        
+                if (histories.length > 0) {
+                    return histories[0].amount;
+                }
+                const employee = employees.find(e => e.id === employeeId);
+                return employee?.dailyWage || 0;
+            };
+
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach((p: Project) => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -151,7 +165,7 @@ export default function ResumenSemanalPage() {
             // PERSONAL
             const totalPersonal = (attendances || []).reduce((sum, att) => {
                 if (att.status === 'presente') {
-                    const dailyGross = employeeMap.get(att.employeeId) || 0;
+                    const dailyGross = getWageForDate(att.employeeId, att.date);
                     
                     if (att.projectId) {
                         const projectData = projectMap.get(att.projectId);
@@ -207,7 +221,7 @@ export default function ResumenSemanalPage() {
         } finally {
             setIsCalculating(false);
         }
-    }, [isLoadingData, currentWeek, attendances, fundRequests, certifications, employees, projects]);
+    }, [isLoadingData, currentWeek, attendances, fundRequests, certifications, employees, projects, wageHistories]);
 
     const summaryCards = [
         { title: 'Total Personal', value: summary?.totalPersonal ?? 0, icon: HardHat },

@@ -123,6 +123,12 @@ export interface Employee {
     documents?: DocumentRecord[];
 }
 
+export interface DailyWageHistory {
+    id: string;
+    amount: number;
+    effectiveDate: string;
+}
+
 export interface Asset {
   id: string;
   name: string;

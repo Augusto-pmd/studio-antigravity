@@ -15,8 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { collection, collectionGroup, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import type { Project, Supplier, Expense, TimeLog, TechnicalOfficeEmployee, Employee, Attendance } from '@/lib/types';
+import type { Project, Supplier, Expense, TimeLog, TechnicalOfficeEmployee, Employee, Attendance, DailyWageHistory } from '@/lib/types';
 import { expenseCategories } from '@/lib/data';
+import { dailyWageHistoryConverter } from '@/lib/converters';
 
 const projectConverter = {
     toFirestore: (data: Project): DocumentData => data,
@@ -85,8 +86,11 @@ export default function GastosPage() {
   const attendancesQuery = useMemo(() => (firestore ? collection(firestore, 'attendances').withConverter(attendanceConverter) : null), [firestore]);
   const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
 
+  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
-  const isLoading = isLoadingProjects || isLoadingSuppliers || isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice || isLoadingSiteEmployees || isLoadingAttendances;
+
+  const isLoading = isLoadingProjects || isLoadingSuppliers || isLoadingAllExpenses || isLoadingAllTimeLogs || isLoadingTechOffice || isLoadingSiteEmployees || isLoadingAttendances || isLoadingWageHistories;
 
   // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
@@ -120,15 +124,30 @@ export default function GastosPage() {
 
   // Create virtual expenses for site payroll
   const payrollExpenses = useMemo((): Expense[] => {
-    if (!attendances || !siteEmployees) return [];
+    if (!attendances || !siteEmployees || !wageHistories) return [];
     
-    const employeeWageMap = new Map(siteEmployees.map((e: Employee) => [e.id, { wage: e.dailyWage, name: e.name }]));
+    const employeeNameMap = new Map(siteEmployees.map((e: Employee) => [e.id, e.name]));
+
+    const getWageForDate = (employeeId: string, date: string): number => {
+      const histories = wageHistories
+          .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+          .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+      if (histories.length > 0) {
+          return histories[0].amount;
+      }
+      
+      const currentEmployee = siteEmployees.find((e: Employee) => e.id === employeeId);
+      return currentEmployee?.dailyWage || 0;
+  };
 
     return attendances.map((att: Attendance): Expense | null => {
         if (att.status !== 'presente' || !att.projectId) return null;
         
-        const employeeData = employeeWageMap.get(att.employeeId);
-        if (!employeeData) return null;
+        const employeeName = employeeNameMap.get(att.employeeId);
+        if (!employeeName) return null;
+
+        const wage = getWageForDate(att.employeeId, att.date);
 
         return {
             id: `payroll-${att.id}`, // Unique ID for virtual expense
@@ -137,14 +156,14 @@ export default function GastosPage() {
             supplierId: 'personal-propio',
             categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
             documentType: 'Recibo Común',
-            amount: employeeData.wage,
+            amount: wage,
             currency: 'ARS',
             exchangeRate: 1,
             status: 'Pagado',
-            description: `Costo Jornal: ${employeeData.name}`,
+            description: `Costo Jornal: ${employeeName}`,
         } as Expense;
     }).filter((e): e is Expense => e !== null);
-  }, [attendances, siteEmployees]);
+  }, [attendances, siteEmployees, wageHistories]);
 
 
   // Create maps for display names

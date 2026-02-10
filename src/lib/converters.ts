@@ -15,6 +15,7 @@ import type {
   Contractor,
   ContractorEmployee,
   Employee,
+  DailyWageHistory,
   Asset,
   CashAccount,
   CashTransaction,
@@ -103,6 +104,20 @@ export const employeeConverter = {
       dailyWage: parseNumber(data.dailyWage),
     } as Employee;
   },
+};
+
+export const dailyWageHistoryConverter = {
+    toFirestore: (data: DailyWageHistory): DocumentData => data,
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): DailyWageHistory & { employeeId: string } => {
+        const data = snapshot.data(options)!;
+        const employeeId = snapshot.ref.parent.parent!.id;
+        return {
+            id: snapshot.id,
+            employeeId,
+            amount: parseNumber(data.amount),
+            effectiveDate: data.effectiveDate,
+        } as DailyWageHistory & { employeeId: string };
+    }
 };
 
 export const attendanceConverter = {

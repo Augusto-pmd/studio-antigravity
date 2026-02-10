@@ -12,12 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
-import type { PayrollWeek, Employee, Attendance, CashAdvance } from "@/lib/types";
+import { collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, collectionGroup } from "firebase/firestore";
+import type { PayrollWeek, Employee, Attendance, CashAdvance, DailyWageHistory } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { employeeConverter, attendanceConverter, cashAdvanceConverter, parseNumber } from "@/lib/converters";
+import { employeeConverter, attendanceConverter, cashAdvanceConverter, parseNumber, dailyWageHistoryConverter } from "@/lib/converters";
 
 
 const formatCurrency = (amount: number) => {
@@ -45,21 +45,36 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   );
   const { data: weekAdvances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
   
-  const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances;
+  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
+
+  const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances || isLoadingWageHistories;
   
   const weeklySummaryData = useMemo(() => {
     const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
-    if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances) {
+    if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances || !wageHistories) {
         return defaultResult;
     }
     
-    try {
-        const employeeWageMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage)]));
-        const employeeHourlyRateMap = new Map(employees.map((e: Employee) => [e.id, parseNumber(e.dailyWage) / 8]));
+    const getWageForDate = (employeeId: string, date: string): {wage: number, hourlyRate: number} => {
+        const histories = wageHistories
+            .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+            .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
+        if (histories.length > 0) {
+            const wage = histories[0].amount;
+            return { wage, hourlyRate: wage / 8 };
+        }
+        
+        const currentEmployee = employees.find((e: Employee) => e.id === employeeId);
+        const wage = currentEmployee?.dailyWage || 0;
+        return { wage, hourlyRate: wage / 8 };
+    };
+    
+    try {
         const grossWages = weekAttendances.reduce((sum: number, attendance: Attendance) => {
             if (attendance.status === 'presente') {
-                const wage = employeeWageMap.get(attendance.employeeId) || 0;
+                const { wage } = getWageForDate(attendance.employeeId, attendance.date);
                 return sum + wage;
             }
             return sum;
@@ -67,7 +82,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
 
         const totalLateHoursDeduction = weekAttendances.reduce((sum: number, attendance: Attendance) => {
           if (attendance.status === 'presente' && parseNumber(attendance.lateHours) > 0) {
-              const hourlyRate = employeeHourlyRateMap.get(attendance.employeeId) || 0;
+              const { hourlyRate } = getWageForDate(attendance.employeeId, attendance.date);
               return sum + (parseNumber(attendance.lateHours) * hourlyRate);
           }
           return sum;
@@ -88,7 +103,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         return defaultResult;
     }
 
-  }, [weekAttendances, employees, weekAdvances, isLoadingSummaryData]);
+  }, [weekAttendances, employees, weekAdvances, wageHistories, isLoadingSummaryData]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = parseISO(startDate);

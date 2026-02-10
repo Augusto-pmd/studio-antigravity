@@ -67,6 +67,10 @@ service cloud.firestore {
     
     match /employees/{employeeId} {
       allow read, write: if true;
+
+      match /dailyWageHistory/{historyId} {
+        allow read, write: if true;
+      }
     }
     
     match /technicalOfficeEmployees/{employeeId} {

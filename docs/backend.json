@@ -639,6 +639,30 @@
         "dailyWage"
       ]
     },
+    "DailyWageHistory": {
+      "title": "Daily Wage History",
+      "type": "object",
+      "description": "Represents a historical record of an employee's daily wage.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The daily wage amount."
+        },
+        "effectiveDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date from which this wage is effective."
+        }
+      },
+      "required": [
+        "id",
+        "amount",
+        "effectiveDate"
+      ]
+    },
     "Sale": {
       "title": "Sale",
       "type": "object",
@@ -1816,6 +1840,26 @@
             {
               "name": "employeeId",
               "description": "The unique identifier for the employee."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/employees/{employeeId}/dailyWageHistory/{historyId}",
+        "definition": {
+          "entityName": "DailyWageHistory",
+          "schema": {
+            "$ref": "#/backend/entities/DailyWageHistory"
+          },
+          "description": "Stores the daily wage history for a site employee. Accessible by admins.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            },
+            {
+              "name": "historyId",
+              "description": "The unique identifier for the history record."
             }
           ]
         }
