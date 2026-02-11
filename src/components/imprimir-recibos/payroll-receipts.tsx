@@ -88,8 +88,8 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     if (!wageHistories || !employees) return { wage: 0, hourlyRate: 0 };
     
     const histories = wageHistories
-        .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-        .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+        .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
         const wage = histories[0].amount;
