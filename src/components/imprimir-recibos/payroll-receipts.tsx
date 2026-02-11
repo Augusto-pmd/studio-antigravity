@@ -14,10 +14,6 @@ import { payrollWeekConverter, employeeConverter, attendanceConverter, cashAdvan
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 
-const getWageForDate = (employeeId: string, date: any): { wage: number, hourlyRate: number } => {
-    return { wage: 0, hourlyRate: 0 };
-};
-
 interface EmployeeReceiptData {
   employee: Employee;
   week: PayrollWeek;
@@ -61,7 +57,10 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     ) : null, [firestore]);
   const { data: allFundRequests, isLoading: isLoadingFundRequests } = useCollection<FundRequest>(fundRequestsQuery);
 
-  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts || isLoadingFundRequests;
+  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
+
+  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts || isLoadingFundRequests || isLoadingWageHistories;
 
   const weeklyFundRequests = useMemo(() => {
     if (!allFundRequests || !week) return [];
@@ -85,6 +84,23 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     return new Map(projects.map((p: Project) => [p.id, p.name]));
   }, [projects]);
   
+  const getWageForDate = useCallback((employeeId: string, date: string): { wage: number, hourlyRate: number } => {
+    if (!wageHistories || !employees) return { wage: 0, hourlyRate: 0 };
+    
+    const histories = wageHistories
+        .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+    if (histories.length > 0) {
+        const wage = histories[0].amount;
+        return { wage, hourlyRate: wage / 8 };
+    }
+    
+    const currentEmployee = employees.find((e) => e.id === employeeId);
+    const wage = currentEmployee?.dailyWage || 0;
+    return { wage, hourlyRate: wage / 8 };
+}, [wageHistories, employees]);
+
   const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
     if (!week || !employees || !attendances || !advances) return [];
 
@@ -131,7 +147,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
         }
       };
     }).filter((data: EmployeeReceiptData) => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
-  }, [week, employees, attendances, advances]);
+  }, [week, employees, attendances, advances, getWageForDate]);
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Cargando datos de la planilla...</span></div>;
