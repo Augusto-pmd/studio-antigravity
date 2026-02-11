@@ -35,12 +35,16 @@ export function AccountsPayable() {
   const pendingExpensesQuery = useMemo(() => (
     firestore ? query(
         collectionGroup(firestore, 'expenses').withConverter(expenseConverter), 
-        where('status', '==', 'Pendiente de Pago'),
-        where('documentType', '!=', 'Nota de Crédito')
+        where('status', 'in', ['Pendiente de Pago', 'Programado'])
     ) : null
   ), [firestore]);
 
-  const { data: expenses, isLoading: isLoadingExpenses } = useCollection<Expense>(pendingExpensesQuery);
+  const { data: allPendingExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(pendingExpensesQuery);
+  
+  const expenses = useMemo(() => {
+    if (!allPendingExpenses) return [];
+    return allPendingExpenses.filter(e => e.documentType !== 'Nota de Crédito');
+  }, [allPendingExpenses]);
   
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -101,7 +105,7 @@ export function AccountsPayable() {
               <TableRow>
                 <TableHead>Proveedor</TableHead>
                 <TableHead className="hidden md:table-cell">Obra</TableHead>
-                <TableHead className="text-right hidden sm:table-cell">Monto</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Monto Pendiente</TableHead>
                 <TableHead className="text-right">Acción</TableHead>
               </TableRow>
             </TableHeader>
@@ -112,15 +116,17 @@ export function AccountsPayable() {
                   <TableCell colSpan={4} className="h-24 text-center">No hay cuentas pendientes de pago.</TableCell>
                 </TableRow>
               )}
-              {expenses?.map((expense: Expense) => (
+              {expenses?.map((expense: Expense) => {
+                const remainingAmount = expense.amount - (expense.paidAmount || 0);
+                return (
                 <TableRow key={expense.id}>
                   <TableCell>
                     <div className="font-medium">{suppliersMap[expense.supplierId] || expense.supplierId}</div>
                     <div className="text-sm text-muted-foreground">{expense.invoiceNumber || 'S/N'}</div>
-                     <div className="sm:hidden mt-2 font-mono font-semibold">{formatCurrency(expense.amount, expense.currency)}</div>
+                     <div className="sm:hidden mt-2 font-mono font-semibold">{formatCurrency(remainingAmount, expense.currency)}</div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{projectsMap[expense.projectId] || expense.projectId}</TableCell>
-                  <TableCell className="text-right font-mono hidden sm:table-cell">{formatCurrency(expense.amount, expense.currency)}</TableCell>
+                  <TableCell className="text-right font-mono hidden sm:table-cell">{formatCurrency(remainingAmount, expense.currency)}</TableCell>
                   <TableCell className="text-right">
                     {permissions.canSupervise && (
                       <DropdownMenu>
@@ -145,7 +151,7 @@ export function AccountsPayable() {
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </div>
