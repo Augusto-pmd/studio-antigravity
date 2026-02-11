@@ -2,42 +2,61 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // --- Helper Functions ---
+    
     function isSignedIn() {
       return request.auth != null;
     }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
     
-    function getUserRole() {
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      if (isSignedIn() && exists(userPath) && 'role' in get(userPath).data) {
-        return get(userPath).data.role;
-      }
-      return null;
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     function isDirector() {
-      return getUserRole() == 'Dirección';
+      return isSignedIn() && userExists() && userDoc().data.role == 'Dirección';
     }
     
     function isAdmin() {
-      let role = getUserRole();
+      if (!isSignedIn() || !userExists()) {
+        return false;
+      }
+      let role = userDoc().data.role;
       return role == 'Dirección' || role == 'Administración';
     }
 
     function canSupervise() {
-      let role = getUserRole();
+       if (!isSignedIn() || !userExists()) {
+        return false;
+      }
+      let role = userDoc().data.role;
       return role == 'Dirección' || role == 'Supervisor' || role == 'Administración';
     }
 
     function canManageSales() {
-      let role = getUserRole();
+       if (!isSignedIn() || !userExists()) {
+        return false;
+      }
+      let role = userDoc().data.role;
       return role == 'Dirección' || role == 'Administración' || role == 'Supervisor';
+    }
+    
+    function canManageStock() {
+       if (!isSignedIn() || !userExists()) {
+        return false;
+      }
+      let role = userDoc().data.role;
+      return role in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
     }
 
     // --- Collections ---
 
     match /users/{userId} {
       allow read, update: if isAdmin() || request.auth.uid == userId;
-      allow create, delete: if isAdmin(); // Create/delete is an admin action
+      allow create, delete: if isAdmin();
       
       match /cashAccounts/{cashAccountId} {
         allow read, write: if request.auth.uid == userId;
@@ -62,7 +81,6 @@ service cloud.firestore {
       allow list: if isSignedIn();
     }
 
-    // Sales are a subcollection of projects
     match /projects/{projectId}/sales/{saleId} {
       allow get: if isSignedIn();
       allow write: if canManageSales();
@@ -71,7 +89,6 @@ service cloud.firestore {
       allow list, create: if canManageSales();
     }
     
-    // Expenses are a subcollection of projects
     match /projects/{projectId}/expenses/{expenseId} {
       allow get, write: if isSignedIn();
     }
@@ -117,9 +134,9 @@ service cloud.firestore {
     }
     
     match /timeLogs/{logId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow get: if isDirector() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
     match /timeLogs {
       allow list: if isSignedIn();
@@ -148,8 +165,8 @@ service cloud.firestore {
     }
     
     match /fundRequests/{fundRequestId} {
-      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
       allow create: if isSignedIn();
+      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
       allow update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
     }
      match /fundRequests {
@@ -164,8 +181,8 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
       allow create: if isSignedIn();
+      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
       allow update, delete: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
     }
      match /taskRequests {
@@ -212,10 +229,10 @@ service cloud.firestore {
 
     match /stockItems/{itemId} {
       allow get: if isSignedIn();
-      allow write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
+      allow write: if canManageStock();
       
       match /movements/{movementId} {
-        allow get, write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
+        allow get, write: if canManageStock();
       }
        match /movements {
         allow list: if isSignedIn();
@@ -226,8 +243,8 @@ service cloud.firestore {
     }
 
     match /contractorCertifications/{certificationId} {
-      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
       allow create: if isSignedIn();
+      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
       allow update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
     }
     match /contractorCertifications {
