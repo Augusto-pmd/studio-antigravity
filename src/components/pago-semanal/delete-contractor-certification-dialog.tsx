@@ -15,7 +15,7 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Loader2, Trash2 } from "lucide-react";
 import { useFirestore } from "@/firebase";
-import { doc, deleteDoc } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { ContractorCertification } from "@/lib/types";
 
@@ -35,8 +35,20 @@ export function DeleteContractorCertificationDialog({ certification }: { certifi
     }
     setIsPending(true);
     try {
+      const batch = writeBatch(firestore);
+
+      // 1. Delete certification document
       const certRef = doc(firestore, 'contractorCertifications', certification.id);
-      await deleteDoc(certRef);
+      batch.delete(certRef);
+
+      // 2. If it was paid, delete the associated expense
+      if (certification.status === 'Pagado' && certification.relatedExpenseId && certification.projectId) {
+        const expenseRef = doc(firestore, `projects/${certification.projectId}/expenses`, certification.relatedExpenseId);
+        batch.delete(expenseRef);
+      }
+      
+      await batch.commit();
+
       toast({
         title: "Certificación Eliminada",
         description: `Se ha eliminado la certificación para ${certification.contractorName}.`,
@@ -66,7 +78,7 @@ export function DeleteContractorCertificationDialog({ certification }: { certifi
         <AlertDialogHeader>
           <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción no se puede deshacer. Se eliminará permanentemente la certificación.
+            Esta acción no se puede deshacer. Se eliminará permanentemente la certificación y el gasto de obra asociado (si ya fue pagada).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

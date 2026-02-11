@@ -18,12 +18,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import type { ContractorCertification, PayrollWeek } from "@/lib/types";
 import { collection, query, orderBy, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { parseISO, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { certificationConverter, payrollWeekConverter } from "@/lib/converters";
+import { Button } from "../ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { DeleteContractorCertificationDialog } from "./delete-contractor-certification-dialog";
 
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -51,6 +55,7 @@ interface PaymentHistoryDialogProps {
 
 export function PaymentHistoryDialog({ contractorId, projectId, contractorName, projectName, children }: PaymentHistoryDialogProps) {
   const firestore = useFirestore();
+  const { permissions } = useUser();
 
   const historyQuery = useMemo(() => {
     if (!firestore || !contractorId || !projectId) return null;
@@ -94,6 +99,7 @@ export function PaymentHistoryDialog({ contractorId, projectId, contractorName, 
                         <TableHead>Semana</TableHead>
                         <TableHead>Descripción</TableHead>
                         <TableHead className="text-right">Monto</TableHead>
+                        {permissions.isSuperAdmin && <TableHead className="w-[50px] text-right">Acciones</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -102,16 +108,31 @@ export function PaymentHistoryDialog({ contractorId, projectId, contractorName, 
                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-full" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                            {permissions.isSuperAdmin && <TableCell className="text-right"><Skeleton className="h-9 w-9 ml-auto" /></TableCell>}
                         </TableRow>
                     ))}
                     {!isLoading && history?.length === 0 && (
-                        <TableRow><TableCell colSpan={3} className="h-24 text-center">No hay pagos registrados.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={permissions.isSuperAdmin ? 4 : 3} className="h-24 text-center">No hay pagos registrados.</TableCell></TableRow>
                     )}
                     {history?.map((cert: ContractorCertification) => (
                         <TableRow key={cert.id}>
                             <TableCell>{formatDate(weekDateMap.get(cert.payrollWeekId))}</TableCell>
                             <TableCell>{cert.notes || 'Certificación semanal'}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(cert.amount, cert.currency)}</TableCell>
+                            {permissions.isSuperAdmin && (
+                                <TableCell className="text-right">
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DeleteContractorCertificationDialog certification={cert} />
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            )}
                         </TableRow>
                     ))}
                 </TableBody>

@@ -120,44 +120,83 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
       toast({ variant: 'destructive', title: 'Error de conexión' });
       return;
     }
-
+  
     try {
-        const batch = writeBatch(firestore);
-        const certRef = doc(firestore, 'contractorCertifications', cert.id);
-
-        batch.update(certRef, { status });
-
-        if (status === 'Pagado') {
-            if (!currentWeek) {
-                toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
-                return;
-            }
-
-            const expenseRef = doc(collection(firestore, `projects/${cert.projectId}/expenses`));
-
-            const expenseData: Omit<Expense, 'id'> = {
-                projectId: cert.projectId,
-                date: new Date().toISOString(),
-                supplierId: cert.contractorId,
-                categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
-                documentType: 'Recibo Común',
-                description: `Certificación de contratista: ${cert.contractorName} - Semana ${format(parseISO(currentWeek.startDate), 'dd/MM/yy')} a ${format(parseISO(currentWeek.endDate), 'dd/MM/yy')}`,
-                amount: cert.amount,
-                currency: cert.currency,
-                exchangeRate: 1, // Assume 1:1 for this flow
-                status: 'Pagado',
-                paymentMethod: 'Planilla Semanal',
-                paidDate: new Date().toISOString(),
-            };
-            batch.set(expenseRef, expenseData);
+      const batch = writeBatch(firestore);
+      const certRef = doc(firestore, 'contractorCertifications', cert.id);
+  
+      const updateData: {
+        status: ContractorCertification['status'];
+        relatedExpenseId?: string | null;
+      } = { status };
+  
+      if (status === 'Pagado') {
+        if (!currentWeek) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No hay una semana de pagos activa.',
+          });
+          return;
         }
-
-        await batch.commit();
-        toast({ title: 'Estado actualizado', description: `La certificación ha sido marcada como ${status.toLowerCase()}${status === 'Pagado' ? ' y se ha generado el gasto correspondiente.' : '.'}` });
-
+  
+        // Only create expense if it doesn't exist
+        if (!cert.relatedExpenseId) {
+          const expenseRef = doc(
+            collection(firestore, `projects/${cert.projectId}/expenses`)
+          );
+  
+          const expenseData: Omit<Expense, 'id'> = {
+            projectId: cert.projectId,
+            date: new Date().toISOString(),
+            supplierId: cert.contractorId,
+            categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
+            documentType: 'Recibo Común',
+            description: `Certificación de contratista: ${
+              cert.contractorName
+            } - Semana ${format(
+              parseISO(currentWeek.startDate),
+              'dd/MM/yy'
+            )} a ${format(parseISO(currentWeek.endDate), 'dd/MM/yy')}`,
+            amount: cert.amount,
+            currency: cert.currency,
+            exchangeRate: 1, // Assume 1:1 for this flow
+            status: 'Pagado',
+            paymentMethod: 'Planilla Semanal',
+            paidDate: new Date().toISOString(),
+          };
+          batch.set(expenseRef, expenseData);
+          updateData.relatedExpenseId = expenseRef.id;
+        }
+      } else if (cert.status === 'Pagado' && cert.relatedExpenseId) {
+        // If moving from 'Pagado' to another status, delete the associated expense
+        const expenseRef = doc(
+          firestore,
+          `projects/${cert.projectId}/expenses`,
+          cert.relatedExpenseId
+        );
+        batch.delete(expenseRef);
+        updateData.relatedExpenseId = null;
+      }
+  
+      batch.update(certRef, updateData);
+  
+      await batch.commit();
+      toast({
+        title: 'Estado actualizado',
+        description: `La certificación ha sido marcada como ${status.toLowerCase()}${
+          status === 'Pagado'
+            ? ' y se ha generado el gasto correspondiente.'
+            : '.'
+        }`,
+      });
     } catch (error) {
-        console.error("Error updating status or creating expense:", error);
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: 'No se pudo completar la operación.' });
+      console.error('Error updating status or creating expense:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al actualizar',
+        description: 'No se pudo completar la operación.',
+      });
     }
   };
 
@@ -286,7 +325,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                         </EditContractorCertificationDialog>
                                                     </>
                                                 )}
-                                                {(permissions.isSuperAdmin || user?.uid === cert.requesterId) && cert.status !== 'Pagado' && (
+                                                {(permissions.isSuperAdmin || user?.uid === cert.requesterId) && (
                                                   <DeleteContractorCertificationDialog certification={cert} />
                                                 )}
                                             </DropdownMenuContent>

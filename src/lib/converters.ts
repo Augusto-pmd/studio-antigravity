@@ -167,6 +167,7 @@ export const certificationConverter = {
       amount: parseNumber(data.amount),
       requesterId: data.requesterId,
       requesterName: data.requesterName,
+      relatedExpenseId: data.relatedExpenseId,
     } as ContractorCertification;
   },
 };

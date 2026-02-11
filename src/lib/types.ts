@@ -370,6 +370,7 @@ export interface ContractorCertification {
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
   requesterId: string;
   requesterName: string;
+  relatedExpenseId?: string;
 }
 
 export interface ClientFollowUp {
