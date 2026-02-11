@@ -40,7 +40,7 @@ const projectConverter = {
 
 export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
   const [open, setOpen] = useState(false);
-  const { firestore } = useUser();
+  const { firestore, user } = useUser();
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
@@ -71,8 +71,8 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
   }, [open]);
 
   const handleSave = async () => {
-    if (!firestore || !currentWeek) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
+    if (!firestore || !currentWeek || !user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa o no está autenticado.' });
         return;
     }
     if (!contractorId || !projectId || !amount) {
@@ -105,6 +105,8 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
             date: format(new Date(), 'yyyy-MM-dd'),
             notes: notes || undefined,
             status: 'Aprobado',
+            requesterId: user.uid,
+            requesterName: user.displayName || 'Usuario sin nombre',
         };
 
         await setDoc(docRef, newCertification);

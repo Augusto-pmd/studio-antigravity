@@ -77,7 +77,7 @@ const contractorConverter = {
 
 
 export function ContractorCertifications({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
-  const { firestore, permissions, role } = useUser();
+  const { firestore, permissions, role, user } = useUser();
   const { toast } = useToast();
 
   const certificationsQuery = useMemo(() => {
@@ -286,7 +286,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                         </EditContractorCertificationDialog>
                                                     </>
                                                 )}
-                                                {role === 'Supervisor' && cert.status !== 'Pagado' && (
+                                                {(permissions.isSuperAdmin || user?.uid === cert.requesterId) && cert.status !== 'Pagado' && (
                                                   <DeleteContractorCertificationDialog certification={cert} />
                                                 )}
                                             </DropdownMenuContent>

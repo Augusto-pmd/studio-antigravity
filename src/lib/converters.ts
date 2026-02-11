@@ -165,6 +165,8 @@ export const certificationConverter = {
       ...data,
       id: snapshot.id,
       amount: parseNumber(data.amount),
+      requesterId: data.requesterId,
+      requesterName: data.requesterName,
     } as ContractorCertification;
   },
 };

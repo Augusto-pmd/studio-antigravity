@@ -368,6 +368,8 @@ export interface ContractorCertification {
   date: string; // YYYY-MM-DD
   notes?: string;
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado';
+  requesterId: string;
+  requesterName: string;
 }
 
 export interface ClientFollowUp {
