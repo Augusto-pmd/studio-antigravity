@@ -21,35 +21,19 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      if (!isSignedIn() || !userExists()) {
-        return false;
-      }
-      let role = userDoc().data.role;
-      return role == 'Dirección' || role == 'Administración';
+      return isSignedIn() && userExists() && (userDoc().data.role == 'Dirección' || userDoc().data.role == 'Administración');
     }
 
     function canSupervise() {
-       if (!isSignedIn() || !userExists()) {
-        return false;
-      }
-      let role = userDoc().data.role;
-      return role == 'Dirección' || role == 'Supervisor' || role == 'Administración';
+      return isSignedIn() && userExists() && (userDoc().data.role == 'Dirección' || userDoc().data.role == 'Supervisor' || userDoc().data.role == 'Administración');
     }
 
     function canManageSales() {
-       if (!isSignedIn() || !userExists()) {
-        return false;
-      }
-      let role = userDoc().data.role;
-      return role == 'Dirección' || role == 'Administración' || role == 'Supervisor';
+      return isSignedIn() && userExists() && (userDoc().data.role == 'Dirección' || userDoc().data.role == 'Administración' || userDoc().data.role == 'Supervisor');
     }
     
     function canManageStock() {
-       if (!isSignedIn() || !userExists()) {
-        return false;
-      }
-      let role = userDoc().data.role;
-      return role in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
+      return isSignedIn() && userExists() && userDoc().data.role in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
     }
 
     // --- Collections ---
@@ -244,7 +228,7 @@ service cloud.firestore {
 
     match /contractorCertifications/{certificationId} {
       allow create: if isSignedIn();
-      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+      allow get: if isSignedIn();
       allow update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
     }
     match /contractorCertifications {
