@@ -8,32 +8,32 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    function userExists() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
     
-    function userExists() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    function getUserRole() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
     function isDirector() {
-      return isSignedIn() && userExists() && userDoc().data.role == 'Dirección';
+      return isSignedIn() && userExists() && getUserRole() == 'Dirección';
     }
     
     function isAdmin() {
-      return isSignedIn() && userExists() && (userDoc().data.role == 'Dirección' || userDoc().data.role == 'Administración');
+      return isSignedIn() && userExists() && getUserRole() in ['Dirección', 'Administración'];
     }
 
     function canSupervise() {
-      return isSignedIn() && userExists() && (userDoc().data.role == 'Dirección' || userDoc().data.role == 'Supervisor' || userDoc().data.role == 'Administración');
+      return isSignedIn() && userExists() && getUserRole() in ['Dirección', 'Supervisor', 'Administración'];
     }
 
     function canManageSales() {
-      return isSignedIn() && userExists() && (userDoc().data.role == 'Dirección' || userDoc().data.role == 'Administración' || userDoc().data.role == 'Supervisor');
+      return isSignedIn() && userExists() && getUserRole() in ['Dirección', 'Administración', 'Supervisor'];
     }
     
     function canManageStock() {
-      return isSignedIn() && userExists() && userDoc().data.role in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
+      return isSignedIn() && userExists() && getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
     }
 
     // --- Collections ---
@@ -158,7 +158,8 @@ service cloud.firestore {
     }
 
     match /payrollWeeks/{payrollWeekId} {
-      allow get, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if canSupervise();
     }
     match /payrollWeeks {
       allow list: if isSignedIn();

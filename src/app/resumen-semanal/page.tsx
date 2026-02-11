@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc, collectionGroup } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project, DailyWageHistory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, parseNumber, dailyWageHistoryConverter } from '@/lib/converters';
 
 
@@ -40,7 +41,9 @@ type SummaryData = {
 };
 
 export default function ResumenSemanalPage() {
-    const firestore = useFirestore();
+    const { firestore, permissions } = useUser();
+    const isAdmin = permissions.canSupervise;
+    const { toast } = useToast();
     
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
@@ -58,28 +61,39 @@ export default function ResumenSemanalPage() {
             const weekStartISO = weekStart.toISOString();
             
             const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartISO), limit(1));
-            const weekSnap = await getDocs(q);
 
-            let weekData: PayrollWeek;
+            try {
+                const weekSnap = await getDocs(q);
+                let weekData: PayrollWeek | null = null;
 
-            if (!weekSnap.empty) {
-                weekData = { id: weekSnap.docs[0].id, ...weekSnap.docs[0].data() } as PayrollWeek;
-            } else {
-                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-                const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-                weekData = {
-                    id: newWeekRef.id,
-                    startDate: weekStartISO,
-                    endDate: weekEnd.toISOString(),
-                };
-                 await setDoc(newWeekRef, weekData);
+                if (!weekSnap.empty) {
+                    weekData = { id: weekSnap.docs[0].id, ...weekSnap.docs[0].data() } as PayrollWeek;
+                } else if (isAdmin) {
+                    const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+                    const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
+                    weekData = {
+                        id: newWeekRef.id,
+                        startDate: weekStartISO,
+                        endDate: weekEnd.toISOString(),
+                    };
+                    await setDoc(newWeekRef, weekData);
+                }
+                setCurrentWeek(weekData);
+            } catch (error) {
+                console.error("Error finding or creating week:", error);
+                setCurrentWeek(null);
+                toast({
+                    variant: "destructive",
+                    title: "Error al cargar la semana",
+                    description: "No se pudo encontrar o crear la semana de pagos. Es posible que no tengas permisos."
+                })
+            } finally {
+                setIsLoadingWeek(false);
             }
-            setCurrentWeek(weekData);
-            setIsLoadingWeek(false);
         };
         
         findOrCreateWeek();
-    }, [selectedDate, firestore]);
+    }, [selectedDate, firestore, isAdmin, toast]);
 
     // --- Data Fetching Hooks ---
     const attendancesQuery = useMemo(() => {

@@ -14,7 +14,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
 
   // Don't show the main layout on the login or print pages
-  if (pathname === '/login' || pathname === '/imprimir-recibos') {
+  if (pathname === '/login' || pathname.startsWith('/imprimir-recibos') || pathname.startsWith('/imprimir-resumen')) {
     return <>{children}</>;
   }
   

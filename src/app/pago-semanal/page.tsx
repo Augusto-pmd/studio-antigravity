@@ -20,6 +20,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 
 const fundRequestConverter = {
@@ -52,6 +53,7 @@ const fundRequestConverter = {
 export default function PagoSemanalPage() {
     const { user, firestore, permissions } = useUser();
     const isAdmin = permissions.canSupervise;
+    const { toast } = useToast();
     
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
@@ -66,29 +68,40 @@ export default function PagoSemanalPage() {
             const weekStartISO = weekStart.toISOString();
             
             const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartISO), limit(1));
-            const weekSnap = await getDocs(q);
+            
+            try {
+                const weekSnap = await getDocs(q);
+                let weekData: PayrollWeek | null = null;
 
-            let weekData: PayrollWeek;
-
-            if (!weekSnap.empty) {
-                const doc = weekSnap.docs[0];
-                weekData = { id: doc.id, ...doc.data() } as PayrollWeek;
-            } else {
-                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-                const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-                weekData = {
-                    id: newWeekRef.id,
-                    startDate: weekStartISO,
-                    endDate: weekEnd.toISOString(),
-                };
-                await setDoc(newWeekRef, weekData);
+                if (!weekSnap.empty) {
+                    const doc = weekSnap.docs[0];
+                    weekData = { id: doc.id, ...doc.data() } as PayrollWeek;
+                } else if (isAdmin) {
+                    const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+                    const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
+                    weekData = {
+                        id: newWeekRef.id,
+                        startDate: weekStartISO,
+                        endDate: weekEnd.toISOString(),
+                    };
+                    await setDoc(newWeekRef, weekData);
+                }
+                setCurrentWeek(weekData);
+            } catch (error) {
+                 console.error("Error finding or creating week:", error);
+                setCurrentWeek(null);
+                toast({
+                    variant: "destructive",
+                    title: "Error al cargar la semana",
+                    description: "No se pudo encontrar o crear la semana de pagos. Es posible que no tengas permisos."
+                })
+            } finally {
+                setIsLoadingCurrentWeek(false);
             }
-            setCurrentWeek(weekData);
-            setIsLoadingCurrentWeek(false);
         };
         
         findOrCreateWeek();
-    }, [selectedDate, firestore]);
+    }, [selectedDate, firestore, isAdmin, toast]);
 
     const allFundRequestsQuery = useMemo(() => {
       if (!firestore) return null;
