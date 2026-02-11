@@ -8,7 +8,7 @@ service cloud.firestore {
     
     function getUserRole() {
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      if (isSignedIn() && exists(userPath)) {
+      if (isSignedIn() && exists(userPath) && 'role' in get(userPath).data) {
         return get(userPath).data.role;
       }
       return null;
@@ -47,7 +47,7 @@ service cloud.firestore {
       }
     }
      match /users {
-      allow list: if isAdmin();
+      allow list: if isSignedIn();
     }
 
     match /projects/{projectId} {
