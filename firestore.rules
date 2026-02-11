@@ -6,35 +6,38 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    // Helper to get the role of the currently signed-in user.
+    // Returns null if the user is not signed in or has no profile/role.
+    function getUserRole() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      if (request.auth != null && userDoc != null) {
+        return userDoc.data.role;
+      }
+      return null;
+    }
+
     function isDirector() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isSignedIn() &&
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         userRole == 'Dirección';
+      return getUserRole() == 'Dirección';
     }
     
     function isAdmin() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isSignedIn() &&
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         (userRole == 'Dirección' || userRole == 'Administración');
+      let role = getUserRole();
+      return role == 'Dirección' || role == 'Administración';
     }
 
     function canSupervise() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isSignedIn() &&
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         userRole in ['Dirección', 'Supervisor', 'Administración'];
+      let role = getUserRole();
+      return role == 'Dirección' || role == 'Supervisor' || role == 'Administración';
     }
 
     function canManageSales() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isSignedIn() &&
-        (userRole == 'Dirección' || userRole == 'Administración' || userRole == 'Supervisor');
+      let role = getUserRole();
+      return role == 'Dirección' || role == 'Administración' || role == 'Supervisor';
     }
 
     match /{path=**}/sales/{saleId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if canManageSales();
     }
 
     match /{path=**}/expenses/{expenseId} {
@@ -42,19 +45,20 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, write: if true;
+      allow read, write: if isAdmin() || request.auth.uid == userId;
       
       match /cashAccounts/{cashAccountId} {
-        allow read, write: if true;
+        allow read, write: if request.auth.uid == userId;
 
         match /transactions/{transactionId} {
-            allow read, write: if true;
+            allow read, write: if request.auth.uid == userId;
         }
       }
     }
 
     match /projects/{projectId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if canSupervise();
 
       match /contracts/{contractId} {
         allow read, write: if isSignedIn();
@@ -62,14 +66,16 @@ service cloud.firestore {
     }
 
     match /suppliers/{supplierId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow write: if canSupervise();
     }
     
     match /employees/{employeeId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow write: if canSupervise();
 
       match /dailyWageHistory/{historyId} {
-        allow read, write: if true;
+        allow read, write: if canSupervise();
       }
     }
     
@@ -91,19 +97,21 @@ service cloud.firestore {
     }
 
     match /contractors/{contractorId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow write: if canSupervise();
 
       match /personnel/{personnelId} {
-        allow read, write: if true;
+        allow read, write: if canSupervise();
       }
     }
     
     match /assets/{assetId} {
-      allow read, write: if isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Dirección', 'Administración', 'Supervisor'];
+      allow read, write: if canSupervise();
     }
     
     match /fundRequests/{fundRequestId} {
-      allow read, write: if true;
+      allow create: if isSignedIn();
+      allow read, update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
     }
 
     match /payrollWeeks/{payrollWeekId} {
@@ -111,15 +119,16 @@ service cloud.firestore {
     }
 
     match /taskRequests/{taskRequestId} {
-      allow read, write: if isSignedIn();
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
     }
     
     match /cashAdvances/{cashAdvanceId} {
-      allow read, write: if true;
+      allow read, write: if canSupervise();
     }
 
     match /attendances/{attendanceId} {
-      allow read, write: if true;
+      allow read, write: if canSupervise();
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
@@ -130,23 +139,26 @@ service cloud.firestore {
     }
     
     match /recurringExpenses/{expenseId} {
-        allow read, write: if true;
+        allow read, write: if isAdmin();
     }
 
     match /moratorias/{moratoriaId} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
 
     match /stockItems/{itemId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
       
       match /movements/{movementId} {
-        allow read, write: if isSignedIn();
+        allow read: if isSignedIn();
+        allow write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
       }
     }
 
     match /contractorCertifications/{certificationId} {
-      allow read, write: if true;
+      allow create: if isSignedIn();
+      allow read, update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
     }
 
     match /clientFollowUps/{followUpId} {
