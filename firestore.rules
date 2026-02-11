@@ -6,12 +6,10 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper to get the role of the currently signed-in user.
-    // Returns null if the user is not signed in or has no profile/role.
     function getUserRole() {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      if (request.auth != null && userDoc != null) {
-        return userDoc.data.role;
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      if (isSignedIn() && exists(userPath)) {
+        return get(userPath).data.role;
       }
       return null;
     }
@@ -35,134 +33,212 @@ service cloud.firestore {
       return role == 'Dirección' || role == 'Administración' || role == 'Supervisor';
     }
 
-    match /{path=**}/sales/{saleId} {
-      allow read: if isSignedIn();
-      allow write: if canManageSales();
-    }
-
-    match /{path=**}/expenses/{expenseId} {
-      allow read, write: if isSignedIn();
-    }
+    // --- Collections ---
 
     match /users/{userId} {
-      allow read, write: if isAdmin() || request.auth.uid == userId;
+      allow read, update: if isAdmin() || request.auth.uid == userId;
+      allow create, delete: if isAdmin(); // Create/delete is an admin action
       
       match /cashAccounts/{cashAccountId} {
         allow read, write: if request.auth.uid == userId;
-
         match /transactions/{transactionId} {
             allow read, write: if request.auth.uid == userId;
         }
       }
     }
+     match /users {
+      allow list: if isAdmin();
+    }
 
     match /projects/{projectId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       allow write: if canSupervise();
 
       match /contracts/{contractId} {
         allow read, write: if isSignedIn();
       }
     }
+    match /projects {
+      allow list: if isSignedIn();
+    }
+
+    // Sales are a subcollection of projects
+    match /projects/{projectId}/sales/{saleId} {
+      allow get: if isSignedIn();
+      allow write: if canManageSales();
+    }
+     match /projects/{projectId}/sales {
+      allow list, create: if canManageSales();
+    }
+    
+    // Expenses are a subcollection of projects
+    match /projects/{projectId}/expenses/{expenseId} {
+      allow get, write: if isSignedIn();
+    }
+    match /projects/{projectId}/expenses {
+      allow list, create: if isSignedIn();
+    }
 
     match /suppliers/{supplierId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       allow write: if canSupervise();
+    }
+     match /suppliers {
+      allow list: if isSignedIn();
     }
     
     match /employees/{employeeId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       allow write: if canSupervise();
 
       match /dailyWageHistory/{historyId} {
         allow read, write: if canSupervise();
       }
     }
+     match /employees {
+      allow list: if isSignedIn();
+    }
     
     match /technicalOfficeEmployees/{employeeId} {
-      allow read, write: if isDirector();
+      allow get, write: if isDirector();
       match /salaryHistory/{salaryHistoryId} {
         allow read, write: if isDirector();
       }
     }
+    match /technicalOfficeEmployees {
+        allow list: if isDirector();
+    }
 
     match /monthlySalaries/{salaryId} {
-      allow read, write: if isDirector();
+      allow get, write: if isDirector();
+    }
+    match /monthlySalaries {
+        allow list: if isDirector();
     }
     
     match /timeLogs/{logId} {
-      allow read: if isDirector() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow get: if isDirector() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
+    match /timeLogs {
+      allow list: if isSignedIn();
+    }
 
     match /contractors/{contractorId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       allow write: if canSupervise();
 
       match /personnel/{personnelId} {
-        allow read, write: if canSupervise();
+        allow get, write: if canSupervise();
       }
+       match /personnel {
+        allow list: if canSupervise();
+      }
+    }
+    match /contractors {
+      allow list: if isSignedIn();
     }
     
     match /assets/{assetId} {
-      allow read, write: if canSupervise();
+      allow get, write: if canSupervise();
+    }
+    match /assets {
+      allow list: if canSupervise();
     }
     
     match /fundRequests/{fundRequestId} {
+      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
       allow create: if isSignedIn();
-      allow read, update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+      allow update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+    }
+     match /fundRequests {
+      allow list: if isSignedIn();
     }
 
     match /payrollWeeks/{payrollWeekId} {
-      allow read, write: if isSignedIn();
+      allow get, write: if isSignedIn();
+    }
+    match /payrollWeeks {
+      allow list: if isSignedIn();
     }
 
     match /taskRequests/{taskRequestId} {
+      allow get: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
       allow create: if isSignedIn();
-      allow read, update, delete: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
+      allow update, delete: if isSignedIn() && (resource.data.requesterId == request.auth.uid || resource.data.assigneeId == request.auth.uid || canSupervise());
+    }
+     match /taskRequests {
+      allow list: if isSignedIn();
     }
     
     match /cashAdvances/{cashAdvanceId} {
-      allow read, write: if canSupervise();
+      allow get, write: if canSupervise();
+    }
+     match /cashAdvances {
+      allow list: if canSupervise();
     }
 
     match /attendances/{attendanceId} {
-      allow read, write: if canSupervise();
+      allow get, write: if canSupervise();
+    }
+    match /attendances {
+      allow list: if canSupervise();
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
-      allow read, write: if canSupervise();
+      allow get, write: if isAdmin();
       match /transactions/{transactionId} {
-        allow read, write: if canSupervise();
+        allow read, write: if isAdmin();
       }
+    }
+     match /treasuryAccounts {
+      allow list: if isAdmin();
     }
     
     match /recurringExpenses/{expenseId} {
-        allow read, write: if isAdmin();
+        allow get, write: if isAdmin();
+    }
+    match /recurringExpenses {
+      allow list: if isAdmin();
     }
 
     match /moratorias/{moratoriaId} {
-      allow read, write: if isAdmin();
+      allow get, write: if isAdmin();
+    }
+    match /moratorias {
+      allow list: if isAdmin();
     }
 
     match /stockItems/{itemId} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();
       allow write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
       
       match /movements/{movementId} {
-        allow read: if isSignedIn();
-        allow write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
+        allow get, write: if getUserRole() in ['Pañolero', 'Dirección', 'Administración', 'Supervisor'];
       }
+       match /movements {
+        allow list: if isSignedIn();
+      }
+    }
+    match /stockItems {
+        allow list: if isSignedIn();
     }
 
     match /contractorCertifications/{certificationId} {
+      allow get: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
       allow create: if isSignedIn();
-      allow read, update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+      allow update, delete: if canSupervise() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+    }
+    match /contractorCertifications {
+      allow list: if isSignedIn();
     }
 
     match /clientFollowUps/{followUpId} {
-      allow read, write: if isDirector();
+      allow get, write: if isDirector();
+    }
+     match /clientFollowUps {
+      allow list: if isDirector();
     }
   }
 }
