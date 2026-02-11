@@ -264,6 +264,8 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                              const totalBudget = (budgetData?.initial || 0) + additionalsTotal;
                              const totalPaid = totalPaidByContractorProject.get(`${cert.contractorId}-${cert.projectId}`) || 0;
                              const remainingBalance = totalBudget - totalPaid;
+                             const canDelete = permissions.isSuperAdmin || (user?.uid === cert.requesterId && cert.status !== 'Pagado');
+
 
                             return(
                             <TableRow key={cert.id}>
@@ -325,7 +327,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                                         </EditContractorCertificationDialog>
                                                     </>
                                                 )}
-                                                {(permissions.isSuperAdmin || user?.uid === cert.requesterId) && (
+                                                {canDelete && (
                                                   <DeleteContractorCertificationDialog certification={cert} />
                                                 )}
                                             </DropdownMenuContent>
