@@ -44,7 +44,9 @@ export interface Expense {
   documentType: 'Factura' | 'Recibo Común' | 'Nota de Crédito';
   invoiceNumber?: string;
   paymentMethod?: string;
+  paymentDueDate?: string;
   amount: number;
+  paidAmount?: number;
   iva?: number;
   iibb?: number;
   iibbJurisdiction?: 'No Aplica' | 'CABA' | 'Provincia';
@@ -56,9 +58,10 @@ export interface Expense {
   retencionIVA?: number;
   retencionIIBB?: number;
   retencionSUSS?: number;
-  status: 'Pendiente de Pago' | 'Pagado';
+  status: 'Pendiente de Pago' | 'Programado' | 'Pagado';
   paidDate?: string;
   treasuryAccountId?: string;
+  paymentSource?: 'Tesorería' | 'Caja Chica';
 }
 
 export interface Supplier {

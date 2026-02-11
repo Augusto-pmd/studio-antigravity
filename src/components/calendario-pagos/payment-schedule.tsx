@@ -29,7 +29,7 @@ export function PaymentSchedule() {
   const moratoriasQuery = useMemo(() => firestore ? query(collection(firestore, 'moratorias').withConverter(moratoriaConverter), where('status', '==', 'Activa')) : null, [firestore]);
   const { data: moratorias, isLoading: l2 } = useCollection(moratoriasQuery);
   
-  const pendingExpensesQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter), where('status', '==', 'Pendiente de Pago')) : null, [firestore]);
+  const pendingExpensesQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'expenses').withConverter(expenseConverter), where('status', 'in', ['Pendiente de Pago', 'Programado'])) : null, [firestore]);
   const { data: pendingExpenses, isLoading: l3 } = useCollection(pendingExpensesQuery);
 
   const pendingSalariesQuery = useMemo(() => firestore ? query(collection(firestore, 'monthlySalaries').withConverter(monthlySalaryConverter), where('status', '==', 'Pendiente de Pago')) : null, [firestore]);
@@ -81,18 +81,17 @@ export function PaymentSchedule() {
 
     // Pending Supplier Expenses
     pendingExpenses?.forEach((item: Expense) => {
-      if (item.date) {
-        processedItems.push({
-          id: `exp-${item.id}`,
-          date: parseISO(item.date),
-          title: `Factura Proveedor`,
-          description: item.invoiceNumber || `Gasto ID: ${item.id.substring(0,6)}`,
-          amount: item.amount,
-          currency: item.currency,
-          type: 'Factura Proveedor',
-          itemData: item
-        });
-      }
+      const dueDate = item.paymentDueDate ? parseISO(item.paymentDueDate) : parseISO(item.date);
+      processedItems.push({
+        id: `exp-${item.id}`,
+        date: dueDate,
+        title: `Factura Proveedor`,
+        description: item.invoiceNumber || `Gasto ID: ${item.id.substring(0,6)}`,
+        amount: item.amount - (item.paidAmount || 0),
+        currency: item.currency,
+        type: 'Factura Proveedor',
+        itemData: item
+      });
     });
 
     // Pending Salaries

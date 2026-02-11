@@ -161,9 +161,18 @@
           "type": "string",
           "description": "The method used for payment (e.g., 'Transferencia', 'Efectivo'). Set when payment is registered."
         },
+        "paymentDueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The due date for the payment, if applicable."
+        },
         "amount": {
           "type": "number",
           "description": "The total amount of the expense document."
+        },
+        "paidAmount": {
+          "type": "number",
+          "description": "The amount that has been paid so far."
         },
         "iva": {
           "type": "number",
@@ -216,6 +225,7 @@
           "type": "string",
           "enum": [
             "Pendiente de Pago",
+            "Programado",
             "Pagado"
           ],
           "description": "Payment status of the expense."
@@ -228,6 +238,14 @@
         "treasuryAccountId": {
           "type": "string",
           "description": "Reference to the TreasuryAccount used for payment."
+        },
+        "paymentSource": {
+          "type": "string",
+          "enum": [
+            "Tesorería",
+            "Caja Chica"
+          ],
+          "description": "Defines the accounting path. Tesorería is formal ('blanco'), Caja Chica is informal ('negra')."
         }
       },
       "required": [

@@ -77,6 +77,7 @@ export const expenseConverter = {
       ...data,
       id: snapshot.id,
       amount: parseNumber(data.amount),
+      paidAmount: parseNumber(data.paidAmount),
       iva: parseNumber(data.iva),
       iibb: parseNumber(data.iibb),
       exchangeRate: parseNumber(data.exchangeRate),
@@ -85,6 +86,8 @@ export const expenseConverter = {
       retencionIIBB: parseNumber(data.retencionIIBB),
       retencionSUSS: parseNumber(data.retencionSUSS),
       status: data.status,
+      paymentDueDate: data.paymentDueDate,
+      paymentSource: data.paymentSource,
     } as Expense;
   },
 };
