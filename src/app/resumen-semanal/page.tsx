@@ -143,6 +143,23 @@ export default function ResumenSemanalPage() {
 
     const isLoadingData = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
 
+    const getWageForDate = useCallback((employeeId: string, date: string): number => {
+        const employee = employees?.find(e => e.id === employeeId);
+        if (!wageHistories) {
+            return employee?.dailyWage || 0;
+        }
+    
+        const histories = wageHistories
+            .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+            .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+    
+        if (histories.length > 0) {
+            return histories[0].amount;
+        }
+        
+        return employee?.dailyWage || 0;
+    }, [wageHistories, employees]);
+
     // --- Calculation Logic ---
     useEffect(() => {
         if (isLoadingData) {
@@ -159,22 +176,6 @@ export default function ResumenSemanalPage() {
                 return;
             }
             
-            const getWageForDate = (employeeId: string, date: string): number => {
-                if (!wageHistories) {
-                     const employee = employees.find((e: Employee) => e.id === employeeId);
-                     return employee?.dailyWage || 0;
-                }
-                const histories = wageHistories
-                    .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-                    .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
-        
-                if (histories.length > 0) {
-                    return histories[0].amount;
-                }
-                const employee = employees.find((e: Employee) => e.id === employeeId);
-                return employee?.dailyWage || 0;
-            };
-
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach((p: Project) => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -240,7 +241,7 @@ export default function ResumenSemanalPage() {
         } finally {
             setIsCalculating(false);
         }
-    }, [isLoadingData, currentWeek, attendances, fundRequests, certifications, employees, projects, wageHistories]);
+    }, [isLoadingData, currentWeek, attendances, fundRequests, certifications, employees, projects, getWageForDate]);
 
     const summaryCards = [
         { title: 'Total Personal', value: summary?.totalPersonal ?? 0, icon: HardHat },

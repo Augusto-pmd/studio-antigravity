@@ -77,9 +77,9 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     const isLoading = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
 
     const getWageForDate = useCallback((employeeId: string, date: string): number => {
-      if (!wageHistories || !employees) {
-          const currentEmployee = employees?.find(e => e.id === employeeId);
-          return currentEmployee?.dailyWage || 0;
+      const employee = employees?.find(e => e.id === employeeId);
+      if (!wageHistories) {
+          return employee?.dailyWage || 0;
       }
 
       const histories = wageHistories
@@ -89,7 +89,6 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
       if (histories.length > 0) {
           return histories[0].amount;
       }
-      const employee = employees.find((e: Employee) => e.id === employeeId);
       return employee?.dailyWage || 0;
     }, [wageHistories, employees]);
 

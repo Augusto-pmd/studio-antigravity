@@ -150,8 +150,8 @@ export function useProjectExpenses(projectId: string) {
     isLoadingFundRequests;
     
   const getWageForDate = useCallback((employeeId: string, date: string): number => {
-    if (!wageHistories || !siteEmployees) {
-        const employee = siteEmployees?.find(e => e.id === employeeId);
+    const employee = siteEmployees?.find(e => e.id === employeeId);
+    if (!wageHistories) {
         return employee?.dailyWage || 0;
     }
 
@@ -162,7 +162,7 @@ export function useProjectExpenses(projectId: string) {
     if (histories.length > 0) {
         return histories[0].amount;
     }
-    const employee = siteEmployees.find((e: Employee) => e.id === employeeId);
+    
     return employee?.dailyWage || 0;
   }, [wageHistories, siteEmployees]);
 
@@ -273,7 +273,7 @@ export function useProjectExpenses(projectId: string) {
           description: descriptionWithDate,
         } as Expense;
       });
-  }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate, wageHistories]);
+  }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate]);
 
   const fundRequestExpenses = useMemo((): Expense[] => {
     if (!fundRequests || !payrollWeeks) return [];

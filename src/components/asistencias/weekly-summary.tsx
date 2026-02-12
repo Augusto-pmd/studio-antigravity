@@ -51,9 +51,9 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances || isLoadingWageHistories;
   
   const getWageForDate = useCallback((employeeId: string, date: string): {wage: number, hourlyRate: number} => {
-    if (!wageHistories || !employees) {
-        const currentEmployee = employees?.find((e: Employee) => e.id === employeeId);
-        const wage = currentEmployee?.dailyWage || 0;
+    const employee = employees?.find(e => e.id === employeeId);
+    if (!wageHistories) {
+        const wage = employee?.dailyWage || 0;
         return { wage, hourlyRate: wage / 8 };
     }
     
@@ -66,8 +66,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         return { wage, hourlyRate: wage / 8 };
     }
     
-    const currentEmployee = employees.find((e: Employee) => e.id === employeeId);
-    const wage = currentEmployee?.dailyWage || 0;
+    const wage = employee?.dailyWage || 0;
     return { wage, hourlyRate: wage / 8 };
 }, [wageHistories, employees]);
 
@@ -110,7 +109,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         return defaultResult;
     }
 
-  }, [weekAttendances, employees, weekAdvances, wageHistories, isLoadingSummaryData, getWageForDate]);
+  }, [weekAttendances, employees, weekAdvances, isLoadingSummaryData, getWageForDate]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = parseISO(startDate);

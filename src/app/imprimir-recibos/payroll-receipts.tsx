@@ -1,15 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useDoc, useCollection, useFirestore } from '@/firebase';
-import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification, FundRequest } from '@/lib/types';
+import { useMemo, useCallback } from 'react';
+import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
+import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, collectionGroup } from 'firebase/firestore';
+import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification, FundRequest, DailyWageHistory } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
-import { payrollWeekConverter, employeeConverter, attendanceConverter, cashAdvanceConverter, projectConverter, certificationConverter, fundRequestConverter } from '@/lib/converters';
+import { payrollWeekConverter, employeeConverter, attendanceConverter, cashAdvanceConverter, projectConverter, certificationConverter, fundRequestConverter, dailyWageHistoryConverter } from '@/lib/converters';
 
 
 const formatCurrency = (amount: number, currency: string = 'ARS') => new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -32,6 +32,7 @@ interface EmployeeReceiptData {
 
 export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'employees' | 'contractors' | 'fund-requests' | null }) {
   const firestore = useFirestore();
+  const { permissions } = useUser();
 
   const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
   const { data: week, isLoading: isLoadingWeek } = useDoc<PayrollWeek>(weekDocRef);
@@ -40,7 +41,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
 
   const attendanceQuery = useMemo(() => firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
-  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
+  const { data: attendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
   
   const advancesQuery = useMemo(() => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
   const { data: advances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
@@ -57,7 +58,10 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     ) : null, [firestore]);
   const { data: allFundRequests, isLoading: isLoadingFundRequests } = useCollection<FundRequest>(fundRequestsQuery);
 
-  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts || isLoadingFundRequests;
+  const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
+  const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
+
+  const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts || isLoadingFundRequests || isLoadingWageHistories;
 
   const weeklyFundRequests = useMemo(() => {
     if (!allFundRequests || !week) return [];
@@ -80,6 +84,26 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     if (!projects) return new Map<string, string>();
     return new Map(projects.map((p: Project) => [p.id, p.name]));
   }, [projects]);
+  
+  const getWageForDate = useCallback((employeeId: string, date: string): { wage: number, hourlyRate: number } => {
+    const employee = employees?.find(e => e.id === employeeId);
+    if (!wageHistories) {
+        const wage = employee?.dailyWage || 0;
+        return { wage, hourlyRate: wage / 8 };
+    }
+    
+    const histories = wageHistories
+        .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+    if (histories.length > 0) {
+        const wage = histories[0].amount;
+        return { wage, hourlyRate: wage / 8 };
+    }
+    
+    const wage = employee?.dailyWage || 0;
+    return { wage, hourlyRate: wage / 8 };
+}, [wageHistories, employees]);
 
   const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
     if (!week || !employees || !attendances || !advances) return [];
@@ -90,12 +114,24 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
 
       const daysPresent = employeeAttendances.filter((a: Attendance) => a.status === 'presente').length;
       const daysAbsent = employeeAttendances.filter((a: Attendance) => a.status === 'ausente').length;
-      const totalLateHours = employeeAttendances.reduce((sum: number, a: Attendance) => sum + a.lateHours, 0);
       
-      const hourlyRate = (employee.dailyWage || 0) / 8; // Assuming 8-hour day
-      const lateHoursDeduction = totalLateHours * hourlyRate;
+      const grossPay = employeeAttendances.reduce((sum: number, att: Attendance) => {
+        if (att.status === 'presente') {
+            const { wage } = getWageForDate(employee.id, att.date);
+            return sum + wage;
+        }
+        return sum;
+      }, 0);
+
+      const { totalLateHours, lateHoursDeduction } = employeeAttendances.reduce((acc: { totalLateHours: number, lateHoursDeduction: number }, att: Attendance) => {
+          if (att.status === 'presente' && att.lateHours > 0) {
+              const { hourlyRate } = getWageForDate(employee.id, att.date);
+              acc.totalLateHours += att.lateHours;
+              acc.lateHoursDeduction += att.lateHours * hourlyRate;
+          }
+          return acc;
+      }, { totalLateHours: 0, lateHoursDeduction: 0 });
       
-      const grossPay = daysPresent * (employee.dailyWage || 0);
       const totalAdvances = employeeAdvances.reduce((sum: number, ad: CashAdvance) => sum + ad.amount, 0);
       const netPay = grossPay - totalAdvances - lateHoursDeduction;
 
@@ -115,7 +151,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
         }
       };
     }).filter((data: EmployeeReceiptData) => data.summary.grossPay > 0 || data.summary.totalAdvances > 0);
-  }, [week, employees, attendances, advances]);
+  }, [week, employees, attendances, advances, getWageForDate]);
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Cargando datos de la planilla...</span></div>;
@@ -262,7 +298,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                 data.attendance.reduce((acc: Record<string, { days: number; earnings: number }>, attendance: Attendance) => {
                   if (attendance.status === 'presente' && attendance.projectId) {
                     const projectName = projectsMap.get(attendance.projectId) || 'Obra no asignada';
-                    const wage = data.employee.dailyWage || 0;
+                    const { wage } = getWageForDate(data.employee.id, attendance.date);
                     if (!acc[projectName]) {
                       acc[projectName] = { days: 0, earnings: 0 };
                     }
@@ -298,7 +334,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
                 <h4 className="font-medium text-xs mb-1 uppercase text-muted-foreground print:text-[8px] print:mb-0.5">Haberes</h4>
                 <div className="space-y-0.5 text-xs print:text-[9px]">
                   {projectAttendanceSummary.length > 0 ? (
-                    projectAttendanceSummary.map(([projectName, details]) => (
+                    projectAttendanceSummary.map(([projectName, details]: [string, { days: number; earnings: number }]) => (
                       <div key={projectName} className="flex justify-between">
                         <span>{projectName} ({details.days}d):</span>
                         <span>{formatCurrency(details.earnings)}</span>
