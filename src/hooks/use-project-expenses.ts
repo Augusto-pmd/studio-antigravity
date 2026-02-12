@@ -150,8 +150,10 @@ export function useProjectExpenses(projectId: string) {
     isLoadingFundRequests;
     
   const getWageForDate = useCallback((employeeId: string, date: string): number => {
-    const employee = siteEmployees?.find(e => e.id === employeeId);
-    if (!wageHistories) {
+    if (!siteEmployees) return 0;
+    const employee = siteEmployees.find(e => e.id === employeeId);
+
+    if (!permissions.canSupervise || !wageHistories) {
         return employee?.dailyWage || 0;
     }
 
@@ -164,7 +166,7 @@ export function useProjectExpenses(projectId: string) {
     }
     
     return employee?.dailyWage || 0;
-  }, [wageHistories, siteEmployees]);
+  }, [wageHistories, siteEmployees, permissions.canSupervise]);
 
   const officeExpenses = useMemo((): Expense[] => {
     if (!projectTimeLogs || !techOfficeEmployees || !payrollWeeks) return [];
