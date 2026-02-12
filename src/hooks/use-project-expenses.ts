@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type {
   Expense,
   TimeLog,
@@ -11,6 +11,7 @@ import type {
   Attendance,
   PayrollWeek,
   CashAdvance,
+  DailyWageHistory,
 } from '@/lib/types';
 import {
   timeLogConverter,
@@ -20,6 +21,7 @@ import {
   expenseConverter,
   payrollWeekConverter,
   cashAdvanceConverter,
+  dailyWageHistoryConverter,
 } from '@/lib/converters';
 import { format, parseISO } from 'date-fns';
 
@@ -126,6 +128,9 @@ export function useProjectExpenses(projectId: string) {
   );
   const { data: cashAdvances, isLoading: isLoadingCashAdvances } =
     useCollection<CashAdvance>(cashAdvancesQuery);
+    
+  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
   const isLoading =
     isLoadingProjectExpenses ||
@@ -134,7 +139,25 @@ export function useProjectExpenses(projectId: string) {
     isLoadingSiteEmployees ||
     isLoadingAttendances ||
     isLoadingPayrollWeeks ||
-    isLoadingCashAdvances;
+    isLoadingCashAdvances ||
+    isLoadingWageHistories;
+    
+  const getWageForDate = useCallback((employeeId: string, date: string): number => {
+    if (!wageHistories || !siteEmployees) {
+        const employee = siteEmployees?.find(e => e.id === employeeId);
+        return employee?.dailyWage || 0;
+    }
+
+    const histories = wageHistories
+        .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+    if (histories.length > 0) {
+        return histories[0].amount;
+    }
+    const employee = siteEmployees.find((e: Employee) => e.id === employeeId);
+    return employee?.dailyWage || 0;
+  }, [wageHistories, siteEmployees]);
 
   // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
@@ -175,26 +198,21 @@ export function useProjectExpenses(projectId: string) {
 
   // Create virtual expenses for site payroll and advances, grouped by week
   const payrollExpenses = useMemo((): Expense[] => {
-    if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
-
-    const employeeWageMap = new Map(
-      siteEmployees.map((e: Employee) => [e.id, { wage: e.dailyWage, name: e.name }])
-    );
-
+    if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances || !wageHistories) return [];
+    
     const weeklyCosts = new Map<string, { totalCost: number, week: PayrollWeek }>();
 
     // Aggregate attendance costs per week
     attendances.forEach((att: Attendance) => {
         if (att.status !== 'presente') return;
-
-        const employeeData = employeeWageMap.get(att.employeeId);
-        if (!employeeData) return;
         
         const week = payrollWeeks.find(pw => pw.id === att.payrollWeekId);
         if (!week) return;
 
         const weeklyCost = weeklyCosts.get(att.payrollWeekId) || { totalCost: 0, week };
-        weeklyCost.totalCost += employeeData.wage;
+        const wageForDay = getWageForDate(att.employeeId, att.date);
+        weeklyCost.totalCost += wageForDay;
+        
         weeklyCosts.set(att.payrollWeekId, weeklyCost);
     });
 
@@ -226,7 +244,7 @@ export function useProjectExpenses(projectId: string) {
         } as Expense;
     });
 
-  }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, representativeExchangeRate]);
+  }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate, wageHistories]);
 
   const allExpenses = useMemo(() => {
     const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
