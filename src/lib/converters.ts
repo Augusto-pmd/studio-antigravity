@@ -177,7 +177,14 @@ export const certificationConverter = {
 
 export const payrollWeekConverter = {
     toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => ({ ...snapshot.data(), id: snapshot.id } as PayrollWeek)
+    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
+        const data = snapshot.data(options)!;
+        return { 
+            ...data, 
+            id: snapshot.id,
+            exchangeRate: parseNumber(data.exchangeRate || 1)
+        } as PayrollWeek;
+    }
 };
 
 export const techOfficeEmployeeConverter = {

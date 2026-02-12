@@ -189,6 +189,7 @@ export interface PayrollWeek {
     id: string;
     startDate: string;
     endDate: string;
+    exchangeRate?: number;
 }
 
 export interface CashAdvance {

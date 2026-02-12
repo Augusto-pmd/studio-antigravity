@@ -964,6 +964,10 @@
         "endDate": {
           "type": "string",
           "format": "date-time"
+        },
+        "exchangeRate": {
+          "type": "number",
+          "description": "The USD exchange rate to apply to all payroll costs for this week."
         }
       },
       "required": [

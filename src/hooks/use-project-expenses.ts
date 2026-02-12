@@ -9,6 +9,7 @@ import type {
   TechnicalOfficeEmployee,
   Employee,
   Attendance,
+  PayrollWeek,
 } from '@/lib/types';
 import {
   timeLogConverter,
@@ -16,6 +17,7 @@ import {
   employeeConverter,
   attendanceConverter,
   expenseConverter,
+  payrollWeekConverter,
 } from '@/lib/converters';
 
 export function useProjectExpenses(projectId: string) {
@@ -35,6 +37,15 @@ export function useProjectExpenses(projectId: string) {
   );
   const { data: projectExpenses, isLoading: isLoadingProjectExpenses } =
     useCollection<Expense>(projectExpensesQuery);
+  
+  const payrollWeeksQuery = useMemo(
+    () =>
+      firestore
+        ? collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter)
+        : null,
+    [firestore]
+  );
+  const { data: payrollWeeks, isLoading: isLoadingPayrollWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
 
   const representativeExchangeRate = useMemo(() => {
     if (!projectExpenses) return 1;
@@ -59,7 +70,7 @@ export function useProjectExpenses(projectId: string) {
     [firestore, projectId]
   );
   const { data: timeLogs, isLoading: isLoadingTimeLogs } =
-    useCollection<TimeLog>(allTimeLogsQuery);
+    useCollection<TimeLog>(timeLogsQuery);
 
   const techOfficeEmployeesQuery = useMemo(
     () =>
@@ -103,7 +114,8 @@ export function useProjectExpenses(projectId: string) {
     isLoadingTimeLogs ||
     isLoadingTechOffice ||
     isLoadingSiteEmployees ||
-    isLoadingAttendances;
+    isLoadingAttendances ||
+    isLoadingPayrollWeeks;
 
   // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
@@ -144,10 +156,14 @@ export function useProjectExpenses(projectId: string) {
 
   // Create virtual expenses for site payroll
   const payrollExpenses = useMemo((): Expense[] => {
-    if (!attendances || !siteEmployees) return [];
+    if (!attendances || !siteEmployees || !payrollWeeks) return [];
 
     const employeeWageMap = new Map(
       siteEmployees.map((e: Employee) => [e.id, { wage: e.dailyWage, name: e.name }])
+    );
+
+    const payrollWeekMap = new Map(
+      payrollWeeks.map((pw: PayrollWeek) => [pw.id, pw.exchangeRate || 1])
     );
 
     return attendances
@@ -156,6 +172,8 @@ export function useProjectExpenses(projectId: string) {
 
         const employeeData = employeeWageMap.get(att.employeeId);
         if (!employeeData) return null;
+        
+        const weeklyExchangeRate = payrollWeekMap.get(att.payrollWeekId) || 1;
 
         return {
           id: `payroll-${att.id}`,
@@ -166,13 +184,13 @@ export function useProjectExpenses(projectId: string) {
           documentType: 'Recibo Común',
           amount: employeeData.wage,
           currency: 'ARS',
-          exchangeRate: representativeExchangeRate,
+          exchangeRate: weeklyExchangeRate,
           status: 'Pagado',
           description: `Costo Jornal: ${employeeData.name}`,
         } as Expense;
       })
       .filter((e): e is Expense => e !== null);
-  }, [attendances, siteEmployees, representativeExchangeRate]);
+  }, [attendances, siteEmployees, payrollWeeks]);
 
   const allExpenses = useMemo(() => {
     const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];

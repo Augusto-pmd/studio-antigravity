@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, getDocs, limit, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, getDocs, limit, doc, setDoc, updateDoc } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
@@ -14,13 +14,15 @@ import { ContractorCertifications } from '@/components/pago-semanal/contractor-c
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Printer } from 'lucide-react';
+import { Calendar as CalendarIcon, Printer, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 const fundRequestConverter = {
@@ -58,6 +60,9 @@ export default function PagoSemanalPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
     const [isLoadingCurrentWeek, setIsLoadingCurrentWeek] = useState(true);
+    const [weekExchangeRate, setWeekExchangeRate] = useState('');
+    const [isSavingRate, setIsSavingRate] = useState(false);
+
 
     useEffect(() => {
         if (!firestore) return;
@@ -83,13 +88,16 @@ export default function PagoSemanalPage() {
                         id: newWeekRef.id,
                         startDate: weekStartISO,
                         endDate: weekEnd.toISOString(),
+                        exchangeRate: 1,
                     };
                     await setDoc(newWeekRef, weekData);
                 }
                 setCurrentWeek(weekData);
+                setWeekExchangeRate(weekData?.exchangeRate?.toString() || '1');
             } catch (error) {
                  console.error("Error finding or creating week:", error);
                 setCurrentWeek(null);
+                setWeekExchangeRate('');
                 toast({
                     variant: "destructive",
                     title: "Error al cargar la semana",
@@ -134,6 +142,27 @@ export default function PagoSemanalPage() {
             }
         });
     }, [allRequests, currentWeek]);
+
+    const handleUpdateExchangeRate = async () => {
+        if (!firestore || !currentWeek) return;
+        const rate = parseFloat(weekExchangeRate);
+        if (isNaN(rate) || rate <= 0) {
+            toast({ variant: 'destructive', title: 'Tipo de cambio inválido' });
+            return;
+        }
+
+        setIsSavingRate(true);
+        try {
+            const weekRef = doc(firestore, 'payrollWeeks', currentWeek.id);
+            await updateDoc(weekRef, { exchangeRate: rate });
+            toast({ title: 'Tipo de cambio guardado', description: `Se aplicará una tasa de ${rate} a esta semana.` });
+        } catch (error) {
+            console.error("Error updating exchange rate:", error);
+            toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo actualizar el tipo de cambio.' });
+        } finally {
+            setIsSavingRate(false);
+        }
+    }
 
   return (
     <div className="flex flex-col gap-6">
@@ -184,6 +213,24 @@ export default function PagoSemanalPage() {
                         />
                     </PopoverContent>
                 </Popover>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
+                    <div className="space-y-2">
+                        <Label htmlFor="week-exchange-rate">Tipo de Cambio Semanal (USD)</Label>
+                        <Input 
+                            id="week-exchange-rate"
+                            type="number"
+                            placeholder="Ej. 900"
+                            value={weekExchangeRate}
+                            onChange={(e) => setWeekExchangeRate(e.target.value)}
+                            disabled={!currentWeek || !isAdmin}
+                        />
+                        <p className="text-xs text-muted-foreground">Este tipo de cambio se usará para calcular el costo en USD de la mano de obra.</p>
+                    </div>
+                    <Button onClick={handleUpdateExchangeRate} disabled={!currentWeek || isSavingRate || !isAdmin}>
+                        {isSavingRate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Guardar Cambio
+                    </Button>
+                </div>
             </CardContent>
         </Card>
 
