@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type {
   Expense,
@@ -29,6 +29,7 @@ import { format, parseISO } from 'date-fns';
 
 export function useProjectExpenses(projectId: string) {
   const firestore = useFirestore();
+  const { permissions } = useUser();
 
   // Fetch all data sources required for expense calculation
   const projectExpensesQuery = useMemo(
@@ -119,7 +120,7 @@ export function useProjectExpenses(projectId: string) {
   const { data: cashAdvances, isLoading: isLoadingCashAdvances } =
     useCollection<CashAdvance>(cashAdvancesQuery);
     
-  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
   const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
    const fundRequestsQuery = useMemo(
@@ -155,8 +156,8 @@ export function useProjectExpenses(projectId: string) {
     }
 
     const histories = wageHistories
-        .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-        .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+        .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
         return histories[0].amount;
@@ -214,7 +215,7 @@ export function useProjectExpenses(projectId: string) {
   }, [projectTimeLogs, techOfficeEmployees, payrollWeeks, projectId]);
 
   const payrollExpenses = useMemo((): Expense[] => {
-    if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances || !wageHistories) return [];
+    if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
 
     const weeklyData = new Map<string, { week: PayrollWeek; attendanceCost: number; advanceCost: number }>();
 

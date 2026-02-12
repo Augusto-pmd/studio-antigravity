@@ -28,7 +28,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWeek?: PayrollWeek | null, isLoadingCurrentWeek: boolean }) {
-  const { firestore } = useUser();
+  const { firestore, permissions } = useUser();
   
   const attendanceQuery = useMemo(
       () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
@@ -45,21 +45,24 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   );
   const { data: weekAdvances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
   
-  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
   const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
   const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances || isLoadingWageHistories;
   
   const weeklySummaryData = useMemo(() => {
     const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
-    if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances || !wageHistories) {
-        return defaultResult;
-    }
-    
+
     const getWageForDate = (employeeId: string, date: string): {wage: number, hourlyRate: number} => {
+        if (!wageHistories || !employees) {
+            const currentEmployee = employees?.find((e: Employee) => e.id === employeeId);
+            const wage = currentEmployee?.dailyWage || 0;
+            return { wage, hourlyRate: wage / 8 };
+        }
+        
         const histories = wageHistories
-            .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-            .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+            .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+            .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
         if (histories.length > 0) {
             const wage = histories[0].amount;
@@ -70,6 +73,10 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         const wage = currentEmployee?.dailyWage || 0;
         return { wage, hourlyRate: wage / 8 };
     };
+    
+    if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances) {
+        return defaultResult;
+    }
     
     try {
         const grossWages = weekAttendances.reduce((sum: number, attendance: Attendance) => {

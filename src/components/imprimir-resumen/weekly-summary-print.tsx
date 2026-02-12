@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { useCollection, useFirestore, useDoc } from '@/firebase';
+import { useCollection, useFirestore, useDoc, useUser } from '@/firebase';
 import { collection, query, where, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, collectionGroup } from 'firebase/firestore';
 import type { Employee, Attendance, FundRequest, ContractorCertification, Project, PayrollWeek, DailyWageHistory } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ type SummaryData = {
 
 export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     const firestore = useFirestore();
+    const { permissions } = useUser();
 
     // --- Data Fetching Hooks ---
     const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
@@ -56,7 +57,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     const certificationsQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', weekId), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, weekId]);
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
     
-    const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+    const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
     const { data: wageHistories, isLoading: l7 } = useCollection(wageHistoriesQuery);
 
     const fundRequests = useMemo(() => {
@@ -82,8 +83,8 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
       }
 
       const histories = wageHistories
-          .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-          .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+          .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+          .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
       if (histories.length > 0) {
           return histories[0].amount;

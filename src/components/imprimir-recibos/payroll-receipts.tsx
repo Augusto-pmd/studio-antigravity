@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { useDoc, useCollection, useFirestore } from '@/firebase';
+import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, collectionGroup } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, Project, ContractorCertification, FundRequest, DailyWageHistory } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
@@ -32,6 +32,7 @@ interface EmployeeReceiptData {
 
 export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'employees' | 'contractors' | 'fund-requests' | null }) {
   const firestore = useFirestore();
+  const { permissions } = useUser();
 
   const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
   const { data: week, isLoading: isLoadingWeek } = useDoc<PayrollWeek>(weekDocRef);
@@ -57,7 +58,7 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
     ) : null, [firestore]);
   const { data: allFundRequests, isLoading: isLoadingFundRequests } = useCollection<FundRequest>(fundRequestsQuery);
 
-  const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+  const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
   const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
   const isLoading = isLoadingWeek || isLoadingEmployees || isLoadingAttendances || isLoadingAdvances || isLoadingProjects || isLoadingCerts || isLoadingFundRequests || isLoadingWageHistories;
@@ -85,11 +86,15 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   }, [projects]);
   
   const getWageForDate = useCallback((employeeId: string, date: string): { wage: number, hourlyRate: number } => {
-    if (!wageHistories || !employees) return { wage: 0, hourlyRate: 0 };
+    if (!wageHistories || !employees) {
+        const currentEmployee = employees?.find((e: Employee) => e.id === employeeId);
+        const wage = currentEmployee?.dailyWage || 0;
+        return { wage, hourlyRate: wage / 8 };
+    };
     
     const histories = wageHistories
-        .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-        .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+        .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
         const wage = histories[0].amount;

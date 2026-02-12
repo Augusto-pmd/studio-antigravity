@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, limit, getDocs, setDoc, collectionGroup } from 'firebase/firestore';
 import type { PayrollWeek, Employee, Attendance, CashAdvance, FundRequest, ContractorCertification, Project, DailyWageHistory } from '@/lib/types';
@@ -138,7 +138,7 @@ export default function ResumenSemanalPage() {
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
     
-    const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+    const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
     const { data: wageHistories, isLoading: l7 } = useCollection(wageHistoriesQuery);
 
     const isLoadingData = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
@@ -153,16 +153,20 @@ export default function ResumenSemanalPage() {
         const defaultResult: SummaryData = { totalPersonal: 0, totalContratistas: 0, totalSolicitudes: 0, grandTotal: 0, breakdown: [] };
 
         try {
-            if (!currentWeek || !employees || !projects || !wageHistories) {
+            if (!currentWeek || !employees || !projects) {
                 setSummary(defaultResult);
                 setIsCalculating(false);
                 return;
             }
-
+            
             const getWageForDate = (employeeId: string, date: string): number => {
+                if (!wageHistories) {
+                     const employee = employees.find((e: Employee) => e.id === employeeId);
+                     return employee?.dailyWage || 0;
+                }
                 const histories = wageHistories
-                    .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-                    .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+                    .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+                    .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
         
                 if (histories.length > 0) {
                     return histories[0].amount;
@@ -285,7 +289,7 @@ export default function ResumenSemanalPage() {
                             <Calendar
                             mode="single"
                             selected={selectedDate}
-                            onSelect={(date: any) => date && setSelectedDate(date)}
+                            onSelect={(d: any) => d && setSelectedDate(d)}
                             initialFocus
                             locale={es}
                             />
