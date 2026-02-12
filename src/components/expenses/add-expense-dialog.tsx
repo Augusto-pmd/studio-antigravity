@@ -65,9 +65,11 @@ const parseOptionalFloat = (value: string): number | undefined => {
 
 export function AddExpenseDialog({
   expense,
+  projectId: defaultProjectId,
   children,
 }: {
   expense?: Expense;
+  projectId?: string;
   children?: React.ReactNode;
 }) {
   const { user, permissions, firestore, firebaseApp } = useUser();
@@ -82,7 +84,7 @@ export function AddExpenseDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProject] = useState(defaultProjectId || '');
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -115,7 +117,7 @@ export function AddExpenseDialog({
   const isSupplierBlocked = false; 
 
   const resetForm = () => {
-    setSelectedProject(expense?.projectId || '');
+    setSelectedProject(defaultProjectId || expense?.projectId || '');
     setSelectedSupplier(expense?.supplierId || '');
     setSelectedCategory(expense?.categoryId || '');
     setDescription(expense?.description || '');
@@ -139,7 +141,7 @@ export function AddExpenseDialog({
     if (open) {
         resetForm();
     }
-  }, [open, expense]);
+  }, [open, expense, defaultProjectId]);
 
   useEffect(() => {
     if(!open) {
@@ -379,7 +381,7 @@ export function AddExpenseDialog({
 
           <div className="space-y-2">
             <Label htmlFor="project">Obra</Label>
-            <Select onValueChange={setSelectedProject} value={selectedProject} disabled={isEditMode || isLoadingProjects}>
+            <Select onValueChange={setSelectedProject} value={selectedProject} disabled={!!defaultProjectId || isEditMode || isLoadingProjects}>
               <SelectTrigger id="project">
                 <SelectValue placeholder="Seleccione una obra" />
               </SelectTrigger>

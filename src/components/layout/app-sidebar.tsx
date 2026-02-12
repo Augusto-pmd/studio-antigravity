@@ -72,7 +72,6 @@ const menuItems = [
   { href: "/pedidos-y-alertas", label: "Pedidos y Alertas", icon: Bell },
   { href: "/mis-horas", label: "Mis Horas", icon: Clock },
   { href: "/caja", label: "Mi Caja", icon: Wallet, pañoleroHidden: true },
-  { href: "/gastos", label: "Gastos por Obra", icon: Receipt, pañoleroHidden: true },
   { href: "/ventas", label: "Ventas", icon: FileText, pañoleroHidden: true },
   { href: "/contabilidad", label: "Contabilidad", icon: BookText, pañoleroHidden: true },
   {

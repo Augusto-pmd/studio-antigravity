@@ -44,9 +44,10 @@ interface ExpensesTableProps {
   isLoading: boolean;
   projectsMap: Record<string, string>;
   suppliersMap: Record<string, string>;
+  hideProjectColumn?: boolean;
 }
 
-export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap }: ExpensesTableProps) {
+export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap, hideProjectColumn = false }: ExpensesTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { permissions } = useUser();
@@ -89,8 +90,8 @@ export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap }
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Obra</TableHead>
-                <TableHead className="hidden md:table-cell">Proveedor</TableHead>
+                {!hideProjectColumn && <TableHead>Obra</TableHead>}
+                <TableHead className={cn(hideProjectColumn && 'pl-4')}>Proveedor</TableHead>
                 <TableHead className="hidden md:table-cell">Fecha</TableHead>
                 <TableHead className="hidden lg:table-cell">Estado</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
@@ -116,12 +117,17 @@ export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap }
                 const isVirtual = expense.supplierId === 'OFICINA-TECNICA' || expense.supplierId === 'personal-propio';
                 return (
                 <TableRow key={expense.id}>
-                  <TableCell>
-                    <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
-                    <div className="text-sm text-muted-foreground">{getCategoryName(expense.categoryId)}</div>
+                  {!hideProjectColumn && (
+                    <TableCell>
+                      <div className="font-medium">{projectsMap[expense.projectId] || expense.projectId}</div>
+                      <div className="text-sm text-muted-foreground">{getCategoryName(expense.categoryId)}</div>
+                    </TableCell>
+                  )}
+                  <TableCell className={cn(hideProjectColumn && 'pl-4')}>
+                    <div className="font-medium">{suppliersMap[expense.supplierId] || expense.supplierId}</div>
                     <div className="text-sm text-muted-foreground">{expense.documentType}</div>
                     <div className="text-sm text-muted-foreground md:hidden mt-2 space-y-1">
-                      <p>{suppliersMap[expense.supplierId] || expense.supplierId}</p>
+                      {!hideProjectColumn && <p>{projectsMap[expense.projectId] || expense.projectId}</p>}
                       <p>{formatDate(expense.date)}</p>
                       <Badge variant={expense.status === 'Pagado' ? 'default' : 'secondary'} className={cn(
                           'capitalize',
@@ -132,7 +138,6 @@ export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap }
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{suppliersMap[expense.supplierId] || expense.supplierId}</TableCell>
                   <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
                   <TableCell className="hidden lg:table-cell">
                      <Badge variant={expense.status === 'Pagado' ? 'default' : 'secondary'} className={cn(

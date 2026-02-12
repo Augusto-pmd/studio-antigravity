@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Project } from '@/lib/types';
-import { projectConverter } from '@/lib/converters';
+import { useDoc, useFirestore, useCollection } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
+import type { Project, Supplier } from '@/lib/types';
+import { projectConverter, supplierConverter } from '@/lib/converters';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
@@ -12,10 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ProjectExpenseSummary } from './project-expense-summary';
+import { ExpensesTable } from '@/components/expenses/expenses-table';
+import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProjectExpenses } from '@/hooks/use-project-expenses';
@@ -35,10 +36,26 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
   );
   const { data: project, isLoading: isLoadingProject } = useDoc<Project>(projectDocRef);
 
-  const { expenses, isLoading: isLoadingExpenses } =
-    useProjectExpenses(projectId);
+  const { expenses, isLoading: isLoadingExpenses } = useProjectExpenses(projectId);
 
-  const isLoading = isLoadingProject || isLoadingExpenses;
+  const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
+  const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
+
+  const suppliersMap = useMemo(() => {
+    const map = suppliers?.reduce((acc: Record<string, string>, s: any) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
+    map['OFICINA-TECNICA'] = 'Oficina Técnica';
+    map['personal-propio'] = 'Personal Propio';
+    map['solicitudes-fondos'] = 'Solicitudes de Fondos (Interno)';
+    map['logistica-vial'] = 'Gastos de Caja (Rápidos)';
+    return map;
+  }, [suppliers]);
+
+  const projectsMap = useMemo(() => {
+    if (!project) return {};
+    return { [project.id]: project.name };
+  }, [project]);
+
+  const isLoading = isLoadingProject || isLoadingExpenses || isLoadingSuppliers;
 
   if (isLoading) {
     return (
@@ -156,7 +173,23 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         </Card>
       </div>
 
-      <ProjectExpenseSummary expenses={expenses} />
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Listado de Gastos</h2>
+        <AddExpenseDialog projectId={projectId}>
+            <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Cargar Gasto
+            </Button>
+        </AddExpenseDialog>
+      </div>
+      
+      <ExpensesTable
+        expenses={expenses}
+        isLoading={isLoading}
+        projectsMap={projectsMap}
+        suppliersMap={suppliersMap}
+        hideProjectColumn={true}
+      />
     </div>
   );
 }
