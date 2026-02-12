@@ -155,6 +155,12 @@ export function AddExpenseDialog({
         setDate(new Date());
     }
   }, [expense]);
+
+  useEffect(() => {
+    if (currency === 'ARS') {
+        setExchangeRate('1');
+    }
+  }, [currency]);
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -217,7 +223,7 @@ export function AddExpenseDialog({
 
   const handleSaveExpense = () => {
     if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
-      toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios.' });
+      toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios, incluyendo el tipo de cambio.' });
       return;
     }
     if ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber) {
@@ -527,6 +533,7 @@ export function AddExpenseDialog({
               placeholder="Dólar BNA compra"
               value={exchangeRate}
               onChange={(e) => setExchangeRate(e.target.value)}
+              disabled={currency === 'ARS'}
             />
           </div>
           
