@@ -199,52 +199,68 @@ export function useProjectExpenses(projectId: string) {
   // Create virtual expenses for site payroll and advances, grouped by week
   const payrollExpenses = useMemo((): Expense[] => {
     if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances || !wageHistories) return [];
-    
-    const weeklyCosts = new Map<string, { totalCost: number, week: PayrollWeek }>();
 
-    // Aggregate attendance costs per week
+    const weeklyData = new Map<string, { week: PayrollWeek; attendanceCost: number; advanceCost: number }>();
+
+    // Initialize map with all relevant weeks from payrollWeeks to ensure all weeks are considered
+    payrollWeeks.forEach(week => {
+      weeklyData.set(week.id, { week, attendanceCost: 0, advanceCost: 0 });
+    });
+
+    // Process attendances
     attendances.forEach((att: Attendance) => {
-        if (att.status !== 'presente') return;
-        
-        const week = payrollWeeks.find(pw => pw.id === att.payrollWeekId);
-        if (!week) return;
+      if (att.status !== 'presente' || !att.payrollWeekId) return;
 
-        const weeklyCost = weeklyCosts.get(att.payrollWeekId) || { totalCost: 0, week };
+      const data = weeklyData.get(att.payrollWeekId);
+      if (data) {
         const wageForDay = getWageForDate(att.employeeId, att.date);
-        weeklyCost.totalCost += wageForDay;
-        
-        weeklyCosts.set(att.payrollWeekId, weeklyCost);
+        data.attendanceCost += wageForDay;
+      }
     });
 
-    // Aggregate cash advance costs per week
+    // Process cash advances
     cashAdvances.forEach((advance: CashAdvance) => {
-      const week = payrollWeeks.find(pw => pw.id === advance.payrollWeekId);
-      if (!week) return;
-      
-      const weeklyCost = weeklyCosts.get(advance.payrollWeekId) || { totalCost: 0, week };
-      weeklyCost.totalCost += advance.amount;
-      weeklyCosts.set(advance.payrollWeekId, weeklyCost);
+      if (!advance.payrollWeekId) return;
+      const data = weeklyData.get(advance.payrollWeekId);
+      if (data) {
+        data.advanceCost += advance.amount;
+      }
     });
 
-    return Array.from(weeklyCosts.entries()).map(([weekId, data]): Expense => {
-        const { totalCost, week } = data;
+    // Create virtual expenses from aggregated data
+    return Array.from(weeklyData.values())
+      .filter(data => data.attendanceCost > 0 || data.advanceCost > 0)
+      .map((data): Expense => {
+        const { week, attendanceCost, advanceCost } = data;
+        const totalCost = attendanceCost + advanceCost;
+
+        let description = 'Costo Desconocido';
+        if (attendanceCost > 0 && advanceCost > 0) {
+          description = 'Costo Personal y Adelantos';
+        } else if (attendanceCost > 0) {
+          description = 'Costo Mano de Obra';
+        } else if (advanceCost > 0) {
+          description = 'Adelantos de Personal';
+        }
         
-        return {
-            id: `payroll-week-${weekId}`,
-            projectId,
-            date: week.endDate, // Use week end date for sorting
-            supplierId: 'personal-propio',
-            categoryId: 'CAT-02', // Mano de Obra
-            documentType: 'Recibo Común',
-            amount: totalCost,
-            currency: 'ARS',
-            exchangeRate: week.exchangeRate || 1,
-            status: 'Pagado',
-            description: `Costo de personal y adelantos - Semana ${format(parseISO(week.startDate), 'dd/MM/yyyy')} al ${format(parseISO(week.endDate), 'dd/MM/yyyy')}`,
-        } as Expense;
-    });
+        const descriptionWithDate = `${description} - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')} a ${format(parseISO(week.endDate), 'dd/MM/yy')}`;
 
+        return {
+          id: `payroll-week-${week.id}`,
+          projectId,
+          date: week.endDate, // Use week end date for sorting
+          supplierId: 'personal-propio',
+          categoryId: 'CAT-02', // Mano de Obra
+          documentType: 'Recibo Común',
+          amount: totalCost,
+          currency: 'ARS',
+          exchangeRate: week.exchangeRate || 1,
+          status: 'Pagado',
+          description: descriptionWithDate,
+        } as Expense;
+      });
   }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate, wageHistories]);
+
 
   const allExpenses = useMemo(() => {
     const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
