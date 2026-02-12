@@ -155,12 +155,6 @@ export function AddExpenseDialog({
         setDate(new Date());
     }
   }, [expense]);
-
-  useEffect(() => {
-    if (currency === 'ARS') {
-        setExchangeRate('1');
-    }
-  }, [currency]);
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -526,14 +520,13 @@ export function AddExpenseDialog({
             </RadioGroup>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="exchangeRate">Tipo de Cambio</Label>
+            <Label htmlFor="exchangeRate">Tipo de Cambio *</Label>
             <Input
               id="exchangeRate"
               type="number"
               placeholder="Dólar BNA compra"
               value={exchangeRate}
               onChange={(e) => setExchangeRate(e.target.value)}
-              disabled={currency === 'ARS'}
             />
           </div>
           
@@ -621,3 +614,5 @@ export function AddExpenseDialog({
     </Dialog>
   );
 }
+
+    
