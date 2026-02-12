@@ -73,6 +73,10 @@ service cloud.firestore {
       allow list, create: if canManageSales();
     }
     
+    match /{path=**}/expenses/{expenseId} {
+      allow read: if isSignedIn();
+    }
+    
     match /projects/{projectId}/expenses/{expenseId} {
       allow get, write: if isSignedIn();
     }
@@ -86,6 +90,10 @@ service cloud.firestore {
     }
      match /suppliers {
       allow list: if isSignedIn();
+    }
+
+    match /{path=**}/dailyWageHistory/{historyId} {
+      allow read: if canSupervise();
     }
     
     match /employees/{employeeId} {
