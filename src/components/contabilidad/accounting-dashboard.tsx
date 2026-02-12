@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { PlanesDePagoTable } from '@/components/planes-de-pago/planes-de-pago-table';
 import { expenseConverter, saleConverter } from '@/lib/converters';
+import { TreasuryDashboard } from '../tesoreria/treasury-dashboard';
 
 
 export function AccountingDashboard() {
@@ -95,22 +96,27 @@ export function AccountingDashboard() {
 
   return (
     <div className="space-y-6">
-       <Tabs defaultValue="suppliers">
-          <TabsList className="grid w-full grid-cols-3 lg:w-fit">
-            <TabsTrigger value="suppliers">Proveedores/Clientes</TabsTrigger>
-            <TabsTrigger value="salaries">Salarios</TabsTrigger>
+       <Tabs defaultValue="cuentas-corrientes" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+            <TabsTrigger value="cuentas-corrientes">Cuentas Corrientes</TabsTrigger>
+            <TabsTrigger value="salarios">Salarios</TabsTrigger>
             <TabsTrigger value="moratorias">Planes de Pago</TabsTrigger>
+            <TabsTrigger value="impuestos">Impuestos y Reportes</TabsTrigger>
+            <TabsTrigger value="flujo-dinero">Flujo de Dinero</TabsTrigger>
           </TabsList>
-          <TabsContent value="suppliers">
+
+          <TabsContent value="cuentas-corrientes" className="mt-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <AccountsPayable />
                 <AccountsReceivable />
             </div>
           </TabsContent>
-          <TabsContent value="salaries">
+
+          <TabsContent value="salarios" className="mt-6">
             <SalaryPayables />
           </TabsContent>
-          <TabsContent value="moratorias">
+          
+          <TabsContent value="moratorias" className="mt-6">
             <Card>
               <CardHeader className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -129,14 +135,20 @@ export function AccountingDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-       </Tabs>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <IvaSummary ivaCredit={ivaCredit} ivaDebit={ivaDebit} />
-        <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />
-      </div>
-      <RetencionesSummary retGanancias={retGanancias} retIva={retIva} retIibb={retIibb} retSuss={retSuss} />
-      <ExpenseReport expenses={formalExpenses || []} isLoading={isLoadingExpenses} />
+          <TabsContent value="impuestos" className="mt-6 space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <IvaSummary ivaCredit={ivaCredit} ivaDebit={ivaDebit} />
+                <IibbSummary iibbCABA={iibbCABA} iibbProvincia={iibbProvincia} />
+              </div>
+              <RetencionesSummary retGanancias={retGanancias} retIva={retIva} retIibb={retIibb} retSuss={retSuss} />
+              <ExpenseReport expenses={formalExpenses || []} isLoading={isLoadingExpenses} />
+          </TabsContent>
+          
+           <TabsContent value="flujo-dinero" className="mt-6">
+            <TreasuryDashboard />
+          </TabsContent>
+       </Tabs>
     </div>
   );
 }

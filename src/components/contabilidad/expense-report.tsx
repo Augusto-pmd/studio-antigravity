@@ -10,9 +10,9 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Expense } from '@/lib/types';
-import { parseISO, format as formatDateFns } from 'date-fns';
+import { parseISO, format as formatDateFns, getYear } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase';
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { expenseCategories } from '@/lib/data';
 import { projectConverter, supplierConverter } from '@/lib/converters';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formatCurrency = (amount: number | undefined, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -38,6 +39,8 @@ const formatDate = (dateString?: string) => {
 
 export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; isLoading: boolean }) {
   const firestore = useFirestore();
+  
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -53,8 +56,20 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
     return suppliers?.reduce((acc: Record<string, string>, s: Supplier) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
   }, [suppliers]);
   
+  const availableYears = useMemo(() => {
+    if (!expenses || expenses.length === 0) return [new Date().getFullYear().toString()];
+    const years = new Set(expenses.map(e => getYear(parseISO(e.date)).toString()));
+    return Array.from(years).sort((a,b) => parseInt(b) - parseInt(a));
+  }, [expenses]);
+  
+  const filteredExpenses = useMemo(() => {
+    if (!selectedYear) return expenses;
+    return expenses.filter(e => getYear(parseISO(e.date)).toString() === selectedYear);
+  }, [expenses, selectedYear]);
+  
+  
   const handleExportCSV = () => {
-    if (!expenses || expenses.length === 0) {
+    if (!filteredExpenses || filteredExpenses.length === 0) {
       return;
     }
 
@@ -73,7 +88,7 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
       "IVA", "IIBB", "Jurisdicción IIBB", "Ret. Ganancias", "Ret. IVA", "Ret. IIBB", "Ret. SUSS"
     ];
 
-    const rows = expenses.map((expense: Expense) => [
+    const rows = filteredExpenses.map((expense: Expense) => [
       expense.id,
       formatDate(expense.date),
       expense.projectId,
@@ -96,11 +111,11 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
     ].map(escapeCSV).join(','));
 
     const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `reporte_gastos_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `reporte_gastos_${selectedYear}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -121,17 +136,27 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
 
   return (
     <Card>
-      <CardHeader className="flex-col items-start gap-y-2 sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="flex-col items-start gap-y-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Libro de IVA Compras</CardTitle>
           <CardDescription>
             Detalle de facturas y notas de crédito que componen el crédito fiscal. Puede exportar esta vista a formato CSV.
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !expenses || expenses.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
-          Exportar a CSV
-        </Button>
+        <div className="flex gap-2">
+           <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Año" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !filteredExpenses || filteredExpenses.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-lg border">
@@ -150,14 +175,14 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
             </TableHeader>
             <TableBody>
               {(isLoading || isLoadingProjects || isLoadingSuppliers) && renderSkeleton()}
-              {!isLoading && expenses.length === 0 && (
+              {!isLoading && filteredExpenses.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
-                    No hay gastos registrados para mostrar.
+                    No hay gastos para el año seleccionado.
                   </TableCell>
                 </TableRow>
               )}
-              {expenses.map((expense: Expense) => (
+              {filteredExpenses.map((expense: Expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>
                     <div className="font-medium">{formatDate(expense.date)}</div>
