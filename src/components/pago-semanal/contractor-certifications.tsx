@@ -152,6 +152,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
             supplierId: cert.contractorId,
             categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
             documentType: 'Recibo Común',
+            paymentSource: 'Tesorería',
             description: `Certificación de contratista: ${
               cert.contractorName
             } - Semana ${format(

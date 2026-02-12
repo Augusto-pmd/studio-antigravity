@@ -206,6 +206,7 @@ export function useProjectExpenses(projectId: string) {
           currency: 'ARS',
           exchangeRate: week.exchangeRate || 0,
           status: 'Pagado',
+          paymentSource: 'Tesorería',
           description: `Costo Horas Oficina - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')}`,
         } as Expense;
     });
@@ -267,6 +268,7 @@ export function useProjectExpenses(projectId: string) {
           currency: 'ARS',
           exchangeRate: week.exchangeRate || 0,
           status: 'Pagado',
+          paymentSource: 'Tesorería',
           description: descriptionWithDate,
         } as Expense;
       });
@@ -297,6 +299,7 @@ export function useProjectExpenses(projectId: string) {
         currency: 'ARS',
         exchangeRate: 1, // Already converted
         status: 'Pagado',
+        paymentSource: 'Caja Chica',
         description: `Solicitud: ${req.requesterName} - ${
           req.description || req.category
         }`,

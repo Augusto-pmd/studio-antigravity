@@ -32,7 +32,7 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
         setError(null);
       },
       (err) => {
-        if (err.message.includes("Missing or insufficient permissions")) {
+        if (err.code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
                 path: '(unknown collection)',
                 operation: 'list',
