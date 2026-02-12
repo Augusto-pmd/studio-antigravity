@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -50,29 +50,29 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
 
   const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances || isLoadingWageHistories;
   
-  const weeklySummaryData = useMemo(() => {
-    const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
-
-    const getWageForDate = (employeeId: string, date: string): {wage: number, hourlyRate: number} => {
-        if (!wageHistories || !employees) {
-            const currentEmployee = employees?.find((e: Employee) => e.id === employeeId);
-            const wage = currentEmployee?.dailyWage || 0;
-            return { wage, hourlyRate: wage / 8 };
-        }
-        
-        const histories = wageHistories
-            .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-            .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
-
-        if (histories.length > 0) {
-            const wage = histories[0].amount;
-            return { wage, hourlyRate: wage / 8 };
-        }
-        
-        const currentEmployee = employees.find((e: Employee) => e.id === employeeId);
+  const getWageForDate = useCallback((employeeId: string, date: string): {wage: number, hourlyRate: number} => {
+    if (!wageHistories || !employees) {
+        const currentEmployee = employees?.find((e: Employee) => e.id === employeeId);
         const wage = currentEmployee?.dailyWage || 0;
         return { wage, hourlyRate: wage / 8 };
-    };
+    }
+    
+    const histories = wageHistories
+        .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+    if (histories.length > 0) {
+        const wage = histories[0].amount;
+        return { wage, hourlyRate: wage / 8 };
+    }
+    
+    const currentEmployee = employees.find((e: Employee) => e.id === employeeId);
+    const wage = currentEmployee?.dailyWage || 0;
+    return { wage, hourlyRate: wage / 8 };
+}, [wageHistories, employees]);
+
+  const weeklySummaryData = useMemo(() => {
+    const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
     
     if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances) {
         return defaultResult;
@@ -110,7 +110,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         return defaultResult;
     }
 
-  }, [weekAttendances, employees, weekAdvances, wageHistories, isLoadingSummaryData]);
+  }, [weekAttendances, employees, weekAdvances, wageHistories, isLoadingSummaryData, getWageForDate]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = parseISO(startDate);

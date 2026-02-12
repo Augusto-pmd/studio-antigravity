@@ -83,8 +83,8 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
       }
 
       const histories = wageHistories
-          .filter((h: DailyWageHistory & { employeeId: string }) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-          .sort((a: DailyWageHistory, b: DailyWageHistory) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+          .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+          .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
       if (histories.length > 0) {
           return histories[0].amount;
