@@ -52,6 +52,7 @@ import { Badge } from '@/components/ui/badge';
 
 type AttendanceStatus = 'presente' | 'ausente';
 interface AttendanceRecord {
+  docId?: string; // <-- This is the key change
   status: AttendanceStatus;
   lateHours: number | string;
   notes: string;
@@ -145,31 +146,46 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
 
   useEffect(() => {
     if (isLoadingAttendances || isLoadingEmployees || !activeEmployees) return;
-    
+
     const newAttendanceState: Record<string, AttendanceRecord> = {};
-    
+
     if (dayAttendances && dayAttendances.length > 0) {
-        dayAttendances.forEach((att: Attendance) => {
-            newAttendanceState[att.employeeId] = {
-                status: att.status,
-                lateHours: att.lateHours || 0,
-                notes: att.notes || '',
-                projectId: att.projectId || null
-            };
-        });
+      dayAttendances.forEach((att: Attendance) => {
+        newAttendanceState[att.employeeId] = {
+          docId: att.id,
+          status: att.status,
+          lateHours: att.lateHours || 0,
+          notes: att.notes || '',
+          projectId: att.projectId || null,
+        };
+      });
+
+      // Ensure all active employees have a state, even if no log exists for them.
+      activeEmployees.forEach((emp: Employee) => {
+        if (!newAttendanceState[emp.id]) {
+          newAttendanceState[emp.id] = {
+            docId: undefined,
+            status: 'ausente',
+            lateHours: 0,
+            notes: '',
+            projectId: null,
+          };
+        }
+      });
     } else {
-        activeEmployees.forEach((emp: Employee) => {
-            newAttendanceState[emp.id] = {
-                status: 'ausente',
-                lateHours: 0,
-                notes: '',
-                projectId: null,
-            };
-        });
+      // If no logs exist for the day, create a default 'ausente' state for all active employees.
+      activeEmployees.forEach((emp: Employee) => {
+        newAttendanceState[emp.id] = {
+          docId: undefined,
+          status: 'ausente',
+          lateHours: 0,
+          notes: '',
+          projectId: null,
+        };
+      });
     }
 
     setAttendance(newAttendanceState);
-
   }, [dayAttendances, isLoadingAttendances, activeEmployees, isLoadingEmployees, selectedDate]);
 
 
@@ -261,37 +277,36 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     startTransition(async () => {
         try {
             const dateStr = format(dateToSave, 'yyyy-MM-dd');
-            const activeEmployeeIds = new Set(activeEmployees.map((e: Employee) => e.id));
-            
-            const existingLogsQuery = query(collection(firestore, 'attendances'), where('date', '==', dateStr));
-            const existingLogsSnap = await getDocs(existingLogsQuery);
-
             const batch = writeBatch(firestore);
 
-            // CRITICAL FIX: Only delete documents for employees that are currently active and being managed.
-            // This prevents deleting attendance data for inactive employees or other potential errors.
-            existingLogsSnap.forEach((doc: any) => {
-                if (activeEmployeeIds.has(doc.data().employeeId)) {
-                    batch.delete(doc.ref);
-                }
-            });
-
-            for (const employee of activeEmployees) {
-                const employeeAttendance = getEmployeeAttendance(employee.id);
-                const docRef = doc(collection(firestore, 'attendances'));
-
+            // This new logic iterates through the component's state.
+            // It only affects employees currently being managed in the UI.
+            for (const employeeId of Object.keys(attendance)) {
+                
+                // Safety check to ensure we only process active employees from the state
+                if (!activeEmployees.some(emp => emp.id === employeeId)) continue;
+                
+                const record = attendance[employeeId];
+                
                 const dataToSave: Omit<Attendance, 'id'> = {
-                    employeeId: employee.id,
+                    employeeId: employeeId,
                     date: dateStr,
                     payrollWeekId: weekToSave.id,
-                    status: employeeAttendance.status,
-                    lateHours: Number(employeeAttendance.lateHours) || 0,
-                    notes: employeeAttendance.notes,
-                    projectId: employeeAttendance.status === 'ausente' ? null : (employeeAttendance.projectId || null),
+                    status: record.status,
+                    lateHours: Number(record.lateHours) || 0,
+                    notes: record.notes,
+                    projectId: record.status === 'ausente' ? null : (record.projectId || null),
                 };
+
+                // If a docId exists, we update that specific document.
+                // If not, we create a new one. This is an "upsert" operation.
+                const docRef = record.docId
+                    ? doc(firestore, 'attendances', record.docId)
+                    : doc(collection(firestore, 'attendances'));
+                
                 batch.set(docRef, dataToSave, { merge: true });
             }
-
+            
             await batch.commit();
             toast({ title: "Asistencias Guardadas", description: `Se guardaron los registros para el ${format(dateToSave, 'dd/MM/yyyy')}` });
         } catch (error) {
