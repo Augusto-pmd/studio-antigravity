@@ -20,6 +20,7 @@ import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProjectExpenses } from '@/hooks/use-project-expenses';
+import { ProjectExpenseSummary } from './project-expense-summary';
 
 const formatCurrency = (amount: number, currency: 'ARS' | 'USD') =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -101,7 +102,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
   const remainingBalance = budgetInARS ? budgetInARS - totalCostARS : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <Button asChild variant="ghost" className="mb-2 -ml-4">
@@ -173,6 +174,8 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         </Card>
       </div>
 
+      <ProjectExpenseSummary expenses={expenses} totalProjectCostARS={totalCostARS} />
+      
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Listado de Gastos</h2>
         <AddExpenseDialog projectId={projectId}>

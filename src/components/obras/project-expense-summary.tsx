@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 import type { Expense } from '@/lib/types';
 import { expenseCategories } from '@/lib/data';
 
@@ -26,6 +27,12 @@ const formatCurrency = (amount: number, currency: 'ARS' | 'USD') => {
   );
 };
 
+const formatPercentage = (value: number) => {
+  if (typeof value !== 'number' || isNaN(value)) return '0%';
+  return `${value.toFixed(1)}%`;
+};
+
+
 type Summary = {
   [categoryId: string]: {
     name: string;
@@ -34,7 +41,7 @@ type Summary = {
   };
 };
 
-export function ProjectExpenseSummary({ expenses }: { expenses: Expense[] }) {
+export function ProjectExpenseSummary({ expenses, totalProjectCostARS }: { expenses: Expense[], totalProjectCostARS: number }) {
   const representativeExchangeRate = useMemo(() => {
     if (!expenses) return 1;
     const expensesWithValidRate = expenses
@@ -96,8 +103,7 @@ export function ProjectExpenseSummary({ expenses }: { expenses: Expense[] }) {
       <CardHeader>
         <CardTitle>Resumen de Gastos por Rubro</CardTitle>
         <CardDescription>
-          Desglose de todos los costos imputados a esta obra, incluyendo gastos
-          directos, mano de obra y horas de oficina.
+          Desglose de todos los costos imputados a esta obra, y su incidencia sobre el costo total.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -105,7 +111,7 @@ export function ProjectExpenseSummary({ expenses }: { expenses: Expense[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rubro</TableHead>
+                <TableHead className="w-[40%]">Rubro</TableHead>
                 <TableHead className="text-right">Total en USD</TableHead>
                 <TableHead className="text-right">Total en ARS</TableHead>
               </TableRow>
@@ -118,17 +124,26 @@ export function ProjectExpenseSummary({ expenses }: { expenses: Expense[] }) {
                   </TableCell>
                 </TableRow>
               ) : (
-                summaryArray.map((item) => (
-                  <TableRow key={item.name}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(item.totalUSD, 'USD')}
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-bold">
-                      {formatCurrency(item.totalARS, 'ARS')}
-                    </TableCell>
-                  </TableRow>
-                ))
+                summaryArray.map((item) => {
+                  const proportion = totalProjectCostARS > 0 ? (item.totalARS / totalProjectCostARS) * 100 : 0;
+                  return (
+                    <TableRow key={item.name}>
+                      <TableCell className="font-medium">
+                        <div>{item.name}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Progress value={proportion} className="h-2 w-20" />
+                          <span className="text-xs text-muted-foreground">{formatPercentage(proportion)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(item.totalUSD, 'USD')}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-bold">
+                        {formatCurrency(item.totalARS, 'ARS')}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
