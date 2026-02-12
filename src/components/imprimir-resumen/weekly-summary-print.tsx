@@ -1,15 +1,15 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
-import { collection, query, where, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc } from 'firebase/firestore';
-import type { Employee, Attendance, FundRequest, ContractorCertification, Project, PayrollWeek } from '@/lib/types';
+import { collection, query, where, getDocs, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, doc, collectionGroup } from 'firebase/firestore';
+import type { Employee, Attendance, FundRequest, ContractorCertification, Project, PayrollWeek, DailyWageHistory } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Logo } from '@/components/icons/logo';
-import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, payrollWeekConverter } from '@/lib/converters';
+import { fundRequestConverter, employeeConverter, attendanceConverter, certificationConverter, projectConverter, payrollWeekConverter, dailyWageHistoryConverter } from '@/lib/converters';
 
 
 const formatCurrency = (amount: number) => {
@@ -55,6 +55,9 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
 
     const certificationsQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', weekId), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, weekId]);
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
+    
+    const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
+    const { data: wageHistories, isLoading: l7 } = useCollection(wageHistoriesQuery);
 
     const fundRequests = useMemo(() => {
         if (!allFundRequests || !week) return [];
@@ -70,13 +73,29 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         });
     }, [allFundRequests, week]);
 
-    const isLoading = isLoadingWeek || l1 || l3 || l4 || l5 || l6;
+    const isLoading = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
+
+    const getWageForDate = useCallback((employeeId: string, date: string): number => {
+      if (!wageHistories || !employees) {
+          const employee = employees?.find(e => e.id === employeeId);
+          return employee?.dailyWage || 0;
+      }
+
+      const histories = wageHistories
+          .filter((h: any) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+          .sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+      if (histories.length > 0) {
+          return histories[0].amount;
+      }
+      const employee = employees.find((e: Employee) => e.id === employeeId);
+      return employee?.dailyWage || 0;
+    }, [wageHistories, employees]);
 
     // --- Calculation Logic ---
     const summary = useMemo((): SummaryData | null => {
         if (isLoading || !employees || !projects || !week) return null;
 
-        const employeeMap = new Map(employees.map((e: Employee) => [e.id, e.dailyWage]));
         const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
         projects.forEach((p: Project) => { if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }); });
 
@@ -84,7 +103,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
 
         const totalPersonal = (attendances || []).reduce((sum, att) => {
             if (att.status === 'presente') {
-                const dailyGross = employeeMap.get(att.employeeId) || 0;
+                const dailyGross = getWageForDate(att.employeeId, att.date);
                 if (att.projectId) {
                     const projectData = projectMap.get(att.projectId);
                     if (projectData) {
@@ -122,7 +141,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         const breakdown = Array.from(projectMap.values()).filter((p: any) => p.personal || p.contratistas || p.solicitudes);
 
         return { totalPersonal, totalContratistas, totalSolicitudes, grandTotal, breakdown };
-    }, [isLoading, attendances, fundRequests, certifications, employees, projects, week]);
+    }, [isLoading, attendances, fundRequests, certifications, employees, projects, week, getWageForDate]);
 
 
     if (isLoading) {
