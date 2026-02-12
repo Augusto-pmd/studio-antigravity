@@ -62,6 +62,7 @@ export interface Expense {
   paidDate?: string;
   treasuryAccountId?: string;
   paymentSource?: 'Tesorería' | 'Caja Chica';
+  payrollWeekId?: string;
 }
 
 export interface Supplier {

@@ -161,6 +161,7 @@ export default function GastosPage() {
             exchangeRate: 1,
             status: 'Pagado',
             description: `Costo Jornal: ${employeeName}`,
+            payrollWeekId: att.payrollWeekId,
         } as Expense;
     }).filter((e): e is Expense => e !== null);
   }, [attendances, siteEmployees, wageHistories]);
