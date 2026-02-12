@@ -193,7 +193,7 @@ service cloud.firestore {
       allow get, write: if canSupervise();
     }
     match /attendances {
-      allow list: if canSupervise();
+      allow list: if isSignedIn();
     }
 
     match /treasuryAccounts/{treasuryAccountId} {
