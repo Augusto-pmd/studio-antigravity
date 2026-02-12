@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { payrollWeekConverter } from '@/lib/converters';
 
 
 const fundRequestConverter = {
@@ -58,57 +59,65 @@ export default function PagoSemanalPage() {
     const { toast } = useToast();
     
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
-    const [isLoadingCurrentWeek, setIsLoadingCurrentWeek] = useState(true);
     const [weekExchangeRate, setWeekExchangeRate] = useState('');
     const [isSavingRate, setIsSavingRate] = useState(false);
 
+    const weekStartDateString = useMemo(() => {
+        const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+        return format(weekStart, 'yyyy-MM-dd');
+    }, [selectedDate]);
 
+    const weekQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'payrollWeeks').withConverter(payrollWeekConverter),
+            where('startDate', '==', weekStartDateString),
+            limit(1)
+        );
+    }, [firestore, weekStartDateString]);
+
+    const { data: weeks, isLoading: isLoadingCurrentWeek } = useCollection<PayrollWeek>(weekQuery);
+
+    const currentWeek = useMemo(() => (weeks && weeks.length > 0 ? weeks[0] : null), [weeks]);
+    
+    // Effect for creating the week if it doesn't exist
     useEffect(() => {
-        if (!firestore) return;
+        if (!firestore || !isAdmin || isLoadingCurrentWeek || (weeks && weeks.length > 0)) return;
 
-        const findOrCreateWeek = async () => {
-            setIsLoadingCurrentWeek(true);
+        const createWeek = async () => {
             const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-            const weekStartDateString = format(weekStart, 'yyyy-MM-dd');
+            const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+            const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
             
-            const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartDateString), limit(1));
+            const newWeekData: Omit<PayrollWeek, 'id' | 'exchangeRate'> & { exchangeRate?: number } = {
+                startDate: format(weekStart, 'yyyy-MM-dd'),
+                endDate: format(weekEnd, 'yyyy-MM-dd'),
+            };
             
             try {
-                const weekSnap = await getDocs(q);
-                let weekData: PayrollWeek | null = null;
-
-                if (!weekSnap.empty) {
-                    const doc = weekSnap.docs[0];
-                    weekData = { id: doc.id, ...doc.data() } as PayrollWeek;
-                } else if (isAdmin) {
-                    const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-                    const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-                    weekData = {
-                        id: newWeekRef.id,
-                        startDate: weekStartDateString,
-                        endDate: format(weekEnd, 'yyyy-MM-dd'),
-                    };
-                    await setDoc(newWeekRef, weekData);
-                }
-                setCurrentWeek(weekData);
-                setWeekExchangeRate(weekData?.exchangeRate?.toString() || '');
+                await setDoc(newWeekRef, newWeekData);
             } catch (error) {
-                 console.error("Error finding or creating week:", error);
-                setCurrentWeek(null);
-                setWeekExchangeRate('');
+                console.error("Error creating week:", error);
                 toast({
                     variant: "destructive",
-                    title: "Error al cargar la semana",
-                    description: "No se pudo encontrar o crear la semana de pagos. Es posible que no tengas permisos."
-                })
-            } finally {
-                setIsLoadingCurrentWeek(false);
+                    title: "Error al crear la semana",
+                    description: "No se pudo crear la semana de pagos."
+                });
             }
         };
-        
-        findOrCreateWeek();
-    }, [selectedDate, firestore, isAdmin, toast]);
+
+        createWeek();
+    }, [firestore, isAdmin, isLoadingCurrentWeek, weeks, selectedDate, toast]);
+    
+    // Effect to update the input field when currentWeek changes
+    useEffect(() => {
+        if (currentWeek) {
+            setWeekExchangeRate(currentWeek.exchangeRate ? currentWeek.exchangeRate.toString() : '');
+        } else {
+            setWeekExchangeRate('');
+        }
+    }, [currentWeek]);
+
 
     const allFundRequestsQuery = useMemo(() => {
       if (!firestore) return null;
@@ -146,7 +155,7 @@ export default function PagoSemanalPage() {
         if (!firestore || !currentWeek) return;
         const rate = parseFloat(weekExchangeRate);
         if (isNaN(rate) || rate <= 0) {
-            toast({ variant: 'destructive', title: 'Tipo de cambio inválido' });
+            toast({ variant: 'destructive', title: 'Tipo de cambio inválido', description: 'El tipo de cambio debe ser un número positivo.' });
             return;
         }
 
@@ -225,7 +234,7 @@ export default function PagoSemanalPage() {
                         />
                         <p className="text-xs text-muted-foreground">Este tipo de cambio se usará para calcular el costo en USD de la mano de obra.</p>
                     </div>
-                    <Button onClick={handleUpdateExchangeRate} disabled={!currentWeek || isSavingRate || !isAdmin}>
+                    <Button onClick={handleUpdateExchangeRate} disabled={!currentWeek || isSavingRate || !isAdmin || !weekExchangeRate}>
                         {isSavingRate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Guardar Cambio
                     </Button>
