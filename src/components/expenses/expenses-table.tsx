@@ -16,7 +16,7 @@ import { doc, deleteDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { expenseCategories } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Link as LinkIcon } from "lucide-react";
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +136,16 @@ export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap, 
                       )}>
                         {expense.status}
                       </Badge>
+                       <div className="font-mono pt-1 font-semibold text-foreground text-left">
+                        <div>{formatCurrency(expense.amount, expense.currency)}</div>
+                        {expense.exchangeRate && expense.exchangeRate > 0 && (
+                            <div className="text-xs text-muted-foreground font-normal">
+                            {expense.currency === 'ARS'
+                                ? `(${formatCurrency(expense.amount / expense.exchangeRate, 'USD')})`
+                                : `(${formatCurrency(expense.amount * expense.exchangeRate, 'ARS')})`}
+                            </div>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{formatDate(expense.date)}</TableCell>
@@ -148,7 +158,16 @@ export function ExpensesTable({ expenses, isLoading, projectsMap, suppliersMap, 
                         {expense.status}
                       </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(expense.amount, expense.currency)}</TableCell>
+                  <TableCell className="text-right font-mono hidden md:table-cell">
+                    <div>{formatCurrency(expense.amount, expense.currency)}</div>
+                    {expense.exchangeRate > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                        {expense.currency === 'ARS'
+                            ? `(${formatCurrency(expense.amount / expense.exchangeRate, 'USD')})`
+                            : `(${formatCurrency(expense.amount * expense.exchangeRate, 'ARS')})`}
+                        </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     {permissions.canLoadExpenses && (
                       <div className="flex items-center justify-end">

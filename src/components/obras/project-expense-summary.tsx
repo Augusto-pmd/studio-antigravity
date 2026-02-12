@@ -87,7 +87,7 @@ export function ProjectExpenseSummary({
       } else {
         // ARS
         acc[categoryId].totalARS += expense.amount;
-        if (exchangeRate > 1) {
+        if (exchangeRate > 0) { // check to avoid division by zero
           acc[categoryId].totalUSD += expense.amount / exchangeRate;
         }
       }
@@ -152,7 +152,7 @@ export function ProjectExpenseSummary({
                         <TableRow>
                           <TableHead className="w-[100px]">Fecha</TableHead>
                           <TableHead>Proveedor</TableHead>
-                          <TableHead className="text-right">Monto (ARS)</TableHead>
+                          <TableHead className="text-right">Monto</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -161,7 +161,6 @@ export function ProjectExpenseSummary({
                             (e) => (e.categoryId || 'CAT-12') === item.categoryId
                           )
                           .map((expense) => {
-                            const amountInARS = expense.currency === 'USD' ? expense.amount * expense.exchangeRate : expense.amount;
                             return (
                                 <TableRow key={expense.id} className="text-xs">
                                     <TableCell>{formatDate(expense.date)}</TableCell>
@@ -169,7 +168,16 @@ export function ProjectExpenseSummary({
                                         <div className='font-medium'>{suppliersMap[expense.supplierId] || expense.supplierId}</div>
                                         {expense.description && <div className='text-muted-foreground'>{expense.description}</div>}
                                     </TableCell>
-                                    <TableCell className="text-right font-mono">{formatCurrency(amountInARS, 'ARS')}</TableCell>
+                                    <TableCell className="text-right font-mono">
+                                        <div>{formatCurrency(expense.amount, expense.currency)}</div>
+                                        {expense.exchangeRate > 0 && (
+                                            <div className="text-muted-foreground text-xs">
+                                            {expense.currency === 'ARS'
+                                                ? `(${formatCurrency(expense.amount / expense.exchangeRate, 'USD')})`
+                                                : `(${formatCurrency(expense.amount * expense.exchangeRate, 'ARS')})`}
+                                            </div>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             )
                           })}
