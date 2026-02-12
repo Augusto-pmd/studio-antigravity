@@ -69,7 +69,7 @@ export function useProjectExpenses(projectId: string) {
         : null,
     [firestore, projectId]
   );
-  const { data: timeLogs, isLoading: isLoadingTimeLogs } =
+  const { data: projectTimeLogs, isLoading: isLoadingTimeLogs } =
     useCollection<TimeLog>(allTimeLogsQuery);
 
   const techOfficeEmployeesQuery = useMemo(
@@ -119,7 +119,7 @@ export function useProjectExpenses(projectId: string) {
 
   // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
-    if (!timeLogs || !techOfficeEmployees) return [];
+    if (!projectTimeLogs || !techOfficeEmployees) return [];
 
     const employeeSalaryMap = new Map(
       techOfficeEmployees.map((e: TechnicalOfficeEmployee) => [
@@ -128,7 +128,7 @@ export function useProjectExpenses(projectId: string) {
       ])
     );
 
-    return timeLogs
+    return projectTimeLogs
       .map((log: TimeLog): Expense | null => {
         const employeeData = employeeSalaryMap.get(log.userId);
         if (!employeeData) return null;
@@ -152,7 +152,7 @@ export function useProjectExpenses(projectId: string) {
         } as Expense;
       })
       .filter((e): e is Expense => e !== null);
-  }, [timeLogs, techOfficeEmployees, representativeExchangeRate]);
+  }, [projectTimeLogs, techOfficeEmployees, representativeExchangeRate]);
 
   // Create virtual expenses for site payroll
   const payrollExpenses = useMemo((): Expense[] => {
