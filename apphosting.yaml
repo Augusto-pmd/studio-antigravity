@@ -7,4 +7,4 @@ runConfig:
   maxInstances: 1
 env:
   - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
+    secret: GEMINI_API_KEY # Este nombre debe coincidir EXACTAMENTE con el de Google Cloud
