@@ -19,6 +19,13 @@ import {
 import { Progress } from '@/components/ui/progress';
 import type { Expense } from '@/lib/types';
 import { expenseCategories } from '@/lib/data';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { format as formatDateFns, parseISO } from 'date-fns';
 
 const formatCurrency = (amount: number, currency: 'ARS' | 'USD') => {
   if (typeof amount !== 'number') return '';
@@ -27,11 +34,15 @@ const formatCurrency = (amount: number, currency: 'ARS' | 'USD') => {
   );
 };
 
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'N/A';
+  return formatDateFns(parseISO(dateString), 'dd/MM/yyyy');
+};
+
 const formatPercentage = (value: number) => {
   if (typeof value !== 'number' || isNaN(value)) return '0%';
   return `${value.toFixed(1)}%`;
 };
-
 
 type Summary = {
   [categoryId: string]: {
@@ -41,8 +52,15 @@ type Summary = {
   };
 };
 
-export function ProjectExpenseSummary({ expenses, totalProjectCostARS }: { expenses: Expense[], totalProjectCostARS: number }) {
-
+export function ProjectExpenseSummary({
+  expenses,
+  totalProjectCostARS,
+  suppliersMap,
+}: {
+  expenses: Expense[];
+  totalProjectCostARS: number;
+  suppliersMap: Record<string, string>;
+}) {
   const summary = useMemo((): Summary => {
     if (!expenses || expenses.length === 0) return {};
 
@@ -79,7 +97,13 @@ export function ProjectExpenseSummary({ expenses, totalProjectCostARS }: { expen
   }, [expenses]);
 
   const summaryArray = useMemo(
-    () => Object.values(summary).sort((a, b) => b.totalARS - a.totalARS),
+    () =>
+      Object.entries(summary)
+        .map(([categoryId, data]) => ({
+          categoryId,
+          ...data,
+        }))
+        .sort((a, b) => b.totalARS - a.totalARS),
     [summary]
   );
 
@@ -88,51 +112,75 @@ export function ProjectExpenseSummary({ expenses, totalProjectCostARS }: { expen
       <CardHeader>
         <CardTitle>Resumen de Gastos por Rubro</CardTitle>
         <CardDescription>
-          Desglose de todos los costos imputados a esta obra, y su incidencia sobre el costo total.
+          Desglose de todos los costos imputados a esta obra, y su incidencia sobre el costo total. Haga clic en un rubro para ver el detalle.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40%]">Rubro</TableHead>
-                <TableHead className="text-right">Total en USD</TableHead>
-                <TableHead className="text-right">Total en ARS</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {summaryArray.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No hay gastos para esta obra.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                summaryArray.map((item) => {
-                  const proportion = totalProjectCostARS > 0 ? (item.totalARS / totalProjectCostARS) * 100 : 0;
-                  return (
-                    <TableRow key={item.name}>
-                      <TableCell className="font-medium">
-                        <div>{item.name}</div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Progress value={proportion} className="h-2 w-20" />
-                          <span className="text-xs text-muted-foreground">{formatPercentage(proportion)}</span>
+        <Accordion type="single" collapsible className="w-full">
+          {summaryArray.length === 0 ? (
+            <div className="text-center text-muted-foreground p-4">
+              No hay gastos para esta obra.
+            </div>
+          ) : (
+            summaryArray.map((item) => {
+              const proportion =
+                totalProjectCostARS > 0
+                  ? (item.totalARS / totalProjectCostARS) * 100
+                  : 0;
+              return (
+                <AccordionItem value={item.name} key={item.name} className="border-b">
+                  <AccordionTrigger className="hover:no-underline p-4 font-normal">
+                    <div className="flex w-full items-center justify-between gap-4 text-sm">
+                        <div className="w-[40%] font-medium">
+                            <div>{item.name}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Progress value={proportion} className="h-2 w-20" />
+                                <span className="text-xs text-muted-foreground">{formatPercentage(proportion)}</span>
+                            </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(item.totalUSD, 'USD')}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-bold">
-                        {formatCurrency(item.totalARS, 'ARS')}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                        <div className="w-[30%] text-right font-mono">
+                            {formatCurrency(item.totalUSD, 'USD')}
+                        </div>
+                        <div className="w-[30%] text-right font-mono font-bold">
+                            {formatCurrency(item.totalARS, 'ARS')}
+                        </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4 bg-muted/50">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Fecha</TableHead>
+                          <TableHead>Proveedor</TableHead>
+                          <TableHead className="text-right">Monto (ARS)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {expenses
+                          .filter(
+                            (e) => (e.categoryId || 'CAT-12') === item.categoryId
+                          )
+                          .map((expense) => {
+                            const amountInARS = expense.currency === 'USD' ? expense.amount * expense.exchangeRate : expense.amount;
+                            return (
+                                <TableRow key={expense.id} className="text-xs">
+                                    <TableCell>{formatDate(expense.date)}</TableCell>
+                                    <TableCell>
+                                        <div className='font-medium'>{suppliersMap[expense.supplierId] || expense.supplierId}</div>
+                                        {expense.description && <div className='text-muted-foreground'>{expense.description}</div>}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">{formatCurrency(amountInARS, 'ARS')}</TableCell>
+                                </TableRow>
+                            )
+                          })}
+                      </TableBody>
+                    </Table>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })
+          )}
+        </Accordion>
       </CardContent>
     </Card>
   );

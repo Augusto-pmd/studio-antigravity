@@ -174,7 +174,11 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         </Card>
       </div>
 
-      <ProjectExpenseSummary expenses={expenses} totalProjectCostARS={totalCostARS} />
+      <ProjectExpenseSummary
+        expenses={expenses}
+        totalProjectCostARS={totalCostARS}
+        suppliersMap={suppliersMap}
+      />
       
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Listado de Gastos</h2>

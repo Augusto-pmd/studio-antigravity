@@ -175,7 +175,11 @@ export function useProjectExpenses(projectId: string) {
   }, [attendances, siteEmployees, representativeExchangeRate]);
 
   const allExpenses = useMemo(() => {
-    return [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
+    const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
+    // Sort by date descending (most recent first)
+    return combined.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }, [projectExpenses, officeExpenses, payrollExpenses]);
 
   return { expenses: allExpenses, isLoading };
