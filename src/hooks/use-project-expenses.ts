@@ -36,6 +36,18 @@ export function useProjectExpenses(projectId: string) {
   const { data: projectExpenses, isLoading: isLoadingProjectExpenses } =
     useCollection<Expense>(projectExpensesQuery);
 
+  const representativeExchangeRate = useMemo(() => {
+    if (!projectExpenses) return 1;
+    const expensesWithValidRate = projectExpenses
+      .filter((e) => e.exchangeRate && e.exchangeRate > 1 && e.date)
+      .sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+    return expensesWithValidRate.length > 0
+      ? expensesWithValidRate[0].exchangeRate
+      : 1;
+  }, [projectExpenses]);
+
   const allTimeLogsQuery = useMemo(
     () =>
       firestore
@@ -122,13 +134,13 @@ export function useProjectExpenses(projectId: string) {
           documentType: 'Recibo Común',
           amount: cost,
           currency: 'ARS',
-          exchangeRate: 1,
+          exchangeRate: representativeExchangeRate,
           status: 'Pagado',
           description: `Costo Horas: ${employeeData.name}`,
         } as Expense;
       })
       .filter((e): e is Expense => e !== null);
-  }, [timeLogs, techOfficeEmployees]);
+  }, [timeLogs, techOfficeEmployees, representativeExchangeRate]);
 
   // Create virtual expenses for site payroll
   const payrollExpenses = useMemo((): Expense[] => {
@@ -154,13 +166,13 @@ export function useProjectExpenses(projectId: string) {
           documentType: 'Recibo Común',
           amount: employeeData.wage,
           currency: 'ARS',
-          exchangeRate: 1,
+          exchangeRate: representativeExchangeRate,
           status: 'Pagado',
           description: `Costo Jornal: ${employeeData.name}`,
         } as Expense;
       })
       .filter((e): e is Expense => e !== null);
-  }, [attendances, siteEmployees]);
+  }, [attendances, siteEmployees, representativeExchangeRate]);
 
   const allExpenses = useMemo(() => {
     return [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
