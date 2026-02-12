@@ -12,6 +12,7 @@ import type {
   PayrollWeek,
   CashAdvance,
   DailyWageHistory,
+  FundRequest,
 } from '@/lib/types';
 import {
   timeLogConverter,
@@ -22,6 +23,7 @@ import {
   payrollWeekConverter,
   cashAdvanceConverter,
   dailyWageHistoryConverter,
+  fundRequestConverter,
 } from '@/lib/converters';
 import { format, parseISO } from 'date-fns';
 
@@ -132,6 +134,21 @@ export function useProjectExpenses(projectId: string) {
   const wageHistoriesQuery = useMemo(() => (firestore ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore]);
   const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
+   const fundRequestsQuery = useMemo(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, 'fundRequests').withConverter(
+              fundRequestConverter
+            ),
+            where('projectId', '==', projectId),
+            where('status', 'in', ['Aprobado', 'Pagado'])
+          )
+        : null,
+    [firestore, projectId]
+  );
+  const { data: fundRequests, isLoading: isLoadingFundRequests } = useCollection<FundRequest>(fundRequestsQuery);
+
   const isLoading =
     isLoadingProjectExpenses ||
     isLoadingTimeLogs ||
@@ -140,7 +157,8 @@ export function useProjectExpenses(projectId: string) {
     isLoadingAttendances ||
     isLoadingPayrollWeeks ||
     isLoadingCashAdvances ||
-    isLoadingWageHistories;
+    isLoadingWageHistories ||
+    isLoadingFundRequests;
     
   const getWageForDate = useCallback((employeeId: string, date: string): number => {
     if (!wageHistories || !siteEmployees) {
@@ -190,7 +208,7 @@ export function useProjectExpenses(projectId: string) {
           currency: 'ARS',
           exchangeRate: representativeExchangeRate,
           status: 'Pagado',
-          description: `Costo Horas: ${employeeData.name}`,
+          description: `Costo Horas Oficina: ${employeeData.name}`,
         } as Expense;
       })
       .filter((e): e is Expense => e !== null);
@@ -261,14 +279,46 @@ export function useProjectExpenses(projectId: string) {
       });
   }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate, wageHistories]);
 
+  const fundRequestExpenses = useMemo((): Expense[] => {
+    if (!fundRequests) return [];
+
+    return fundRequests.map((req: FundRequest): Expense => {
+      const amountInARS =
+        req.currency === 'USD'
+          ? req.amount * (req.exchangeRate || representativeExchangeRate)
+          : req.amount;
+      
+      let categoryId = 'CAT-12'; // Default to "Otros"
+      if (req.category === 'Materiales') categoryId = 'CAT-01';
+      if (req.category === 'Logística y PMD') categoryId = 'CAT-04';
+      if (req.category === 'Viáticos') categoryId = 'CAT-09';
+      
+      return {
+        id: `fund-req-${req.id}`,
+        projectId: req.projectId!,
+        date: req.date,
+        supplierId: 'solicitudes-fondos',
+        categoryId: categoryId,
+        documentType: 'Recibo Común',
+        amount: amountInARS,
+        currency: 'ARS',
+        exchangeRate: 1, // Already converted
+        status: 'Pagado',
+        description: `Solicitud: ${req.requesterName} - ${
+          req.description || req.category
+        }`,
+      } as Expense;
+    });
+  }, [fundRequests, representativeExchangeRate]);
+
 
   const allExpenses = useMemo(() => {
-    const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
+    const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses, ...fundRequestExpenses];
     // Sort by date descending (most recent first)
     return combined.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-  }, [projectExpenses, officeExpenses, payrollExpenses]);
+  }, [projectExpenses, officeExpenses, payrollExpenses, fundRequestExpenses]);
 
   return { expenses: allExpenses, isLoading };
 }
