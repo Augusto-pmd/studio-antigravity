@@ -32,12 +32,15 @@ export function useCollection<T extends DocumentData>(q: Query<T> | null) {
         setError(null);
       },
       (err) => {
-        // Emitting the contextual error instead of just logging it.
-        const permissionError = new FirestorePermissionError({
-            path: '(unknown collection)',
-            operation: 'list',
-        }, err);
-        errorEmitter.emit('permission-error', permissionError);
+        if (err.message.includes("Missing or insufficient permissions")) {
+            const permissionError = new FirestorePermissionError({
+                path: '(unknown collection)',
+                operation: 'list',
+            }, err);
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+            console.error("Firestore query failed:", err);
+        }
 
         setIsLoading(false);
         setError(err);

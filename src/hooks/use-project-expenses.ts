@@ -54,18 +54,6 @@ export function useProjectExpenses(projectId: string) {
   );
   const { data: payrollWeeks, isLoading: isLoadingPayrollWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
 
-  const representativeExchangeRate = useMemo(() => {
-    if (!projectExpenses) return 1;
-    const expensesWithValidRate = projectExpenses
-      .filter((e) => e.exchangeRate && e.exchangeRate > 1 && e.date)
-      .sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-    return expensesWithValidRate.length > 0
-      ? expensesWithValidRate[0].exchangeRate
-      : 1;
-  }, [projectExpenses]);
-
   const allTimeLogsQuery = useMemo(
     () =>
       firestore
@@ -177,9 +165,8 @@ export function useProjectExpenses(projectId: string) {
     return employee?.dailyWage || 0;
   }, [wageHistories, siteEmployees]);
 
-  // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
-    if (!projectTimeLogs || !techOfficeEmployees) return [];
+    if (!projectTimeLogs || !techOfficeEmployees || !payrollWeeks) return [];
 
     const employeeSalaryMap = new Map(
       techOfficeEmployees.map((e: TechnicalOfficeEmployee) => [
@@ -187,45 +174,53 @@ export function useProjectExpenses(projectId: string) {
         { salary: e.monthlySalary, name: e.fullName },
       ])
     );
+    
+    const weeklyData = new Map<string, { week: PayrollWeek, cost: number }>();
 
-    return projectTimeLogs
-      .map((log: TimeLog): Expense | null => {
+    projectTimeLogs.forEach((log: TimeLog) => {
+        const logDate = parseISO(log.date);
+        const week = payrollWeeks.find(w => logDate >= parseISO(w.startDate) && logDate <= parseISO(w.endDate));
+        if (!week) return;
+
         const employeeData = employeeSalaryMap.get(log.userId);
-        if (!employeeData) return null;
+        if (!employeeData) return;
 
-        // Assume 160 working hours in a month.
         const hourlyRate = employeeData.salary / 160;
         const cost = (log.hours || 0) * hourlyRate;
 
+        const data = weeklyData.get(week.id) || { week, cost: 0 };
+        data.cost += cost;
+        weeklyData.set(week.id, data);
+    });
+
+    return Array.from(weeklyData.values()).map(data => {
+        const { week, cost } = data;
         return {
-          id: `log-${log.id}`,
-          projectId: log.projectId,
-          date: log.date,
+          id: `office-week-${week.id}`,
+          projectId,
+          date: week.endDate,
           supplierId: 'OFICINA-TECNICA',
           categoryId: 'CAT-14', // Oficina Técnica (Costo)
           documentType: 'Recibo Común',
           amount: cost,
           currency: 'ARS',
-          exchangeRate: representativeExchangeRate,
+          exchangeRate: week.exchangeRate || 0,
           status: 'Pagado',
-          description: `Costo Horas Oficina: ${employeeData.name}`,
+          description: `Costo Horas Oficina - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')}`,
         } as Expense;
-      })
-      .filter((e): e is Expense => e !== null);
-  }, [projectTimeLogs, techOfficeEmployees, representativeExchangeRate]);
+    });
 
-  // Create virtual expenses for site payroll and advances, grouped by week
+  }, [projectTimeLogs, techOfficeEmployees, payrollWeeks, projectId]);
+
   const payrollExpenses = useMemo((): Expense[] => {
     if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances || !wageHistories) return [];
 
     const weeklyData = new Map<string, { week: PayrollWeek; attendanceCost: number; advanceCost: number }>();
 
-    // Initialize map with all relevant weeks from payrollWeeks to ensure all weeks are considered
     payrollWeeks.forEach(week => {
       weeklyData.set(week.id, { week, attendanceCost: 0, advanceCost: 0 });
     });
 
-    // Process attendances
     attendances.forEach((att: Attendance) => {
       if (att.status !== 'presente' || !att.payrollWeekId) return;
 
@@ -236,7 +231,6 @@ export function useProjectExpenses(projectId: string) {
       }
     });
 
-    // Process cash advances
     cashAdvances.forEach((advance: CashAdvance) => {
       if (!advance.payrollWeekId) return;
       const data = weeklyData.get(advance.payrollWeekId);
@@ -245,7 +239,6 @@ export function useProjectExpenses(projectId: string) {
       }
     });
 
-    // Create virtual expenses from aggregated data
     return Array.from(weeklyData.values())
       .filter(data => data.attendanceCost > 0 || data.advanceCost > 0)
       .map((data): Expense => {
@@ -266,13 +259,13 @@ export function useProjectExpenses(projectId: string) {
         return {
           id: `payroll-week-${week.id}`,
           projectId,
-          date: week.endDate, // Use week end date for sorting
+          date: week.endDate,
           supplierId: 'personal-propio',
           categoryId: 'CAT-02', // Mano de Obra
           documentType: 'Recibo Común',
           amount: totalCost,
           currency: 'ARS',
-          exchangeRate: week.exchangeRate,
+          exchangeRate: week.exchangeRate || 0,
           status: 'Pagado',
           description: descriptionWithDate,
         } as Expense;
@@ -280,15 +273,15 @@ export function useProjectExpenses(projectId: string) {
   }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate, wageHistories]);
 
   const fundRequestExpenses = useMemo((): Expense[] => {
-    if (!fundRequests) return [];
+    if (!fundRequests || !payrollWeeks) return [];
 
     return fundRequests.map((req: FundRequest): Expense => {
-      const amountInARS =
-        req.currency === 'USD'
-          ? req.amount * (req.exchangeRate || representativeExchangeRate)
-          : req.amount;
+      const reqDate = parseISO(req.date);
+      const week = payrollWeeks.find(w => reqDate >= parseISO(w.startDate) && reqDate <= parseISO(w.endDate));
+      const exchangeRate = req.currency === 'USD' ? (req.exchangeRate || week?.exchangeRate || 0) : 1;
+      const amountInARS = req.amount * exchangeRate;
       
-      let categoryId = 'CAT-12'; // Default to "Otros"
+      let categoryId = 'CAT-12';
       if (req.category === 'Materiales') categoryId = 'CAT-01';
       if (req.category === 'Logística y PMD') categoryId = 'CAT-04';
       if (req.category === 'Viáticos') categoryId = 'CAT-09';
@@ -309,12 +302,11 @@ export function useProjectExpenses(projectId: string) {
         }`,
       } as Expense;
     });
-  }, [fundRequests, representativeExchangeRate]);
+  }, [fundRequests, payrollWeeks]);
 
 
   const allExpenses = useMemo(() => {
     const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses, ...fundRequestExpenses];
-    // Sort by date descending (most recent first)
     return combined.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );

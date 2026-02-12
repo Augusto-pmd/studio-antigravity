@@ -29,11 +29,15 @@ export function useDoc<T extends DocumentData>(ref: DocumentReference<T> | null)
         setError(null);
       },
       (err) => {
-        const permissionError = new FirestorePermissionError({
-            path: ref.path,
-            operation: 'get',
-        }, err);
-        errorEmitter.emit('permission-error', permissionError);
+        if (err.message.includes("Missing or insufficient permissions")) {
+          const permissionError = new FirestorePermissionError({
+              path: ref.path,
+              operation: 'get',
+          }, err);
+          errorEmitter.emit('permission-error', permissionError);
+        } else {
+          console.error(`Firestore document fetch failed for path: ${ref.path}`, err);
+        }
         setIsLoading(false);
         setError(err);
       }
