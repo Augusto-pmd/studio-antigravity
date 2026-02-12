@@ -88,12 +88,11 @@ export default function PagoSemanalPage() {
                         id: newWeekRef.id,
                         startDate: weekStartDateString,
                         endDate: format(weekEnd, 'yyyy-MM-dd'),
-                        exchangeRate: 1,
                     };
                     await setDoc(newWeekRef, weekData);
                 }
                 setCurrentWeek(weekData);
-                setWeekExchangeRate(weekData?.exchangeRate?.toString() || '1');
+                setWeekExchangeRate(weekData?.exchangeRate?.toString() || '');
             } catch (error) {
                  console.error("Error finding or creating week:", error);
                 setCurrentWeek(null);

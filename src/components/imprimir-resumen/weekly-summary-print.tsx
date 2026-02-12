@@ -80,7 +80,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
         projects.forEach((p: Project) => { if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 }); });
 
-        const weeklyRate = week?.exchangeRate ?? 1;
+        const weeklyRate = week?.exchangeRate;
 
         const totalPersonal = (attendances || []).reduce((sum, att) => {
             if (att.status === 'presente') {
@@ -97,7 +97,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         }, 0);
         
         const totalContratistas = (certifications || []).reduce((sum, cert) => {
-            const amount = cert.currency === 'USD' ? cert.amount * weeklyRate : cert.amount;
+            const amount = cert.currency === 'USD' ? cert.amount * (weeklyRate || 0) : cert.amount;
             if (cert.projectId) {
                 const projectData = projectMap.get(cert.projectId);
                 if (projectData) {
@@ -108,7 +108,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         }, 0);
         
         const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
-            const amount = req.currency === 'USD' ? req.amount * weeklyRate : req.amount;
+            const amount = req.currency === 'USD' ? req.amount * (weeklyRate || 0) : req.amount;
             if (req.projectId) {
                 const projectData = projectMap.get(req.projectId);
                 if (projectData) {

@@ -182,7 +182,7 @@ export const payrollWeekConverter = {
         return { 
             ...data, 
             id: snapshot.id,
-            exchangeRate: parseNumber(data.exchangeRate || 1)
+            exchangeRate: parseNumber(data.exchangeRate)
         } as PayrollWeek;
     }
 };

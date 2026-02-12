@@ -254,7 +254,7 @@ export function useProjectExpenses(projectId: string) {
           documentType: 'Recibo Común',
           amount: totalCost,
           currency: 'ARS',
-          exchangeRate: week.exchangeRate || 1,
+          exchangeRate: week.exchangeRate,
           status: 'Pagado',
           description: descriptionWithDate,
         } as Expense;

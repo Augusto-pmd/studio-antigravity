@@ -75,7 +75,6 @@ export default function ResumenSemanalPage() {
                         id: newWeekRef.id,
                         startDate: weekStartDateString,
                         endDate: format(weekEnd, 'yyyy-MM-dd'),
-                        exchangeRate: 1,
                     };
                     await setDoc(newWeekRef, weekData);
                 }
@@ -176,7 +175,7 @@ export default function ResumenSemanalPage() {
             projects.forEach((p: Project) => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
             });
-            const weeklyRate = currentWeek?.exchangeRate ?? 1;
+            const weeklyRate = currentWeek?.exchangeRate;
 
             // PERSONAL
             const totalPersonal = (attendances || []).reduce((sum, att) => {
@@ -196,7 +195,7 @@ export default function ResumenSemanalPage() {
             
             // CONTRATISTAS
             const totalContratistas = (certifications || []).reduce((sum, cert) => {
-                const amount = cert.currency === 'USD' ? cert.amount * weeklyRate : cert.amount;
+                const amount = cert.currency === 'USD' ? cert.amount * (weeklyRate || 0) : cert.amount;
                 if (cert.projectId) {
                     const projectData = projectMap.get(cert.projectId);
                     if (projectData) {
@@ -208,7 +207,7 @@ export default function ResumenSemanalPage() {
             
             // SOLICITUDES
             const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
-                const amount = req.currency === 'USD' ? req.amount * weeklyRate : req.amount;
+                const amount = req.currency === 'USD' ? req.amount * (weeklyRate || 0) : req.amount;
                 if (req.projectId) {
                     const projectData = projectMap.get(req.projectId);
                     if (projectData) {
