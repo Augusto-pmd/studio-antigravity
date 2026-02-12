@@ -70,7 +70,7 @@ export function useProjectExpenses(projectId: string) {
     [firestore, projectId]
   );
   const { data: timeLogs, isLoading: isLoadingTimeLogs } =
-    useCollection<TimeLog>(timeLogsQuery);
+    useCollection<TimeLog>(allTimeLogsQuery);
 
   const techOfficeEmployeesQuery = useMemo(
     () =>
