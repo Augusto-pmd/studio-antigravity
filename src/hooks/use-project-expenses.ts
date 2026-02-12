@@ -185,7 +185,7 @@ export function useProjectExpenses(projectId: string) {
         const employeeData = employeeSalaryMap.get(log.userId);
         if (!employeeData) return;
 
-        const hourlyRate = employeeData.salary / 160;
+        const hourlyRate = employeeData.salary / 160; // Assume 160 hs / month
         const cost = (log.hours || 0) * hourlyRate;
 
         const data = weeklyData.get(week.id) || { week, cost: 0 };
