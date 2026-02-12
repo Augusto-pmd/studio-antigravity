@@ -35,6 +35,18 @@ type Summary = {
 };
 
 export function ProjectExpenseSummary({ expenses }: { expenses: Expense[] }) {
+  const representativeExchangeRate = useMemo(() => {
+    if (!expenses) return 1;
+    const expensesWithValidRate = expenses
+      .filter((e) => e.exchangeRate && e.exchangeRate > 1 && e.date)
+      .sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+    return expensesWithValidRate.length > 0
+      ? expensesWithValidRate[0].exchangeRate
+      : 1;
+  }, [expenses]);
+
   const summary = useMemo((): Summary => {
     if (!expenses || expenses.length === 0) return {};
 
@@ -55,18 +67,24 @@ export function ProjectExpenseSummary({ expenses }: { expenses: Expense[] }) {
 
       if (expense.currency === 'USD') {
         acc[categoryId].totalUSD += expense.amount;
-        acc[categoryId].totalARS += expense.amount * (expense.exchangeRate || 1);
-      } else { // ARS
+        acc[categoryId].totalARS +=
+          expense.amount * (expense.exchangeRate || 1);
+      } else {
+        // ARS
         acc[categoryId].totalARS += expense.amount;
-        // Also calculate the USD equivalent for the total column
-        if (expense.exchangeRate > 1) { // A simple check to avoid dividing by 0 or 1
-            acc[categoryId].totalUSD += expense.amount / expense.exchangeRate;
+        const rateToUse =
+          expense.exchangeRate && expense.exchangeRate > 1
+            ? expense.exchangeRate
+            : representativeExchangeRate;
+
+        if (rateToUse > 1) {
+          acc[categoryId].totalUSD += expense.amount / rateToUse;
         }
       }
 
       return acc;
     }, initialSummary);
-  }, [expenses]);
+  }, [expenses, representativeExchangeRate]);
 
   const summaryArray = useMemo(
     () => Object.values(summary).sort((a, b) => b.totalARS - a.totalARS),
