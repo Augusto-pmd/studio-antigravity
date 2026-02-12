@@ -10,6 +10,7 @@ import type {
   Employee,
   Attendance,
   PayrollWeek,
+  CashAdvance,
 } from '@/lib/types';
 import {
   timeLogConverter,
@@ -18,7 +19,9 @@ import {
   attendanceConverter,
   expenseConverter,
   payrollWeekConverter,
+  cashAdvanceConverter,
 } from '@/lib/converters';
+import { format, parseISO } from 'date-fns';
 
 export function useProjectExpenses(projectId: string) {
   const firestore = useFirestore();
@@ -108,6 +111,21 @@ export function useProjectExpenses(projectId: string) {
   );
   const { data: attendances, isLoading: isLoadingAttendances } =
     useCollection<Attendance>(attendancesQuery);
+  
+  const cashAdvancesQuery = useMemo(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, 'cashAdvances').withConverter(
+              cashAdvanceConverter
+            ),
+            where('projectId', '==', projectId)
+          )
+        : null,
+    [firestore, projectId]
+  );
+  const { data: cashAdvances, isLoading: isLoadingCashAdvances } =
+    useCollection<CashAdvance>(cashAdvancesQuery);
 
   const isLoading =
     isLoadingProjectExpenses ||
@@ -115,7 +133,8 @@ export function useProjectExpenses(projectId: string) {
     isLoadingTechOffice ||
     isLoadingSiteEmployees ||
     isLoadingAttendances ||
-    isLoadingPayrollWeeks;
+    isLoadingPayrollWeeks ||
+    isLoadingCashAdvances;
 
   // Create virtual expenses for office hours
   const officeExpenses = useMemo((): Expense[] => {
@@ -154,43 +173,60 @@ export function useProjectExpenses(projectId: string) {
       .filter((e): e is Expense => e !== null);
   }, [projectTimeLogs, techOfficeEmployees, representativeExchangeRate]);
 
-  // Create virtual expenses for site payroll
+  // Create virtual expenses for site payroll and advances, grouped by week
   const payrollExpenses = useMemo((): Expense[] => {
-    if (!attendances || !siteEmployees || !payrollWeeks) return [];
+    if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
 
     const employeeWageMap = new Map(
       siteEmployees.map((e: Employee) => [e.id, { wage: e.dailyWage, name: e.name }])
     );
 
-    const payrollWeekMap = new Map(
-      payrollWeeks.map((pw: PayrollWeek) => [pw.id, pw.exchangeRate || 1])
-    );
+    const weeklyCosts = new Map<string, { totalCost: number, week: PayrollWeek }>();
 
-    return attendances
-      .map((att: Attendance): Expense | null => {
-        if (att.status !== 'presente' || !att.projectId) return null;
+    // Aggregate attendance costs per week
+    attendances.forEach((att: Attendance) => {
+        if (att.status !== 'presente') return;
 
         const employeeData = employeeWageMap.get(att.employeeId);
-        if (!employeeData) return null;
+        if (!employeeData) return;
         
-        const weeklyExchangeRate = payrollWeekMap.get(att.payrollWeekId) || 1;
+        const week = payrollWeeks.find(pw => pw.id === att.payrollWeekId);
+        if (!week) return;
 
+        const weeklyCost = weeklyCosts.get(att.payrollWeekId) || { totalCost: 0, week };
+        weeklyCost.totalCost += employeeData.wage;
+        weeklyCosts.set(att.payrollWeekId, weeklyCost);
+    });
+
+    // Aggregate cash advance costs per week
+    cashAdvances.forEach((advance: CashAdvance) => {
+      const week = payrollWeeks.find(pw => pw.id === advance.payrollWeekId);
+      if (!week) return;
+      
+      const weeklyCost = weeklyCosts.get(advance.payrollWeekId) || { totalCost: 0, week };
+      weeklyCost.totalCost += advance.amount;
+      weeklyCosts.set(advance.payrollWeekId, weeklyCost);
+    });
+
+    return Array.from(weeklyCosts.entries()).map(([weekId, data]): Expense => {
+        const { totalCost, week } = data;
+        
         return {
-          id: `payroll-${att.id}`,
-          projectId: att.projectId,
-          date: att.date,
-          supplierId: 'personal-propio',
-          categoryId: 'CAT-02', // Mano de Obra
-          documentType: 'Recibo Común',
-          amount: employeeData.wage,
-          currency: 'ARS',
-          exchangeRate: weeklyExchangeRate,
-          status: 'Pagado',
-          description: `Costo Jornal: ${employeeData.name}`,
+            id: `payroll-week-${weekId}`,
+            projectId,
+            date: week.endDate, // Use week end date for sorting
+            supplierId: 'personal-propio',
+            categoryId: 'CAT-02', // Mano de Obra
+            documentType: 'Recibo Común',
+            amount: totalCost,
+            currency: 'ARS',
+            exchangeRate: week.exchangeRate || 1,
+            status: 'Pagado',
+            description: `Costo de personal y adelantos - Semana ${format(parseISO(week.startDate), 'dd/MM/yyyy')} al ${format(parseISO(week.endDate), 'dd/MM/yyyy')}`,
         } as Expense;
-      })
-      .filter((e): e is Expense => e !== null);
-  }, [attendances, siteEmployees, payrollWeeks]);
+    });
+
+  }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, representativeExchangeRate]);
 
   const allExpenses = useMemo(() => {
     const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses];
