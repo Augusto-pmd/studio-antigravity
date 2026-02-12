@@ -149,6 +149,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             receiptUrl: receiptUrl,
             status: 'Pagado',
             paidDate: expenseDate.toISOString(),
+            paymentSource: 'Caja Chica',
         };
         batch.set(expenseRef, newExpense);
         

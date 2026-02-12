@@ -90,6 +90,7 @@ export function AddExpenseDialog({
   const [description, setDescription] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
+  const [paymentSource, setPaymentSource] = useState<'Tesorería' | 'Caja Chica'>('Tesorería');
   const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común' | 'Nota de Crédito'>('Factura');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -123,6 +124,7 @@ export function AddExpenseDialog({
     setDescription(expense?.description || '');
     setDate(expense?.date ? parseISO(expense.date) : new Date());
     setCurrency(expense?.currency || 'ARS');
+    setPaymentSource(expense?.paymentSource || 'Tesorería');
     setDocumentType(expense?.documentType || 'Factura');
     setInvoiceNumber(expense?.invoiceNumber || '');
     setFile(null);
@@ -259,6 +261,7 @@ export function AddExpenseDialog({
             documentType,
             amount: parseFloat(amount) || 0,
             currency,
+            paymentSource,
             exchangeRate: parseFloat(exchangeRate) || 0,
             status: isEditMode ? expense.status : 'Pendiente de Pago',
         };
@@ -452,6 +455,23 @@ export function AddExpenseDialog({
             </Select>
           </div>
           <div className="space-y-2">
+            <Label>Vía Contable / Origen del Pago</Label>
+            <RadioGroup
+              value={paymentSource}
+              onValueChange={(v: 'Tesorería' | 'Caja Chica') => setPaymentSource(v)}
+              className="flex items-center gap-6 pt-1"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Tesorería" id="tesoreria" />
+                <Label htmlFor="tesoreria">Tesorería (Formal)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Caja Chica" id="caja-chica" />
+                <Label htmlFor="caja-chica">Caja Chica (Informal)</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="description">Descripción (Opcional)</Label>
             <Textarea
               id="description"
@@ -618,3 +638,4 @@ export function AddExpenseDialog({
 }
 
     
+

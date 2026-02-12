@@ -43,7 +43,8 @@ export function AccountsPayable() {
   
   const expenses = useMemo(() => {
     if (!allPendingExpenses) return [];
-    return allPendingExpenses.filter(e => e.documentType !== 'Nota de Crédito');
+    // Only show formal expenses (not from Caja Chica) and that are not credit notes
+    return allPendingExpenses.filter(e => e.paymentSource !== 'Caja Chica' && e.documentType !== 'Nota de Crédito');
   }, [allPendingExpenses]);
   
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
@@ -96,7 +97,7 @@ export function AccountsPayable() {
     <Card>
       <CardHeader>
         <CardTitle>Cuentas por Pagar</CardTitle>
-        <CardDescription>Facturas de proveedores pendientes de pago. Desde aquí se registran los pagos.</CardDescription>
+        <CardDescription>Facturas y gastos formales (vía Tesorería) pendientes de pago.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
