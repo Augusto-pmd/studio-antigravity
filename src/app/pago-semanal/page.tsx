@@ -70,9 +70,9 @@ export default function PagoSemanalPage() {
         const findOrCreateWeek = async () => {
             setIsLoadingCurrentWeek(true);
             const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-            const weekStartISO = weekStart.toISOString();
+            const weekStartDateString = format(weekStart, 'yyyy-MM-dd');
             
-            const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartISO), limit(1));
+            const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartDateString), limit(1));
             
             try {
                 const weekSnap = await getDocs(q);
@@ -86,8 +86,8 @@ export default function PagoSemanalPage() {
                     const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
                     weekData = {
                         id: newWeekRef.id,
-                        startDate: weekStartISO,
-                        endDate: weekEnd.toISOString(),
+                        startDate: weekStartDateString,
+                        endDate: format(weekEnd, 'yyyy-MM-dd'),
                         exchangeRate: 1,
                     };
                     await setDoc(newWeekRef, weekData);
