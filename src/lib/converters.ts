@@ -113,9 +113,10 @@ export const dailyWageHistoryConverter = {
     toFirestore: (data: DailyWageHistory): DocumentData => data,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): DailyWageHistory & { employeeId: string } => {
         const data = snapshot.data(options)!;
+        const employeeId = snapshot.ref.parent.parent!.id;
         return {
             id: snapshot.id,
-            employeeId: data.employeeId,
+            employeeId: employeeId,
             amount: parseNumber(data.amount),
             effectiveDate: data.effectiveDate,
         } as DailyWageHistory & { employeeId: string };
