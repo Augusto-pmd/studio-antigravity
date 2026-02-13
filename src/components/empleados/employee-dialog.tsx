@@ -111,6 +111,7 @@ export function EmployeeDialog({
         if (hasWageChanged) {
           const wageHistoryRef = doc(collection(firestore, `employees/${employeeId}/dailyWageHistory`));
           const newWageHistoryEntry = {
+              employeeId: employeeId,
               amount: newWage,
               effectiveDate: new Date().toISOString(),
           };
