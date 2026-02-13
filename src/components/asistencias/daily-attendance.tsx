@@ -136,7 +136,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
   const startOfDay = selectedDate ? new Date(selectedDate.setHours(0,0,0,0)) : null;
   const endOfDay = selectedDate ? new Date(selectedDate.setHours(23,59,59,999)) : null;
   const attendanceForDayQuery = useMemo(
-    () => (firestore && formattedDate ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '>=', startOfDay).where('date', '<=', endOfDay)) : null),
+    () => (firestore && formattedDate ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '>=', startOfDay), where('date', '<=', endOfDay)) : null),
     [firestore, formattedDate]
   );
   const { data: dayAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceForDayQuery);
