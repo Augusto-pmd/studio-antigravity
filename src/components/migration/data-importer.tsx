@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -310,6 +311,37 @@ export function DataImporter() {
             console.error(e);
             toast({ variant: 'destructive', title: 'Error al procesar', description: e.message });
         }
+    };
+
+    // --- Template Generation ---
+    const downloadTemplate = () => {
+        const config = ENTITY_CONFIGS[entityType];
+        if (!config) return;
+
+        // 1. Get Headers
+        const headers = config.fields.map(f => f.key);
+
+        // 2. Create Sample Data (Empty or with examples)
+        const sampleRow: any = {};
+        config.fields.forEach(f => {
+            if (f.defaultValue) sampleRow[f.key] = f.defaultValue;
+            else if (f.key === 'date') sampleRow[f.key] = '2024-01-01';
+            else if (f.key.includes('amount') || f.key.includes('price')) sampleRow[f.key] = 1000;
+            else if (f.key === 'email') sampleRow[f.key] = 'ejemplo@email.com';
+            else sampleRow[f.key] = `Ejemplo ${f.label}`;
+        });
+
+        const data = [sampleRow];
+
+        // 3. Create Worksheet
+        const ws = XLSX.utils.json_to_sheet(data, { header: headers });
+
+        // 4. Create Workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, config.label.substring(0, 30)); // Sheet name max 31 chars
+
+        // 5. Save
+        XLSX.writeFile(wb, `Plantilla_${config.label.replace(/\s+/g, '_')}.xlsx`);
     };
 
     // --- Step 3: Execution ---

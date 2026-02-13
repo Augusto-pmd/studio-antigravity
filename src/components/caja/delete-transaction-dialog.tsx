@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,22 +23,24 @@ import { logAction } from '@/lib/logger';
 
 export function DeleteTransactionDialog({ transaction, cashAccount }: { transaction: CashTransaction, cashAccount: CashAccount }) {
   const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isDeleting, setIsDeleting] = useState(false); // Replaces useTransition
   const { firestore, user } = useUser();
   const { toast } = useToast();
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error de conexión.' });
       return;
     }
 
-    startTransition(() => {
-      if (!transaction.relatedExpenseId || !transaction.relatedProjectId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se puede eliminar esta transacción porque no está vinculada a un gasto de obra.' });
-        return;
-      }
+    if (!transaction.relatedExpenseId || !transaction.relatedProjectId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se puede eliminar esta transacción porque no está vinculada a un gasto de obra.' });
+      return;
+    }
 
+    setIsDeleting(true);
+
+    try {
       const batch = writeBatch(firestore);
 
       // 1. Re-add amount to cash account balance
@@ -56,13 +58,6 @@ export function DeleteTransactionDialog({ transaction, cashAccount }: { transact
 
       await batch.commit();
 
-      // Audit Log (Fire and forget, but after commit to ensure consistency)
-      // Note: We need a User object for the logger. 
-      // If `useUser` context isn't available here, we might need to pass it or just log rudimentary info.
-      // Assuming we can get user from context or passed props.
-      // Since this component uses `useUser` via `const { firestore } = useUser();` we should check if `user` is available.
-      // Actually `useUser` usually returns { user, firestore, ... }.
-
       if (user) {
         logAction(firestore, user, 'DELETE', 'EXPENSE', `Eliminó movimiento: ${transaction.amount}`, { id: transaction.id, amount: transaction.amount });
       }
@@ -76,6 +71,8 @@ export function DeleteTransactionDialog({ transaction, cashAccount }: { transact
         title: "Error al eliminar",
         description: "No se pudo eliminar el movimiento.",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -95,8 +92,8 @@ export function DeleteTransactionDialog({ transaction, cashAccount }: { transact
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive/90">
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Eliminar
           </AlertDialogAction>
         </AlertDialogFooter>
