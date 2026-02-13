@@ -129,6 +129,7 @@ export interface Employee {
 
 export interface DailyWageHistory {
     id: string;
+    employeeId?: string;
     amount: number;
     effectiveDate: string;
 }
