@@ -80,11 +80,15 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const { firestore, permissions, role, user } = useUser();
   const { toast } = useToast();
 
+  const startOfDay = currentWeek?.startDate ? new Date(currentWeek.startDate) : null;
+  const endOfDay = currentWeek?.endDate ? new Date(currentWeek.endDate) : null;
+  const startOfDay = currentWeek?.startDate ? new Date(currentWeek.startDate) : null;
+  const endOfDay = currentWeek?.endDate ? new Date(currentWeek.endDate) : null;
   const certificationsQuery = useMemo(() => {
     if (!firestore || !currentWeek) return null;
     return query(
       collection(firestore, 'contractorCertifications').withConverter(certificationConverter),
-      where('payrollWeekId', '==', currentWeek.id)
+      where('payrollWeekId', '==', currentWeek.id), where('date', '>=', startOfDay), where('date', '<=', endOfDay)
     );
   }, [firestore, currentWeek]);
 
