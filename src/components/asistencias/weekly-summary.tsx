@@ -52,13 +52,13 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   
   const getWageForDate = useCallback((employeeId: string, date: string): {wage: number, hourlyRate: number} => {
     const employee = employees?.find(e => e.id === employeeId);
-    if (!wageHistories) {
+    if (!wageHistories || !permissions.canSupervise) {
         const wage = employee?.dailyWage || 0;
         return { wage, hourlyRate: wage / 8 };
     }
     
     const histories = wageHistories
-        .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
         .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
@@ -68,7 +68,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     
     const wage = employee?.dailyWage || 0;
     return { wage, hourlyRate: wage / 8 };
-}, [wageHistories, employees]);
+}, [wageHistories, employees, permissions.canSupervise]);
 
   const weeklySummaryData = useMemo(() => {
     const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
@@ -99,13 +99,11 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
         
        if (isNaN(grossWages) || isNaN(totalAdvances) || isNaN(totalLateHoursDeduction) || isNaN(netPay)) {
-            console.error("NaN detected in weekly summary calculation", { grossWages, totalAdvances, totalLateHoursDeduction });
             return defaultResult;
        }
 
         return { grossWages, totalAdvances, totalLateHoursDeduction, netPay };
     } catch(error) {
-        console.error("Error calculating weekly summary:", error);
         return defaultResult;
     }
 

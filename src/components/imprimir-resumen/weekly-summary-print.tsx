@@ -77,20 +77,21 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     const isLoading = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
 
     const getWageForDate = useCallback((employeeId: string, date: string): number => {
-      const employee = employees?.find(e => e.id === employeeId);
-      if (!wageHistories) {
-          return employee?.dailyWage || 0;
+      if (!employees) return 0;
+      const currentEmployee = employees.find(e => e.id === employeeId);
+      if (!wageHistories || !permissions.canSupervise) {
+          return currentEmployee?.dailyWage || 0;
       }
 
       const histories = wageHistories
-          .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+          .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
           .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
       if (histories.length > 0) {
           return histories[0].amount;
       }
-      return employee?.dailyWage || 0;
-    }, [wageHistories, employees]);
+      return currentEmployee?.dailyWage || 0;
+    }, [wageHistories, employees, permissions.canSupervise]);
 
     // --- Calculation Logic ---
     const summary = useMemo((): SummaryData | null => {
