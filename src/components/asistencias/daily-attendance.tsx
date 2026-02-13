@@ -384,3 +384,4 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
     </div>
   );
 }
+// Trigger Build v3.0.2
