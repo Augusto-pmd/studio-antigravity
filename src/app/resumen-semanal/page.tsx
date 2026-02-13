@@ -144,9 +144,14 @@ export default function ResumenSemanalPage() {
     const isLoadingData = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
 
     const getWageForDate = useCallback((employeeId: string, date: string): number => {
-        const employee = employees?.find(e => e.id === employeeId);
-        if (!wageHistories) {
-            return employee?.dailyWage || 0;
+        if (!employees) return 0;
+        const employee = employees.find(e => e.id === employeeId);
+        if (!employee) return 0;
+    
+        const baseWage = employee?.dailyWage || 0;
+
+        if (!wageHistories || !permissions.canSupervise) {
+            return baseWage;
         }
     
         const histories = wageHistories
@@ -157,8 +162,8 @@ export default function ResumenSemanalPage() {
             return histories[0].amount;
         }
         
-        return employee?.dailyWage || 0;
-    }, [wageHistories, employees]);
+        return baseWage;
+    }, [wageHistories, employees, permissions.canSupervise]);
 
     // --- Calculation Logic ---
     useEffect(() => {

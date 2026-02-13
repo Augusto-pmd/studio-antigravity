@@ -51,16 +51,16 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
   const isLoadingSummaryData = isLoadingAttendances || isLoadingEmployees || isLoadingAdvances || isLoadingWageHistories;
   
   const getWageForDate = useCallback((employeeId: string, date: string): {wage: number, hourlyRate: number} => {
-    // A single source of truth for the employee's base wage.
-    const employee = employees?.find(e => e.id === employeeId);
-    const baseWage = employee?.dailyWage || 0;
+    if (!employees) return { wage: 0, hourlyRate: 0 };
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return { wage: 0, hourlyRate: 0 };
 
-    // If there's no history or no permissions, return the base wage.
+    const baseWage = employee.dailyWage || 0;
+
     if (!wageHistories || !permissions.canSupervise) {
         return { wage: baseWage, hourlyRate: baseWage / 8 };
     }
     
-    // If there is history, find the most recent applicable one.
     const histories = wageHistories
         .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
         .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
@@ -70,7 +70,6 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
         return { wage: historicWage, hourlyRate: historicWage / 8 };
     }
     
-    // Fallback to base wage if no applicable history is found.
     return { wage: baseWage, hourlyRate: baseWage / 8 };
   }, [wageHistories, employees, permissions.canSupervise]);
 
