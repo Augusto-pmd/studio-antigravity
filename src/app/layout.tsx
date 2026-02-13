@@ -25,8 +25,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased border-t-8 border-red-500">
-        <div className="w-full bg-yellow-300 text-black text-center font-bold p-4 text-2xl">SISTEMA ACTUALIZADO 2026</div>
+      <body className="font-body antialiased">
         <FirebaseClientProvider>
           <SidebarProvider>
             <AppShell>{children}</AppShell>
