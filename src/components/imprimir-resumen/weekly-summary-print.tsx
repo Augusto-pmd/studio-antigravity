@@ -78,9 +78,11 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
 
     const getWageForDate = useCallback((employeeId: string, date: string): number => {
       if (!employees) return 0;
-      const currentEmployee = employees.find(e => e.id === employeeId);
+      const employee = employees.find(e => e.id === employeeId);
+      const baseWage = employee?.dailyWage || 0;
+
       if (!wageHistories || !permissions.canSupervise) {
-          return currentEmployee?.dailyWage || 0;
+          return baseWage;
       }
 
       const histories = wageHistories
@@ -90,7 +92,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
       if (histories.length > 0) {
           return histories[0].amount;
       }
-      return currentEmployee?.dailyWage || 0;
+      return baseWage;
     }, [wageHistories, employees, permissions.canSupervise]);
 
     // --- Calculation Logic ---

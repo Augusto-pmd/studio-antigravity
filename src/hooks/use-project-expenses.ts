@@ -151,21 +151,22 @@ export function useProjectExpenses(projectId: string) {
     
   const getWageForDate = useCallback((employeeId: string, date: string): number => {
     if (!siteEmployees) return 0;
-    const currentEmployee = siteEmployees.find((e) => e.id === employeeId);
+    const employee = siteEmployees.find((e) => e.id === employeeId);
+    const baseWage = employee?.dailyWage || 0;
 
     if (!permissions.canSupervise || !wageHistories) {
-        return currentEmployee?.dailyWage || 0;
+        return baseWage;
     }
 
     const histories = wageHistories
-        .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .filter((h) => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
         .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
         return histories[0].amount;
     }
     
-    return currentEmployee?.dailyWage || 0;
+    return baseWage;
   }, [wageHistories, siteEmployees, permissions.canSupervise]);
 
   const officeExpenses = useMemo((): Expense[] => {
