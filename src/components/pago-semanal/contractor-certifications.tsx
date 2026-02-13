@@ -58,7 +58,6 @@ const formatCurrency = (amount: number, currency: string = 'ARS') => {
 
 
 // --- Converters ---
-// REGLA: Asegurar que el conversor use parseNumber.
 const certificationConverter = {
     toFirestore: (cert: ContractorCertification): DocumentData => cert,
     fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
@@ -66,7 +65,7 @@ const certificationConverter = {
         return {
             ...data,
             id: snapshot.id,
-            amount: parseNumber(data.amount), // Correctamente usando la función de parseo
+            amount: parseNumber(data.amount),
         } as ContractorCertification;
     }
 };
@@ -81,11 +80,8 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const { firestore, permissions, user } = useUser();
   const { toast } = useToast();
 
-  // REGLA: El filtro principal debe ser por 'payrollWeekId'.
   const certificationsQuery = useMemo(() => {
     if (!firestore || !currentWeek) return null;
-    // REGLA: Agregar log con el ID de la semana.
-    console.log('SEMANA ID BUSCADA:', currentWeek.id);
     return query(
       collection(firestore, 'contractorCertifications').withConverter(certificationConverter),
       where('payrollWeekId', '==', currentWeek.id)
@@ -94,22 +90,6 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
 
   const { data: certifications, isLoading: isLoadingCerts } = useCollection<ContractorCertification>(certificationsQuery);
 
-  // REGLA: Log de seguridad si no se encuentran certificaciones.
-  useEffect(() => {
-    if (firestore && !isLoadingCerts && currentWeek && (!certifications || certifications.length === 0)) {
-        const fetchAllForDebug = async () => {
-            console.warn(`SECURITY FALLBACK: No se encontraron certificaciones para la semana ${currentWeek.id}. Verificando todos los documentos de la colección 'contractorCertifications' para diagnosticar posibles errores de ID...`);
-            const allDocsQuery = query(collection(firestore, 'contractorCertifications'));
-            const querySnapshot = await getDocs(allDocsQuery);
-            const allDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log('SECURITY FALLBACK - Datos recibidos:', allDocs);
-        };
-        fetchAllForDebug();
-    }
-  }, [firestore, isLoadingCerts, currentWeek, certifications]);
-
-
-  // --- Lógica adicional para presupuestos y saldos (sin cambios) ---
   const allContractorsQuery = useMemo(() => firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null, [firestore]);
   const { data: allContractors, isLoading: isLoadingContractors } = useCollection<Contractor>(allContractorsQuery);
 
@@ -129,7 +109,6 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   }, [allPaidCerts]);
 
   
-  // --- Handlers (sin cambios) ---
   const handleStatusChange = async (cert: ContractorCertification, status: ContractorCertification['status']) => {
      if (!firestore || !currentWeek) return;
       try {
@@ -156,7 +135,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
               };
               batch.set(expenseRef, expenseData);
               updateData.relatedExpenseId = expenseRef.id;
-          } else if (cert.status === 'Pagado' && cert.relatedExpenseId) {
+          } else if (cert.status === 'Pagado' && status !== 'Pagado' && cert.relatedExpenseId) {
               const expenseRef = doc(firestore, `projects/${cert.projectId}/expenses`, cert.relatedExpenseId);
               batch.delete(expenseRef);
               updateData.relatedExpenseId = null;
@@ -172,7 +151,6 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   };
 
 
-  // --- Renderizado ---
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between">
@@ -213,11 +191,10 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
                                 </TableRow>
                             ))
                         )}
-                        {/* REGLA: Si certifications es undefined o vacío, mostrar mensaje claro. */}
                         {!isLoading && currentWeek && (!certifications || certifications.length === 0) && (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                    No se encontraron certificaciones para la semana con ID: {currentWeek.id}
+                                    No se encontraron certificaciones para esta semana.
                                 </TableCell>
                             </TableRow>
                         )}

@@ -104,7 +104,6 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
 
   const formattedDate = useMemo(() => selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, [selectedDate]);
 
-  // REGLA: Usar query, collection y where con el filtro estricto.
   const attendanceForDayQuery = useMemo(
     () => (firestore && formattedDate
         ? query(
@@ -121,26 +120,18 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
   useEffect(() => {
     setIsClient(true);
     if (currentWeek) {
-        // Sincroniza la fecha interna con la semana seleccionada en el componente padre
         setSelectedDate(parseISO(currentWeek.startDate));
     } else {
         setSelectedDate(new Date());
     }
   }, [currentWeek]);
   
-  // REGLA: useEffect para imprimir en consola
-  useEffect(() => {
-    console.log('BUSCANDO FECHA:', formattedDate);
-    console.log('DATOS RECIBIDOS:', dayAttendances);
-  }, [formattedDate, dayAttendances]);
-
   useEffect(() => {
     if (isLoadingAttendances || isLoadingEmployees || !employees) return;
 
     const newAttendanceState: Record<string, AttendanceRecord> = {};
     const activeEmployees = employees.filter((emp) => emp.status === 'Activo');
 
-    // Mapea los datos de asistencia existentes
     if (dayAttendances && dayAttendances.length > 0) {
       dayAttendances.forEach((att) => {
         newAttendanceState[att.employeeId] = {
@@ -153,7 +144,6 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
       });
     }
 
-    // Crea un estado por defecto para todos los empleados activos, incluso si no tienen asistencia registrada
     activeEmployees.forEach((emp) => {
       if (!newAttendanceState[emp.id]) {
         newAttendanceState[emp.id] = {
@@ -317,10 +307,9 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
         <CardContent>
             {isLoadingEmployees || isLoadingProjects || isLoadingAttendances ? (
                 <div className="space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-40 w-full" /></div>
-            // REGLA: Si la lista está vacía, mostrar div.
             ) : dayAttendances && dayAttendances.length === 0 && !isLoadingAttendances ? (
                 <div className="flex h-40 items-center justify-center rounded-md border border-dashed text-center">
-                    <p className='text-muted-foreground'>{`No hay datos en Firebase para ${formattedDate}`}</p>
+                    <p className='text-muted-foreground'>{`No hay datos de asistencia para ${formattedDate}. Cargue y guarde para comenzar.`}</p>
                 </div>
             ) : Object.keys(groupedEmployees).length > 0 ? (
                 <Accordion type="multiple" defaultValue={['unassigned']} className="w-full space-y-4">
