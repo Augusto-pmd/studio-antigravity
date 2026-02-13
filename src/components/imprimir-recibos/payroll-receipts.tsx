@@ -86,25 +86,28 @@ export function PayrollReceipts({ weekId, type }: { weekId: string, type: 'emplo
   }, [projects]);
   
   const getWageForDate = useCallback((employeeId: string, date: string): { wage: number, hourlyRate: number } => {
-    if (!wageHistories || !employees) {
-        const currentEmployee = employees?.find((e: Employee) => e.id === employeeId);
-        const wage = currentEmployee?.dailyWage || 0;
-        return { wage, hourlyRate: wage / 8 };
-    };
+    // A single source of truth for the employee's base wage.
+    const employee = employees?.find(e => e.id === employeeId);
+    const baseWage = employee?.dailyWage || 0;
+
+    // If there's no history or no permissions, return the base wage.
+    if (!wageHistories || !permissions.canSupervise) {
+        return { wage: baseWage, hourlyRate: baseWage / 8 };
+    }
     
+    // If there is history, find the most recent applicable one.
     const histories = wageHistories
         .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
         .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
-        const wage = histories[0].amount;
-        return { wage, hourlyRate: wage / 8 };
+        const historicWage = histories[0].amount;
+        return { wage: historicWage, hourlyRate: historicWage / 8 };
     }
     
-    const currentEmployee = employees.find((e) => e.id === employeeId);
-    const wage = currentEmployee?.dailyWage || 0;
-    return { wage, hourlyRate: wage / 8 };
-}, [wageHistories, employees]);
+    // Fallback to base wage if no applicable history is found.
+    return { wage: baseWage, hourlyRate: baseWage / 8 };
+  }, [wageHistories, employees, permissions.canSupervise]);
 
   const employeeReceiptsData = useMemo<EmployeeReceiptData[]>(() => {
     if (!week || !employees || !attendances || !advances) return [];
