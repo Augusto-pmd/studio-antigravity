@@ -58,7 +58,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     }
     
     const histories = wageHistories
-        .filter(h => h.employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+        .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
         .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
