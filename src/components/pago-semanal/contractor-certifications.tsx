@@ -80,13 +80,13 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const { firestore, permissions, role, user } = useUser();
   const { toast } = useToast();
 
-  const startOfDay = currentWeek?.startDate ? new Date(currentWeek.startDate) : null;
-  const endOfDay = currentWeek?.endDate ? new Date(currentWeek.endDate) : null;
   const certificationsQuery = useMemo(() => {
     if (!firestore || !currentWeek) return null;
     return query(
       collection(firestore, 'contractorCertifications').withConverter(certificationConverter),
-      where('payrollWeekId', '==', currentWeek.id), where('date', '>=', startOfDay), where('date', '<=', endOfDay)
+      where('payrollWeekId', '==', currentWeek.id),
+      where('date', '>=', currentWeek.startDate),
+      where('date', '<=', currentWeek.endDate)
     );
   }, [firestore, currentWeek]);
 
@@ -155,12 +155,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
             categoryId: 'CAT-02', // Mano de Obra (Subcontratos)
             documentType: 'Recibo Común',
             paymentSource: 'Tesorería',
-            description: `Certificación de contratista: ${
-              cert.contractorName
-            } - Semana ${format(
-              parseISO(currentWeek.startDate),
-              'dd/MM/yy'
-            )} a ${format(parseISO(currentWeek.endDate), 'dd/MM/yy')}`,
+            description: `Certificación de contratista: ${cert.contractorName} - Semana ${format(parseISO(currentWeek.startDate), 'dd/MM/yy')} a ${format(parseISO(currentWeek.endDate), 'dd/MM/yy')}`,
             amount: cert.amount,
             currency: cert.currency,
             exchangeRate: 1, // Assume 1:1 for this flow
@@ -187,11 +182,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
       await batch.commit();
       toast({
         title: 'Estado actualizado',
-        description: `La certificación ha sido marcada como ${status.toLowerCase()}${
-          status === 'Pagado'
-            ? ' y se ha generado el gasto correspondiente.'
-            : '.'
-        }`,
+        description: `La certificación ha sido marcada como ${status.toLowerCase()}${status === 'Pagado' ? ' y se ha generado el gasto correspondiente.' : '.'}`,
       });
     } catch (error) {
       console.error('Error updating status or creating expense:', error);
