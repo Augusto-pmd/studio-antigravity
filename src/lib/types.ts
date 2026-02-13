@@ -197,6 +197,7 @@ export interface FundRequest {
   exchangeRate: number;
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado' | 'Aplazado';
   description?: string;
+  source?: 'MANUAL' | 'IMPORT';
 }
 
 export interface PayrollWeek {
@@ -229,6 +230,7 @@ export interface Attendance {
   notes: string;
   projectId?: string | null;
   payrollWeekId: string;
+  source?: 'MANUAL' | 'IMPORT';
 }
 
 export interface TaskRequest {
@@ -392,6 +394,7 @@ export interface ContractorCertification {
   requesterId: string;
   requesterName: string;
   relatedExpenseId?: string;
+  source?: 'MANUAL' | 'IMPORT';
 }
 
 export interface ClientFollowUp {
