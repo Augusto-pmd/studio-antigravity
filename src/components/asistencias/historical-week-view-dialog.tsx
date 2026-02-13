@@ -33,11 +33,11 @@ export function HistoricalWeekViewDialog({ week, children }: { week: PayrollWeek
     const { firestore } = useUser();
 
     // Data for the summary
-    const attendanceQuery = useMemo(
+    const attendancesQuery = useMemo(
         () => firestore ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', week.id)) : null,
         [firestore, week.id]
     );
-    const { data: weekAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
+    const { data: weekAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
 
     const employeesQuery = useMemo(() => firestore ? query(collection(firestore, 'employees').withConverter(employeeConverter)) : null, [firestore]);
     const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);

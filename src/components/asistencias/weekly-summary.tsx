@@ -30,11 +30,11 @@ const formatCurrency = (amount: number) => {
 export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWeek?: PayrollWeek | null, isLoadingCurrentWeek: boolean }) {
   const { firestore, permissions } = useUser();
   
-  const attendanceQuery = useMemo(
+  const attendancesQuery = useMemo(
       () => firestore && currentWeek ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
       [firestore, currentWeek]
   );
-  const { data: weekAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendanceQuery);
+  const { data: weekAttendances, isLoading: isLoadingAttendances } = useCollection<Attendance>(attendancesQuery);
 
   const employeesQuery = useMemo(() => firestore ? query(collection(firestore, 'employees').withConverter(employeeConverter), where('status', '==', 'Activo')) : null, [firestore]);
   const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
