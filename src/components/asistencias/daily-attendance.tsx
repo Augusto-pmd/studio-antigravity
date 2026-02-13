@@ -42,7 +42,7 @@ import {
 import type { Project, Employee, PayrollWeek, Attendance } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, Save, Loader2 } from 'lucide-react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -141,8 +141,12 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
 
   useEffect(() => {
     setIsClient(true);
-    setSelectedDate(new Date());
-  }, []);
+    if (currentWeek) {
+        setSelectedDate(parseISO(currentWeek.startDate));
+    } else {
+        setSelectedDate(new Date());
+    }
+  }, [currentWeek]);
 
   useEffect(() => {
     if (isLoadingAttendances || isLoadingEmployees || !activeEmployees) return;
@@ -416,7 +420,7 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
                   onSelect={setSelectedDate}
                   locale={es}
                   initialFocus
-                  disabled={(d: Date) => currentWeek ? (d < new Date(currentWeek.startDate) || d > new Date(currentWeek.endDate)) : false}
+                  disabled={(d: Date) => currentWeek ? (d < parseISO(currentWeek.startDate) || d > parseISO(currentWeek.endDate)) : false}
                 />
               </PopoverContent>
             </Popover>
