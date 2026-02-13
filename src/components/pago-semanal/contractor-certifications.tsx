@@ -82,8 +82,6 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
 
   const startOfDay = currentWeek?.startDate ? new Date(currentWeek.startDate) : null;
   const endOfDay = currentWeek?.endDate ? new Date(currentWeek.endDate) : null;
-  const startOfDay = currentWeek?.startDate ? new Date(currentWeek.startDate) : null;
-  const endOfDay = currentWeek?.endDate ? new Date(currentWeek.endDate) : null;
   const certificationsQuery = useMemo(() => {
     if (!firestore || !currentWeek) return null;
     return query(
