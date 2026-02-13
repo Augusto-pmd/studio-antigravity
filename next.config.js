@@ -1,6 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  distDir: '.next_new',
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
   generateBuildId: async () => {
     // This will generate a unique build id for each build
     return String(Date.now());
