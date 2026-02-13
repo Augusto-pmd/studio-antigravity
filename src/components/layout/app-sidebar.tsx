@@ -52,6 +52,7 @@ import {
   PieChart,
   BarChart,
   Database,
+  Settings,
 } from "lucide-react";
 import type { Role, TaskRequest } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -125,6 +126,12 @@ const menuItems = [
     href: "/migracion",
     label: "Migración",
     icon: Database,
+  },
+  {
+    href: "/configuracion",
+    label: "Configuración",
+    icon: Settings,
+    adminOnly: true,
   },
 ];
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { DataImporter } from '@/components/migration/data-importer';
+import { HistoricalRateBackfill } from '@/components/migration/historical-rate-backfill';
 
 export default function MigrationPage() {
     return (
@@ -12,6 +13,10 @@ export default function MigrationPage() {
                 </div>
             </div>
             <DataImporter />
+            <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Herramientas Avanzadas</h3>
+                <HistoricalRateBackfill />
+            </div>
         </div>
     );
 }

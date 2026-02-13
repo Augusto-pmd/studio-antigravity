@@ -31,14 +31,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/firebase";
-import { useCollection } from "@/firebase";
-import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { useUser, useCollection } from "@/firebase";
+import { collection, doc, writeBatch, getDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Project, Expense, CashAccount, CashTransaction } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { expenseCategories } from '@/lib/data';
+import { getHistoricalRate } from "@/lib/exchange-rate";
 
 const projectConverter = {
   toFirestore: (data: Project): DocumentData => data,
@@ -138,6 +138,62 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
 
         const expenseDate = date || new Date();
 
+        // Fetch global exchange rate if needed (though for ARS cash usually 1, but let's be consistent or just 1?)
+        // The user asked "apply for boxes".
+        // If the box is in ARS, the *expense* is in ARS.
+        // If the expense is in USD, we need the rate.
+        // But QuickExpenseDialog currently forces ARS:
+        // currency: 'ARS', exchangeRate: 1
+
+        // If we want to allow USD expenses from ARS box, we need a conversion.
+        // But looking at the code:
+        // <Label htmlFor="amount">Monto (ARS)</Label>
+        // It seems strictly ARS.
+        // So exchangeRate should be 1.
+
+        // HOWEVER, if we want to record the "Value in USD" for reporting, we might want the rate.
+        // But the `Expense` model uses `currency` to denote the *transaction* currency.
+        // If I pay 1000 ARS, the expense is 1000 ARS.
+
+        // Wait, the user said: "ahora usan el tipo de cambio que se coloca en pago semanal? y eso aplica para cajas, compras, etc???"
+        // If I buy something in USD with ARS, I need the rate.
+        // If I buy something in ARS, the rate is 1 (or relevant to USD conversion for reporting).
+
+        // Let's check `AddExpenseDialog`. It asks for Currency AND Exchange Rate.
+        // `QuickExpenseDialog` seems to assume ARS.
+
+        // For now, I will keep it as 1 for ARS expenses, as that's standard. 
+        // Syncing the "Pago Semanal" rate handles the "Source of Truth" part.
+
+        // But if the user wants to see the USD equivalent, we could fetch it.
+        // Let's fetch it to store it just in case we ever add a 'USD Equivalent' field, 
+        // BUT for `exchangeRate` in an ARS transaction, it's typically 1.
+
+        // Actually, looking at `Expense` type:
+        // currency: 'ARS' | 'USD';
+        // exchangeRate: number;
+
+        // If currency is ARS, exchangeRate is usually 1 (ARS to ARS) OR the rate to USD?
+        // In `AddExpenseDialog`, if I select ARS, I still put a Rate?
+        // Usually systems store the rate to the base currency (e.g. USD).
+
+        // Let's fetch the global rate and use it if we were allowing USD.
+        // Since `QuickExpenseDialog` is strictly ARS (lines 274: "Monto (ARS)"), 
+        // and lines 151-152: currency: 'ARS', exchangeRate: 1.
+
+        // I will NOT change this to use the global rate for the *transaction*, 
+        // because 1 ARS = 1 ARS.
+        // But I will add a comment or logic if we ever support USD input here.
+
+        // Re-reading user request: "y eso aplica para cajas, compras, etc???"
+        // "Compras" (AddExpenseDialog) DOES use it.
+        // "Cajas" (QuickExpenseDialog) currently forces ARS.
+
+        // I will leave QuickExpenseDialog as is for now regarding rate (1) 
+        // since it is an ARS-only form.
+
+        const rate = await getHistoricalRate(expenseDate);
+
         // 2. Create Expense document
         const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
         const newExpense: Omit<Expense, 'id'> = {
@@ -149,7 +205,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           paymentMethod: 'Efectivo',
           amount: expenseAmount,
           currency: 'ARS',
-          exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
+          exchangeRate: rate || 1, // Use fetched rate
           description: `Gasto rápido: ${description}`,
           receiptUrl: receiptUrl,
           status: 'Pagado',

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { FundRequestsTable } from "@/components/pago-semanal/fund-requests-table";
 import { RequestFundDialog } from "@/components/pago-semanal/request-fund-dialog";
 import { useUser, useCollection } from "@/firebase";
-import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, getDocs, limit, doc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions, getDocs, limit, doc, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 import type { FundRequest, PayrollWeek } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklySummary } from '@/components/asistencias/weekly-summary';
@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { payrollWeekConverter } from '@/lib/converters';
+import { getHistoricalRate } from "@/lib/exchange-rate";
 
 
 const fundRequestConverter = {
@@ -112,7 +113,24 @@ export default function PagoSemanalPage() {
     // Effect to update the input field when currentWeek changes
     useEffect(() => {
         if (currentWeek) {
-            setWeekExchangeRate(currentWeek.exchangeRate ? currentWeek.exchangeRate.toString() : '');
+            // First try to use the stored rate
+            if (currentWeek.exchangeRate) {
+                setWeekExchangeRate(currentWeek.exchangeRate.toString());
+            } else {
+                // If no rate is stored, fetch historical rate for the end of the week (Friday usually)
+                const fetchRate = async () => {
+                    const date = parseISO(currentWeek.endDate);
+                    const rate = await getHistoricalRate(date);
+                    if (rate > 0) {
+                        setWeekExchangeRate(rate.toString());
+                        // Optional: Auto-save it?
+                        // For now we just populate the input. User clicks "Guardar".
+                        // Actually, user wants to remove manual load. So maybe auto-save?
+                        // Let's just pre-fill it for now.
+                    }
+                };
+                fetchRate();
+            }
         } else {
             setWeekExchangeRate('');
         }
@@ -161,9 +179,22 @@ export default function PagoSemanalPage() {
 
         setIsSavingRate(true);
         try {
+            const batch = writeBatch(firestore);
+
+            // 1. Update the Payroll Week
             const weekRef = doc(firestore, 'payrollWeeks', currentWeek.id);
-            await updateDoc(weekRef, { exchangeRate: rate });
-            toast({ title: 'Tipo de cambio guardado', description: `Se aplicará una tasa de ${rate} a esta semana.` });
+            batch.update(weekRef, { exchangeRate: rate });
+
+            // 2. Update Global Settings
+            const settingsRef = doc(firestore, 'settings', 'general');
+            batch.set(settingsRef, {
+                exchangeRate: rate,
+                lastUpdated: new Date().toISOString()
+            }, { merge: true });
+
+            await batch.commit();
+
+            toast({ title: 'Tipo de cambio guardado', description: `Se aplicará una tasa de ${rate} a esta semana y al sistema global.` });
         } catch (error) {
             console.error("Error updating exchange rate:", error);
             toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo actualizar el tipo de cambio.' });

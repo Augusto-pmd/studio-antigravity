@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type {
@@ -26,6 +26,7 @@ import {
   fundRequestConverter,
 } from '@/lib/converters';
 import { format, parseISO } from 'date-fns';
+import { getHistoricalRate } from "@/lib/exchange-rate";
 
 export function useProjectExpenses(projectId: string) {
   const firestore = useFirestore();
@@ -126,15 +127,44 @@ export function useProjectExpenses(projectId: string) {
     return currentEmployee?.dailyWage || 0;
   }, [wageHistories, siteEmployees, permissions.canSupervise]);
 
+  // ... existing code ...
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!payrollWeeks) return;
+
+    const fetchRates = async () => {
+      const newRates: Record<string, number> = {};
+      for (const week of payrollWeeks) {
+        if (!week.exchangeRate || week.exchangeRate <= 1) {
+          // If the week doesn't have a stored rate, fetch it
+          // We use the week's end date (Friday) as reference
+          const date = parseISO(week.endDate);
+          const rate = await getHistoricalRate(date);
+          if (rate > 0) {
+            newRates[week.id] = rate;
+          }
+        }
+      }
+      if (Object.keys(newRates).length > 0) {
+        setExchangeRates(prev => ({ ...prev, ...newRates }));
+      }
+    };
+
+    fetchRates();
+  }, [payrollWeeks]);
+
   const payrollExpenses = useMemo((): Expense[] => {
     if (isLoading || !attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
 
+    // ... existing map logic ...
     const weeklyData = new Map<string, { week: PayrollWeek; attendanceCost: number; advanceCost: number }>();
 
     payrollWeeks.forEach(week => {
       weeklyData.set(week.id, { week, attendanceCost: 0, advanceCost: 0 });
     });
 
+    // ... existing loop ...
     attendances.forEach((att) => {
       if (att.status !== 'presente' || !att.payrollWeekId) return;
 
@@ -161,6 +191,7 @@ export function useProjectExpenses(projectId: string) {
 
         let description = 'Costo Desconocido';
         if (attendanceCost > 0 && advanceCost > 0) {
+          // ...
           description = 'Costo Personal y Adelantos';
         } else if (attendanceCost > 0) {
           description = 'Costo Mano de Obra';
@@ -168,26 +199,32 @@ export function useProjectExpenses(projectId: string) {
           description = 'Adelantos de Personal';
         }
 
-        const descriptionWithDate = `${description} - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')} a ${format(parseISO(week.endDate), 'dd/MM/yy')}`;
+        const descriptionWithDate = `${description} - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')} to ${format(parseISO(week.endDate), 'dd/MM/yy')}`;
+
+        // Use week's rate OR fetched rate OR 1 as fallback
+        const weekRate = week.exchangeRate || 0;
+        const rate = weekRate > 1 ? weekRate : (exchangeRates[week.id] || 1);
 
         return {
-          id: `payroll-week-${week.id}`,
+          id: `payroll-week-${week.id}`, // Virtual ID
           projectId,
           date: week.endDate,
-          supplierId: 'personal-propio',
+          supplierId: 'personal-propio', // Virtual Supplier
           categoryId: 'CAT-02', // Mano de Obra
-          documentType: 'Recibo Común',
+          documentType: 'Recibo Común', // Virtual Doc Type
+          description: descriptionWithDate,
           amount: totalCost,
           currency: 'ARS',
-          exchangeRate: week.exchangeRate || 0,
+          exchangeRate: rate,
           status: 'Pagado',
-          paymentSource: 'Tesorería',
-          description: descriptionWithDate,
-        } as Expense;
+          paymentMethod: 'Efectivo',
+          paidDate: week.endDate,
+          paymentSource: 'Tesorería' // Assumed
+        };
       });
-  }, [isLoading, attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate]);
+  }, [isLoading, attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate, exchangeRates]);
 
-
+  // ... 
   const allExpenses = useMemo(() => {
     // Merge real expenses (Project, User Cash, Approved Funds, Contractor Certs) + Virtual (Payroll)
     const combined = [...(projectExpenses || []), ...payrollExpenses];

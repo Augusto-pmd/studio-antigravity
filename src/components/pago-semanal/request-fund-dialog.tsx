@@ -39,10 +39,12 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
   type SnapshotOptions,
+  getDoc,
 } from 'firebase/firestore';
 import type { Project, FundRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { getHistoricalRate } from "@/lib/exchange-rate";
 
 const fundRequestCategories = [
   'Logística y PMD',
@@ -63,7 +65,7 @@ const projectConverter = {
 export function RequestFundDialog() {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const { user, firestore } = useUser();
+  const { user, firestore, permissions } = useUser();
   const { toast } = useToast();
 
   // Form State
@@ -100,6 +102,19 @@ export function RequestFundDialog() {
       resetForm();
     }
   }, [open]);
+
+  // Auto-fetch rate when date changes
+  useEffect(() => {
+    if (date) {
+      const fetchRate = async () => {
+        const rate = await getHistoricalRate(date);
+        if (rate > 0) {
+          setExchangeRate(rate.toString());
+        }
+      };
+      fetchRate();
+    }
+  }, [date]);
 
   const handleSave = async () => {
     if (!firestore || !user) {
@@ -297,7 +312,14 @@ export function RequestFundDialog() {
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setExchangeRate(e.target.value)
               }
+              readOnly={!permissions.canSupervise}
+              className={cn("bg-muted", permissions.canSupervise && "bg-background")}
             />
+            <p className="text-xs text-muted-foreground">
+              {permissions.canSupervise
+                ? "Calculado automáticamente. Puede editarlo manualmente."
+                : "Calculado automáticamente segun fecha. Solo Dirección puede modificarlo."}
+            </p>
           </div>
         </div>
         <DialogFooter>

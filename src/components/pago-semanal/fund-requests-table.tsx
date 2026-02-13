@@ -26,6 +26,9 @@ import { doc, updateDoc, writeBatch, collection, setDoc } from "firebase/firesto
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteFundRequestDialog } from "./delete-fund-request-dialog";
+import { getHistoricalRate } from "@/lib/exchange-rate";
+
+
 
 const formatCurrency = (amount: number, currency: string) => {
     if (typeof amount !== 'number') return '';
@@ -37,13 +40,14 @@ const formatDate = (dateString?: string) => {
     return format(parseISO(dateString), 'dd/MM/yyyy');
 };
 
+// ...
 
 export function FundRequestsTable({ requests, isLoading }: { requests: FundRequest[] | null, isLoading: boolean }) {
     const { user, permissions, firestore } = useUser();
     const { toast } = useToast();
     const isAdmin = permissions.canSupervise;
 
-    const handleStatusChange = (requestId: string, status: FundRequest['status']) => {
+    const handleStatusChange = async (requestId: string, status: FundRequest['status']) => {
         if (!firestore) {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
             return;
@@ -72,6 +76,8 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
             if (request.category === 'Logística y PMD') categoryId = 'CAT-04';
             if (request.category === 'Viáticos') categoryId = 'CAT-09';
 
+            const rate = await getHistoricalRate(new Date());
+
             const newExpense: Omit<Expense, 'id'> = {
                 projectId: request.projectId,
                 date: new Date().toISOString(), // Use current date for the expense
@@ -81,7 +87,7 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
                 description: `Solicitud de Fondos: ${request.description || request.category}`,
                 amount: amountInARS,
                 currency: 'ARS',
-                exchangeRate: 1, // Already converted to ARS
+                exchangeRate: rate || 1, // Use fetched rate
                 status: 'Pagado', // Assume it's paid from a cash box, not tesoreria
                 paymentMethod: 'Efectivo',
                 paidDate: new Date().toISOString(),
@@ -98,18 +104,17 @@ export function FundRequestsTable({ requests, isLoading }: { requests: FundReque
 
         batch.update(requestRef, updateData);
 
-        batch.commit()
-            .then(() => {
-                toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}${status === 'Aprobado' && request.projectId ? ' y se ha generado el gasto correspondiente.' : '.'}` });
-            })
-            .catch((error) => {
-                console.error("Error processing request:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error al actualizar",
-                    description: "No se pudo cambiar el estado. Es posible que no tengas permisos.",
-                });
+        try {
+            await batch.commit();
+            toast({ title: 'Estado actualizado', description: `La solicitud ha sido marcada como ${status.toLowerCase()}${status === 'Aprobado' && request.projectId ? ' y se ha generado el gasto correspondiente.' : '.'}` });
+        } catch (error) {
+            console.error("Error processing request:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al actualizar",
+                description: "No se pudo cambiar el estado. Es posible que no tengas permisos.",
             });
+        }
     };
 
     const renderSkeleton = () => (

@@ -46,5 +46,11 @@ export const SIDEBAR_ITEMS = [
         href: "/migracion",
         icon: Database,
         variant: "ghost"
+    },
+    {
+        title: "Configuración",
+        href: "/configuracion",
+        icon: Settings,
+        variant: "ghost"
     }
 ];

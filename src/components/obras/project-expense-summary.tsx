@@ -131,19 +131,19 @@ export function ProjectExpenseSummary({
                 <AccordionItem value={item.name} key={item.name} className="border-b">
                   <AccordionTrigger className="hover:no-underline p-4 font-normal">
                     <div className="flex w-full items-center justify-between gap-4 text-sm">
-                        <div className="w-[40%] font-medium">
-                            <div>{item.name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Progress value={proportion} className="h-2 w-20" />
-                                <span className="text-xs text-muted-foreground">{formatPercentage(proportion)}</span>
-                            </div>
+                      <div className="w-[40%] font-medium">
+                        <div>{item.name}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Progress value={proportion} className="h-2 w-20" />
+                          <span className="text-xs text-muted-foreground">{formatPercentage(proportion)}</span>
                         </div>
-                        <div className="w-[30%] text-right font-mono">
-                            {formatCurrency(item.totalUSD, 'USD')}
-                        </div>
-                        <div className="w-[30%] text-right font-mono font-bold">
-                            {formatCurrency(item.totalARS, 'ARS')}
-                        </div>
+                      </div>
+                      <div className="w-[30%] text-right font-mono">
+                        {formatCurrency(item.totalUSD, 'USD')}
+                      </div>
+                      <div className="w-[30%] text-right font-mono font-bold">
+                        {formatCurrency(item.totalARS, 'ARS')}
+                      </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4 bg-muted/50">
@@ -162,23 +162,23 @@ export function ProjectExpenseSummary({
                           )
                           .map((expense) => {
                             return (
-                                <TableRow key={expense.id} className="text-xs">
-                                    <TableCell>{formatDate(expense.date)}</TableCell>
-                                    <TableCell>
-                                        <div className='font-medium'>{suppliersMap[expense.supplierId] || expense.supplierId}</div>
-                                        {expense.description && <div className='text-muted-foreground'>{expense.description}</div>}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">
-                                        <div>{formatCurrency(expense.amount, expense.currency)}</div>
-                                        {expense.exchangeRate > 0 && (
-                                            <div className="text-muted-foreground text-xs">
-                                            {expense.currency === 'ARS'
-                                                ? `(${formatCurrency(expense.amount / expense.exchangeRate, 'USD')})`
-                                                : `(${formatCurrency(expense.amount * expense.exchangeRate, 'ARS')})`}
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
+                              <TableRow key={expense.id} className="text-xs">
+                                <TableCell>{formatDate(expense.date)}</TableCell>
+                                <TableCell>
+                                  <div className='font-medium'>{suppliersMap[expense.supplierId] || expense.supplierId}</div>
+                                  {expense.description && <div className='text-muted-foreground'>{expense.description}</div>}
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                  <div>{formatCurrency(expense.amount, expense.currency)}</div>
+                                  {expense.exchangeRate > 0 && (
+                                    <div className="text-muted-foreground text-xs">
+                                      {expense.currency === 'ARS'
+                                        ? `(${formatCurrency(expense.amount / expense.exchangeRate, 'USD')})`
+                                        : `(${formatCurrency(expense.amount * expense.exchangeRate, 'ARS')})`}
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </TableRow>
                             )
                           })}
                       </TableBody>
@@ -189,6 +189,18 @@ export function ProjectExpenseSummary({
             })
           )}
         </Accordion>
+
+        <div className="mt-6 border-t pt-4">
+          <div className="flex w-full items-center justify-between gap-4 text-sm font-bold">
+            <div className="w-[40%] text-lg">Total General</div>
+            <div className="w-[30%] text-right font-mono text-lg">
+              {formatCurrency(summaryArray.reduce((acc, item) => acc + item.totalUSD, 0), 'USD')}
+            </div>
+            <div className="w-[30%] text-right font-mono text-lg">
+              {formatCurrency(summaryArray.reduce((acc, item) => acc + item.totalARS, 0), 'ARS')}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

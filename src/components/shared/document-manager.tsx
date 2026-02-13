@@ -19,6 +19,7 @@ interface DocumentManagerProps {
 
 export function DocumentManager({ title, documents, onUpload, onDelete, isUploading, isDeleting }: DocumentManagerProps) {
     const [file, setFile] = useState<File | null>(null);
+    const [inputKey, setInputKey] = useState(0);
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0] || null;
@@ -29,6 +30,7 @@ export function DocumentManager({ title, documents, onUpload, onDelete, isUpload
         if (!file) return;
         await onUpload(file);
         setFile(null); // Clear file input after upload
+        setInputKey(prev => prev + 1); // Force input reset
     };
 
     return (
@@ -38,11 +40,11 @@ export function DocumentManager({ title, documents, onUpload, onDelete, isUpload
                 {documents.map((doc: DocumentRecord) => (
                     <div key={doc.id} className="flex items-center justify-between rounded-md border bg-muted/50 p-2 text-sm">
                         <div className="flex items-center gap-2 truncate">
-                           <FileText className="h-4 w-4 shrink-0"/>
-                           <div className="truncate">
-                             <a href={doc.url} target="_blank" rel="noopener noreferrer" className="truncate font-medium hover:underline">{doc.fileName}</a>
-                             <p className="text-xs text-muted-foreground">Subido el {format(parseISO(doc.uploadedAt), 'dd/MM/yyyy', { locale: es })}</p>
-                           </div>
+                            <FileText className="h-4 w-4 shrink-0" />
+                            <div className="truncate">
+                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="truncate font-medium hover:underline">{doc.fileName}</a>
+                                <p className="text-xs text-muted-foreground">Subido el {format(parseISO(doc.uploadedAt), 'dd/MM/yyyy', { locale: es })}</p>
+                            </div>
                         </div>
                         <div className="flex items-center">
                             <Button asChild variant="ghost" size="icon" className="h-8 w-8">
@@ -58,8 +60,8 @@ export function DocumentManager({ title, documents, onUpload, onDelete, isUpload
                     <p className="text-xs text-muted-foreground px-2">No hay documentos para esta categoría.</p>
                 )}
             </div>
-             <div className="flex items-center gap-2 pt-2 border-t">
-                <Input type="file" onChange={handleFileChange} className="flex-1 h-9 text-xs" />
+            <div className="flex items-center gap-2 pt-2 border-t">
+                <Input key={inputKey} type="file" onChange={handleFileChange} className="flex-1 h-9 text-xs" />
                 <Button onClick={handleUploadClick} disabled={!file || isUploading} size="sm">
                     {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                     Subir

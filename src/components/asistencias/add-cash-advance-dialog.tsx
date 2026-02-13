@@ -2,28 +2,28 @@
 
 import { useState, useMemo, useEffect, ChangeEvent } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
@@ -101,184 +101,209 @@ const projectConverter = {
 };
 
 export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
-  const [open, setOpen] = useState(false);
-  const { firestore } = useUser();
-  const { toast } = useToast();
-  const [isPending, setIsPending] = useState(false);
+    const [open, setOpen] = useState(false);
+    const { firestore } = useUser();
+    const { toast } = useToast();
+    const [isPending, setIsPending] = useState(false);
 
-  // FORM STATE
-  const [date, setDate] = useState<Date | undefined>();
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
+    // FORM STATE
+    const [date, setDate] = useState<Date | undefined>();
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
+    const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+    const [amount, setAmount] = useState('');
+    const [reason, setReason] = useState('');
+    const [installments, setInstallments] = useState('1');
 
-  const [isClient, setIsClient] = useState(false);
+    const [isClient, setIsClient] = useState(false);
 
-  // DATA FETCHING
-  const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
-  const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
-  const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+    // DATA FETCHING
+    const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null), [firestore]);
+    const { data: employees, isLoading: isLoadingEmployees } = useCollection<Employee>(employeesQuery);
+    const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
+    const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const resetForm = () => {
-    setDate(new Date());
-    setSelectedEmployeeId(undefined);
-    setSelectedProjectId(undefined);
-    setAmount('');
-    setReason('');
-  };
-  
-  useEffect(() => {
-    setIsClient(true);
-    if (open) {
-        resetForm();
-    }
-  }, [open]);
+    const resetForm = () => {
+        setDate(new Date());
+        setSelectedEmployeeId(undefined);
+        setSelectedProjectId(undefined);
+        setAmount('');
+        setReason('');
+        setInstallments('1');
+    };
 
-  const handleSave = async () => {
-    if (!firestore || !currentWeek) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
-        return;
-    }
-    if (!selectedEmployeeId || !date || !amount) {
-        toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Fecha y Monto son obligatorios.' });
-        return;
-    }
+    useEffect(() => {
+        setIsClient(true);
+        if (open) {
+            resetForm();
+        }
+    }, [open]);
 
-    const selectedEmployee = employees?.find((e: Employee) => e.id === selectedEmployeeId);
-    if (!selectedEmployee) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
-        return;
-    }
+    const handleSave = async () => {
+        if (!firestore || !currentWeek) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
+            return;
+        }
+        if (!selectedEmployeeId || !date || !amount) {
+            toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Fecha y Monto son obligatorios.' });
+            return;
+        }
 
-    setIsPending(true);
-    try {
-      const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId);
+        const selectedEmployee = employees?.find((e: Employee) => e.id === selectedEmployeeId);
+        if (!selectedEmployee) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
+            return;
+        }
 
-      const advancesCollection = collection(firestore, 'cashAdvances');
-      const advanceRef = doc(advancesCollection);
-      const advanceId = advanceRef.id;
+        setIsPending(true);
+        try {
+            const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId);
 
-      const newAdvance: CashAdvance = {
-          id: advanceId,
-          payrollWeekId: currentWeek.id,
-          employeeId: selectedEmployee.id,
-          employeeName: selectedEmployee.name,
-          projectId: selectedProject?.id,
-          projectName: selectedProject?.name,
-          date: date.toISOString(),
-          amount: parseArgentinianNumber(amount),
-          reason: reason || undefined,
-      };
+            const advancesCollection = collection(firestore, 'cashAdvances');
+            const advanceRef = doc(advancesCollection);
+            const advanceId = advanceRef.id;
 
-      await setDoc(advanceRef, newAdvance);
+            const newAdvance: CashAdvance = {
+                id: advanceId,
+                payrollWeekId: currentWeek.id,
+                employeeId: selectedEmployee.id,
+                employeeName: selectedEmployee.name,
+                projectId: selectedProject?.id,
+                projectName: selectedProject?.name,
+                date: date.toISOString(),
+                amount: parseArgentinianNumber(amount),
+                reason: reason || undefined,
+                installments: parseInt(installments) || 1,
+                createdAt: new Date().toISOString(),
+            };
 
-      toast({
-          title: 'Adelanto Registrado',
-          description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
-      });
-      setOpen(false);
-    } catch (error) {
-        console.error("Error writing to Firestore:", error);
-        toast({
-            variant: "destructive",
-            title: "Error al guardar",
-            description: "No se pudo guardar el adelanto. Es posible que no tengas permisos.",
-        });
-    } finally {
-        setIsPending(false);
-    }
-  };
+            await setDoc(advanceRef, newAdvance);
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button disabled={!currentWeek}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Registrar Adelanto
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Registrar Adelanto de Sueldo</DialogTitle>
-          <DialogDescription>
-            Complete el formulario para registrar un nuevo adelanto.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-                <Label htmlFor="employee">Empleado</Label>
-                <Select onValueChange={setSelectedEmployeeId} value={selectedEmployeeId} disabled={isLoadingEmployees}>
-                <SelectTrigger id="employee">
-                    <SelectValue placeholder="Seleccione un empleado" />
-                </SelectTrigger>
-                <SelectContent>
-                    {employees?.filter((e: Employee) => e.status === 'Activo').map((e: Employee) => (
-                    <SelectItem key={e.id} value={e.id}>
-                        {e.name}
-                    </SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="project">Obra</Label>
-                 <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
-                <SelectTrigger id="project">
-                    <SelectValue placeholder="Imputar a una obra (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                    {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
-                    <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                    </SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="date">Fecha</Label>
-                <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                    variant={"outline"}
-                    className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
+            toast({
+                title: 'Adelanto Registrado',
+                description: `Se ha guardado el adelanto para ${selectedEmployee.name}.`,
+            });
+            setOpen(false);
+        } catch (error) {
+            console.error("Error writing to Firestore:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: "No se pudo guardar el adelanto. Es posible que no tengas permisos.",
+            });
+        } finally {
+            setIsPending(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button disabled={!currentWeek}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Registrar Adelanto
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Registrar Adelanto de Sueldo</DialogTitle>
+                    <DialogDescription>
+                        Complete el formulario para registrar un nuevo adelanto.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="employee">Empleado</Label>
+                        <Select onValueChange={setSelectedEmployeeId} value={selectedEmployeeId} disabled={isLoadingEmployees}>
+                            <SelectTrigger id="employee">
+                                <SelectValue placeholder="Seleccione un empleado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {employees?.filter((e: Employee) => e.status === 'Activo').map((e: Employee) => (
+                                    <SelectItem key={e.id} value={e.id}>
+                                        {e.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="project">Obra</Label>
+                        <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
+                            <SelectTrigger id="project">
+                                <SelectValue placeholder="Imputar a una obra (opcional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {projects?.filter((p: Project) => p.status === 'En Curso').map((p: Project) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                        {p.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Fecha</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !date && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={date}
+                                    onSelect={setDate}
+                                    initialFocus
+                                    locale={es}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="amount">Monto Total</Label>
+                            <Input id="amount" type="text" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="installments">Cuotas</Label>
+                            <Input
+                                id="installments"
+                                type="number"
+                                min="1"
+                                step="1"
+                                placeholder="1"
+                                value={installments}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setInstallments(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    {amount && installments && (
+                        <p className="text-sm text-muted-foreground">
+                            {parseArgentinianNumber(amount) > 0 && parseInt(installments) > 0
+                                ? `Se descontarán ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(parseArgentinianNumber(amount) / parseInt(installments))} por semana.`
+                                : ''}
+                        </p>
                     )}
-                    >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
+                    <div className="space-y-2">
+                        <Label htmlFor="reason">Motivo</Label>
+                        <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="button" onClick={handleSave} disabled={isPending}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Guardar Adelanto
                     </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                    <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    locale={es}
-                    />
-                </PopoverContent>
-                </Popover>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="amount">Monto</Label>
-                <Input id="amount" type="text" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="reason">Motivo</Label>
-                <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}/>
-            </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" onClick={handleSave} disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar Adelanto
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }

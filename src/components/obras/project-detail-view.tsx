@@ -105,8 +105,9 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
   }, 0);
 
   const isBudgetInARS = project.currency === 'ARS';
-  const budgetInARS = isBudgetInARS ? project.budget : null;
-  const remainingBalance = budgetInARS ? budgetInARS - totalCostARS : null;
+  const remainingBalance = isBudgetInARS
+    ? project.budget - totalCostARS
+    : project.budget - totalCostUSD;
 
   return (
     <div className="space-y-8">
@@ -169,17 +170,13 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Saldo Restante (ARS)
+              Saldo Restante
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {remainingBalance !== null ? (
-              <div className="text-2xl font-bold">
-                {formatCurrency(remainingBalance, 'ARS')}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
-            )}
+            <div className={cn("text-2xl font-bold", remainingBalance < 0 && "text-red-500")}>
+              {formatCurrency(remainingBalance, project.currency)}
+            </div>
           </CardContent>
         </Card>
       </div>

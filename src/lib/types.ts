@@ -216,6 +216,8 @@ export interface CashAdvance {
   amount: number;
   reason?: string;
   payrollWeekId: string;
+  installments?: number; // Total number of installments
+  createdAt?: string; // ISO Date of creation for sorting/tracking
 }
 
 export interface Attendance {

@@ -29,7 +29,7 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
 
     const handleUpload = async (file: File, documentType: string) => {
         if (!firestore || !firebaseApp || !employeeRef) return toast({ variant: 'destructive', title: "Error de conexión" });
-        
+
         setIsUploading(true);
         const storage = getStorage(firebaseApp);
         const docId = doc(collection(firestore, 'dummy')).id; // Generate a unique ID
@@ -66,7 +66,7 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
 
         setDeletingDocId(documentToDelete.id);
         const storage = getStorage(firebaseApp);
-        
+
         try {
             // First, atomically update the Firestore document
             const docSnap = await getDoc(employeeRef);
@@ -81,12 +81,12 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
             // Then, delete from Storage
             const storageRef = ref(storage, documentToDelete.url);
             await deleteObject(storageRef);
-            
+
             toast({ title: "Documento Eliminado" });
         } catch (error: any) {
             console.error("Delete error:", error);
             // If the file doesn't exist in storage, Firestore update still goes through. That's OK.
-            if(error.code !== 'storage/object-not-found') {
+            if (error.code !== 'storage/object-not-found') {
                 toast({ variant: 'destructive', title: "Error al eliminar", description: "No se pudo eliminar el archivo del almacenamiento, pero la referencia ha sido borrada." });
             }
         } finally {
@@ -108,31 +108,31 @@ export function EmployeeFileDialog({ employee, children }: { employee: Employee;
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
-                  {isLoading ? (
-                    <div className="space-y-4">
-                        <Skeleton className="h-32 w-full" />
-                        <Skeleton className="h-32 w-full" />
-                    </div>
-                  ) : (
-                    <>
-                        <DocumentManager
-                            title="Seguro de Accidentes Personales"
-                            documents={accidentInsuranceDocs}
-                            onUpload={(file: File) => { handleUpload(file, 'accidentInsurance'); } }
-                            onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
-                            isUploading={isUploading}
-                            isDeleting={deletingDocId}
-                        />
-                        <DocumentManager
-                            title="Antecedentes Penales"
-                            documents={criminalRecordDocs}
-                            onUpload={(file: File) => { handleUpload(file, 'criminalRecord'); } }
-                            onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
-                            isUploading={isUploading}
-                            isDeleting={deletingDocId}
-                        />
-                    </>
-                  )}
+                    {isLoading ? (
+                        <div className="space-y-4">
+                            <Skeleton className="h-32 w-full" />
+                            <Skeleton className="h-32 w-full" />
+                        </div>
+                    ) : (
+                        <>
+                            <DocumentManager
+                                title="Seguro de Accidentes Personales"
+                                documents={accidentInsuranceDocs}
+                                onUpload={(file: File) => handleUpload(file, 'accidentInsurance')}
+                                onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
+                                isUploading={isUploading}
+                                isDeleting={deletingDocId}
+                            />
+                            <DocumentManager
+                                title="Antecedentes Penales"
+                                documents={criminalRecordDocs}
+                                onUpload={(file: File) => handleUpload(file, 'criminalRecord')}
+                                onDelete={async (doc: DocumentRecord) => { await handleDelete(doc); }}
+                                isUploading={isUploading}
+                                isDeleting={deletingDocId}
+                            />
+                        </>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>

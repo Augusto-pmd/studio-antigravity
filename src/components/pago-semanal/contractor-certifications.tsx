@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EditContractorCertificationDialog } from './edit-contractor-certification-dialog';
 import { DeleteContractorCertificationDialog } from './delete-contractor-certification-dialog';
 import { PaymentHistoryDialog } from './payment-history-dialog';
+import { getHistoricalRate } from "@/lib/exchange-rate";
 
 const parseNumber = (value: any): number => {
   if (value === null || value === undefined) return 0;
@@ -148,6 +149,8 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
             collection(firestore, `projects/${cert.projectId}/expenses`)
           );
 
+          const rate = await getHistoricalRate(new Date());
+
           const expenseData: Omit<Expense, 'id'> = {
             projectId: cert.projectId,
             date: new Date().toISOString(),
@@ -162,7 +165,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
               )} a ${format(parseISO(currentWeek.endDate), 'dd/MM/yy')}`,
             amount: cert.amount,
             currency: cert.currency,
-            exchangeRate: 1, // Assume 1:1 for this flow
+            exchangeRate: rate || 1,
             status: 'Pagado',
             paymentMethod: 'Planilla Semanal',
             paidDate: new Date().toISOString(),
@@ -187,8 +190,8 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
       toast({
         title: 'Estado actualizado',
         description: `La certificación ha sido marcada como ${status.toLowerCase()}${status === 'Pagado'
-            ? ' y se ha generado el gasto correspondiente.'
-            : '.'
+          ? ' y se ha generado el gasto correspondiente.'
+          : '.'
           }`,
       });
     } catch (error) {

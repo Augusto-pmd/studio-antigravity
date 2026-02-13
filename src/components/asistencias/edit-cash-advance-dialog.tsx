@@ -37,62 +37,62 @@ import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const parseArgentinianNumber = (value: string): number => {
-    if (!value) return 0;
-    // Remove thousand separators (dots) and then replace decimal comma with a dot.
-    const cleanedString = value.replace(/\./g, '').replace(',', '.');
-    const num = parseFloat(cleanedString);
-    return isNaN(num) ? 0 : num;
+  if (!value) return 0;
+  // Remove thousand separators (dots) and then replace decimal comma with a dot.
+  const cleanedString = value.replace(/\./g, '').replace(',', '.');
+  const num = parseFloat(cleanedString);
+  return isNaN(num) ? 0 : num;
 }
 
 const employeeConverter = {
-    toFirestore(employee: Employee): DocumentData {
-        const { id, ...data } = employee;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Employee {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            status: data.status,
-            paymentType: data.paymentType,
-            category: data.category,
-            dailyWage: data.dailyWage,
-            artExpiryDate: data.artExpiryDate,
-        };
-    }
+  toFirestore(employee: Employee): DocumentData {
+    const { id, ...data } = employee;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): Employee {
+    const data = snapshot.data(options)!;
+    return {
+      id: snapshot.id,
+      name: data.name,
+      status: data.status,
+      paymentType: data.paymentType,
+      category: data.category,
+      dailyWage: data.dailyWage,
+      artExpiryDate: data.artExpiryDate,
+    };
+  }
 };
 
 const projectConverter = {
-    toFirestore(project: Project): DocumentData {
-        const { id, ...data } = project;
-        return data;
-    },
-    fromFirestore(
-        snapshot: QueryDocumentSnapshot,
-        options: SnapshotOptions
-    ): Project {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            client: data.client,
-            address: data.address,
-            currency: data.currency,
-            projectType: data.projectType,
-            status: data.status,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            supervisor: data.supervisor,
-            budget: data.budget,
-            balance: data.balance,
-            progress: data.progress,
-            description: data.description,
-        };
-    }
+  toFirestore(project: Project): DocumentData {
+    const { id, ...data } = project;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): Project {
+    const data = snapshot.data(options)!;
+    return {
+      id: snapshot.id,
+      name: data.name,
+      client: data.client,
+      address: data.address,
+      currency: data.currency,
+      projectType: data.projectType,
+      status: data.status,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      supervisor: data.supervisor,
+      budget: data.budget,
+      balance: data.balance,
+      progress: data.progress,
+      description: data.description,
+    };
+  }
 };
 
 export function EditCashAdvanceDialog({ advance, currentWeek, children }: { advance: CashAdvance, currentWeek?: PayrollWeek, children: React.ReactNode }) {
@@ -105,8 +105,9 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
   const [date, setDate] = useState<Date | undefined>();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
+  const [amount, setAmount] = useState(advance.amount.toString());
+  const [reason, setReason] = useState(advance.reason || '');
+  const [installments, setInstallments] = useState((advance.installments || 1).toString());
 
   const [isClient, setIsClient] = useState(false);
 
@@ -122,23 +123,24 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
     setSelectedProjectId(advance.projectId);
     setAmount(advance.amount.toString());
     setReason(advance.reason || '');
+    setInstallments((advance.installments || 1).toString());
   };
-  
+
   useEffect(() => {
     setIsClient(true);
     if (open) {
-        resetForm();
+      resetForm();
     }
   }, [open, advance]);
 
   const handleSave = () => {
     if (!firestore) {
-        toast({ variant: 'destructive', title: 'Error de conexión.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error de conexión.' });
+      return;
     }
     if (!selectedEmployeeId || !date || !amount) {
-        toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Fecha y Monto son obligatorios.' });
-        return;
+      toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Fecha y Monto son obligatorios.' });
+      return;
     }
 
     startTransition(() => {
@@ -146,37 +148,38 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
       const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId);
 
       if (!selectedEmployee) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
-          return;
+        toast({ variant: 'destructive', title: 'Error', description: 'Empleado no válido.' });
+        return;
       }
 
       const advanceRef = doc(firestore, 'cashAdvances', advance.id);
 
       const updatedAdvance: Partial<CashAdvance> = {
-          employeeId: selectedEmployee.id,
-          employeeName: selectedEmployee.name,
-          projectId: selectedProject?.id,
-          projectName: selectedProject?.name,
-          date: date.toISOString(),
-          amount: parseArgentinianNumber(amount),
-          reason: reason || undefined,
+        employeeId: selectedEmployee.id,
+        employeeName: selectedEmployee.name,
+        projectId: selectedProject?.id,
+        projectName: selectedProject?.name,
+        date: date.toISOString(),
+        amount: parseArgentinianNumber(amount),
+        reason: reason || undefined,
+        installments: parseInt(installments) || 1,
       };
 
       updateDoc(advanceRef, updatedAdvance)
         .then(() => {
-            toast({
-                title: 'Adelanto Actualizado',
-                description: `Se ha actualizado el adelanto para ${selectedEmployee.name}.`,
-            });
-            setOpen(false);
+          toast({
+            title: 'Adelanto Actualizado',
+            description: `Se ha actualizado el adelanto para ${selectedEmployee.name}.`,
+          });
+          setOpen(false);
         })
         .catch((error) => {
-            console.error("Error updating document:", error);
-            toast({
-                variant: "destructive",
-                title: "Error al actualizar",
-                description: "No se pudo actualizar el adelanto. Es posible que no tengas permisos.",
-            });
+          console.error("Error updating document:", error);
+          toast({
+            variant: "destructive",
+            title: "Error al actualizar",
+            description: "No se pudo actualizar el adelanto. Es posible que no tengas permisos.",
+          });
         });
     });
   };
@@ -224,9 +227,9 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
             </Select>
           </div>
 
-           <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="date">Fecha</Label>
-             <Popover>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
@@ -250,15 +253,36 @@ export function EditCashAdvanceDialog({ advance, currentWeek, children }: { adva
               </PopoverContent>
             </Popover>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="amount">Monto</Label>
-            <Input id="amount" type="text" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-amount">Monto Total</Label>
+              <Input id="edit-amount" type="text" placeholder="ARS" value={amount} onChange={(e: ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-installments">Cuotas</Label>
+              <Input
+                id="edit-installments"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="1"
+                value={installments}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setInstallments(e.target.value)}
+              />
+            </div>
           </div>
+          {amount && installments && (
+            <p className="text-sm text-muted-foreground">
+              {parseArgentinianNumber(amount) > 0 && parseInt(installments) > 0
+                ? `Se descontarán ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(parseArgentinianNumber(amount) / parseInt(installments))} por semana.`
+                : ''}
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="reason">Motivo</Label>
-            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}/>
+            <Textarea id="reason" placeholder="Motivo del adelanto (opcional)" value={reason} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} />
           </div>
         </div>
         <DialogFooter>
