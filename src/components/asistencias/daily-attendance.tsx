@@ -88,6 +88,7 @@ const attendanceConverter = {
 
 
 export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
+  console.log('--- SYNC 2026 ACTIVA ---');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [isClient, setIsClient] = useState(false);

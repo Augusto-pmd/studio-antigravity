@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import AppShell from '@/components/layout/app-shell';
 
 export const metadata: Metadata = {
-  title: 'PMD Arquitectura',
+  title: 'PMD - V3.1.0 (2026 OK)',
   description: 'Sistema Integral de Gestión de Obras',
 };
 
