@@ -32,6 +32,7 @@ export default function RootLayout({
             <Toaster />
           </SidebarProvider>
         </FirebaseClientProvider>
+        <span className="hidden">Build: {new Date().toISOString()}</span>
       </body>
     </html>
   );

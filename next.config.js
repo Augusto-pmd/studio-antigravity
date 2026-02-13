@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  generateBuildId: async () => {
+    // This will generate a unique build id for each build
+    return String(Date.now());
+  },
   images: {
     remotePatterns: [
       {
