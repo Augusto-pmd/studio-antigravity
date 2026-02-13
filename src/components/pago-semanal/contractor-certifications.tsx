@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EditContractorCertificationDialog } from './edit-contractor-certification-dialog';
 import { DeleteContractorCertificationDialog } from './delete-contractor-certification-dialog';
 import { PaymentHistoryDialog } from './payment-history-dialog';
+import { certificationConverter, contractorConverter } from '@/lib/converters';
 
 
 // --- Helper Functions ---
@@ -58,22 +59,7 @@ const formatCurrency = (amount: number, currency: string = 'ARS') => {
 
 
 // --- Converters ---
-const certificationConverter = {
-    toFirestore: (cert: ContractorCertification): DocumentData => cert,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorCertification => {
-        const data = snapshot.data(options)!;
-        return {
-            ...data,
-            id: snapshot.id,
-            amount: parseNumber(data.amount),
-        } as ContractorCertification;
-    }
-};
-
-const contractorConverter = {
-    toFirestore: (data: Contractor): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => ({ ...snapshot.data(options), id: snapshot.id } as Contractor)
-};
+// The converters are now in `src/lib/converters.ts`, so no need to define them here.
 
 
 export function ContractorCertifications({ currentWeek, isLoadingWeek }: { currentWeek?: PayrollWeek, isLoadingWeek: boolean }) {
@@ -93,7 +79,7 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
   const allContractorsQuery = useMemo(() => firestore ? collection(firestore, 'contractors').withConverter(contractorConverter) : null, [firestore]);
   const { data: allContractors, isLoading: isLoadingContractors } = useCollection<Contractor>(allContractorsQuery);
 
-  const allPaidCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications'), where('status', '==', 'Pagado')) : null, [firestore]);
+  const allPaidCertsQuery = useMemo(() => firestore ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('status', '==', 'Pagado')) : null, [firestore]);
   const { data: allPaidCerts, isLoading: isLoadingAllCerts } = useCollection<ContractorCertification>(allPaidCertsQuery);
 
   const isLoading = isLoadingWeek || isLoadingCerts || isLoadingContractors || isLoadingAllCerts;
@@ -238,3 +224,4 @@ export function ContractorCertifications({ currentWeek, isLoadingWeek }: { curre
     </Card>
   );
 }
+    
