@@ -14,10 +14,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
 
   // Don't show the main layout on the login or print pages
-  if (pathname === '/login' || pathname.startsWith('/imprimir-recibos') || pathname.startsWith('/imprimir-resumen')) {
+  if (pathname === '/login' || pathname.startsWith('/imprimir-recibos') || pathname.startsWith('/imprimir-resumen') || pathname.startsWith('/imprimir-pago-semanal')) {
     return <>{children}</>;
   }
-  
+
   // The rest of the component is for authenticated pages.
   // We can put the auth logic and loading states here.
 
@@ -27,13 +27,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
-  
+
   // While user is loading, or if there is no user (before redirect kicks in), show a loading screen.
   if (isUserLoading || !user) {
     return (
-        <div className="flex h-screen w-screen items-center justify-center bg-background">
-            <p>Cargando sesión...</p>
-        </div>
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <p>Cargando sesión...</p>
+      </div>
     )
   }
 

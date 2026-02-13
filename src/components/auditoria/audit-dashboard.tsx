@@ -1,75 +1,70 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { UserProfile, TimeLog, TaskRequest, FundRequest, Expense } from '@/lib/types';
-import { UserActivityCard } from './user-activity-card';
-import { Skeleton } from '../ui/skeleton';
-
-const userProfileConverter = {
-    toFirestore: (data: UserProfile): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): UserProfile => ({ ...snapshot.data(options), id: snapshot.id } as UserProfile)
-};
-const timeLogConverter = {
-    toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => ({ ...snapshot.data(options), id: snapshot.id } as TimeLog)
-};
-const taskRequestConverter = {
-    toFirestore: (data: TaskRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => ({ ...snapshot.data(options), id: snapshot.id } as TaskRequest)
-};
-const fundRequestConverter = {
-    toFirestore: (data: FundRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): FundRequest => ({ ...snapshot.data(options), id: snapshot.id } as FundRequest)
-};
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ActionTimeline } from "./action-timeline";
+import { ShieldAlert, Users, History } from "lucide-react";
 
 export function AuditDashboard() {
-  const firestore = useFirestore();
-  
-  const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users').withConverter(userProfileConverter)) : null, [firestore]);
-  const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
-
-  const timeLogsQuery = useMemo(() => firestore ? query(collection(firestore, 'timeLogs').withConverter(timeLogConverter)) : null, [firestore]);
-  const { data: timeLogs, isLoading: isLoadingTimeLogs } = useCollection<TimeLog>(timeLogsQuery);
-
-  const tasksQuery = useMemo(() => firestore ? query(collection(firestore, 'taskRequests').withConverter(taskRequestConverter)) : null, [firestore]);
-  const { data: tasks, isLoading: isLoadingTasks } = useCollection<TaskRequest>(tasksQuery);
-  
-  const fundsQuery = useMemo(() => firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter)) : null, [firestore]);
-  const { data: fundRequests, isLoading: isLoadingFunds } = useCollection<FundRequest>(fundsQuery);
-
-  const isLoading = isLoadingUsers || isLoadingTimeLogs || isLoadingTasks || isLoadingFunds;
-
-  if (isLoading) {
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Skeleton className="h-60 w-full" />
-            <Skeleton className="h-60 w-full" />
-            <Skeleton className="h-60 w-full" />
-        </div>
-    )
-  }
+        <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {/* Summary Metrics Placeholders */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Acciones (Hoy)</CardTitle>
+                        <History className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">-</div>
+                        <p className="text-xs text-muted-foreground">Registro de movimientos</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Usuarios Activos</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">-</div>
+                        <p className="text-xs text-muted-foreground">En las últimas 24hs</p>
+                    </CardContent>
+                </Card>
+            </div>
 
-  return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {users?.map((user: UserProfile) => {
-            const userTimeLogs = timeLogs?.filter((log: TimeLog) => log.userId === user.id);
-            const userCreatedTasks = tasks?.filter((task: TaskRequest) => task.requesterId === user.id);
-            const userAssignedTasks = tasks?.filter((task: TaskRequest) => task.assigneeId === user.id);
-            const userFundRequests = fundRequests?.filter((req: FundRequest) => req.requesterId === user.id);
-            
-            return (
-                <UserActivityCard 
-                    key={user.id} 
-                    user={user} 
-                    timeLogs={userTimeLogs || []}
-                    createdTasks={userCreatedTasks || []}
-                    assignedTasks={userAssignedTasks || []}
-                    fundRequests={userFundRequests || []}
-                />
-            )
-        })}
-    </div>
-  );
+            <Tabs defaultValue="timeline" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="timeline" className="gap-2"><History className="h-4 w-4" /> Línea de Tiempo</TabsTrigger>
+                    <TabsTrigger value="security" className="gap-2"><ShieldAlert className="h-4 w-4" /> Seguridad</TabsTrigger>
+                    {/* Attendance will be mapped here later once collection is ready */}
+                </TabsList>
+
+                <TabsContent value="timeline" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Registro de Actividad</CardTitle>
+                            <CardDescription>
+                                Historial detallado de todas las acciones realizadas por el personal.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ActionTimeline />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="security" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Alertas de Seguridad</CardTitle>
+                            <CardDescription>Monitor de accesos y acciones de alto riesgo.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="h-[200px] flex items-center justify-center text-muted-foreground bg-muted/10 rounded-md border-dashed border">
+                            <p>No se han detectado alertas de seguridad recientes.</p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
 }

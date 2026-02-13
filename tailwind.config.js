@@ -8,9 +8,9 @@ const config = {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['PT Sans', 'sans-serif'],
-        code: ['monospace'],
+        sans: ['Inter', 'sans-serif'],
+        headline: ['Outfit', 'sans-serif'],
+        mono: ['monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -94,6 +94,26 @@ const config = {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'float': 'float 3s ease-in-out infinite',
+      },
+      keyframes: {
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+      },
+      boxShadow: {
+        'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
+        'glass-hover': '0 10px 40px rgba(0, 0, 0, 0.2)',
+        'neumorphic': '20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff',
       },
     },
   },

@@ -43,7 +43,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
   const suppliersMap = useMemo(() => {
-    const map = suppliers?.reduce((acc: Record<string, string>, s: any) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
+    const map: Record<string, string> = suppliers?.reduce((acc: Record<string, string>, s: any) => ({ ...acc, [s.id]: s.name }), {}) || {};
     map['OFICINA-TECNICA'] = 'Oficina Técnica';
     map['personal-propio'] = 'Personal Propio';
     map['solicitudes-fondos'] = 'Solicitudes de Fondos (Interno)';
@@ -97,6 +97,13 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     return sum + amount;
   }, 0);
 
+  const totalCostUSD = expenses.reduce((sum, exp) => {
+    const exchangeRate = exp.exchangeRate || 1;
+    const amount =
+      exp.currency === 'ARS' ? exp.amount / exchangeRate : exp.amount;
+    return sum + amount;
+  }, 0);
+
   const isBudgetInARS = project.currency === 'ARS';
   const budgetInARS = isBudgetInARS ? project.budget : null;
   const remainingBalance = budgetInARS ? budgetInARS - totalCostARS : null;
@@ -120,13 +127,13 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
           className={cn(
             'w-fit capitalize',
             project.status === 'En Curso' &&
-              'bg-green-900/40 text-green-300 border-green-700',
+            'bg-green-900/40 text-green-300 border-green-700',
             project.status === 'Pausado' &&
-              'bg-yellow-900/40 text-yellow-300 border-yellow-700',
+            'bg-yellow-900/40 text-yellow-300 border-yellow-700',
             project.status === 'Completado' &&
-              'bg-blue-900/40 text-blue-300 border-blue-700',
+            'bg-blue-900/40 text-blue-300 border-blue-700',
             project.status === 'Cancelado' &&
-              'bg-red-900/40 text-red-300 border-red-700'
+            'bg-red-900/40 text-red-300 border-red-700'
           )}
         >
           {project.status}
@@ -147,12 +154,15 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Gasto Total (ARS)
+              Gasto Total
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(totalCostARS, 'ARS')}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {formatCurrency(totalCostUSD, 'USD')}
             </div>
           </CardContent>
         </Card>
@@ -163,12 +173,12 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-             {remainingBalance !== null ? (
-                <div className="text-2xl font-bold">
+            {remainingBalance !== null ? (
+              <div className="text-2xl font-bold">
                 {formatCurrency(remainingBalance, 'ARS')}
-                </div>
+              </div>
             ) : (
-                <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
+              <div className="text-sm text-muted-foreground pt-2">N/A (Presupuesto en USD)</div>
             )}
           </CardContent>
         </Card>
@@ -179,17 +189,17 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         totalProjectCostARS={totalCostARS}
         suppliersMap={suppliersMap}
       />
-      
+
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Listado de Gastos</h2>
         <AddExpenseDialog projectId={projectId}>
-            <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Cargar Gasto
-            </Button>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Cargar Gasto
+          </Button>
         </AddExpenseDialog>
       </div>
-      
+
       <ExpensesTable
         expenses={expenses}
         isLoading={isLoading}

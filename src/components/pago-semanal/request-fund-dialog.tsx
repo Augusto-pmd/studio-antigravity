@@ -139,7 +139,7 @@ export function RequestFundDialog() {
         amount: parseFloat(amount),
         currency,
         exchangeRate: parseFloat(exchangeRate) || 1,
-        status: 'Aprobado',
+        status: 'Pendiente',
         description: description || undefined,
       };
 

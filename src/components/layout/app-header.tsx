@@ -46,7 +46,7 @@ export function AppHeader() {
     }
 
     return (
-      <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-7 w-7 text-foreground hover:text-foreground/90">
+      <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-10 w-10 rounded-full text-foreground hover:bg-background/40 hover:text-foreground hover:shadow-sm transition-all border border-transparent hover:border-white/20">
         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
         <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         <span className="sr-only">Toggle theme</span>
@@ -56,9 +56,11 @@ export function AppHeader() {
 
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/20 bg-background/60 px-4 backdrop-blur-sm md:px-6">
-      <SidebarTrigger className="text-foreground hover:text-foreground/90" />
-      
+    <header className="sticky top-0 z-30 flex h-20 items-center gap-4 bg-transparent px-6 transition-all">
+      <div className="bg-background/40 backdrop-blur-xl border border-white/20 shadow-sm rounded-full p-2">
+        <SidebarTrigger className="text-foreground hover:bg-background/50 rounded-full h-8 w-8" />
+      </div>
+
       {renderThemeButton()}
 
       <div className="flex flex-1 justify-center">

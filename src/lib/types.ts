@@ -78,6 +78,8 @@ export interface Supplier {
   type: 'Servicios' | 'Materiales' | 'Mixto';
   fiscalCondition?: string;
   notes?: string;
+  insuranceExpiryDate?: string; // YYYY-MM-DD
+  artExpiryDate?: string; // YYYY-MM-DD
 }
 
 export interface Contractor {
@@ -97,40 +99,40 @@ export interface Contractor {
 }
 
 export interface DocumentRecord {
-    id: string;
-    type: string;
-    fileName: string;
-    url: string;
-    uploadedAt: string;
+  id: string;
+  type: string;
+  fileName: string;
+  url: string;
+  uploadedAt: string;
 }
 
 export interface ContractorEmployee {
-    id: string;
-    name: string;
-    contractorId: string;
-    artExpiryDate?: string;
-    documents?: DocumentRecord[];
+  id: string;
+  name: string;
+  contractorId: string;
+  artExpiryDate?: string;
+  documents?: DocumentRecord[];
 }
 
 export interface Employee {
-    id: string;
-    name: string;
-    email?: string;
-    phone?: string;
-    emergencyContactName?: string;
-    emergencyContactPhone?: string;
-    status: 'Activo' | 'Inactivo';
-    paymentType: 'Diario' | 'Semanal';
-    category: string;
-    dailyWage: number;
-    artExpiryDate?: string;
-    documents?: DocumentRecord[];
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  status: 'Activo' | 'Inactivo';
+  paymentType: 'Diario' | 'Semanal';
+  category: string;
+  dailyWage: number;
+  artExpiryDate?: string;
+  documents?: DocumentRecord[];
 }
 
 export interface DailyWageHistory {
-    id: string;
-    amount: number;
-    effectiveDate: string;
+  id: string;
+  amount: number;
+  effectiveDate: string;
 }
 
 export interface Asset {
@@ -150,145 +152,157 @@ export interface CashAccount {
   name: string;
   currency: 'ARS';
   balance: number;
+  lastClosureDate?: string;
+  lastClosureAmount?: number;
+}
+
+export interface CashClosure {
+  id: string;
+  cashAccountId: string;
+  date: string;
+  amount: number;
+  notes?: string;
+  userId: string;
+  createdAt: string;
 }
 
 export interface CashTransaction {
-    id: string;
-    userId: string;
-    date: string;
-    type: 'Ingreso' | 'Egreso' | 'Refuerzo' | 'Transferencia';
-    amount: number;
-    currency: 'ARS';
-    description: string;
-    relatedExpenseId?: string;
-    relatedProjectId?: string;
-    relatedProjectName?: string;
-    operatorId?: string;
-    operatorName?: string;
-    isInternalLoan?: boolean;
-    loanStatus?: 'Pendiente' | 'Saldado';
-    transferId?: string;
+  id: string;
+  userId: string;
+  date: string;
+  type: 'Ingreso' | 'Egreso' | 'Refuerzo' | 'Transferencia';
+  amount: number;
+  currency: 'ARS';
+  description: string;
+  relatedExpenseId?: string;
+  relatedProjectId?: string;
+  relatedProjectName?: string;
+  operatorId?: string;
+  operatorName?: string;
+  isInternalLoan?: boolean;
+  loanStatus?: 'Pendiente' | 'Saldado';
+  transferId?: string;
 }
 
 export interface FundRequest {
-    id: string;
-    requesterId: string;
-    requesterName: string;
-    date: string;
-    category: 'Logística y PMD' | 'Materiales' | 'Viáticos' | 'Caja Chica' | 'Otros';
-    projectId?: string;
-    projectName?: string;
-    amount: number;
-    currency: 'ARS' | 'USD';
-    exchangeRate: number;
-    status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado' | 'Aplazado';
-    description?: string;
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  date: string;
+  category: 'Logística y PMD' | 'Materiales' | 'Viáticos' | 'Caja Chica' | 'Otros';
+  projectId?: string;
+  projectName?: string;
+  amount: number;
+  currency: 'ARS' | 'USD';
+  exchangeRate: number;
+  status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado' | 'Aplazado';
+  description?: string;
 }
 
 export interface PayrollWeek {
-    id: string;
-    startDate: string;
-    endDate: string;
-    exchangeRate?: number;
+  id: string;
+  startDate: string;
+  endDate: string;
+  exchangeRate?: number;
 }
 
 export interface CashAdvance {
-    id: string;
-    employeeId: string;
-    employeeName: string;
-    projectId?: string;
-    projectName?: string;
-    date: string;
-    amount: number;
-    reason?: string;
-    payrollWeekId: string;
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  projectId?: string;
+  projectName?: string;
+  date: string;
+  amount: number;
+  reason?: string;
+  payrollWeekId: string;
 }
 
 export interface Attendance {
-    id: string;
-    employeeId: string;
-    date: string; // YYYY-MM-DD
-    status: 'presente' | 'ausente';
-    lateHours: number;
-    notes: string;
-    projectId?: string | null;
-    payrollWeekId: string;
+  id: string;
+  employeeId: string;
+  date: string; // YYYY-MM-DD
+  status: 'presente' | 'ausente';
+  lateHours: number;
+  notes: string;
+  projectId?: string | null;
+  payrollWeekId: string;
 }
 
 export interface TaskRequest {
-    id: string;
-    title: string;
-    description?: string;
-    requesterId: string;
-    requesterName: string;
-    assigneeId: string;
-    assigneeName: string;
-    status: 'Pendiente' | 'Finalizado';
-    createdAt: string;
-    completedAt?: string;
-    projectId?: string;
+  id: string;
+  title: string;
+  description?: string;
+  requesterId: string;
+  requesterName: string;
+  assigneeId: string;
+  assigneeName: string;
+  status: 'Pendiente' | 'Finalizado';
+  createdAt: string;
+  completedAt?: string;
+  projectId?: string;
 }
 
 export interface TechnicalOfficeEmployee {
-    id: string;
-    userId: string;
-    fullName: string;
-    position: string;
-    employmentType: 'Relación de Dependencia' | 'Monotributo';
-    monthlySalary: number;
-    status: 'Activo' | 'Inactivo';
+  id: string;
+  userId: string;
+  fullName: string;
+  position: string;
+  employmentType: 'Relación de Dependencia' | 'Monotributo';
+  monthlySalary: number;
+  status: 'Activo' | 'Inactivo';
 }
 
 export interface TimeLog {
-    id: string;
-    userId: string;
-    date: string; // YYYY-MM-DD
-    projectId: string;
-    hours: number;
-    description?: string;
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  projectId: string;
+  hours: number;
+  description?: string;
 }
 
 export interface SalaryHistory {
-    id: string;
-    amount: number;
-    effectiveDate: string;
+  id: string;
+  amount: number;
+  effectiveDate: string;
 }
 
 export interface MonthlySalary {
-    id: string;
-    employeeId: string;
-    employeeName: string;
-    period: string; // YYYY-MM
-    grossSalary: number;
-    deductions: number;
-    netSalary: number;
-    status: 'Pendiente de Pago' | 'Pagado';
-    paidDate?: string;
-    treasuryAccountId?: string;
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  period: string; // YYYY-MM
+  grossSalary: number;
+  deductions: number;
+  netSalary: number;
+  status: 'Pendiente de Pago' | 'Pagado';
+  paidDate?: string;
+  treasuryAccountId?: string;
 }
 
 export interface TreasuryAccount {
-    id: string;
-    name: string;
-    currency: 'ARS' | 'USD';
-    balance: number;
-    accountType: 'Banco' | 'Efectivo';
-    cbu?: string;
+  id: string;
+  name: string;
+  currency: 'ARS' | 'USD';
+  balance: number;
+  accountType: 'Banco' | 'Efectivo';
+  cbu?: string;
 }
 
 export interface TreasuryTransaction {
-    id: string;
-    treasuryAccountId: string;
-    date: string;
-    type: 'Ingreso' | 'Egreso';
-    amount: number;
-    currency: 'ARS' | 'USD';
-    description: string;
-    category: string;
-    relatedDocumentId?: string;
-    relatedDocumentType?: string;
-    projectId?: string;
-    projectName?: string;
+  id: string;
+  treasuryAccountId: string;
+  date: string;
+  type: 'Ingreso' | 'Egreso';
+  amount: number;
+  currency: 'ARS' | 'USD';
+  description: string;
+  category: string;
+  relatedDocumentId?: string;
+  relatedDocumentType?: string;
+  projectId?: string;
+  projectName?: string;
 }
 
 export interface Sale {

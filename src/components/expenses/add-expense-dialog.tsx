@@ -45,21 +45,21 @@ import { extractInvoiceData } from "@/ai/flows/extract-invoice-data";
 import { Textarea } from "@/components/ui/textarea";
 
 const projectConverter = {
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+  toFirestore: (data: Project): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
 };
 
 const supplierConverter = {
-    toFirestore: (data: Supplier): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
+  toFirestore: (data: Supplier): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(options), id: snapshot.id } as Supplier)
 };
 
 const parseOptionalFloat = (value: string): number | undefined => {
-    if (value === null || value.trim() === '') {
-        return undefined;
-    }
-    const num = parseFloat(value);
-    return isNaN(num) ? undefined : num;
+  if (value === null || value.trim() === '') {
+    return undefined;
+  }
+  const num = parseFloat(value);
+  return isNaN(num) ? undefined : num;
 };
 
 
@@ -77,7 +77,7 @@ export function AddExpenseDialog({
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const isEditMode = !!expense;
-  
+
   const [isClient, setIsClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -114,8 +114,19 @@ export function AddExpenseDialog({
   const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
 
   const project = useMemo(() => projects?.find((p: Project) => p.id === selectedProject), [selectedProject, projects]);
+  const supplier = useMemo(() => suppliers?.find((s: Supplier) => s.id === selectedSupplier), [selectedSupplier, suppliers]);
+
   const isContractBlocked = project?.balance === 0;
-  const isSupplierBlocked = false; 
+
+  const isSupplierBlocked = useMemo(() => {
+    if (!supplier) return false;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (supplier.insuranceExpiryDate && supplier.insuranceExpiryDate < today) return true;
+    if (supplier.artExpiryDate && supplier.artExpiryDate < today) return true;
+
+    return false;
+  }, [supplier]);
 
   const resetForm = () => {
     setSelectedProject(defaultProjectId || expense?.projectId || '');
@@ -141,12 +152,12 @@ export function AddExpenseDialog({
 
   useEffect(() => {
     if (open) {
-        resetForm();
+      resetForm();
     }
   }, [open, expense, defaultProjectId]);
 
   useEffect(() => {
-    if(!open) {
+    if (!open) {
       setTimeout(() => {
         resetForm();
       }, 500);
@@ -156,10 +167,10 @@ export function AddExpenseDialog({
   useEffect(() => {
     setIsClient(true);
     if (!expense) {
-        setDate(new Date());
+      setDate(new Date());
     }
   }, [expense]);
-  
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -175,47 +186,47 @@ export function AddExpenseDialog({
     toast({ title: 'Analizando comprobante...', description: 'La IA está leyendo los datos. Esto puede tardar unos segundos.' });
 
     try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const imageDataUri = reader.result as string;
-            
-            setFile(file);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const imageDataUri = reader.result as string;
 
-            const extractedData = await extractInvoiceData(imageDataUri);
-            
-            dismiss();
-            toast({ title: 'Datos Extraídos', description: 'Revisa la información precargada en el formulario.' });
+        setFile(file);
 
-            if (extractedData.amount) setAmount(extractedData.amount.toString());
-            if (extractedData.iva) setIva(extractedData.iva.toString());
-            if (extractedData.iibb) setIibb(extractedData.iibb.toString());
-            if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
-            if (extractedData.date) {
-                const utcDate = new Date(`${extractedData.date}T00:00:00`);
-                setDate(utcDate);
-            }
+        const extractedData = await extractInvoiceData(imageDataUri);
 
-            if (extractedData.supplierCuit && suppliers) {
-                const matchedSupplier = suppliers.find((s: Supplier) => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
-                if (matchedSupplier) {
-                    setSelectedSupplier(matchedSupplier.id);
-                    toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
-                }
-            } else if (extractedData.supplierName && suppliers) {
-                 const matchedSupplier = suppliers.find((s: Supplier) => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
-                 if (matchedSupplier) {
-                     setSelectedSupplier(matchedSupplier.id);
-                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
-                 }
-            }
-        };
-    } catch (error) {
-        console.error("Error extracting invoice data:", error);
         dismiss();
-        toast({ variant: 'destructive', title: 'Error de IA', description: 'No se pudieron extraer los datos del comprobante.' });
+        toast({ title: 'Datos Extraídos', description: 'Revisa la información precargada en el formulario.' });
+
+        if (extractedData.amount) setAmount(extractedData.amount.toString());
+        if (extractedData.iva) setIva(extractedData.iva.toString());
+        if (extractedData.iibb) setIibb(extractedData.iibb.toString());
+        if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
+        if (extractedData.date) {
+          const utcDate = new Date(`${extractedData.date}T00:00:00`);
+          setDate(utcDate);
+        }
+
+        if (extractedData.supplierCuit && suppliers) {
+          const matchedSupplier = suppliers.find((s: Supplier) => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
+          if (matchedSupplier) {
+            setSelectedSupplier(matchedSupplier.id);
+            toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
+          }
+        } else if (extractedData.supplierName && suppliers) {
+          const matchedSupplier = suppliers.find((s: Supplier) => s.name.toLowerCase().includes(extractedData.supplierName!.toLowerCase()));
+          if (matchedSupplier) {
+            setSelectedSupplier(matchedSupplier.id);
+            toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}".` });
+          }
+        }
+      };
+    } catch (error) {
+      console.error("Error extracting invoice data:", error);
+      dismiss();
+      toast({ variant: 'destructive', title: 'Error de IA', description: 'No se pudieron extraer los datos del comprobante.' });
     } finally {
-        setIsExtracting(false);
+      setIsExtracting(false);
     }
   };
 
@@ -225,12 +236,12 @@ export function AddExpenseDialog({
       return;
     }
     if ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber) {
-        toast({ variant: 'destructive', title: 'Nº de Comprobante requerido', description: 'El número de factura o nota de crédito es obligatorio.' });
-        return;
+      toast({ variant: 'destructive', title: 'Nº de Comprobante requerido', description: 'El número de factura o nota de crédito es obligatorio.' });
+      return;
     }
-    
+
     if (!firestore || !user || !firebaseApp) {
-      toast({variant: 'destructive', title: 'Error', description: "Firebase no está disponible."});
+      toast({ variant: 'destructive', title: 'Error', description: "Firebase no está disponible." });
       return;
     }
 
@@ -244,40 +255,40 @@ export function AddExpenseDialog({
 
         let receiptUrl = expense?.receiptUrl || '';
         if (file) {
-            const storage = getStorage(firebaseApp);
-            const filePath = `receipts/${projectId}/${expenseRef.id}/${file.name}`;
-            const fileRef = ref(storage, filePath);
-            
-            await uploadBytes(fileRef, file);
-            receiptUrl = await getDownloadURL(fileRef);
+          const storage = getStorage(firebaseApp);
+          const filePath = `receipts/${projectId}/${expenseRef.id}/${file.name}`;
+          const fileRef = ref(storage, filePath);
+
+          await uploadBytes(fileRef, file);
+          receiptUrl = await getDownloadURL(fileRef);
         }
 
         const expenseData: Partial<Expense> = {
-            id: expenseRef.id,
-            projectId: projectId,
-            date: date.toISOString(),
-            supplierId: selectedSupplier,
-            categoryId: selectedCategory,
-            documentType,
-            amount: parseFloat(amount) || 0,
-            currency,
-            paymentSource,
-            exchangeRate: parseFloat(exchangeRate) || 0,
-            status: isEditMode ? expense.status : 'Pendiente de Pago',
+          id: expenseRef.id,
+          projectId: projectId,
+          date: date.toISOString(),
+          supplierId: selectedSupplier,
+          categoryId: selectedCategory,
+          documentType,
+          amount: parseFloat(amount) || 0,
+          currency,
+          paymentSource,
+          exchangeRate: parseFloat(exchangeRate) || 0,
+          status: isEditMode ? expense.status : 'Pendiente de Pago',
         };
 
         if (description) expenseData.description = description;
         if (receiptUrl) expenseData.receiptUrl = receiptUrl;
 
         if (documentType === 'Factura' || documentType === 'Nota de Crédito') {
-            expenseData.invoiceNumber = invoiceNumber;
-            expenseData.iibbJurisdiction = iibbJurisdiction;
-            const parsedIva = parseOptionalFloat(iva);
-            if (parsedIva !== undefined) expenseData.iva = parsedIva;
-            const parsedIibb = parseOptionalFloat(iibb);
-            if (parsedIibb !== undefined) expenseData.iibb = parsedIibb;
+          expenseData.invoiceNumber = invoiceNumber;
+          expenseData.iibbJurisdiction = iibbJurisdiction;
+          const parsedIva = parseOptionalFloat(iva);
+          if (parsedIva !== undefined) expenseData.iva = parsedIva;
+          const parsedIibb = parseOptionalFloat(iibb);
+          if (parsedIibb !== undefined) expenseData.iibb = parsedIibb;
         } else {
-            expenseData.iibbJurisdiction = 'No Aplica';
+          expenseData.iibbJurisdiction = 'No Aplica';
         }
 
         const parsedRetG = parseOptionalFloat(retencionGanancias);
@@ -288,11 +299,11 @@ export function AddExpenseDialog({
         if (parsedRetIibb !== undefined) expenseData.retencionIIBB = parsedRetIibb;
         const parsedRetSuss = parseOptionalFloat(retencionSUSS);
         if (parsedRetSuss !== undefined) expenseData.retencionSUSS = parsedRetSuss;
-        
+
         if (isEditMode && expense) {
-            if (expense.paymentMethod) expenseData.paymentMethod = expense.paymentMethod;
-            if (expense.paidDate) expenseData.paidDate = expense.paidDate;
-            if (expense.treasuryAccountId) expenseData.treasuryAccountId = expense.treasuryAccountId;
+          if (expense.paymentMethod) expenseData.paymentMethod = expense.paymentMethod;
+          if (expense.paidDate) expenseData.paidDate = expense.paidDate;
+          if (expense.treasuryAccountId) expenseData.treasuryAccountId = expense.treasuryAccountId;
         }
 
         return setDoc(expenseRef, expenseData, { merge: true });
@@ -300,22 +311,22 @@ export function AddExpenseDialog({
 
       saveData()
         .then(() => {
-            toast({ title: isEditMode ? 'Documento Actualizado' : 'Documento Guardado', description: 'El documento ha sido guardado correctamente.' });
-            setOpen(false);
+          toast({ title: isEditMode ? 'Documento Actualizado' : 'Documento Guardado', description: 'El documento ha sido guardado correctamente.' });
+          setOpen(false);
         })
         .catch((error: any) => {
-            console.error("Error writing to Firestore:", error);
-            const description = "No se pudo registrar el documento. Por favor, revise los datos e inténtelo de nuevo.";
-            toast({ variant: 'destructive', title: 'Error al guardar', description });
+          console.error("Error writing to Firestore:", error);
+          const description = "No se pudo registrar el documento. Por favor, revise los datos e inténtelo de nuevo.";
+          toast({ variant: 'destructive', title: 'Error al guardar', description });
         })
         .finally(() => {
-            setIsSaving(false);
+          setIsSaving(false);
         });
     });
   };
 
   const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber);
-  
+
   if (!permissions.canLoadExpenses) return null;
 
   return (
@@ -335,7 +346,7 @@ export function AddExpenseDialog({
             {isEditMode ? 'Modifique los detalles del documento.' : 'Escanee un comprobante o complete los campos para registrar un nuevo documento.'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4 max-h-[75vh] overflow-y-auto pr-4">
           <div className="space-y-2">
             <Button
@@ -373,11 +384,16 @@ export function AddExpenseDialog({
             </Alert>
           )}
           {isSupplierBlocked && (
-             <Alert variant="destructive">
+            <Alert variant="destructive">
               <TriangleAlert className="h-4 w-4" />
               <AlertTitle>Proveedor Bloqueado</AlertTitle>
               <AlertDescription>
-                El seguro o ART de este proveedor está vencido. No se pueden cargar gastos.
+                {supplier?.insuranceExpiryDate && supplier.insuranceExpiryDate < new Date().toISOString().split('T')[0]
+                  ? `El Seguro del proveedor venció el ${format(parseISO(supplier.insuranceExpiryDate), 'dd/MM/yyyy')}.`
+                  : supplier?.artExpiryDate && supplier.artExpiryDate < new Date().toISOString().split('T')[0]
+                    ? `La ART del proveedor venció el ${format(parseISO(supplier.artExpiryDate), 'dd/MM/yyyy')}.`
+                    : "La documentación del proveedor está vencida."}
+                No se pueden cargar gastos hasta que se actualice.
               </AlertDescription>
             </Alert>
           )}
@@ -399,7 +415,7 @@ export function AddExpenseDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="date">Fecha</Label>
-             <Popover>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   id="date"
@@ -439,14 +455,14 @@ export function AddExpenseDialog({
               </SelectContent>
             </Select>
           </div>
-           <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="category">Rubro</Label>
             <Select onValueChange={setSelectedCategory} value={selectedCategory}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Seleccione un rubro" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map((c: {id: string; name: string}) => (
+                {expenseCategories.map((c: { id: string; name: string }) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -480,9 +496,9 @@ export function AddExpenseDialog({
               placeholder="Añada un detalle sobre el gasto"
             />
           </div>
-           <div className="space-y-2">
+          <div className="space-y-2">
             <Label>Tipo Comprobante</Label>
-             <RadioGroup
+            <RadioGroup
               value={documentType}
               onValueChange={(value: 'Factura' | 'Recibo Común' | 'Nota de Crédito') => setDocumentType(value)}
               className="flex items-center flex-wrap gap-x-6 gap-y-2 pt-1"
@@ -501,16 +517,16 @@ export function AddExpenseDialog({
               </div>
             </RadioGroup>
           </div>
-          
+
           {(documentType === 'Factura' || documentType === 'Nota de Crédito') && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="receipt">Comprobante</Label>
                 <div className="flex items-center gap-2">
-                  <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic"/>
-                   {isEditMode && expense?.receiptUrl && (
+                  <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic" />
+                  {isEditMode && expense?.receiptUrl && (
                     <Button asChild variant="outline" size="icon">
-                        <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"><LinkIcon className="h-4 w-4" /></a>
+                      <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"><LinkIcon className="h-4 w-4" /></a>
                     </Button>
                   )}
                 </div>
@@ -518,7 +534,7 @@ export function AddExpenseDialog({
               <div className="space-y-2">
                 <Label htmlFor="invoiceNumber">Nº Comprobante</Label>
                 <div className="relative">
-                    <Input id="invoiceNumber" type="text" placeholder="Nº de la factura o nota de crédito" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+                  <Input id="invoiceNumber" type="text" placeholder="Nº de la factura o nota de crédito" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
                 </div>
               </div>
             </>
@@ -551,7 +567,7 @@ export function AddExpenseDialog({
               onChange={(e) => setExchangeRate(e.target.value)}
             />
           </div>
-          
+
           {(documentType === 'Factura' || documentType === 'Nota de Crédito') && (
             <>
               <Separator />
@@ -560,34 +576,34 @@ export function AddExpenseDialog({
                 <div className="space-y-2">
                   <Label htmlFor="iva">IVA</Label>
                   <div className="relative">
-                      <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
+                    <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="iibb">Percepción IIBB</Label>
                   <div className="relative">
-                      <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
+                    <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Jurisdicción IIBB</Label>
-                  <RadioGroup 
-                      value={iibbJurisdiction} 
-                      onValueChange={(v) => setIibbJurisdiction(v as any)} 
-                      className="flex items-center gap-6 pt-2"
+                  <RadioGroup
+                    value={iibbJurisdiction}
+                    onValueChange={(v) => setIibbJurisdiction(v as any)}
+                    className="flex items-center gap-6 pt-2"
                   >
-                      <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="No Aplica" id="iibb-na" />
-                          <Label htmlFor="iibb-na">No Aplica</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="CABA" id="iibb-caba" />
-                          <Label htmlFor="iibb-caba">CABA</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Provincia" id="iibb-pba" />
-                          <Label htmlFor="iibb-pba">Provincia</Label>
-                      </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="No Aplica" id="iibb-na" />
+                      <Label htmlFor="iibb-na">No Aplica</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="CABA" id="iibb-caba" />
+                      <Label htmlFor="iibb-caba">CABA</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Provincia" id="iibb-pba" />
+                      <Label htmlFor="iibb-pba">Provincia</Label>
+                    </div>
                   </RadioGroup>
                 </div>
               </div>
@@ -607,7 +623,7 @@ export function AddExpenseDialog({
                     <Label htmlFor="retencionIIBB">Ret. IIBB</Label>
                     <Input id="retencionIIBB" type="number" placeholder="0.00" value={retencionIIBB} onChange={e => setRetencionIIBB(e.target.value)} />
                   </div>
-                   <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor="retencionSUSS">Ret. SUSS</Label>
                     <Input id="retencionSUSS" type="number" placeholder="0.00" value={retencionSUSS} onChange={e => setRetencionSUSS(e.target.value)} />
                   </div>
@@ -620,8 +636,8 @@ export function AddExpenseDialog({
 
           <div className="space-y-2">
             <Label htmlFor="amount" className="text-lg">Monto Total</Label>
-             <div className="relative">
-                <Input id="amount" type="number" placeholder="0.00" className="text-lg h-12" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <div className="relative">
+              <Input id="amount" type="number" placeholder="0.00" className="text-lg h-12" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
           </div>
 
@@ -637,5 +653,5 @@ export function AddExpenseDialog({
   );
 }
 
-    
+
 

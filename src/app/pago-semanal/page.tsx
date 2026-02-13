@@ -57,7 +57,7 @@ export default function PagoSemanalPage() {
     const { user, firestore, permissions } = useUser();
     const isAdmin = permissions.canSupervise;
     const { toast } = useToast();
-    
+
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [weekExchangeRate, setWeekExchangeRate] = useState('');
     const [isSavingRate, setIsSavingRate] = useState(false);
@@ -79,7 +79,7 @@ export default function PagoSemanalPage() {
     const { data: weeks, isLoading: isLoadingCurrentWeek } = useCollection<PayrollWeek>(weekQuery);
 
     const currentWeek = useMemo(() => (weeks && weeks.length > 0 ? weeks[0] : null), [weeks]);
-    
+
     // Effect for creating the week if it doesn't exist
     useEffect(() => {
         if (!firestore || !isAdmin || isLoadingCurrentWeek || (weeks && weeks.length > 0)) return;
@@ -88,12 +88,12 @@ export default function PagoSemanalPage() {
             const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
             const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
             const newWeekRef = doc(collection(firestore, 'payrollWeeks'));
-            
+
             const newWeekData: Omit<PayrollWeek, 'id' | 'exchangeRate'> & { exchangeRate?: number } = {
                 startDate: format(weekStart, 'yyyy-MM-dd'),
                 endDate: format(weekEnd, 'yyyy-MM-dd'),
             };
-            
+
             try {
                 await setDoc(newWeekRef, newWeekData);
             } catch (error) {
@@ -108,7 +108,7 @@ export default function PagoSemanalPage() {
 
         createWeek();
     }, [firestore, isAdmin, isLoadingCurrentWeek, weeks, selectedDate, toast]);
-    
+
     // Effect to update the input field when currentWeek changes
     useEffect(() => {
         if (currentWeek) {
@@ -120,15 +120,15 @@ export default function PagoSemanalPage() {
 
 
     const allFundRequestsQuery = useMemo(() => {
-      if (!firestore) return null;
-      
-      let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), orderBy('date', 'desc'));
+        if (!firestore) return null;
 
-      if (!isAdmin && user) {
-        q = query(q, where('requesterId', '==', user.uid));
-      }
-      
-      return q;
+        let q = query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), orderBy('date', 'desc'));
+
+        if (!isAdmin && user) {
+            q = query(q, where('requesterId', '==', user.uid));
+        }
+
+        return q;
     }, [firestore, user, isAdmin]);
 
     const { data: allRequests, isLoading: isLoadingRequests } = useCollection<FundRequest>(allFundRequestsQuery);
@@ -172,123 +172,123 @@ export default function PagoSemanalPage() {
         }
     }
 
-  return (
-    <div className="flex flex-col gap-6">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h1 className="text-3xl font-headline">Gestión de Pago Semanal</h1>
-                <p className="mt-1 text-muted-foreground">
-                    Consolide la planilla de pagos de personal y las solicitudes de fondos para la semana.
-                </p>
-            </div>
-            <Button asChild disabled={!currentWeek}>
-              <Link href={currentWeek ? `/imprimir-resumen?weekId=${currentWeek.id}` : '#'} target="_blank">
-                  <Printer className="mr-2 h-4 w-4" />
-                  Imprimir Resumen Semanal
-              </Link>
-            </Button>
-        </div>
-
-        <Card>
-            <CardHeader>
+    return (
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <CardTitle>Selector de Semana</CardTitle>
-                    <CardDescription>Elija una fecha para ver o cargar datos de esa semana.</CardDescription>
+                    <h1 className="text-3xl font-headline">Gestión de Pago Semanal</h1>
+                    <p className="mt-1 text-muted-foreground">
+                        Consolide la planilla de pagos de personal y las solicitudes de fondos para la semana.
+                    </p>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                        variant={'outline'}
-                        className={cn('w-full justify-start text-left font-normal text-lg', !selectedDate && 'text-muted-foreground')}
-                        >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {currentWeek ? (
-                            <span>{format(parseISO(currentWeek.startDate), 'dd/MM/yy', {locale: es})} al {format(parseISO(currentWeek.endDate), 'dd/MM/yy', {locale: es})}</span>
-                        ) : (
-                            <span>Seleccione una fecha</span>
-                        )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                        <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => date && setSelectedDate(date)}
-                        initialFocus
-                        locale={es}
-                        />
-                    </PopoverContent>
-                </Popover>
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
-                    <div className="space-y-2">
-                        <Label htmlFor="week-exchange-rate">Tipo de Cambio Semanal (USD)</Label>
-                        <Input 
-                            id="week-exchange-rate"
-                            type="number"
-                            placeholder="Ej. 900"
-                            value={weekExchangeRate}
-                            onChange={(e) => setWeekExchangeRate(e.target.value)}
-                            disabled={!currentWeek || !isAdmin}
-                        />
-                        <p className="text-xs text-muted-foreground">Este tipo de cambio se usará para calcular el costo en USD de la mano de obra.</p>
+                <Button asChild disabled={!currentWeek}>
+                    <Link href={currentWeek ? `/imprimir-pago-semanal?weekId=${currentWeek.id}` : '#'} target="_blank">
+                        <Printer className="mr-2 h-4 w-4" />
+                        Imprimir Planilla de Pagos
+                    </Link>
+                </Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <div>
+                        <CardTitle>Selector de Semana</CardTitle>
+                        <CardDescription>Elija una fecha para ver o cargar datos de esa semana.</CardDescription>
                     </div>
-                    <Button onClick={handleUpdateExchangeRate} disabled={!currentWeek || isSavingRate || !isAdmin || !weekExchangeRate}>
-                        {isSavingRate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Guardar Cambio
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
-
-        <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
-                <TabsTrigger value="personal">Planilla (Personal)</TabsTrigger>
-                <TabsTrigger value="contratistas">Certificaciones (Contratistas)</TabsTrigger>
-                <TabsTrigger value="solicitudes">Solicitudes de Fondos</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="personal" className="mt-6">
-                <div className="flex flex-col gap-6">
-                    <WeeklySummary 
-                        currentWeek={currentWeek}
-                        isLoadingCurrentWeek={isLoadingCurrentWeek}
-                    />
-                    <CashAdvances 
-                        currentWeek={currentWeek ?? undefined} 
-                        isLoadingWeek={isLoadingCurrentWeek} 
-                    />
-                    <DailyAttendance 
-                        currentWeek={currentWeek ?? undefined} 
-                        isLoadingWeek={isLoadingCurrentWeek} 
-                    />
-                </div>
-            </TabsContent>
-
-            <TabsContent value="contratistas" className="mt-6">
-              <ContractorCertifications 
-                currentWeek={currentWeek ?? undefined}
-                isLoadingWeek={isLoadingCurrentWeek}
-              />
-            </TabsContent>
-
-            <TabsContent value="solicitudes" className="mt-6">
-                <div className="flex flex-col gap-6">
-                    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                        <h2 className="text-2xl font-semibold">Solicitudes de Fondos</h2>
-                        <p className="mt-1 text-muted-foreground">
-                            Cree y supervise las solicitudes de dinero para gastos de la semana.
-                        </p>
+                </CardHeader>
+                <CardContent>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={'outline'}
+                                className={cn('w-full justify-start text-left font-normal text-lg', !selectedDate && 'text-muted-foreground')}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {currentWeek ? (
+                                    <span>{format(parseISO(currentWeek.startDate), 'dd/MM/yy', { locale: es })} al {format(parseISO(currentWeek.endDate), 'dd/MM/yy', { locale: es })}</span>
+                                ) : (
+                                    <span>Seleccione una fecha</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => date && setSelectedDate(date)}
+                                initialFocus
+                                locale={es}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
+                        <div className="space-y-2">
+                            <Label htmlFor="week-exchange-rate">Tipo de Cambio Semanal (USD)</Label>
+                            <Input
+                                id="week-exchange-rate"
+                                type="number"
+                                placeholder="Ej. 900"
+                                value={weekExchangeRate}
+                                onChange={(e) => setWeekExchangeRate(e.target.value)}
+                                disabled={!currentWeek || !isAdmin}
+                            />
+                            <p className="text-xs text-muted-foreground">Este tipo de cambio se usará para calcular el costo en USD de la mano de obra.</p>
                         </div>
-                        <RequestFundDialog />
+                        <Button onClick={handleUpdateExchangeRate} disabled={!currentWeek || isSavingRate || !isAdmin || !weekExchangeRate}>
+                            {isSavingRate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Guardar Cambio
+                        </Button>
                     </div>
-                    <FundRequestsTable requests={requests} isLoading={isLoadingRequests} />
-                </div>
-            </TabsContent>
-        </Tabs>
-    </div>
-  );
+                </CardContent>
+            </Card>
+
+
+            <Tabs defaultValue="personal" className="w-full">
+                <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
+                    <TabsTrigger value="personal">Planilla (Personal)</TabsTrigger>
+                    <TabsTrigger value="contratistas">Certificaciones (Contratistas)</TabsTrigger>
+                    <TabsTrigger value="solicitudes">Solicitudes de Fondos</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="personal" className="mt-6">
+                    <div className="flex flex-col gap-6">
+                        <WeeklySummary
+                            currentWeek={currentWeek}
+                            isLoadingCurrentWeek={isLoadingCurrentWeek}
+                        />
+                        <CashAdvances
+                            currentWeek={currentWeek ?? undefined}
+                            isLoadingWeek={isLoadingCurrentWeek}
+                        />
+                        <DailyAttendance
+                            currentWeek={currentWeek ?? undefined}
+                            isLoadingWeek={isLoadingCurrentWeek}
+                        />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="contratistas" className="mt-6">
+                    <ContractorCertifications
+                        currentWeek={currentWeek ?? undefined}
+                        isLoadingWeek={isLoadingCurrentWeek}
+                    />
+                </TabsContent>
+
+                <TabsContent value="solicitudes" className="mt-6">
+                    <div className="flex flex-col gap-6">
+                        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-2xl font-semibold">Solicitudes de Fondos</h2>
+                                <p className="mt-1 text-muted-foreground">
+                                    Cree y supervise las solicitudes de dinero para gastos de la semana.
+                                </p>
+                            </div>
+                            <RequestFundDialog />
+                        </div>
+                        <FundRequestsTable requests={requests} isLoading={isLoadingRequests} />
+                    </div>
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
 }

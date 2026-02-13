@@ -19,10 +19,12 @@ import { doc, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { CashTransaction, CashAccount } from "@/lib/types";
 
+import { logAction } from '@/lib/logger';
+
 export function DeleteTransactionDialog({ transaction, cashAccount }: { transaction: CashTransaction, cashAccount: CashAccount }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { firestore } = useUser();
+  const { firestore, user } = useUser();
   const { toast } = useToast();
 
   const handleDelete = () => {
@@ -36,14 +38,14 @@ export function DeleteTransactionDialog({ transaction, cashAccount }: { transact
         toast({ variant: 'destructive', title: 'Error', description: 'No se puede eliminar esta transacción porque no está vinculada a un gasto de obra.' });
         return;
       }
-      
+
       const batch = writeBatch(firestore);
 
       // 1. Re-add amount to cash account balance
       const accountRef = doc(firestore, `users/${cashAccount.userId}/cashAccounts`, cashAccount.id);
       const newBalance = cashAccount.balance + transaction.amount;
       batch.update(accountRef, { balance: newBalance });
-      
+
       // 2. Delete the related Expense document
       const expenseRef = doc(firestore, `projects/${transaction.relatedProjectId}/expenses`, transaction.relatedExpenseId);
       batch.delete(expenseRef);
@@ -51,28 +53,37 @@ export function DeleteTransactionDialog({ transaction, cashAccount }: { transact
       // 3. Delete the CashTransaction document
       const transactionRef = doc(firestore, `users/${cashAccount.userId}/cashAccounts/${cashAccount.id}/transactions`, transaction.id);
       batch.delete(transactionRef);
-      
-      batch.commit()
-        .then(() => {
-          toast({ title: 'Movimiento Eliminado', description: `El movimiento ha sido eliminado y el saldo de su caja fue restaurado.` });
-          setOpen(false);
-        })
-        .catch((error) => {
-            console.error("Error deleting transaction:", error);
-            toast({
-                variant: "destructive",
-                title: "Error al eliminar",
-                description: "No se pudo eliminar el movimiento. Es posible que no tengas permisos.",
-            });
-        });
-    });
+
+      await batch.commit();
+
+      // Audit Log (Fire and forget, but after commit to ensure consistency)
+      // Note: We need a User object for the logger. 
+      // If `useUser` context isn't available here, we might need to pass it or just log rudimentary info.
+      // Assuming we can get user from context or passed props.
+      // Since this component uses `useUser` via `const { firestore } = useUser();` we should check if `user` is available.
+      // Actually `useUser` usually returns { user, firestore, ... }.
+
+      if (user) {
+        logAction(firestore, user, 'DELETE', 'EXPENSE', `Eliminó movimiento: ${transaction.amount}`, { id: transaction.id, amount: transaction.amount });
+      }
+
+      toast({ title: 'Movimiento Eliminado', description: `El movimiento ha sido eliminado y el saldo de su caja fue restaurado.` });
+      setOpen(false);
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el movimiento.",
+      });
+    }
   };
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild onClick={(e) => { e.stopPropagation(); }}>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent onClick={(e) => e.stopPropagation()}>

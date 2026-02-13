@@ -51,6 +51,7 @@ import {
   Warehouse,
   PieChart,
   BarChart,
+  Database,
 } from "lucide-react";
 import type { Role, TaskRequest } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -100,7 +101,7 @@ const menuItems = [
     adminOnly: true,
     pañoleroHidden: true,
   },
-   {
+  {
     href: "/auditoria",
     label: "Auditoría",
     icon: BarChart,
@@ -120,11 +121,16 @@ const menuItems = [
     adminOnly: true,
     pañoleroHidden: true,
   },
+  {
+    href: "/migracion",
+    label: "Migración",
+    icon: Database,
+  },
 ];
 
 const taskRequestConverter = {
-    toFirestore: (data: TaskRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => ({ ...snapshot.data(options), id: snapshot.id } as TaskRequest)
+  toFirestore: (data: TaskRequest): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => ({ ...snapshot.data(options), id: snapshot.id } as TaskRequest)
 };
 
 export function AppSidebar() {
@@ -135,13 +141,13 @@ export function AppSidebar() {
 
   const pendingTasksQuery = useMemo(() => {
     if (!user || !firestore) return null;
-    
+
     const tasksCollection = collection(firestore, 'taskRequests').withConverter(taskRequestConverter);
 
     if (permissions.canSupervise) {
       return query(tasksCollection, where('status', '==', 'Pendiente'));
     }
-    
+
     return query(
       tasksCollection,
       where('assigneeId', '==', user.uid),
@@ -151,7 +157,7 @@ export function AppSidebar() {
 
   const { data: pendingTasks } = useCollection<TaskRequest>(pendingTasksQuery);
   const pendingTasksCount = pendingTasks?.length || 0;
-  
+
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
@@ -160,9 +166,9 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar variant="floating" collapsible="icon">
-        <SidebarHeader>
-          <Logo className="h-auto w-full max-w-[120px]" />
+      <Sidebar variant="floating" collapsible="icon" className="m-4 ml-4 md:ml-4 h-[calc(100svh-2rem)] rounded-[2rem] border-0 shadow-glass bg-sidebar/70 backdrop-blur-3xl transition-all duration-500 hover:shadow-glass-hover">
+        <SidebarHeader className="p-6 pb-2">
+          <Logo className="h-auto w-full max-w-[120px] transition-transform duration-300 hover:scale-105" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -187,7 +193,7 @@ export function AppSidebar() {
               if (adminValidationRoutes.includes(item.href) && !permissions.canValidate) {
                 return null;
               }
-              
+
               const isPedidos = item.href === "/pedidos-y-alertas";
 
               return (
@@ -196,12 +202,15 @@ export function AppSidebar() {
                     asChild
                     isActive={pathname === item.href}
                     tooltip={{ children: item.label, side: "right", align: "center" }}
+                    className="rounded-full px-5 py-3 h-12 transition-all duration-300 hover:bg-sidebar-accent/50 hover:pl-7 data-[active=true]:bg-primary/15 data-[active=true]:text-primary font-medium"
                   >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
+                    <Link href={item.href} className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5" />
+                      <span className="text-base">{item.label}</span>
                       {isPedidos && pendingTasksCount > 0 && (
-                        <SidebarMenuBadge>{pendingTasksCount}</SidebarMenuBadge>
+                        <SidebarMenuBadge className="bg-primary text-primary-foreground rounded-full h-5 min-w-5 px-1.5 ml-auto">
+                          {pendingTasksCount}
+                        </SidebarMenuBadge>
                       )}
                     </Link>
                   </SidebarMenuButton>
@@ -210,36 +219,36 @@ export function AppSidebar() {
             })}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="flex flex-col gap-2">
-          <Separator className="bg-sidebar-border" />
+        <SidebarFooter className="flex flex-col gap-2 p-4">
+          <Separator className="bg-sidebar-border/50" />
           <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-auto w-full justify-start p-2 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center">
-                      <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                              <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'Avatar'} />
-                              <AvatarFallback>{user?.displayName?.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="text-left group-data-[collapsible=icon]:hidden">
-                              <p className="font-semibold text-sm text-sidebar-foreground truncate">{user?.displayName}</p>
-                              <p className="text-xs text-sidebar-foreground/70">{role}</p>
-                          </div>
-                      </div>
-                      <MoreHorizontal className="ml-auto h-5 w-5 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden" />
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
-                  <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={() => setProfileDialogOpen(true)}>
-                      <UserIcon className="mr-2 h-4 w-4"/>
-                      <span>Editar Perfil</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4"/>
-                      Cerrar Sesión
-                  </DropdownMenuItem>
-              </DropdownMenuContent>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-14 w-full justify-start px-3 py-2 rounded-2xl hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:w-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 transition-all duration-300">
+                <div className="flex items-center gap-3 w-full">
+                  <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+                    <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'Avatar'} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">{user?.displayName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-left group-data-[collapsible=icon]:hidden flex-1 overflow-hidden">
+                    <p className="font-semibold text-sm text-sidebar-foreground truncate tracking-tight">{user?.displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{role}</p>
+                  </div>
+                  <MoreHorizontal className="h-5 w-5 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-60 mb-2 rounded-2xl shadow-glass border-0 bg-white/80 backdrop-blur-xl p-2">
+              <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => setProfileDialogOpen(true)} className="rounded-xl focus:bg-primary/10 focus:text-primary cursor-pointer p-3">
+                <UserIcon className="mr-3 h-4 w-4" />
+                <span className="font-medium">Editar Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-border/50 my-1" />
+              <DropdownMenuItem onSelect={handleLogout} className="rounded-xl focus:bg-destructive/10 focus:text-destructive cursor-pointer p-3 text-destructive">
+                <LogOut className="mr-3 h-4 w-4" />
+                <span className="font-medium">Cerrar Sesión</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
           </DropdownMenu>
         </SidebarFooter>
       </Sidebar>

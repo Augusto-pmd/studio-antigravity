@@ -41,8 +41,8 @@ import { Separator } from "@/components/ui/separator";
 import { expenseCategories } from '@/lib/data';
 
 const projectConverter = {
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+  toFirestore: (data: Project): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
 };
 
 export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount }) {
@@ -51,7 +51,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  
+
   // Form State
   const [projectId, setProjectId] = useState<string | undefined>();
   const [categoryId, setCategoryId] = useState<string | undefined>();
@@ -92,26 +92,31 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
   };
-  
+
   const handleSave = () => {
     if (!firestore || !user || !firebaseApp) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'No está autenticado o hay un problema de conexión.' });
+      return;
     }
     if (!projectId || !amount || !description || !categoryId || !date) {
-        toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Obra, categoría, fecha, monto y descripción son obligatorios.' });
-        return;
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Obra, categoría, fecha, monto y descripción son obligatorios.' });
+      return;
     }
 
     if (!cashAccount) {
-        toast({ variant: 'destructive', title: 'Error', description: `No tiene una caja en ARS para debitar el gasto.` });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: `No tiene una caja en ARS para debitar el gasto.` });
+      return;
     }
-    
+
     const expenseAmount = parseFloat(amount);
     if (cashAccount.balance < expenseAmount) {
-        toast({ variant: 'destructive', title: 'Saldo Insuficiente', description: `No tiene suficiente saldo en su caja de ARS.` });
-        return;
+      toast({ variant: 'destructive', title: 'Saldo Insuficiente', description: `No tiene suficiente saldo en su caja de ARS.` });
+      return;
+    }
+
+    if (cashAccount.lastClosureDate && date && format(date, 'yyyy-MM-dd') <= cashAccount.lastClosureDate) {
+      toast({ variant: 'destructive', title: 'Periodo Cerrado', description: `No se pueden cargar gastos con fecha anterior o igual al último cierre (${format(parseISO(cashAccount.lastClosureDate), 'dd/MM/yyyy')}).` });
+      return;
     }
 
     startTransition(() => {
@@ -124,11 +129,11 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
         // 1. Upload receipt if exists
         let receiptUrl = '';
         if (receiptFile) {
-            const storage = getStorage(firebaseApp);
-            const filePath = `receipts/${projectId}/${new Date().toISOString()}_${receiptFile.name}`;
-            const fileRef = ref(storage, filePath);
-            await uploadBytes(fileRef, receiptFile);
-            receiptUrl = await getDownloadURL(fileRef);
+          const storage = getStorage(firebaseApp);
+          const filePath = `receipts/${projectId}/${new Date().toISOString()}_${receiptFile.name}`;
+          const fileRef = ref(storage, filePath);
+          await uploadBytes(fileRef, receiptFile);
+          receiptUrl = await getDownloadURL(fileRef);
         }
 
         const expenseDate = date || new Date();
@@ -136,35 +141,35 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
         // 2. Create Expense document
         const expenseRef = doc(collection(firestore, `projects/${projectId}/expenses`));
         const newExpense: Omit<Expense, 'id'> = {
-            projectId: projectId,
-            date: expenseDate.toISOString(),
-            supplierId: 'logistica-vial', // Generic supplier for these expenses
-            categoryId: categoryId,
-            documentType: 'Recibo Común',
-            paymentMethod: 'Efectivo',
-            amount: expenseAmount,
-            currency: 'ARS',
-            exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
-            description: `Gasto rápido: ${description}`,
-            receiptUrl: receiptUrl,
-            status: 'Pagado',
-            paidDate: expenseDate.toISOString(),
-            paymentSource: 'Caja Chica',
+          projectId: projectId,
+          date: expenseDate.toISOString(),
+          supplierId: 'logistica-vial', // Generic supplier for these expenses
+          categoryId: categoryId,
+          documentType: 'Recibo Común',
+          paymentMethod: 'Efectivo',
+          amount: expenseAmount,
+          currency: 'ARS',
+          exchangeRate: 1, // Since it's ARS cash, exchange rate is 1
+          description: `Gasto rápido: ${description}`,
+          receiptUrl: receiptUrl,
+          status: 'Pagado',
+          paidDate: expenseDate.toISOString(),
+          paymentSource: 'Caja Chica',
         };
         batch.set(expenseRef, newExpense);
-        
+
         // 3. Create CashTransaction document
         const transactionRef = doc(collection(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}/transactions`));
         const newTransaction: Omit<CashTransaction, 'id'> = {
-            userId: user.uid,
-            date: expenseDate.toISOString(),
-            type: 'Egreso',
-            amount: expenseAmount,
-            currency: 'ARS',
-            description: `Gasto en ${project.name}: ${description}`,
-            relatedExpenseId: expenseRef.id,
-            relatedProjectId: projectId,
-            relatedProjectName: project.name
+          userId: user.uid,
+          date: expenseDate.toISOString(),
+          type: 'Egreso',
+          amount: expenseAmount,
+          currency: 'ARS',
+          description: `Gasto en ${project.name}: ${description}`,
+          relatedExpenseId: expenseRef.id,
+          relatedProjectId: projectId,
+          relatedProjectName: project.name
         };
         batch.set(transactionRef, newTransaction);
 
@@ -172,7 +177,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
         const accountRef = doc(firestore, `users/${user.uid}/cashAccounts/${cashAccount.id}`);
         const newBalance = cashAccount.balance - expenseAmount;
         batch.update(accountRef, { balance: newBalance });
-        
+
         return batch.commit();
       };
 
@@ -207,7 +212,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-            <Separator />
+          <Separator />
           <div className="space-y-2">
             <Label htmlFor="project">Obra</Label>
             <Select onValueChange={setProjectId} value={projectId} disabled={isLoadingProjects}>
@@ -230,7 +235,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map((c: {id: string, name: string}) => (
+                {expenseCategories.map((c: { id: string, name: string }) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -240,7 +245,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
           </div>
           <div className="space-y-2">
             <Label htmlFor="date">Fecha del Gasto</Label>
-             <Popover>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   id="date"
@@ -273,7 +278,7 @@ export function QuickExpenseDialog({ cashAccount }: { cashAccount?: CashAccount 
             <Label htmlFor="description">Descripción del Gasto</Label>
             <Textarea id="description" value={description} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Ej: Compra de clavos y tornillos para..." />
           </div>
-           <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="receipt-file">Comprobante (Opcional)</Label>
             <Input id="receipt-file" type="file" onChange={handleFileChange} />
           </div>

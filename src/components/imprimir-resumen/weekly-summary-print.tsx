@@ -41,22 +41,22 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     // --- Data Fetching Hooks ---
     const weekDocRef = useMemo(() => firestore ? doc(firestore, 'payrollWeeks', weekId).withConverter(payrollWeekConverter) : null, [firestore, weekId]);
     const { data: week, isLoading: isLoadingWeek } = useDoc<PayrollWeek>(weekDocRef);
-    
+
     const employeesQuery = useMemo(() => firestore ? collection(firestore, 'employees').withConverter(employeeConverter) : null, [firestore]);
     const { data: employees, isLoading: l5 } = useCollection(employeesQuery);
 
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
-    
+
     const attendancesQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', weekId)) : null, [firestore, weekId]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
-    
+
     const fundRequestsQuery = useMemo(() => firestore ? query(collection(firestore, 'fundRequests').withConverter(fundRequestConverter), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore]);
     const { data: allFundRequests, isLoading: l3 } = useCollection(fundRequestsQuery);
 
     const certificationsQuery = useMemo(() => firestore && weekId ? query(collection(firestore, 'contractorCertifications').withConverter(certificationConverter), where('payrollWeekId', '==', weekId), where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])) : null, [firestore, weekId]);
     const { data: certifications, isLoading: l4 } = useCollection(certificationsQuery);
-    
+
     const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
     const { data: wageHistories, isLoading: l7 } = useCollection(wageHistoriesQuery);
 
@@ -64,7 +64,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         if (!allFundRequests || !week) return [];
         const start = parseISO(week.startDate);
         const end = parseISO(week.endDate);
-        end.setHours(23, 59, 59, 999); 
+        end.setHours(23, 59, 59, 999);
         return allFundRequests.filter((req: FundRequest) => {
             if (!req.date) return false;
             try {
@@ -77,19 +77,19 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
     const isLoading = isLoadingWeek || l1 || l3 || l4 || l5 || l6 || l7;
 
     const getWageForDate = useCallback((employeeId: string, date: string): number => {
-      const employee = employees?.find(e => e.id === employeeId);
-      if (!wageHistories) {
-          return employee?.dailyWage || 0;
-      }
+        const employee = employees?.find(e => e.id === employeeId);
+        if (!wageHistories) {
+            return employee?.dailyWage || 0;
+        }
 
-      const histories = wageHistories
-          .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-          .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+        const histories = wageHistories
+            .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+            .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
-      if (histories.length > 0) {
-          return histories[0].amount;
-      }
-      return employee?.dailyWage || 0;
+        if (histories.length > 0) {
+            return histories[0].amount;
+        }
+        return employee?.dailyWage || 0;
     }, [wageHistories, employees]);
 
     // --- Calculation Logic ---
@@ -114,7 +114,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
             }
             return sum;
         }, 0);
-        
+
         const totalContratistas = (certifications || []).reduce((sum, cert) => {
             const amount = cert.currency === 'USD' ? cert.amount * (weeklyRate || 0) : cert.amount;
             if (cert.projectId) {
@@ -125,7 +125,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
             }
             return sum + amount;
         }, 0);
-        
+
         const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
             const amount = req.currency === 'USD' ? req.amount * (weeklyRate || 0) : req.amount;
             if (req.projectId) {
@@ -136,7 +136,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
             }
             return sum + amount;
         }, 0);
-        
+
         const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
         const breakdown = Array.from(projectMap.values()).filter((p: any) => p.personal || p.contratistas || p.solicitudes);
 
@@ -156,19 +156,22 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
         <div className="p-4 sm:p-8 bg-white">
             <header className="flex justify-between items-center mb-8">
                 <div>
-                    <Logo className="h-8 w-auto" />
+                    <Logo className="h-8 w-auto mb-2" />
                     <h1 className="text-2xl font-bold mt-2">Resumen Semanal de Pagos</h1>
                     <p className="text-muted-foreground">Semana del {format(parseISO(week.startDate), 'dd/MM/yyyy')} al {format(parseISO(week.endDate), 'dd/MM/yyyy')}</p>
                 </div>
-                <Button onClick={() => window.print()} className="no-print"><Printer className="mr-2 h-4 w-4" /> Imprimir</Button>
+                <div className="flex gap-2 no-print">
+                    <Button variant="outline" onClick={() => window.close()}>Cerrar</Button>
+                    <Button onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Imprimir</Button>
+                </div>
             </header>
 
             <section className="space-y-6">
-                 <div className="border p-4 rounded-lg bg-gray-50">
+                <div className="border p-4 rounded-lg bg-gray-50">
                     <p className="text-sm font-medium text-gray-500">Costo Total Estimado de la Semana</p>
                     <p className="text-4xl font-bold">{formatCurrency(summary.grandTotal)}</p>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-4">
                     <div className="border p-4 rounded-lg">
                         <p className="text-sm font-medium text-gray-500">Total Personal</p>
@@ -178,7 +181,7 @@ export function WeeklySummaryPrint({ weekId }: { weekId: string }) {
                         <p className="text-sm font-medium text-gray-500">Total Contratistas</p>
                         <p className="text-2xl font-bold">{formatCurrency(summary.totalContratistas)}</p>
                     </div>
-                     <div className="border p-4 rounded-lg">
+                    <div className="border p-4 rounded-lg">
                         <p className="text-sm font-medium text-gray-500">Total Solicitudes</p>
                         <p className="text-2xl font-bold">{formatCurrency(summary.totalSolicitudes)}</p>
                     </div>

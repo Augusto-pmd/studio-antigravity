@@ -27,15 +27,17 @@ import { useUser, useCollection } from '@/firebase';
 import { collection, doc, setDoc, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { Contractor, Project, ContractorCertification, PayrollWeek } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { format } from "date-fns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { TriangleAlert } from "lucide-react";
+import { format, parseISO, isBefore } from "date-fns";
 
 const contractorConverter = {
-    toFirestore: (data: Contractor): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => ({ ...snapshot.data(options), id: snapshot.id } as Contractor)
+  toFirestore: (data: Contractor): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => ({ ...snapshot.data(options), id: snapshot.id } as Contractor)
 };
 const projectConverter = {
-    toFirestore: (data: Project): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
+  toFirestore: (data: Project): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Project => ({ ...snapshot.data(options), id: snapshot.id } as Project)
 };
 
 export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
@@ -65,66 +67,66 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
     setCurrency('ARS');
     setNotes('');
   };
-  
+
   useEffect(() => {
     if (open) resetForm();
   }, [open]);
 
   const handleSave = async () => {
     if (!firestore || !currentWeek || !user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa o no está autenticado.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa o no está autenticado.' });
+      return;
     }
     if (!contractorId || !projectId || !amount) {
-        toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Contratista, Obra y Monto son obligatorios.' });
-        return;
+      toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Contratista, Obra y Monto son obligatorios.' });
+      return;
     }
-    
+
     const selectedContractor = contractors?.find((c: Contractor) => c.id === contractorId);
     const selectedProject = projects?.find((p: Project) => p.id === projectId);
 
     if (!selectedContractor || !selectedProject) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Contratista o Proyecto no válido.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'Contratista o Proyecto no válido.' });
+      return;
     }
 
     setIsPending(true);
     try {
-        const collectionRef = collection(firestore, 'contractorCertifications');
-        const docRef = doc(collectionRef);
-        
-        const newCertification: ContractorCertification = {
-            id: docRef.id,
-            payrollWeekId: currentWeek.id,
-            contractorId,
-            contractorName: selectedContractor.name,
-            projectId,
-            projectName: selectedProject.name,
-            amount: parseFloat(amount) || 0,
-            currency,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            notes: notes || undefined,
-            status: 'Aprobado',
-            requesterId: user.uid,
-            requesterName: user.displayName || 'Usuario sin nombre',
-        };
+      const collectionRef = collection(firestore, 'contractorCertifications');
+      const docRef = doc(collectionRef);
 
-        await setDoc(docRef, newCertification);
-        
-        toast({
-            title: 'Certificación Registrada',
-            description: `Se ha guardado la certificación para ${selectedContractor.name}.`,
-        });
-        setOpen(false);
+      const newCertification: ContractorCertification = {
+        id: docRef.id,
+        payrollWeekId: currentWeek.id,
+        contractorId,
+        contractorName: selectedContractor.name,
+        projectId,
+        projectName: selectedProject.name,
+        amount: parseFloat(amount) || 0,
+        currency,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        notes: notes || undefined,
+        status: 'Aprobado',
+        requesterId: user.uid,
+        requesterName: user.displayName || 'Usuario sin nombre',
+      };
+
+      await setDoc(docRef, newCertification);
+
+      toast({
+        title: 'Certificación Registrada',
+        description: `Se ha guardado la certificación para ${selectedContractor.name}.`,
+      });
+      setOpen(false);
     } catch (error) {
-        console.error("Error writing to Firestore:", error);
-        toast({
-            variant: "destructive",
-            title: "Error al guardar",
-            description: "No se pudo guardar la certificación. Es posible que no tengas permisos.",
-        });
+      console.error("Error writing to Firestore:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al guardar",
+        description: "No se pudo guardar la certificación. Es posible que no tengas permisos.",
+      });
     } finally {
-        setIsPending(false);
+      setIsPending(false);
     }
   };
 
@@ -144,6 +146,29 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {contractorId && (() => {
+            const selectedContractor = contractors?.find((c: Contractor) => c.id === contractorId);
+            if (!selectedContractor) return null;
+
+            const today = new Date();
+            const isArtExpired = selectedContractor.artExpiryDate && isBefore(parseISO(selectedContractor.artExpiryDate), today);
+            const isInsuranceExpired = selectedContractor.insuranceExpiryDate && isBefore(parseISO(selectedContractor.insuranceExpiryDate), today);
+
+            if (isArtExpired || isInsuranceExpired) {
+              return (
+                <Alert variant="destructive">
+                  <TriangleAlert className="h-4 w-4" />
+                  <AlertTitle>Documentación Vencida</AlertTitle>
+                  <AlertDescription>
+                    {isArtExpired ? "La ART del contratista está vencida." : "El Seguro del contratista está vencido."}
+                    <br />
+                    No se pueden cargar certificaciones hasta actualizar la documentación.
+                  </AlertDescription>
+                </Alert>
+              )
+            }
+            return null;
+          })()}
           <div className="space-y-2">
             <Label htmlFor="contractor">Contratista</Label>
             <Select onValueChange={setContractorId} value={contractorId} disabled={isLoadingContractors}>
@@ -167,11 +192,11 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
           <div className="space-y-2">
             <Label>Moneda</Label>
             <RadioGroup value={currency} onValueChange={(v: any) => setCurrency(v)} className="flex items-center gap-6 pt-1">
-                <div className="flex items-center space-x-2"><RadioGroupItem value="ARS" id="ars" /><Label htmlFor="ars">ARS</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="USD" id="usd" /><Label htmlFor="usd">USD</Label></div>
+              <div className="flex items-center space-x-2"><RadioGroupItem value="ARS" id="ars" /><Label htmlFor="ars">ARS</Label></div>
+              <div className="flex items-center space-x-2"><RadioGroupItem value="USD" id="usd" /><Label htmlFor="usd">USD</Label></div>
             </RadioGroup>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="amount">Monto a Certificar</Label>
             <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} />
@@ -179,11 +204,19 @@ export function AddContractorCertificationDialog({ currentWeek }: { currentWeek?
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notas</Label>
-            <Textarea id="notes" placeholder="Detalle de los trabajos certificados (opcional)" value={notes} onChange={e => setNotes(e.target.value)}/>
+            <Textarea id="notes" placeholder="Detalle de los trabajos certificados (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" onClick={handleSave} disabled={isPending}>
+          <Button type="button" onClick={handleSave} disabled={isPending || (() => {
+            if (!contractorId) return false;
+            const selectedContractor = contractors?.find((c: Contractor) => c.id === contractorId);
+            if (!selectedContractor) return false;
+            const today = new Date();
+            const isArtExpired = selectedContractor.artExpiryDate && isBefore(parseISO(selectedContractor.artExpiryDate), today);
+            const isInsuranceExpired = selectedContractor.insuranceExpiryDate && isBefore(parseISO(selectedContractor.insuranceExpiryDate), today);
+            return !!(isArtExpired || isInsuranceExpired);
+          })()}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar
           </Button>

@@ -31,21 +31,22 @@ export function useProjectExpenses(projectId: string) {
   const firestore = useFirestore();
   const { permissions } = useUser();
 
-  // Fetch all data sources required for expense calculation
+  // 1. Fetch direct project expenses (includes User Cash & Fund Requests transformed to expenses)
   const projectExpensesQuery = useMemo(
     () =>
       firestore
         ? query(
-            collection(firestore, `projects/${projectId}/expenses`).withConverter(
-              expenseConverter
-            )
+          collection(firestore, `projects/${projectId}/expenses`).withConverter(
+            expenseConverter
           )
+        )
         : null,
     [firestore, projectId]
   );
   const { data: projectExpenses, isLoading: isLoadingProjectExpenses } =
     useCollection<Expense>(projectExpensesQuery);
-  
+
+  // 2. Fetch Payroll Data for "Mano de Obra" calculation (Virtual Expenses)
   const payrollWeeksQuery = useMemo(
     () =>
       firestore
@@ -54,31 +55,6 @@ export function useProjectExpenses(projectId: string) {
     [firestore]
   );
   const { data: payrollWeeks, isLoading: isLoadingPayrollWeeks } = useCollection<PayrollWeek>(payrollWeeksQuery);
-
-  const allTimeLogsQuery = useMemo(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, 'timeLogs').withConverter(timeLogConverter),
-            where('projectId', '==', projectId)
-          )
-        : null,
-    [firestore, projectId]
-  );
-  const { data: projectTimeLogs, isLoading: isLoadingTimeLogs } =
-    useCollection<TimeLog>(allTimeLogsQuery);
-
-  const techOfficeEmployeesQuery = useMemo(
-    () =>
-      firestore
-        ? collection(firestore, 'technicalOfficeEmployees').withConverter(
-            techOfficeEmployeeConverter
-          )
-        : null,
-    [firestore]
-  );
-  const { data: techOfficeEmployees, isLoading: isLoadingTechOffice } =
-    useCollection<TechnicalOfficeEmployee>(techOfficeEmployeesQuery);
 
   const siteEmployeesQuery = useMemo(
     () =>
@@ -94,127 +70,61 @@ export function useProjectExpenses(projectId: string) {
     () =>
       firestore
         ? query(
-            collection(firestore, 'attendances').withConverter(
-              attendanceConverter
-            ),
-            where('projectId', '==', projectId)
-          )
+          collection(firestore, 'attendances').withConverter(
+            attendanceConverter
+          ),
+          where('projectId', '==', projectId)
+        )
         : null,
     [firestore, projectId]
   );
   const { data: attendances, isLoading: isLoadingAttendances } =
     useCollection<Attendance>(attendancesQuery);
-  
+
   const cashAdvancesQuery = useMemo(
     () =>
       firestore
         ? query(
-            collection(firestore, 'cashAdvances').withConverter(
-              cashAdvanceConverter
-            ),
-            where('projectId', '==', projectId)
-          )
+          collection(firestore, 'cashAdvances').withConverter(
+            cashAdvanceConverter
+          ),
+          where('projectId', '==', projectId)
+        )
         : null,
     [firestore, projectId]
   );
   const { data: cashAdvances, isLoading: isLoadingCashAdvances } =
     useCollection<CashAdvance>(cashAdvancesQuery);
-    
+
   const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
   const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
 
-   const fundRequestsQuery = useMemo(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, 'fundRequests').withConverter(
-              fundRequestConverter
-            ),
-            where('projectId', '==', projectId),
-            where('status', 'in', ['Aprobado', 'Pagado'])
-          )
-        : null,
-    [firestore, projectId]
-  );
-  const { data: fundRequests, isLoading: isLoadingFundRequests } = useCollection<FundRequest>(fundRequestsQuery);
-
   const isLoading =
     isLoadingProjectExpenses ||
-    isLoadingTimeLogs ||
-    isLoadingTechOffice ||
     isLoadingSiteEmployees ||
     isLoadingAttendances ||
     isLoadingPayrollWeeks ||
     isLoadingCashAdvances ||
-    isLoadingWageHistories ||
-    isLoadingFundRequests;
-    
+    isLoadingWageHistories;
+
   const getWageForDate = useCallback((employeeId: string, date: string): number => {
     if (!siteEmployees) return 0;
     const currentEmployee = siteEmployees.find((e) => e.id === employeeId);
 
     if (!permissions.canSupervise || !wageHistories) {
-        return currentEmployee?.dailyWage || 0;
+      return currentEmployee?.dailyWage || 0;
     }
 
     const histories = wageHistories
-        .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
-        .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+      .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
+      .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     if (histories.length > 0) {
-        return histories[0].amount;
+      return histories[0].amount;
     }
-    
+
     return currentEmployee?.dailyWage || 0;
   }, [wageHistories, siteEmployees, permissions.canSupervise]);
-
-  const officeExpenses = useMemo((): Expense[] => {
-    if (isLoading || !projectTimeLogs || !techOfficeEmployees || !payrollWeeks) return [];
-
-    const employeeSalaryMap = new Map(
-      techOfficeEmployees.map((e) => [
-        e.userId,
-        { salary: e.monthlySalary, name: e.fullName },
-      ])
-    );
-    
-    const weeklyData = new Map<string, { week: PayrollWeek, cost: number }>();
-
-    projectTimeLogs.forEach((log) => {
-        const logDate = parseISO(log.date);
-        const week = payrollWeeks.find(w => logDate >= parseISO(w.startDate) && logDate <= parseISO(w.endDate));
-        if (!week) return;
-
-        const employeeData = employeeSalaryMap.get(log.userId);
-        if (!employeeData) return;
-
-        const hourlyRate = employeeData.salary / 160; // Assume 160 hs / month
-        const cost = (log.hours || 0) * hourlyRate;
-
-        const data = weeklyData.get(week.id) || { week, cost: 0 };
-        data.cost += cost;
-        weeklyData.set(week.id, data);
-    });
-
-    return Array.from(weeklyData.values()).map(data => {
-        const { week, cost } = data;
-        return {
-          id: `office-week-${week.id}`,
-          projectId,
-          date: week.endDate,
-          supplierId: 'OFICINA-TECNICA',
-          categoryId: 'CAT-14', // Oficina Técnica (Costo)
-          documentType: 'Recibo Común',
-          amount: cost,
-          currency: 'ARS',
-          exchangeRate: week.exchangeRate || 0,
-          status: 'Pagado',
-          paymentSource: 'Tesorería',
-          description: `Costo Horas Oficina - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')}`,
-        } as Expense;
-    });
-
-  }, [isLoading, projectTimeLogs, techOfficeEmployees, payrollWeeks, projectId]);
 
   const payrollExpenses = useMemo((): Expense[] => {
     if (isLoading || !attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
@@ -257,7 +167,7 @@ export function useProjectExpenses(projectId: string) {
         } else if (advanceCost > 0) {
           description = 'Adelantos de Personal';
         }
-        
+
         const descriptionWithDate = `${description} - Semana ${format(parseISO(week.startDate), 'dd/MM/yy')} a ${format(parseISO(week.endDate), 'dd/MM/yy')}`;
 
         return {
@@ -277,46 +187,14 @@ export function useProjectExpenses(projectId: string) {
       });
   }, [isLoading, attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate]);
 
-  const fundRequestExpenses = useMemo((): Expense[] => {
-    if (isLoading || !fundRequests || !payrollWeeks) return [];
-
-    return fundRequests.map((req): Expense => {
-      const reqDate = parseISO(req.date);
-      const week = payrollWeeks.find(w => reqDate >= parseISO(w.startDate) && reqDate <= parseISO(w.endDate));
-      const exchangeRate = req.currency === 'USD' ? (req.exchangeRate || week?.exchangeRate || 0) : 1;
-      const amountInARS = req.amount * exchangeRate;
-      
-      let categoryId = 'CAT-12';
-      if (req.category === 'Materiales') categoryId = 'CAT-01';
-      if (req.category === 'Logística y PMD') categoryId = 'CAT-04';
-      if (req.category === 'Viáticos') categoryId = 'CAT-09';
-      
-      return {
-        id: `fund-req-${req.id}`,
-        projectId: req.projectId!,
-        date: req.date,
-        supplierId: 'solicitudes-fondos',
-        categoryId: categoryId,
-        documentType: 'Recibo Común',
-        amount: amountInARS,
-        currency: 'ARS',
-        exchangeRate: 1, // Already converted
-        status: 'Pagado',
-        paymentSource: 'Caja Chica',
-        description: `Solicitud: ${req.requesterName} - ${
-          req.description || req.category
-        }`,
-      } as Expense;
-    });
-  }, [isLoading, fundRequests, payrollWeeks]);
-
 
   const allExpenses = useMemo(() => {
-    const combined = [...(projectExpenses || []), ...officeExpenses, ...payrollExpenses, ...fundRequestExpenses];
+    // Merge real expenses (Project, User Cash, Approved Funds, Contractor Certs) + Virtual (Payroll)
+    const combined = [...(projectExpenses || []), ...payrollExpenses];
     return combined.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-  }, [projectExpenses, officeExpenses, payrollExpenses, fundRequestExpenses]);
+  }, [projectExpenses, payrollExpenses]);
 
   return { expenses: allExpenses, isLoading };
 }

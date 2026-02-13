@@ -1,81 +1,120 @@
+@import "@fontsource/outfit/300.css";
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/outfit/700.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 206 14% 18%;
+    /* Google 2026 Light Theme - Blue Edition */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    /* Deep Navy */
+
     --card: 0 0% 100%;
-    --card-foreground: 206 14% 18%;
+    --card-foreground: 222 47% 11%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 206 14% 18%;
-    --primary: 206 72% 41%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%;
+    /* Brand Blue (Royal) */
     --primary-foreground: 210 40% 98%;
-    --secondary: 209 100% 28%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 199 89% 48%;
+    /* Sky Blue Accent */
+    --accent-foreground: 210 40% 98%;
+
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --warning: 45 86% 47%;
-    --warning-foreground: 45 86% 47%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 45 86% 47%;
-    --radius: 1rem;
-    --chart-1: 206 72% 41%;
-    --chart-2: 209 100% 28%;
-    --chart-3: 210 100% 28%;
-    --chart-4: 45 86% 47%;
-    --chart-5: 210 40% 60%;
-    --sidebar-background: 240 4.8% 95.9% / 0.9;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 1.5rem;
+
+    /* Charts (Blue Spectrum) */
+    --chart-1: 221 83% 53%;
+    /* Primary Blue */
+    --chart-2: 199 89% 48%;
+    /* Sky Blue */
+    --chart-3: 222 47% 11%;
+    /* Navy */
+    --chart-4: 180 70% 50%;
+    /* Teal/Cyan */
+    --chart-5: 200 80% 80%;
+    /* Light Blue */
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 221 83% 53%;
+    --sidebar-border: 0 0% 0% / 0;
+    --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
-    --background: 220 13% 11%;
+    /* Google 2026 Dark Theme - Blue Edition */
+    --background: 222 47% 11%;
+    /* Deep Navy Background */
     --foreground: 210 40% 98%;
-    --card: 220 13% 15%;
+
+    --card: 222 47% 13%;
     --card-foreground: 210 40% 98%;
-    --popover: 220 13% 11%;
+
+    --popover: 222 47% 13%;
     --popover-foreground: 210 40% 98%;
-    --primary: 206 72% 41%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 209 100% 28%;
+
+    --primary: 217 91% 60%;
+    /* Lighter Blue for Dark Mode */
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 220 13% 20%;
-    --muted-foreground: 210 40% 60%;
-    --accent: 220 13% 20%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 199 89% 48%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 206 14% 10%;
-    --warning: 45 86% 47%;
-    --warning-foreground: 45 86% 47%;
-    --border: 220 13% 22%;
-    --input: 220 13% 22%;
-    --ring: 45 86% 47%;
-    --chart-1: 206 72% 41%;
-    --chart-2: 209 100% 28%;
-    --chart-3: 210 100% 28%;
-    --chart-4: 45 86% 47%;
-    --chart-5: 210 40% 60%;
-    --sidebar-background: 220 13% 13% / 0.8;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+
+    /* Charts */
+    --chart-1: 217 91% 60%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 210 40% 98%;
+    --chart-4: 180 70% 50%;
+    --chart-5: 200 80% 80%;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 13%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 206 72% 41%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 220 13% 25%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 217 33% 17%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 13% 22%;
-    --sidebar-ring: 206 72% 41%;
+    --sidebar-border: 0 0% 0% / 0;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -83,7 +122,60 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(221, 83%, 53%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(199, 89%, 48%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(222, 47%, 11%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(210, 40%, 98%, 1) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@media print {
+  @page {
+    margin: 1cm;
+    size: auto;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Hide header/sidebar/nav if they exist outside the page component */
+  nav,
+  aside,
+  footer {
+    display: none !important;
+  }
+
+  /* Reset Card styles for print */
+  .border {
+    border: 1px solid #ddd !important;
+  }
+
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Ensure text is readable */
+  * {
+    color: black !important;
+    text-shadow: none !important;
+  }
+
+  /* Logo and specific elements */
+  .text-muted-foreground {
+    color: #666 !important;
   }
 }
