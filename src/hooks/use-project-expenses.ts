@@ -151,10 +151,10 @@ export function useProjectExpenses(projectId: string) {
     
   const getWageForDate = useCallback((employeeId: string, date: string): number => {
     if (!siteEmployees) return 0;
-    const employee = siteEmployees.find(e => e.id === employeeId);
+    const currentEmployee = siteEmployees.find((e) => e.id === employeeId);
 
     if (!permissions.canSupervise || !wageHistories) {
-        return employee?.dailyWage || 0;
+        return currentEmployee?.dailyWage || 0;
     }
 
     const histories = wageHistories
@@ -165,14 +165,14 @@ export function useProjectExpenses(projectId: string) {
         return histories[0].amount;
     }
     
-    return employee?.dailyWage || 0;
+    return currentEmployee?.dailyWage || 0;
   }, [wageHistories, siteEmployees, permissions.canSupervise]);
 
   const officeExpenses = useMemo((): Expense[] => {
-    if (!projectTimeLogs || !techOfficeEmployees || !payrollWeeks) return [];
+    if (isLoading || !projectTimeLogs || !techOfficeEmployees || !payrollWeeks) return [];
 
     const employeeSalaryMap = new Map(
-      techOfficeEmployees.map((e: TechnicalOfficeEmployee) => [
+      techOfficeEmployees.map((e) => [
         e.userId,
         { salary: e.monthlySalary, name: e.fullName },
       ])
@@ -180,7 +180,7 @@ export function useProjectExpenses(projectId: string) {
     
     const weeklyData = new Map<string, { week: PayrollWeek, cost: number }>();
 
-    projectTimeLogs.forEach((log: TimeLog) => {
+    projectTimeLogs.forEach((log) => {
         const logDate = parseISO(log.date);
         const week = payrollWeeks.find(w => logDate >= parseISO(w.startDate) && logDate <= parseISO(w.endDate));
         if (!week) return;
@@ -214,10 +214,10 @@ export function useProjectExpenses(projectId: string) {
         } as Expense;
     });
 
-  }, [projectTimeLogs, techOfficeEmployees, payrollWeeks, projectId]);
+  }, [isLoading, projectTimeLogs, techOfficeEmployees, payrollWeeks, projectId]);
 
   const payrollExpenses = useMemo((): Expense[] => {
-    if (!attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
+    if (isLoading || !attendances || !siteEmployees || !payrollWeeks || !cashAdvances) return [];
 
     const weeklyData = new Map<string, { week: PayrollWeek; attendanceCost: number; advanceCost: number }>();
 
@@ -225,7 +225,7 @@ export function useProjectExpenses(projectId: string) {
       weeklyData.set(week.id, { week, attendanceCost: 0, advanceCost: 0 });
     });
 
-    attendances.forEach((att: Attendance) => {
+    attendances.forEach((att) => {
       if (att.status !== 'presente' || !att.payrollWeekId) return;
 
       const data = weeklyData.get(att.payrollWeekId);
@@ -235,7 +235,7 @@ export function useProjectExpenses(projectId: string) {
       }
     });
 
-    cashAdvances.forEach((advance: CashAdvance) => {
+    cashAdvances.forEach((advance) => {
       if (!advance.payrollWeekId) return;
       const data = weeklyData.get(advance.payrollWeekId);
       if (data) {
@@ -275,12 +275,12 @@ export function useProjectExpenses(projectId: string) {
           description: descriptionWithDate,
         } as Expense;
       });
-  }, [attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate]);
+  }, [isLoading, attendances, siteEmployees, payrollWeeks, cashAdvances, projectId, getWageForDate]);
 
   const fundRequestExpenses = useMemo((): Expense[] => {
-    if (!fundRequests || !payrollWeeks) return [];
+    if (isLoading || !fundRequests || !payrollWeeks) return [];
 
-    return fundRequests.map((req: FundRequest): Expense => {
+    return fundRequests.map((req): Expense => {
       const reqDate = parseISO(req.date);
       const week = payrollWeeks.find(w => reqDate >= parseISO(w.startDate) && reqDate <= parseISO(w.endDate));
       const exchangeRate = req.currency === 'USD' ? (req.exchangeRate || week?.exchangeRate || 0) : 1;
@@ -308,7 +308,7 @@ export function useProjectExpenses(projectId: string) {
         }`,
       } as Expense;
     });
-  }, [fundRequests, payrollWeeks]);
+  }, [isLoading, fundRequests, payrollWeeks]);
 
 
   const allExpenses = useMemo(() => {
