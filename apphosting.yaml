@@ -1,0 +1,6 @@
+runConfig:
+  cpu: 1
+  memoryMiB: 1024
+env:
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY

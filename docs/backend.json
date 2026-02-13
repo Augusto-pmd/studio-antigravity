@@ -1,0 +1,2228 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the PMD Manager system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user within the system (e.g., Direction, Supervisor, Administration, Operator, Pañolero)."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The full name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "fullName",
+        "email"
+      ]
+    },
+    "Project": {
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a construction project managed within the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the project entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "client": {
+          "type": "string",
+          "description": "The name of the client for the project."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical address of the project."
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ],
+          "description": "The currency for the project's budget and expenses."
+        },
+        "projectType": {
+          "type": "string",
+          "description": "The type of project (e.g., Comercial, Residencial)."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "En Curso",
+            "Completado",
+            "Pausado",
+            "Cancelado"
+          ],
+          "description": "The current status of the project."
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date of the project."
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The planned end date of the project."
+        },
+        "supervisor": {
+          "type": "string",
+          "description": "The name of the supervisor in charge of the project."
+        },
+        "budget": {
+          "type": "number",
+          "description": "The total budget allocated for the project."
+        },
+        "balance": {
+          "type": "number",
+          "description": "The remaining balance of the contract."
+        },
+        "progress": {
+          "type": "number",
+          "description": "The completion percentage of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the project."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "client",
+        "address",
+        "currency",
+        "status",
+        "supervisor",
+        "budget"
+      ]
+    },
+    "Expense": {
+      "title": "Expense",
+      "type": "object",
+      "description": "Represents an expense incurred for a specific project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the expense entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N Expense)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the expense was incurred.",
+          "format": "date-time"
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "The ID of the supplier."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "The ID of the expense category."
+        },
+        "documentType": {
+          "type": "string",
+          "enum": [
+            "Factura",
+            "Recibo Común",
+            "Nota de Crédito"
+          ]
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "The invoice number, required if documentType is 'Factura'."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method used for payment (e.g., 'Transferencia', 'Efectivo'). Set when payment is registered."
+        },
+        "paymentDueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The due date for the payment, if applicable."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount of the expense document."
+        },
+        "paidAmount": {
+          "type": "number",
+          "description": "The amount that has been paid so far."
+        },
+        "iva": {
+          "type": "number",
+          "description": "The VAT amount discriminated in the document."
+        },
+        "iibb": {
+          "type": "number",
+          "description": "The Gross Income tax perception amount discriminated in the document."
+        },
+        "iibbJurisdiction": {
+          "type": "string",
+          "enum": [
+            "No Aplica",
+            "CABA",
+            "Provincia"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "exchangeRate": {
+          "type": "number",
+          "description": "The exchange rate applied if currency is not ARS."
+        },
+        "receiptUrl": {
+          "type": "string",
+          "description": "URL of the receipt image."
+        },
+        "retencionGanancias": {
+          "type": "number",
+          "description": "Retención de Impuesto a las Ganancias aplicada al pago."
+        },
+        "retencionIVA": {
+          "type": "number",
+          "description": "Retención de IVA aplicada al pago."
+        },
+        "retencionIIBB": {
+          "type": "number",
+          "description": "Retención de Ingresos Brutos aplicada al pago."
+        },
+        "retencionSUSS": {
+          "type": "number",
+          "description": "Retención de SUSS (Seguridad Social) aplicada al pago."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente de Pago",
+            "Programado",
+            "Pagado"
+          ],
+          "description": "Payment status of the expense."
+        },
+        "paidDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the expense was paid."
+        },
+        "treasuryAccountId": {
+          "type": "string",
+          "description": "Reference to the TreasuryAccount used for payment."
+        },
+        "paymentSource": {
+          "type": "string",
+          "enum": [
+            "Tesorería",
+            "Caja Chica"
+          ],
+          "description": "Defines the accounting path. Tesorería is formal ('blanco'), Caja Chica is informal ('negra')."
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "date",
+        "supplierId",
+        "categoryId",
+        "amount",
+        "currency",
+        "exchangeRate",
+        "documentType",
+        "status"
+      ]
+    },
+    "CashAccount": {
+      "title": "CashAccount",
+      "type": "object",
+      "description": "Represents one of a user's cash accounts (up to 3 per user) in ARS for managing funds.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the cash account entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N CashAccount)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the account (e.g., 'Caja Principal ARS')."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the cash account, always 'ARS'."
+        },
+        "balance": {
+          "type": "number",
+          "description": "The current balance of the cash account."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "currency",
+        "balance"
+      ]
+    },
+    "CashTransaction": {
+      "title": "Cash Transaction",
+      "type": "object",
+      "description": "Represents a single transaction (income, expense, or transfer) within a user's cash account.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Ingreso",
+            "Egreso",
+            "Refuerzo",
+            "Transferencia"
+          ]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the transaction, always 'ARS'."
+        },
+        "description": {
+          "type": "string"
+        },
+        "relatedExpenseId": {
+          "type": "string"
+        },
+        "relatedProjectId": {
+          "type": "string"
+        },
+        "operatorId": {
+          "type": "string"
+        },
+        "operatorName": {
+          "type": "string"
+        },
+        "isInternalLoan": {
+          "type": "boolean",
+          "description": "Set to true if this transaction is part of an internal loan between user's cash accounts."
+        },
+        "loanStatus": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Saldado"
+          ],
+          "description": "The status of the loan, if it is one."
+        },
+        "transferId": {
+          "type": "string",
+          "description": "A common ID to link the two transactions of an internal loan."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "type",
+        "amount",
+        "currency",
+        "description"
+      ]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier providing goods or services to the company.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "alias": {
+          "type": "string",
+          "description": "An optional alias or nickname for the supplier."
+        },
+        "cuit": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "contactPerson": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Aprobado",
+            "Pendiente",
+            "Rechazado"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Servicios",
+            "Materiales",
+            "Mixto"
+          ]
+        },
+        "fiscalCondition": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "cuit",
+        "status",
+        "type"
+      ]
+    },
+    "Contractor": {
+      "title": "Contractor",
+      "type": "object",
+      "description": "Represents a contractor providing services to the company.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "cuit": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "contactPerson": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Aprobado",
+            "Pendiente",
+            "Rechazado"
+          ]
+        },
+        "fiscalCondition": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "insuranceExpiryDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "budgets": {
+          "type": "object",
+          "description": "A map of project IDs to budget amounts for this contractor.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "initial": {
+                "type": "number",
+                "description": "The initial budget amount."
+              },
+              "additional": {
+                "type": "number",
+                "description": "Any additional budget amounts."
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "cuit",
+        "status"
+      ]
+    },
+    "ContractorEmployee": {
+      "title": "ContractorEmployee",
+      "type": "object",
+      "description": "Represents an employee of a contractor.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contractorId": {
+          "type": "string"
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "documents": {
+          "type": "array",
+          "description": "A list of uploaded documents for the employee.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "description": "Type of document, e.g., 'accidentInsurance', 'criminalRecord'."
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "uploadedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "fileName",
+              "url",
+              "uploadedAt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contractorId"
+      ]
+    },
+    "Employee": {
+      "title": "Employee",
+      "type": "object",
+      "description": "Represents an employee of the company.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The email address of the employee."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the employee."
+        },
+        "emergencyContactName": {
+          "type": "string",
+          "description": "Name of the emergency contact."
+        },
+        "emergencyContactPhone": {
+          "type": "string",
+          "description": "Phone number of the emergency contact."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ]
+        },
+        "paymentType": {
+          "type": "string",
+          "enum": [
+            "Diario",
+            "Semanal"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "dailyWage": {
+          "type": "number"
+        },
+        "artExpiryDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "documents": {
+          "type": "array",
+          "description": "A list of uploaded documents for the employee.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "description": "Type of document, e.g., 'accidentInsurance', 'criminalRecord'."
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "uploadedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "fileName",
+              "url",
+              "uploadedAt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "status",
+        "paymentType",
+        "category",
+        "dailyWage"
+      ]
+    },
+    "DailyWageHistory": {
+      "title": "Daily Wage History",
+      "type": "object",
+      "description": "Represents a historical record of an employee's daily wage.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The daily wage amount."
+        },
+        "effectiveDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date from which this wage is effective."
+        }
+      },
+      "required": [
+        "id",
+        "amount",
+        "effectiveDate"
+      ]
+    },
+    "Sale": {
+      "title": "Sale",
+      "type": "object",
+      "description": "Represents a sales invoice with a client for a specific project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the sale entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N Sale)"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the invoice was issued."
+        },
+        "documentType": {
+          "type": "string",
+          "enum": ["Factura de Venta", "Nota de Crédito"],
+          "description": "The type of sales document."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the sale."
+        },
+        "netAmount": {
+          "type": "number",
+          "description": "The net value of the sale before taxes."
+        },
+        "ivaAmount": {
+          "type": "number",
+          "description": "The total IVA amount for the sale."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The gross value of the sale (net + IVA)."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Borrador",
+            "Pendiente de Cobro",
+            "Cobrado",
+            "Cancelado"
+          ],
+          "description": "The current status of the sale."
+        },
+        "invoiceUrl": {
+          "type": "string",
+          "description": "URL of the uploaded sales invoice PDF/image."
+        },
+        "collectedDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the sale was collected."
+        },
+        "treasuryAccountId": {
+          "type": "string",
+          "description": "Reference to the TreasuryAccount where the funds were deposited."
+        },
+        "retencionGanancias": {
+          "type": "number",
+          "description": "Retención de Ganancias sufrida en el cobro."
+        },
+        "retencionIVA": {
+          "type": "number",
+          "description": "Retención de IVA sufrida en el cobro."
+        },
+        "retencionIIBB": {
+          "type": "number",
+          "description": "Retención de Ingresos Brutos sufrida en el cobro."
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "date",
+        "documentType",
+        "description",
+        "netAmount",
+        "ivaAmount",
+        "totalAmount",
+        "status"
+      ]
+    },
+    "Asset": {
+      "title": "Asset",
+      "type": "object",
+      "description": "Represents a company asset.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "purchaseDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "purchaseValue": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Mantenimiento",
+            "Vendido",
+            "De Baja"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "purchaseDate",
+        "purchaseValue",
+        "currency",
+        "category",
+        "status"
+      ]
+    },
+    "TaskRequest": {
+      "title": "Task Request",
+      "type": "object",
+      "description": "Represents a task or request assigned by one user to another.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "requesterId": {
+          "type": "string"
+        },
+        "requesterName": {
+          "type": "string"
+        },
+        "assigneeId": {
+          "type": "string"
+        },
+        "assigneeName": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Finalizado"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "requesterId",
+        "requesterName",
+        "assigneeId",
+        "assigneeName",
+        "status",
+        "createdAt"
+      ]
+    },
+    "FundRequest": {
+      "title": "Fund Request",
+      "type": "object",
+      "description": "Represents a request for funds for the weekly payment sheet.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "requesterId": {
+          "type": "string"
+        },
+        "requesterName": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Logística y PMD",
+            "Materiales",
+            "Viáticos",
+            "Caja Chica",
+            "Otros"
+          ]
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "projectName": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "exchangeRate": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Aprobado",
+            "Pagado",
+            "Rechazado",
+            "Aplazado"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional description or reason for the fund request."
+        }
+      },
+      "required": [
+        "id",
+        "requesterId",
+        "requesterName",
+        "date",
+        "category",
+        "amount",
+        "currency",
+        "exchangeRate",
+        "status"
+      ]
+    },
+    "PayrollWeek": {
+      "title": "Payroll Week",
+      "type": "object",
+      "description": "Represents a weekly payroll period for attendance and payments.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "exchangeRate": {
+          "type": "number",
+          "description": "The USD exchange rate to apply to all payroll costs for this week."
+        }
+      },
+      "required": [
+        "id",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "CashAdvance": {
+      "title": "Cash Advance",
+      "type": "object",
+      "description": "Represents a cash advance given to an employee during a payroll week.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "employeeId": {
+          "type": "string"
+        },
+        "employeeName": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "projectName": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "payrollWeekId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "employeeId",
+        "employeeName",
+        "date",
+        "amount",
+        "payrollWeekId"
+      ]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "type": "object",
+      "description": "Represents a daily attendance record for a site employee (jornal).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "employeeId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "presente",
+            "ausente"
+          ]
+        },
+        "lateHours": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "payrollWeekId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "employeeId",
+        "date",
+        "status",
+        "payrollWeekId"
+      ]
+    },
+    "TechnicalOfficeEmployee": {
+      "title": "Technical Office Employee",
+      "type": "object",
+      "description": "Represents an employee from the technical office with salary information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier, same as the user's auth UID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Denormalized full name of the user."
+        },
+        "position": {
+          "type": "string",
+          "description": "Job title or position in the company."
+        },
+        "employmentType": {
+          "type": "string",
+          "enum": [
+            "Relación de Dependencia",
+            "Monotributo"
+          ],
+          "description": "The type of employment contract."
+        },
+        "monthlySalary": {
+          "type": "number",
+          "description": "The gross monthly salary in ARS for 'Relación de Dependencia' or the monthly fee for 'Monotributo'."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ],
+          "description": "Current status of the employee."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "fullName",
+        "position",
+        "employmentType",
+        "monthlySalary",
+        "status"
+      ]
+    },
+    "TimeLog": {
+      "title": "Time Log",
+      "type": "object",
+      "description": "Represents a log of hours a user has spent on a specific project on a given day.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user who is logging the hours."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date for which the hours are logged (YYYY-MM-DD)."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The project to which the hours are attributed."
+        },
+        "hours": {
+          "type": "number",
+          "description": "Number of hours dedicated to the project on that day."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional notes about the logged hours."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "projectId",
+        "hours"
+      ]
+    },
+    "SalaryHistory": {
+      "title": "Salary History",
+      "type": "object",
+      "description": "Represents a historical record of an employee's salary.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The gross monthly salary amount."
+        },
+        "effectiveDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date from which this salary is effective."
+        }
+      },
+      "required": [
+        "id",
+        "amount",
+        "effectiveDate"
+      ]
+    },
+    "MonthlySalary": {
+      "title": "Monthly Salary",
+      "type": "object",
+      "description": "Represents a monthly salary settlement for a technical office employee.",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string", "description": "Reference to TechnicalOfficeEmployee" },
+        "employeeName": { "type": "string", "description": "Denormalized employee name" },
+        "period": { "type": "string", "description": "The settlement period, e.g., '2024-05'" },
+        "grossSalary": { "type": "number" },
+        "deductions": { "type": "number" },
+        "netSalary": { "type": "number", "description": "The net amount to be paid (gross - deductions)" },
+        "status": { "type": "string", "enum": ["Pendiente de Pago", "Pagado"] },
+        "paidDate": { "type": "string", "format": "date-time" },
+        "treasuryAccountId": { "type": "string", "description": "Reference to TreasuryAccount used for payment" }
+      },
+      "required": ["id", "employeeId", "employeeName", "period", "grossSalary", "deductions", "netSalary", "status"]
+    },
+    "TreasuryAccount": {
+      "title": "Treasury Account",
+      "type": "object",
+      "description": "Represents a central company cash or bank account.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Descriptive name for the account (e.g., 'Banco Galicia ARS')."
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "balance": {
+          "type": "number"
+        },
+        "accountType": {
+          "type": "string",
+          "enum": [
+            "Banco",
+            "Efectivo"
+          ]
+        },
+        "cbu": {
+          "type": "string",
+          "description": "CBU/CVU for bank accounts, optional."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "currency",
+        "balance",
+        "accountType"
+      ]
+    },
+    "TreasuryTransaction": {
+      "title": "Treasury Transaction",
+      "type": "object",
+      "description": "Represents a transaction within a central treasury account.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "treasuryAccountId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Ingreso",
+            "Egreso"
+          ]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "description": "e.g., 'Cobro Cliente', 'Pago Proveedor', 'Refuerzo Caja'"
+        },
+        "relatedDocumentId": {
+          "type": "string",
+          "description": "ID of a related document, e.g., an expense ID or a user ID for a cash reinforcement."
+        },
+        "relatedDocumentType": {
+          "type": "string",
+          "description": "Type of the related document, e.g., 'Expense', 'UserCashReinforcement'."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Optional reference to a project if the transaction is project-related."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Denormalized project name for display purposes."
+        }
+      },
+      "required": [
+        "id",
+        "treasuryAccountId",
+        "date",
+        "type",
+        "amount",
+        "currency",
+        "description",
+        "category"
+      ]
+    },
+    "RecurringExpense": {
+      "title": "Recurring Expense",
+      "type": "object",
+      "description": "Represents a recurring office or administrative expense.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "Diario",
+            "Semanal",
+            "Mensual",
+            "Bimestral",
+            "Trimestral",
+            "Semestral",
+            "Anual"
+          ]
+        },
+        "paymentSource": {
+          "type": "string",
+          "enum": [
+            "Tesorería",
+            "Caja Chica"
+          ],
+          "description": "Defines the accounting path. Tesorería is formal ('blanca'), Caja Chica is informal ('negra')."
+        },
+        "issueDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the expense was issued."
+        },
+        "nextDueDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activo",
+            "Pausado"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the recurring expense."
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "category",
+        "amount",
+        "currency",
+        "period",
+        "paymentSource",
+        "nextDueDate",
+        "status"
+      ]
+    },
+    "Moratoria": {
+      "title": "Moratoria",
+      "type": "object",
+      "description": "Represents a tax payment plan (moratoria).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Descriptive name of the payment plan, e.g., 'Plan Facilidades IVA'."
+        },
+        "tax": {
+          "type": "string",
+          "description": "The tax being paid (e.g., IVA, Ganancias, Aportes)."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total consolidated debt amount of the plan."
+        },
+        "paidAmount": {
+          "type": "number",
+          "description": "The total amount paid to date."
+        },
+        "installments": {
+          "type": "number",
+          "description": "The total number of installments."
+        },
+        "paidInstallments": {
+          "type": "number",
+          "description": "Number of installments already paid."
+        },
+        "installmentAmount": {
+          "type": "number",
+          "description": "The amount of each monthly installment."
+        },
+        "nextDueDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Due date for the next installment."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Activa",
+            "Finalizada",
+            "Incumplida"
+          ],
+          "description": "Current status of the plan."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "tax",
+        "totalAmount",
+        "installments",
+        "installmentAmount",
+        "nextDueDate",
+        "status",
+        "paidAmount",
+        "paidInstallments"
+      ]
+    },
+    "StockItem": {
+      "title": "Stock Item",
+      "type": "object",
+      "description": "Represents an item in the company's inventory, such as tools or consumables.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the stock item."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the item."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Herramienta",
+            "Consumible",
+            "Insumo"
+          ],
+          "description": "The category of the item."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The current quantity in stock."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measurement for the quantity (e.g., 'unidades', 'metros', 'cajas')."
+        },
+        "reorderPoint": {
+          "type": "number",
+          "description": "The quantity at which a reorder is needed."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the last update."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "quantity",
+        "unit",
+        "lastUpdated"
+      ]
+    },
+    "StockMovement": {
+      "title": "Stock Movement",
+      "type": "object",
+      "description": "Represents a single movement (check-in/check-out) of a stock item.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Reference to the StockItem."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Ingreso",
+            "Egreso"
+          ],
+          "description": "The type of movement."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The number of items moved."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the movement."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user who registered the movement."
+        },
+        "assigneeId": {
+          "type": "string",
+          "description": "The user to whom the item was assigned (for Egreso)."
+        },
+        "assigneeName": {
+          "type": "string",
+          "description": "Denormalized name of the assignee."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The project the item was assigned to (for Egreso)."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Denormalized name of the project."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the movement."
+        }
+      },
+      "required": [
+        "id",
+        "itemId",
+        "type",
+        "quantity",
+        "date",
+        "userId"
+      ]
+    },
+    "ContractorCertification": {
+      "title": "Contractor Certification",
+      "type": "object",
+      "description": "Represents a weekly work certification for a contractor to be paid.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "payrollWeekId": {
+          "type": "string",
+          "description": "Reference to the payroll week."
+        },
+        "contractorId": {
+          "type": "string",
+          "description": "Reference to the contractor."
+        },
+        "contractorName": {
+          "type": "string",
+          "description": "Denormalized name of the contractor."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the project."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Denormalized name of the project."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount to be paid."
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "ARS",
+            "USD"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the certification was created."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the certification."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendiente",
+            "Aprobado",
+            "Pagado",
+            "Rechazado"
+          ],
+          "description": "The status of the certification payment."
+        }
+      },
+      "required": [
+        "id",
+        "payrollWeekId",
+        "contractorId",
+        "contractorName",
+        "projectId",
+        "projectName",
+        "amount",
+        "currency",
+        "status",
+        "date"
+      ]
+    },
+    "ClientFollowUp": {
+      "title": "Client Follow-Up",
+      "type": "object",
+      "description": "Represents a follow-up interaction with a potential or existing client.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the follow-up record."
+        },
+        "clientName": {
+          "type": "string",
+          "description": "The name of the client or company."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The name of the contact person."
+        },
+        "contactDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the contact was made."
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "Llamada",
+            "Email",
+            "Reunión",
+            "WhatsApp",
+            "Otro"
+          ],
+          "description": "The channel through which the contact was made."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Primer Contacto",
+            "En Seguimiento",
+            "Propuesta Enviada",
+            "En Negociación",
+            "Cerrado - Ganado",
+            "Cerrado - Perdido",
+            "Stand-by"
+          ],
+          "description": "The current status of the follow-up."
+        },
+        "summary": {
+          "type": "string",
+          "description": "A summary of the interaction."
+        },
+        "nextStep": {
+          "type": "string",
+          "description": "The next action to be taken."
+        },
+        "nextContactDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date for the next follow-up."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "The ID of the user responsible for this follow-up."
+        },
+        "assignedToName": {
+          "type": "string",
+          "description": "The name of the user responsible for this follow-up."
+        }
+      },
+      "required": [
+        "id",
+        "clientName",
+        "contactDate",
+        "channel",
+        "status",
+        "summary",
+        "assignedTo",
+        "assignedToName"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures only the user (or admin) can access their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cashAccounts/{cashAccountId}",
+        "definition": {
+          "entityName": "CashAccount",
+          "schema": {
+            "$ref": "#/backend/entities/CashAccount"
+          },
+          "description": "Stores a user's cash accounts (up to 3). Path-based ownership ensures only the user can access their own cash accounts.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "cashAccountId",
+              "description": "The unique identifier for the cash account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cashAccounts/{cashAccountId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "CashTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/CashTransaction"
+          },
+          "description": "Stores transaction history for a specific cash account. Inherits ownership from the parent user document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "cashAccountId",
+              "description": "The unique identifier for the cash account."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project details. Includes denormalized 'members' map for authorization independence.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}/expenses/{expenseId}",
+        "definition": {
+          "entityName": "Expense",
+          "schema": {
+            "$ref": "#/backend/entities/Expense"
+          },
+          "description": "Stores expenses associated with a project. Inherits authorization context (members) from the parent Project document for Authorization Independence.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            },
+            {
+              "name": "expenseId",
+              "description": "The unique identifier for the expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier information.",
+          "params": [
+            {
+              "name": "supplierId",
+              "description": "The unique identifier for the supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/projects/{projectId}/sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/backend/entities/Sale"
+          },
+          "description": "Stores sales invoices associated with a project. Inherits authorization context (members) from the parent Project document for Authorization Independence.",
+          "params": [
+            {
+              "name": "projectId",
+              "description": "The unique identifier for the project."
+            },
+            {
+              "name": "saleId",
+              "description": "The unique identifier for the sale."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/employees/{employeeId}",
+        "definition": {
+          "entityName": "Employee",
+          "schema": {
+            "$ref": "#/backend/entities/Employee"
+          },
+          "description": "Stores company employee information.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/employees/{employeeId}/dailyWageHistory/{historyId}",
+        "definition": {
+          "entityName": "DailyWageHistory",
+          "schema": {
+            "$ref": "#/backend/entities/DailyWageHistory"
+          },
+          "description": "Stores the daily wage history for a site employee. Accessible by admins.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            },
+            {
+              "name": "historyId",
+              "description": "The unique identifier for the history record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/technicalOfficeEmployees/{employeeId}",
+        "definition": {
+          "entityName": "TechnicalOfficeEmployee",
+          "schema": {
+            "$ref": "#/backend/entities/TechnicalOfficeEmployee"
+          },
+          "description": "Stores sensitive HR data for technical office staff. Only accessible by 'Dirección' role.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee, matches their user ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/technicalOfficeEmployees/{employeeId}/salaryHistory/{salaryHistoryId}",
+        "definition": {
+          "entityName": "SalaryHistory",
+          "schema": {
+            "$ref": "#/backend/entities/SalaryHistory"
+          },
+          "description": "Stores the salary history for a technical office employee. Only accessible by 'Dirección' role.",
+          "params": [
+            {
+              "name": "employeeId",
+              "description": "The unique identifier for the employee."
+            },
+            {
+              "name": "salaryHistoryId",
+              "description": "The unique identifier for the salary history record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/monthlySalaries/{salaryId}",
+        "definition": {
+          "entityName": "MonthlySalary",
+          "schema": {
+            "$ref": "#/backend/entities/MonthlySalary"
+          },
+          "description": "Stores monthly salary settlements. Only accessible by admins.",
+          "params": [
+            {
+              "name": "salaryId",
+              "description": "The unique identifier for the salary settlement."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/timeLogs/{logId}",
+        "definition": {
+          "entityName": "TimeLog",
+          "schema": {
+            "$ref": "#/backend/entities/TimeLog"
+          },
+          "description": "Stores daily time logs for users against projects. Users can only write their own logs.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for the time log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contractors/{contractorId}",
+        "definition": {
+          "entityName": "Contractor",
+          "schema": {
+            "$ref": "#/backend/entities/Contractor"
+          },
+          "description": "Stores contractor information.",
+          "params": [
+            {
+              "name": "contractorId",
+              "description": "The unique identifier for the contractor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contractors/{contractorId}/personnel/{personnelId}",
+        "definition": {
+          "entityName": "ContractorEmployee",
+          "schema": {
+            "$ref": "#/backend/entities/ContractorEmployee"
+          },
+          "description": "Stores personnel for a specific contractor.",
+          "params": [
+            {
+              "name": "contractorId",
+              "description": "The unique identifier for the contractor."
+            },
+            {
+              "name": "personnelId",
+              "description": "The unique identifier for the personnel."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/assets/{assetId}",
+        "definition": {
+          "entityName": "Asset",
+          "schema": {
+            "$ref": "#/backend/entities/Asset"
+          },
+          "description": "Stores company assets information.",
+          "params": [
+            {
+              "name": "assetId",
+              "description": "The unique identifier for the asset."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/taskRequests/{taskRequestId}",
+        "definition": {
+          "entityName": "TaskRequest",
+          "schema": {
+            "$ref": "#/backend/entities/TaskRequest"
+          },
+          "description": "Stores tasks and requests between users. Users can read tasks assigned to or created by them.",
+          "params": [
+            {
+              "name": "taskRequestId",
+              "description": "The unique identifier for the task request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/fundRequests/{fundRequestId}",
+        "definition": {
+          "entityName": "FundRequest",
+          "schema": {
+            "$ref": "#/backend/entities/FundRequest"
+          },
+          "description": "Stores fund requests for the weekly payment sheet. Users can read their own requests, admins can manage all.",
+          "params": [
+            {
+              "name": "fundRequestId",
+              "description": "The unique identifier for the fund request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/payrollWeeks/{payrollWeekId}",
+        "definition": {
+          "entityName": "PayrollWeek",
+          "schema": {
+            "$ref": "#/backend/entities/PayrollWeek"
+          },
+          "description": "Stores weekly payroll periods. Only admins can create or modify these.",
+          "params": [
+            {
+              "name": "payrollWeekId",
+              "description": "The unique identifier for the payroll week."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/cashAdvances/{cashAdvanceId}",
+        "definition": {
+          "entityName": "CashAdvance",
+          "schema": {
+            "$ref": "#/backend/entities/CashAdvance"
+          },
+          "description": "Stores employee cash advances. Admins can manage all.",
+          "params": [
+            {
+              "name": "cashAdvanceId",
+              "description": "The unique identifier for the cash advance."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/attendances/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": {
+            "$ref": "#/backend/entities/Attendance"
+          },
+          "description": "Stores daily attendance for site employees. Writable by supervisors and admins.",
+          "params": [
+            {
+              "name": "attendanceId",
+              "description": "The unique identifier for the attendance record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/treasuryAccounts/{treasuryAccountId}",
+        "definition": {
+          "entityName": "TreasuryAccount",
+          "schema": {
+            "$ref": "#/backend/entities/TreasuryAccount"
+          },
+          "description": "Stores the company's central cash and bank accounts. Only accessible by admins.",
+          "params": [
+            {
+              "name": "treasuryAccountId",
+              "description": "The unique identifier for the treasury account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/treasuryAccounts/{treasuryAccountId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "TreasuryTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/TreasuryTransaction"
+          },
+          "description": "Stores transaction history for a central treasury account. Inherits ownership from the parent account.",
+          "params": [
+            {
+              "name": "treasuryAccountId",
+              "description": "The unique identifier for the treasury account."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/recurringExpenses/{expenseId}",
+        "definition": {
+          "entityName": "RecurringExpense",
+          "schema": {
+            "$ref": "#/backend/entities/RecurringExpense"
+          },
+          "description": "Stores recurring office expenses.",
+          "params": [
+            {
+              "name": "expenseId",
+              "description": "The unique ID for the recurring expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/moratorias/{moratoriaId}",
+        "definition": {
+          "entityName": "Moratoria",
+          "schema": {
+            "$ref": "#/backend/entities/Moratoria"
+          },
+          "description": "Stores tax payment plans (moratorias). Accessible by admins.",
+          "params": [
+            {
+              "name": "moratoriaId",
+              "description": "The unique ID for the payment plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stockItems/{itemId}",
+        "definition": {
+          "entityName": "StockItem",
+          "schema": {
+            "$ref": "#/backend/entities/StockItem"
+          },
+          "description": "Stores company inventory items. Writable by Pañolero and Admins.",
+          "params": [
+            {
+              "name": "itemId",
+              "description": "The unique identifier for the stock item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/stockItems/{itemId}/movements/{movementId}",
+        "definition": {
+          "entityName": "StockMovement",
+          "schema": {
+            "$ref": "#/backend/entities/StockMovement"
+          },
+          "description": "Stores the check-in/check-out history for a specific stock item. Writable by Pañolero and Admins.",
+          "params": [
+            {
+              "name": "itemId",
+              "description": "The unique identifier for the stock item."
+            },
+            {
+              "name": "movementId",
+              "description": "The unique identifier for the stock movement."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contractorCertifications/{certificationId}",
+        "definition": {
+          "entityName": "ContractorCertification",
+          "schema": {
+            "$ref": "#/backend/entities/ContractorCertification"
+          },
+          "description": "Stores weekly work certifications for contractors.",
+          "params": [
+            {
+              "name": "certificationId",
+              "description": "The unique identifier for the certification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clientFollowUps/{followUpId}",
+        "definition": {
+          "entityName": "ClientFollowUp",
+          "schema": {
+            "$ref": "#/backend/entities/ClientFollowUp"
+          },
+          "description": "Stores client follow-up records. Only accessible by 'Dirección' role.",
+          "params": [
+            {
+              "name": "followUpId",
+              "description": "The unique identifier for the follow-up record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the PMD Manager application, focusing on role-based access control, project-specific data segregation, and financial tracking. Authorization Independence is achieved through path-based ownership for user-specific data and denormalization of membership within project-related collections. This eliminates the need for `get()` calls in security rules, simplifying them and ensuring atomic operations. Segregation ensures that each collection has a homogeneous security posture. QAPs are supported through structural segregation, making list operations secure and predictable.\n\nUser data is stored in a dedicated collection (`/users/{userId}`) for private data. Project-related data (expenses, sales) are nested under the `/projects/{projectId}` collection, which may contain denormalized members that explicitly grant access. User cash accounts are stored under the user's document (`/users/{userId}/cashAccount`), ensuring that only the owning user has access.\n\nSupplier information is stored in the root collection `/suppliers` since it is shared, and may involve cross-project authorization. The structure also enables straightforward querying and data aggregation for dashboard visualizations."
+  }
+}
