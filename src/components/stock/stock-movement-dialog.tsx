@@ -32,10 +32,10 @@ import {
   where,
   type DocumentData,
   type QueryDocumentSnapshot,
-  type SnapshotOptions,
+  SnapshotOptions,
 } from 'firebase/firestore';
 import type {
-  StockItem,
+  Consumable,
   StockMovement,
   UserProfile,
   Project,
@@ -59,7 +59,7 @@ const projectConverter = {
 };
 
 interface StockMovementDialogProps {
-  item: StockItem;
+  item: Consumable;
   movementType: 'Ingreso' | 'Egreso';
   children: React.ReactNode;
 }
@@ -93,9 +93,9 @@ export function StockMovementDialog({
     () =>
       firestore
         ? query(
-            collection(firestore, 'projects').withConverter(projectConverter),
-            where('status', '==', 'En Curso')
-          )
+          collection(firestore, 'projects').withConverter(projectConverter),
+          where('status', '==', 'En Curso')
+        )
         : null,
     [firestore]
   );
@@ -129,9 +129,9 @@ export function StockMovementDialog({
     setIsPending(true);
     try {
       const batch = writeBatch(firestore);
-      const stockItemRef = doc(firestore, 'stockItems', item.id);
+      const stockItemRef = doc(firestore, 'inventory_consumables', item.id);
       const movementRef = doc(
-        collection(firestore, `stockItems/${item.id}/movements`)
+        collection(firestore, 'inventory_movements')
       );
 
       let newQuantity;
@@ -168,12 +168,17 @@ export function StockMovementDialog({
 
         newMovement = {
           itemId: item.id,
-          type: 'Egreso',
+          itemName: item.name,
+          itemType: 'CONSUMABLE',
+          type: 'CHECK_OUT',
           quantity: moveQuantity,
           date: new Date().toISOString(),
-          userId: user.uid,
-          assigneeId: selectedAssignee?.id,
-          assigneeName: selectedAssignee?.fullName,
+          authorizedBy: user.uid,
+          to: selectedAssignee ? {
+            type: 'EMPLOYEE',
+            id: selectedAssignee.id,
+            name: selectedAssignee.fullName,
+          } : undefined,
           projectId: selectedProject?.id,
           projectName: selectedProject?.name,
           notes: notes || undefined,
@@ -183,10 +188,12 @@ export function StockMovementDialog({
         newQuantity = item.quantity + moveQuantity;
         newMovement = {
           itemId: item.id,
-          type: 'Ingreso',
+          itemName: item.name,
+          itemType: 'CONSUMABLE',
+          type: 'CHECK_IN', // Changed from 'Ingreso'
           quantity: moveQuantity,
           date: new Date().toISOString(),
-          userId: user.uid,
+          authorizedBy: user.uid,
           notes: notes || undefined,
         };
       }

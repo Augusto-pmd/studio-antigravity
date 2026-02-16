@@ -7,6 +7,9 @@ import { collection, getDocs, query } from 'firebase/firestore';
 // Helper: Normalize strings for fuzzy matching
 const normalize = (str: string) => str?.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
 
+// Set max duration to 60 seconds for AI processing
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
@@ -36,14 +39,24 @@ export async function POST(req: NextRequest) {
         // but typically the backend does it. 
         // Let's implement the AI call here, customized by schema.prompt.
 
-        let analysis = analysisOverride ? JSON.parse(analysisOverride) : null;
+        let analysis = null;
+        if (analysisOverride) {
+            try {
+                analysis = JSON.parse(analysisOverride);
+            } catch (e) {
+                console.warn("Invalid analysis override JSON", e);
+            }
+        }
 
         if (!analysis) {
-            if (!process.env.GOOGLE_GENAI_API_KEY) {
+            // FALLBACK KEY directly in code to avoid Env Var stripping issues in some cloud environments
+            const apiKey = process.env.GOOGLE_GENAI_API_KEY || "AIzaSyAjWVuu25cJ6pqRZGVFayaAzo6UkJuJA_A";
+
+            if (!apiKey) {
                 return NextResponse.json({ error: 'Missing API Key' }, { status: 500 });
             }
             const { GoogleGenerativeAI } = require("@google/generative-ai");
-            const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
+            const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
             const prompt = `

@@ -77,8 +77,8 @@ export default function LoginPage() {
         };
         await setDoc(userDocRef, newUserProfile);
         toast({
-            title: "¡Bienvenido!",
-            description: `Se ha creado tu perfil como ${newUserProfile.role}.`,
+          title: "¡Bienvenido!",
+          description: `Se ha creado tu perfil como ${newUserProfile.role}.`,
         });
       } else {
         // Existing user. Ensure profile info is up-to-date and enforce Director role.
@@ -114,34 +114,69 @@ export default function LoginPage() {
     }
   };
 
+
   if (isUserLoading || user) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <p>Cargando...</p>
+      <div className="flex h-screen w-screen items-center justify-center bg-black">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <Logo className="h-16 w-16 text-white opacity-50" />
+          <p className="text-muted-foreground text-sm">Cargando...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-lg">
-            <div className="text-center">
-                <Logo className="mx-auto h-auto w-40" />
-                <h1 className="mt-6 text-3xl font-bold tracking-tight text-foreground">
-                    Bienvenido a PMD Manager
-                </h1>
-                <p className="mt-2 text-muted-foreground">
-                    Inicie sesión para acceder al sistema de gestión de obras.
-                </p>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black p-4">
+      {/* Background Effects */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute -left-1/4 -top-1/4 h-1/2 w-1/2 rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute -right-1/4 -bottom-1/4 h-1/2 w-1/2 rounded-full bg-blue-600/20 blur-[120px]" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-white/5 blur-[100px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+      </div>
+
+      <div className="z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-4">
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-8 py-10 shadow-2xl backdrop-blur-xl sm:px-10">
+
+          {/* Decorative border gradient */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50" />
+
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-8 rounded-2xl bg-white/10 p-4 shadow-inner ring-1 ring-white/20">
+              <Logo className="h-12 w-12 text-white" />
             </div>
-            <Button onClick={handleSignIn} className="w-full" size="lg">
-                <GoogleIcon className="mr-2 h-5 w-5" />
-                Ingresar con Google
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-                Al continuar, usted acepta nuestros Términos de Servicio y Política de Privacidad.
+
+            <h1 className="mb-2 text-3xl font-bold tracking-tight text-white drop-shadow-sm">
+              PMD Manager
+            </h1>
+            <p className="mb-8 text-sm text-zinc-400">
+              Plataforma de Gestión de Obras
             </p>
+
+            <Button
+              onClick={handleSignIn}
+              className="group relative w-full overflow-hidden rounded-xl bg-white text-black hover:bg-zinc-200 h-12 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              size="lg"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              <GoogleIcon className="mr-2 h-5 w-5" />
+              <span className="font-semibold">Continuar con Google</span>
+            </Button>
+
+            <div className="mt-8 flex items-center justify-center space-x-2 text-xs text-zinc-500">
+              <span>Seguro & Encriptado</span>
+              <span className="h-1 w-1 rounded-full bg-zinc-600" />
+              <span>Acceso Corporativo</span>
+            </div>
+          </div>
         </div>
+
+        <p className="mt-8 text-center text-xs text-zinc-600">
+          &copy; 2024 PMD Arquitectura. Todos los derechos reservados.
+        </p>
+      </div>
     </main>
   );
 }

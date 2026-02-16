@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TechnicalOfficeEmployee } from "@/lib/types";
-import { Pencil, FilePlus } from "lucide-react";
+import { Pencil, FilePlus, ClipboardList } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { TechnicalOfficeEmployeeDialog } from "@/components/recursos-humanos/technical-office-employee-dialog";
 import { useFirestore, useCollection } from "@/firebase";
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
@@ -21,16 +22,17 @@ import { useMemo } from "react";
 import { SettleSalaryDialog } from "@/components/recursos-humanos/settle-salary-dialog";
 
 const formatCurrency = (amount: number) => {
-    if (typeof amount !== 'number') return '';
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
+  if (typeof amount !== 'number') return '';
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
 }
 
 const techOfficeEmployeeConverter = {
-    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
+  toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
 };
 
 export function TechnicalOfficeEmployeesTable() {
+  const router = useRouter();
   const firestore = useFirestore();
   const employeesQuery = useMemo(() => (firestore ? collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter) : null), [firestore]);
   const { data: employees, isLoading } = useCollection<TechnicalOfficeEmployee>(employeesQuery);
@@ -45,90 +47,94 @@ export function TechnicalOfficeEmployeesTable() {
   );
 
   return (
-      <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Empleado</TableHead>
-                <TableHead className="hidden md:table-cell">Salario / Contratación</TableHead>
-                <TableHead className="hidden md:table-cell">Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && (
-                <>
-                  {renderSkeleton()}
-                  {renderSkeleton()}
-                </>
-              )}
-              {!isLoading && employees?.length === 0 && (
-                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No hay empleados de oficina registrados.
-                  </TableCell>
-                </TableRow>
-              )}
-              {employees?.map((employee: TechnicalOfficeEmployee) => (
-                <TableRow key={employee.id}>
-                  <TableCell>
-                      <div className="font-medium">{employee.fullName}</div>
-                      <div className="text-sm text-muted-foreground">{employee.position}</div>
-                      <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
-                        <p><span className='font-medium text-foreground'>Salario:</span> <span className='font-mono'>{formatCurrency(employee.monthlySalary)}</span></p>
-                        <div><Badge variant="outline">{employee.employmentType}</Badge></div>
-                        <div>
-                             <Badge
-                                variant={employee.status === 'Activo' ? 'default' : 'secondary'}
-                                className={cn(
-                                    "capitalize text-xs",
-                                    employee.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
-                                    employee.status === "Inactivo" && "bg-gray-700/40 text-gray-400 border-gray-600",
-                                )}
-                                >
-                                {employee.status}
-                                </Badge>
-                        </div>
-                      </div>
-                  </TableCell>
-                  <TableCell className='hidden md:table-cell'>
-                    <div className="font-mono">{formatCurrency(employee.monthlySalary)}</div>
-                    <div className="text-xs text-muted-foreground">{employee.employmentType}</div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Empleado</TableHead>
+            <TableHead className="hidden md:table-cell">Salario / Contratación</TableHead>
+            <TableHead className="hidden md:table-cell">Estado</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading && (
+            <>
+              {renderSkeleton()}
+              {renderSkeleton()}
+            </>
+          )}
+          {!isLoading && employees?.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24 text-center">
+                No hay empleados de oficina registrados.
+              </TableCell>
+            </TableRow>
+          )}
+          {employees?.map((employee: TechnicalOfficeEmployee) => (
+            <TableRow key={employee.id}>
+              <TableCell>
+                <div className="font-medium">{employee.fullName}</div>
+                <div className="text-sm text-muted-foreground">{employee.position}</div>
+                <div className="md:hidden mt-2 space-y-1 text-sm text-muted-foreground">
+                  <p><span className='font-medium text-foreground'>Salario:</span> <span className='font-mono'>{formatCurrency(employee.monthlySalary)}</span></p>
+                  <div><Badge variant="outline">{employee.employmentType}</Badge></div>
+                  <div>
                     <Badge
                       variant={employee.status === 'Activo' ? 'default' : 'secondary'}
                       className={cn(
-                          "capitalize",
-                          employee.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
-                          employee.status === "Inactivo" && "bg-gray-700/40 text-gray-400 border-gray-600",
+                        "capitalize text-xs",
+                        employee.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
+                        employee.status === "Inactivo" && "bg-gray-700/40 text-gray-400 border-gray-600",
                       )}
                     >
                       {employee.status}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end items-center">
-                      {employee.employmentType === 'Relación de Dependencia' && (
-                        <SettleSalaryDialog employee={employee}>
-                          <Button variant="ghost" size="icon">
-                            <FilePlus className="h-4 w-4" />
-                            <span className="sr-only">Liquidar Sueldo</span>
-                          </Button>
-                        </SettleSalaryDialog>
-                      )}
-                      <TechnicalOfficeEmployeeDialog employee={employee}>
-                          <Button variant="ghost" size="icon">
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Editar</span>
-                          </Button>
-                      </TechnicalOfficeEmployeeDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-      </div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className='hidden md:table-cell'>
+                <div className="font-mono">{formatCurrency(employee.monthlySalary)}</div>
+                <div className="text-xs text-muted-foreground">{employee.employmentType}</div>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <Badge
+                  variant={employee.status === 'Activo' ? 'default' : 'secondary'}
+                  className={cn(
+                    "capitalize",
+                    employee.status === "Activo" && "bg-green-900/40 text-green-300 border-green-700",
+                    employee.status === "Inactivo" && "bg-gray-700/40 text-gray-400 border-gray-600",
+                  )}
+                >
+                  {employee.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end items-center">
+                  {employee.employmentType === 'Relación de Dependencia' && (
+                    <SettleSalaryDialog employee={employee}>
+                      <Button variant="ghost" size="icon">
+                        <FilePlus className="h-4 w-4" />
+                        <span className="sr-only">Liquidar Sueldo</span>
+                      </Button>
+                    </SettleSalaryDialog>
+                  )}
+                  <TechnicalOfficeEmployeeDialog employee={employee}>
+                    <Button variant="ghost" size="icon">
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Editar</span>
+                    </Button>
+                  </TechnicalOfficeEmployeeDialog>
+                  <Button variant="ghost" size="icon" onClick={() => router.push(`/recursos-humanos/legajo/${employee.id}`)}>
+                    <ClipboardList className="h-4 w-4" />
+                    <span className="sr-only">Ver Legajo</span>
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

@@ -17,9 +17,13 @@ import { Project } from '@/lib/types';
 
 import { projectConverter } from '@/lib/converters';
 
+// ... imports
+import { useYear } from '@/lib/contexts/year-context';
+
 export function AnalyticsDashboard() {
     const [financials, setFinancials] = useState<ProjectFinancials[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { selectedYear } = useYear(); // Get global year
 
     // Fetch projects first
     const { data: projects } = useCollection<Project>(
@@ -28,6 +32,8 @@ export function AnalyticsDashboard() {
 
     // Verify if we already have data to prevent flickering
     const [lastProjectCount, setLastProjectCount] = useState(0);
+    // Track last fetched year to force refresh on change
+    const [lastFetchedYear, setLastFetchedYear] = useState<number | null>(null);
 
     useEffect(() => {
         if (!projects || projects.length === 0) {
@@ -35,27 +41,25 @@ export function AnalyticsDashboard() {
             return;
         }
 
-        // Avoid re-fetching if we already have the data for the same number of projects
-        // This is a simple heuristic. For a real app, one might use a more robust cache key.
-        if (projects.length === lastProjectCount && financials.length === projects.length) {
+        // Re-fetch if project count changes OR year changes
+        if (projects.length === lastProjectCount && financials.length === projects.length && lastFetchedYear === selectedYear) {
             return;
         }
 
         const fetchData = async () => {
-            // Only show loader on initial fetch
-            if (financials.length === 0) setIsLoading(true);
+            setIsLoading(true);
 
             try {
                 const results = await Promise.all(
                     projects.map(async (project) => {
-                        // Check if we already have this project cached in state to avoid calling service again? 
-                        // For now, let's just fetch but not clear state.
-                        const data = await FinancialAnalyticsService.getProjectFinancials(project.id);
+                        // Pass selectedYear to service
+                        const data = await FinancialAnalyticsService.getProjectFinancials(project.id, selectedYear);
                         return { ...data, projectName: project.name };
                     })
                 );
                 setFinancials(results);
                 setLastProjectCount(projects.length);
+                setLastFetchedYear(selectedYear);
             } catch (error) {
                 console.error("Failed to fetch financials:", error);
             } finally {
@@ -64,7 +68,7 @@ export function AnalyticsDashboard() {
         };
 
         fetchData();
-    }, [projects]);
+    }, [projects, selectedYear]); // Add selectedYear dependency
 
     if (isLoading) {
         return <div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;

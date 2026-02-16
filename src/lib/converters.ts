@@ -39,6 +39,8 @@ import type {
   ClientFollowUp,
   UserProfile,
   Role,
+  Consumable,
+  Tool,
 } from './types';
 
 // Utility to safely parse numbers that might be strings or undefined
@@ -93,8 +95,8 @@ export const expenseConverter = {
 };
 
 export const supplierConverter = {
-    toFirestore: (data: Supplier): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(), id: snapshot.id } as Supplier)
+  toFirestore: (data: Supplier): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Supplier => ({ ...snapshot.data(), id: snapshot.id } as Supplier)
 };
 
 export const employeeConverter = {
@@ -110,17 +112,17 @@ export const employeeConverter = {
 };
 
 export const dailyWageHistoryConverter = {
-    toFirestore: (data: DailyWageHistory): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): DailyWageHistory & { employeeId: string } => {
-        const data = snapshot.data(options)!;
-        const employeeId = snapshot.ref.parent.parent!.id;
-        return {
-            id: snapshot.id,
-            employeeId,
-            amount: parseNumber(data.amount),
-            effectiveDate: data.effectiveDate,
-        } as DailyWageHistory & { employeeId: string };
-    }
+  toFirestore: (data: DailyWageHistory): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): DailyWageHistory & { employeeId: string } => {
+    const data = snapshot.data(options)!;
+    const employeeId = snapshot.ref.parent.parent!.id;
+    return {
+      id: snapshot.id,
+      employeeId,
+      amount: parseNumber(data.amount),
+      effectiveDate: data.effectiveDate,
+    } as DailyWageHistory & { employeeId: string };
+  }
 };
 
 export const attendanceConverter = {
@@ -176,150 +178,150 @@ export const certificationConverter = {
 };
 
 export const payrollWeekConverter = {
-    toFirestore: (data: PayrollWeek): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
-        const data = snapshot.data(options)!;
-        return { 
-            ...data, 
-            id: snapshot.id,
-            exchangeRate: parseNumber(data.exchangeRate)
-        } as PayrollWeek;
-    }
+  toFirestore: (data: PayrollWeek): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): PayrollWeek => {
+    const data = snapshot.data(options)!;
+    return {
+      ...data,
+      id: snapshot.id,
+      exchangeRate: parseNumber(data.exchangeRate)
+    } as PayrollWeek;
+  }
 };
 
 export const techOfficeEmployeeConverter = {
-    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => {
-        const data = snapshot.data()!;
-        return { 
-            ...data,
-            id: snapshot.id,
-            monthlySalary: parseNumber(data.monthlySalary)
-        } as TechnicalOfficeEmployee
-    }
+  toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      monthlySalary: parseNumber(data.monthlySalary)
+    } as TechnicalOfficeEmployee
+  }
 };
 
 export const timeLogConverter = {
-    toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
-        const data = snapshot.data()!;
-        let dateStr: string = '';
-        if (data.date) {
-            if ((data.date as Timestamp)?.toDate && typeof (data.date as Timestamp).toDate === 'function') {
-                dateStr = format((data.date as Timestamp).toDate(), 'yyyy-MM-dd');
-            } 
-            else if (typeof data.date === 'string') {
-                dateStr = data.date.split('T')[0];
-            }
-        }
-        return { 
-            ...data, 
-            id: snapshot.id,
-            date: dateStr,
-            hours: parseNumber(data.hours)
-        } as TimeLog;
+  toFirestore: (data: TimeLog): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
+    const data = snapshot.data()!;
+    let dateStr: string = '';
+    if (data.date) {
+      if ((data.date as Timestamp)?.toDate && typeof (data.date as Timestamp).toDate === 'function') {
+        dateStr = format((data.date as Timestamp).toDate(), 'yyyy-MM-dd');
+      }
+      else if (typeof data.date === 'string') {
+        dateStr = data.date.split('T')[0];
+      }
     }
+    return {
+      ...data,
+      id: snapshot.id,
+      date: dateStr,
+      hours: parseNumber(data.hours)
+    } as TimeLog;
+  }
 };
 
 export const userProfileConverter = {
-    toFirestore: (profile: UserProfile): DocumentData => {
-        const { id, ...data } = profile;
-        return data;
-    },
-    fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions): UserProfile => {
-        const data = snapshot.data()!;
-        return {
-            id: snapshot.id,
-            role: data.role as Role,
-            fullName: data.fullName,
-            email: data.email,
-            photoURL: data.photoURL,
-        };
-    }
+  toFirestore: (profile: UserProfile): DocumentData => {
+    const { id, ...data } = profile;
+    return data;
+  },
+  fromFirestore: (snapshot: DocumentSnapshot, options: SnapshotOptions): UserProfile => {
+    const data = snapshot.data()!;
+    return {
+      id: snapshot.id,
+      role: data.role as Role,
+      fullName: data.fullName,
+      email: data.email,
+      photoURL: data.photoURL,
+    };
+  }
 };
 
 export const cashAccountConverter = {
-    toFirestore: (data: CashAccount): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => {
-      const data = snapshot.data()!;
-      return {
-        ...data,
-        id: snapshot.id,
-        balance: parseNumber(data.balance)
-      } as CashAccount;
-    }
+  toFirestore: (data: CashAccount): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      balance: parseNumber(data.balance)
+    } as CashAccount;
+  }
 };
 
 export const cashTransactionConverter = {
-    toFirestore: (data: CashTransaction): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashTransaction => {
-      const data = snapshot.data()!;
-      return {
-        ...data,
-        id: snapshot.id,
-        amount: parseNumber(data.amount)
-      } as CashTransaction;
-    }
+  toFirestore: (data: CashTransaction): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashTransaction => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      amount: parseNumber(data.amount)
+    } as CashTransaction;
+  }
 };
 
 export const saleConverter = {
-    toFirestore: (data: Sale): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => {
-        const data = snapshot.data()!;
-        return {
-            ...data,
-            id: snapshot.id,
-            netAmount: parseNumber(data.netAmount),
-            ivaAmount: parseNumber(data.ivaAmount),
-            totalAmount: parseNumber(data.totalAmount),
-            retencionGanancias: parseNumber(data.retencionGanancias),
-            retencionIVA: parseNumber(data.retencionIVA),
-            retencionIIBB: parseNumber(data.retencionIIBB),
-        } as Sale;
-    }
+  toFirestore: (data: Sale): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Sale => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      netAmount: parseNumber(data.netAmount),
+      ivaAmount: parseNumber(data.ivaAmount),
+      totalAmount: parseNumber(data.totalAmount),
+      retencionGanancias: parseNumber(data.retencionGanancias),
+      retencionIVA: parseNumber(data.retencionIVA),
+      retencionIIBB: parseNumber(data.retencionIIBB),
+    } as Sale;
+  }
 };
 
 export const assetConverter = {
-    toFirestore: (data: Asset): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Asset => {
-        const data = snapshot.data()!;
-        return {
-            ...data,
-            id: snapshot.id,
-            purchaseValue: parseNumber(data.purchaseValue),
-        } as Asset;
-    }
+  toFirestore: (data: Asset): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Asset => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      purchaseValue: parseNumber(data.purchaseValue),
+    } as Asset;
+  }
 };
 
 export const contractorConverter = {
-    toFirestore: (data: Contractor): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => {
-        const data = snapshot.data()!;
-        const budgets = data.budgets || {};
-        for(const projectId in budgets) {
-            budgets[projectId].initial = parseNumber(budgets[projectId].initial);
-            if (budgets[projectId].additionals) {
-                 budgets[projectId].additionals.forEach((ad: any) => {
-                    ad.amount = parseNumber(ad.amount);
-                });
-            }
-        }
-        return { ...data, id: snapshot.id, budgets } as Contractor;
+  toFirestore: (data: Contractor): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Contractor => {
+    const data = snapshot.data()!;
+    const budgets = data.budgets || {};
+    for (const projectId in budgets) {
+      budgets[projectId].initial = parseNumber(budgets[projectId].initial);
+      if (budgets[projectId].additionals) {
+        budgets[projectId].additionals.forEach((ad: any) => {
+          ad.amount = parseNumber(ad.amount);
+        });
+      }
     }
+    return { ...data, id: snapshot.id, budgets } as Contractor;
+  }
 };
 
 export const contractorEmployeeConverter = {
-    toFirestore: (data: ContractorEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => {
-        const data = snapshot.data()!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            contractorId: data.contractorId,
-            artExpiryDate: data.artExpiryDate,
-            documents: data.documents || [],
-        } as ContractorEmployee
-    }
+  toFirestore: (data: ContractorEmployee): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ContractorEmployee => {
+    const data = snapshot.data()!;
+    return {
+      id: snapshot.id,
+      name: data.name,
+      contractorId: data.contractorId,
+      artExpiryDate: data.artExpiryDate,
+      documents: data.documents || [],
+    } as ContractorEmployee
+  }
 };
 
 export const monthlySalaryConverter = {
@@ -337,88 +339,95 @@ export const monthlySalaryConverter = {
 };
 
 export const moratoriaConverter = {
-    toFirestore: (data: Moratoria): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Moratoria => {
-      const data = snapshot.data()!;
-      return {
-        ...data,
-        id: snapshot.id,
-        totalAmount: parseNumber(data.totalAmount),
-        paidAmount: parseNumber(data.paidAmount),
-        installments: parseNumber(data.installments),
-        paidInstallments: parseNumber(data.paidInstallments),
-        installmentAmount: parseNumber(data.installmentAmount),
-      } as Moratoria;
-    }
+  toFirestore: (data: Moratoria): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Moratoria => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      totalAmount: parseNumber(data.totalAmount),
+      paidAmount: parseNumber(data.paidAmount),
+      installments: parseNumber(data.installments),
+      paidInstallments: parseNumber(data.paidInstallments),
+      installmentAmount: parseNumber(data.installmentAmount),
+    } as Moratoria;
+  }
 };
 
 export const recurringExpenseConverter = {
-    toFirestore: (data: RecurringExpense): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): RecurringExpense => {
-        const data = snapshot.data()!;
-        return {
-            ...data,
-            id: snapshot.id,
-            amount: parseNumber(data.amount),
-        } as RecurringExpense;
-    }
+  toFirestore: (data: RecurringExpense): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): RecurringExpense => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      amount: parseNumber(data.amount),
+    } as RecurringExpense;
+  }
 };
 
 export const stockItemConverter = {
-    toFirestore: (data: StockItem): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): StockItem => {
-        const data = snapshot.data()!;
-        return {
-            ...data,
-            id: snapshot.id,
-            quantity: parseNumber(data.quantity),
-            reorderPoint: parseNumber(data.reorderPoint),
-        } as StockItem;
-    }
+  toFirestore: (data: StockItem): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): StockItem => {
+    const data = snapshot.data()!;
+    // Assume it is a Consumable for now as per StockTable usage
+    return {
+      ...data,
+      id: snapshot.id,
+      type: 'CONSUMABLE', // Defaulting to Consumable for legacy converter
+      name: data.name || 'Sin Nombre',
+      category: data.category || 'Insumo',
+      quantity: parseNumber(data.quantity),
+      unit: data.unit || 'u',
+      minStock: parseNumber(data.reorderPoint || data.minStock),
+      cost: parseNumber(data.cost),
+      lastUpdated: data.lastUpdated || new Date().toISOString(),
+    } as Consumable;
+  }
 };
 
 export const stockMovementConverter = {
-    toFirestore: (data: StockMovement): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): StockMovement => {
-        const data = snapshot.data()!;
-        return {
-            ...data,
-            id: snapshot.id,
-            quantity: parseNumber(data.quantity),
-        } as StockMovement;
-    }
+  toFirestore: (data: StockMovement): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): StockMovement => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      quantity: parseNumber(data.quantity),
+    } as StockMovement;
+  }
 };
 
 export const taskRequestConverter = {
-    toFirestore: (data: TaskRequest): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => {
-        const data = snapshot.data()!;
-        return { ...data, id: snapshot.id } as TaskRequest
-    }
+  toFirestore: (data: TaskRequest): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TaskRequest => {
+    const data = snapshot.data()!;
+    return { ...data, id: snapshot.id } as TaskRequest
+  }
 };
 
 export const treasuryAccountConverter = {
-    toFirestore: (data: TreasuryAccount): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryAccount => {
-      const data = snapshot.data()!;
-      return {
-        ...data,
-        id: snapshot.id,
-        balance: parseNumber(data.balance)
-      } as TreasuryAccount;
-    }
+  toFirestore: (data: TreasuryAccount): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryAccount => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      balance: parseNumber(data.balance)
+    } as TreasuryAccount;
+  }
 };
 
 export const treasuryTransactionConverter = {
-    toFirestore: (data: TreasuryTransaction): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryTransaction => {
-      const data = snapshot.data()!;
-      return {
-        ...data,
-        id: snapshot.id,
-        amount: parseNumber(data.amount)
-      } as TreasuryTransaction;
-    }
+  toFirestore: (data: TreasuryTransaction): DocumentData => data,
+  fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryTransaction => {
+    const data = snapshot.data()!;
+    return {
+      ...data,
+      id: snapshot.id,
+      amount: parseNumber(data.amount)
+    } as TreasuryTransaction;
+  }
 };
 
 export const clientFollowUpConverter = {

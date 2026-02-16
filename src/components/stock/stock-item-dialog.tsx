@@ -27,7 +27,14 @@ import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { setDoc, collection, doc } from "firebase/firestore";
 
-const categories: StockItem['category'][] = ["Herramienta", "Consumible", "Insumo"];
+const categories: { label: string; value: StockItem['category'] }[] = [
+  { label: "Herramientas Eléctricas", value: "Power Tools" },
+  { label: "Herramientas Manuales", value: "Hand Tools" },
+  { label: "Seguridad", value: "Safety" },
+  { label: "Consumibles", value: "Consumables" },
+  { label: "Maquinaria", value: "Machinery" },
+  { label: "Otros", value: "Other" },
+];
 
 export function StockItemDialog({
   item,
@@ -48,15 +55,22 @@ export function StockItemDialog({
   const [category, setCategory] = useState<StockItem['category'] | undefined>();
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
-  const [reorderPoint, setReorderPoint] = useState('');
+  const [minStock, setMinStock] = useState('');
 
   const resetForm = () => {
     setName(item?.name || '');
     setDescription(item?.description || '');
     setCategory(item?.category);
-    setQuantity(item?.quantity?.toString() || (isEditMode ? '0' : ''));
-    setUnit(item?.unit || '');
-    setReorderPoint(item?.reorderPoint?.toString() || '');
+    // Handle Quantity: Tools might not have quantity property in the same way, but StockItem alias implies it. 
+    // Actually Tool extends InventoryItem but doesn't have quantity. Consumable does.
+    // For Tool, quantity is implicitly 1 per item if tracked individually, or we need to check type.
+    // If it's a Tool, we might hide quantity or set to 1.
+    // However, the dialog seems generic. Let's cast safely.
+    const qty = (item as any).quantity;
+    setQuantity(qty !== undefined ? qty.toString() : (isEditMode ? '0' : ''));
+
+    setUnit((item as any).unit || '');
+    setMinStock(item?.minStock?.toString() || '');
   };
 
   useEffect(() => {
@@ -70,36 +84,47 @@ export function StockItemDialog({
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo conectar a la base de datos.' });
       return;
     }
-    if (!name || !category || !quantity || !unit) {
-      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Nombre, categoría, cantidad y unidad son obligatorios.' });
+    if (!name || !category) {
+      toast({ variant: 'destructive', title: 'Campos Incompletos', description: 'Nombre y categoría son obligatorios.' });
       return;
     }
 
     startTransition(() => {
-      const collectionRef = collection(firestore, 'stockItems');
+      // Decide collection based on type? Or unified?
+      // Previously stockItems. Now maybe inventory_tools or inventory_consumables?
+      // For now, let's Stick to 'inventory_consumables' for Consumables and 'inventory_tools' for Tools?
+      // Or just 'stockItems' if we are using a unified generic view?
+      // The instruction mentions "Update collection path to 'inventory_consumables'" in StockTable.
+      // So we should probably write to 'inventory_consumables' if it's a consumable.
+
+      // Heuristic: If category is 'Consumables', use inventory_consumables. Else inventory_tools?
+      // Or simply allow the user to select Type?
+      // For simplicity in this fix, seeing as StockTable reads from 'inventory_consumables', 
+      // AND the user is likely managing consumables here:
+
+      const targetCollection = category === 'Consumables' ? 'inventory_consumables' : 'inventory_tools';
+
+      const collectionRef = collection(firestore, targetCollection);
       const docRef = isEditMode && item ? doc(collectionRef, item.id) : doc(collectionRef);
-      
-      if (!category) {
-          toast({ variant: 'destructive', title: 'Error Interno', description: 'La categoría no fue seleccionada.' });
-          return;
-      }
-      
-      const itemData: Omit<StockItem, 'reorderPoint' | 'description'> & { reorderPoint?: number, description?: string } = {
+
+      const itemData: any = {
         id: docRef.id,
         name,
         category,
-        quantity: parseInt(quantity, 10) || 0,
-        unit,
+        minStock: parseInt(minStock, 10) || 0,
         lastUpdated: new Date().toISOString(),
+        description,
+        type: category === 'Consumables' ? 'CONSUMABLE' : 'TOOL',
       };
-      
-      if (description) {
-        itemData.description = description;
+
+      if (category === 'Consumables') {
+        itemData.quantity = parseInt(quantity, 10) || 0;
+        itemData.unit = unit || 'u';
+      } else {
+        // Tool specific defaults
+        itemData.status = (item as any)?.status || 'AVAILABLE';
       }
-      if (reorderPoint) {
-        itemData.reorderPoint = parseInt(reorderPoint, 10);
-      }
-      
+
       setDoc(docRef, itemData, { merge: true })
         .then(() => {
           toast({
@@ -109,12 +134,12 @@ export function StockItemDialog({
           setOpen(false);
         })
         .catch((error) => {
-            console.error("Error writing to Firestore:", error);
-            toast({
-                variant: "destructive",
-                title: "Error al guardar",
-                description: "No se pudo guardar el ítem. Es posible que no tengas permisos.",
-            });
+          console.error("Error writing to Firestore:", error);
+          toast({
+            variant: "destructive",
+            title: "Error al guardar",
+            description: "No se pudo guardar el ítem. Es posible que no tengas permisos.",
+          });
         });
     });
   };
@@ -140,36 +165,35 @@ export function StockItemDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Categoría</Label>
             <Select value={category} onValueChange={(v: StockItem['category']) => setCategory(v)}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat: StockItem['category']) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label htmlFor="quantity">Cantidad</Label>
-                <Input id="quantity" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0" />
+              <Label htmlFor="quantity">Cantidad</Label>
+              <Input id="quantity" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="0" />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="unit">Unidad</Label>
-                <Input id="unit" value={unit} onChange={e => setUnit(e.target.value)} placeholder="Ej. unidades, cajas, mts" />
+              <Label htmlFor="unit">Unidad</Label>
+              <Input id="unit" value={unit} onChange={e => setUnit(e.target.value)} placeholder="Ej. unidades, cajas, mts" />
             </div>
           </div>
-           <div className="space-y-2">
-                <Label htmlFor="reorderPoint">Punto de Pedido (Opcional)</Label>
-                <Input id="reorderPoint" type="number" value={reorderPoint} onChange={e => setReorderPoint(e.target.value)} placeholder="Cantidad mínima para reponer" />
-                <p className="text-xs text-muted-foreground">
-                    Cuando la cantidad baje de este número, se generará una alerta.
-                </p>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="minStock">Stock Mínimo</Label>
+            <Input id="minStock" type="number" value={minStock} onChange={e => setMinStock(e.target.value)} placeholder="Cantidad mínima para alerta" />
+            <p className="text-xs text-muted-foreground">
+              Cuando la cantidad baje de este número, se generará una alerta.
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button type="button" onClick={handleSave} disabled={isPending}>

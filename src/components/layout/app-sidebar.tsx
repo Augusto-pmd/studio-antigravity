@@ -60,6 +60,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { useState, useMemo } from "react";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
 import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from "firebase/firestore";
+import { YearNavigator } from "@/components/ui/year-navigator";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -176,6 +177,9 @@ export function AppSidebar() {
       <Sidebar variant="floating" collapsible="icon" className="m-4 ml-4 md:ml-4 h-[calc(100svh-2rem)] rounded-[2rem] border-0 shadow-glass bg-sidebar/70 backdrop-blur-3xl transition-all duration-500 hover:shadow-glass-hover">
         <SidebarHeader className="p-6 pb-2">
           <Logo className="h-auto w-full max-w-[120px] transition-transform duration-300 hover:scale-105" />
+          <div className="mt-4">
+            <YearNavigator />
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>

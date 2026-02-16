@@ -66,18 +66,7 @@ export async function deleteProjectUpdate(updateId: string): Promise<void> {
     await deleteDoc(doc(db, UPDATES_COLLECTION, updateId));
 }
 
-// --- Generic Entities for Stock ---
-export async function getProjects() {
-    const q = query(collection(db, 'projects'), where('status', '==', 'En Ejecución'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
 
-export async function getEmployees() {
-    const q = query(collection(db, 'employees'), where('status', '==', 'Active'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
 
 // --- Generic Entities for Stock ---
 // Note: These should ideally be in a dedicated 'projects.ts' or 'employees.ts' service, 

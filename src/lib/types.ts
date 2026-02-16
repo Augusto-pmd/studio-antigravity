@@ -33,6 +33,13 @@ export interface Project {
   balance: number;
   progress: number;
   description?: string;
+  projectMode?: 'CLIENT' | 'INVESTMENT';
+  investmentData?: {
+    landCost: number;        // Costo del Terreno (USD)
+    totalArea: number;       // Metros Cuadrados Vendibles
+    unitsCount?: number;     // Cantidad de Unidades Funcionales
+    projectedSalePrice: number; // Precio de Venta Total Estimado (USD)
+  };
 }
 
 export interface Expense {
@@ -197,7 +204,7 @@ export interface FundRequest {
   exchangeRate: number;
   status: 'Pendiente' | 'Aprobado' | 'Pagado' | 'Rechazado' | 'Aplazado';
   description?: string;
-  source?: 'MANUAL' | 'IMPORT';
+  source?: 'MANUAL' | 'IMPORT' | 'IMPORT_LEGACY';
 }
 
 export interface PayrollWeek {
@@ -230,7 +237,8 @@ export interface Attendance {
   notes: string;
   projectId?: string | null;
   payrollWeekId: string;
-  source?: 'MANUAL' | 'IMPORT';
+  source?: 'MANUAL' | 'IMPORT' | 'IMPORT_LEGACY';
+  reason?: 'Vacaciones' | 'Enfermedad' | 'Falta Injustificada' | 'Licencia' | 'Otro';
 }
 
 export interface TaskRequest {
@@ -354,30 +362,7 @@ export interface Moratoria {
   status: 'Activa' | 'Finalizada' | 'Incumplida';
 }
 
-export interface StockItem {
-  id: string;
-  name: string;
-  description?: string;
-  category: 'Herramienta' | 'Consumible' | 'Insumo';
-  quantity: number;
-  unit: string;
-  reorderPoint?: number;
-  lastUpdated: string;
-}
 
-export interface StockMovement {
-  id: string;
-  itemId: string;
-  type: 'Ingreso' | 'Egreso';
-  quantity: number;
-  date: string;
-  userId: string; // User who performed the action
-  assigneeId?: string;
-  assigneeName?: string;
-  projectId?: string;
-  projectName?: string;
-  notes?: string;
-}
 
 export interface ContractorCertification {
   id: string;
@@ -394,7 +379,7 @@ export interface ContractorCertification {
   requesterId: string;
   requesterName: string;
   relatedExpenseId?: string;
-  source?: 'MANUAL' | 'IMPORT';
+  source?: 'MANUAL' | 'IMPORT' | 'IMPORT_LEGACY';
 }
 
 export interface ClientFollowUp {
@@ -447,6 +432,8 @@ export interface InventoryItem {
   minStock: number; // Alert threshold
   location?: string; // Shelf/Bin
   image?: string; // URL
+  lastUpdated?: string; // ISO Date
+  description?: string;
 }
 
 export interface Tool extends InventoryItem {
@@ -473,7 +460,9 @@ export interface Consumable extends InventoryItem {
   avgCost?: number; // Weighted Average Cost
 }
 
-export type MovementType = 'CHECK_OUT' | 'CHECK_IN' | 'PURCHASE' | 'ADJUSTMENT' | 'LOSS' | 'BROKEN' | 'REPAIR_START' | 'REPAIR_END';
+export type MovementType = 'CHECK_OUT' | 'CHECK_IN' | 'PURCHASE' | 'ADJUSTMENT' | 'LOSS' | 'BROKEN' | 'REPAIR_START' | 'REPAIR_END' | 'STOLEN';
+
+export type StockItem = Tool | Consumable;
 
 export interface StockMovement {
   id: string;
@@ -496,8 +485,13 @@ export interface StockMovement {
     name: string;
   };
 
+  projectId?: string;
+  projectName?: string;
+
   authorizedBy: string; // User ID
   authorizedByName?: string;
   notes?: string;
   batchId?: string; // To group movements (e.g. multiple items in one checkout)
+  unitCost?: number; // Snapshot of cost at time of movement
+  totalCost?: number; // quantity * unitCost
 }

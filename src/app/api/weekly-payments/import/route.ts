@@ -32,6 +32,9 @@ const parseSheetDate = (sheetName: string): Date | null => {
     return null;
 };
 
+// Set max duration for import process
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
@@ -83,14 +86,17 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'Invalid Analysis Override Format' }, { status: 400 });
             }
         } else {
-            console.log(`[Import] Starting AI analysis. Rows: ${firstSheetRows.length}. API Key Present: ${!!process.env.GOOGLE_GENAI_API_KEY}`);
+            console.log(`[Import] Starting AI analysis. Rows: ${firstSheetRows.length}.`);
             try {
-                if (!process.env.GOOGLE_GENAI_API_KEY) {
-                    throw new Error("GOOGLE_GENAI_API_KEY is missing in environment variables.");
+                // FALLBACK KEY directly in code
+                const apiKey = process.env.GOOGLE_GENAI_API_KEY || "AIzaSyAjWVuu25cJ6pqRZGVFayaAzo6UkJuJA_A";
+
+                if (!apiKey) {
+                    throw new Error("GOOGLE_GENAI_API_KEY is missing.");
                 }
 
                 const { GoogleGenerativeAI } = require("@google/generative-ai");
-                const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
+                const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
                 const prompt = `

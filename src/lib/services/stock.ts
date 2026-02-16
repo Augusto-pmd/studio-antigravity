@@ -116,8 +116,11 @@ export async function registerMovement(movement: Omit<StockMovement, 'id'>) {
                         break;
 
                     case 'LOSS':
+                        updateData.status = 'LOST';
+                        updateData.currentHolder = null;
+                        break;
                     case 'STOLEN':
-                        updateData.status = movement.type; // 'LOSS' or 'STOLEN'
+                        updateData.status = 'STOLEN';
                         updateData.currentHolder = null;
                         break;
                 }
@@ -153,8 +156,24 @@ export async function registerMovement(movement: Omit<StockMovement, 'id'>) {
                 transaction.update(itemRef, { quantity: newQty });
             }
 
-            // 4. Save Movement
-            transaction.set(movementRef, { ...movement, id: movementRef.id });
+            // 4. Calculate Cost
+            let unitCost = 0;
+            if (movement.itemType === 'TOOL') {
+                const tool = itemSnap.data() as Tool;
+                unitCost = tool.purchasePrice || 0;
+                // Note: ideally we use amortized value, but purchasePrice is a good start.
+            } else {
+                const consumable = itemSnap.data() as Consumable;
+                unitCost = consumable.avgCost || 0;
+            }
+
+            // 5. Save Movement
+            transaction.set(movementRef, {
+                ...movement,
+                id: movementRef.id,
+                unitCost,
+                totalCost: unitCost * movement.quantity
+            });
         });
 
         return true;

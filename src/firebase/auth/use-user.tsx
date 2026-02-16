@@ -7,23 +7,23 @@ import type { UserProfile, Role } from '@/lib/types';
 import type { Auth } from 'firebase/auth';
 
 const userProfileConverter = {
-    toFirestore(profile: UserProfile): DocumentData {
-        const { id, ...data } = profile;
-        return data;
-    },
-    fromFirestore(
-        snapshot: DocumentSnapshot,
-        options: SnapshotOptions
-    ): UserProfile {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            role: data.role as Role,
-            fullName: data.fullName,
-            email: data.email,
-            photoURL: data.photoURL,
-        };
-    }
+  toFirestore(profile: UserProfile): DocumentData {
+    const { id, ...data } = profile;
+    return data;
+  },
+  fromFirestore(
+    snapshot: DocumentSnapshot,
+    options: SnapshotOptions
+  ): UserProfile {
+    const data = snapshot.data(options)!;
+    return {
+      id: snapshot.id,
+      role: data.role as Role,
+      fullName: data.fullName,
+      email: data.email,
+      photoURL: data.photoURL,
+    };
+  }
 };
 
 export function useUser(auth: Auth | null, firestore: Firestore | null) {
@@ -39,7 +39,11 @@ export function useUser(auth: Auth | null, firestore: Firestore | null) {
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      setIsLoading(false);
+      if (!user) {
+        setIsLoading(false);
+        setUserProfile(null);
+      }
+      // Don't set loading false here if user exists; wait for profile
     });
 
     return () => unsubscribe();
@@ -47,9 +51,13 @@ export function useUser(auth: Auth | null, firestore: Firestore | null) {
 
   useEffect(() => {
     if (!firestore || !user) {
-      setUserProfile(null);
+      if (!user && !isLoading) return; // Already handled
+      // If we have no user, we are done loading (handled above usually, but safety check)
       return;
     }
+
+    // Set loading true again just in case (though it should be true from initial state if auth detected user)
+    // Actually, if we came from 'no user' to 'user', loading might be false? No, auth state change triggers.
 
     const userDocRef = doc(firestore, `users/${user.uid}`).withConverter(userProfileConverter);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
@@ -58,6 +66,10 @@ export function useUser(auth: Auth | null, firestore: Firestore | null) {
       } else {
         setUserProfile(null);
       }
+      setIsLoading(false); // <--- Set loading false ONLY after profile check
+    }, (error) => {
+      console.error("Error fetching user profile:", error);
+      setIsLoading(false); // Stop loading on error
     });
 
     return () => unsubscribe();

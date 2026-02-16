@@ -32,18 +32,32 @@ export interface ProjectFinancials {
 }
 
 export const FinancialAnalyticsService = {
-    async getProjectFinancials(projectId: string): Promise<ProjectFinancials> {
+    async getProjectFinancials(projectId: string, year?: number): Promise<ProjectFinancials> {
+        const currentYear = new Date().getFullYear();
+        const targetYear = year || currentYear;
+        const startStr = `${targetYear}-01-01`;
+        const endStr = `${targetYear}-12-31`;
+
+        // Helper for currency conversion
+        const getSafeAmount = (item: any, type: string) => {
+            if (item.currency === 'USD') {
+                const rate = item.exchangeRate || 1200;
+                if (!item.exchangeRate) console.warn(`[Financials] Missing exchange rate for ${type} ${item.id}. Using default 1200.`);
+                return item.amount * rate;
+            }
+            return item.amount || 0;
+        };
+
         // 1. Fetch Sales (Income)
-        const salesRef = collection(db, 'sales');
-        const salesq = query(salesRef, where('projectId', '==', projectId));
-        const salesSnap = await getDocs(salesq);
+        const salesRef = collection(db, 'projects', projectId, 'sales');
+        const salesQ = query(salesRef, where('date', '>=', startStr), where('date', '<=', endStr));
+        const salesSnap = await getDocs(salesQ);
 
         let incomeTotal = 0;
         let incomePaid = 0;
 
         salesSnap.forEach(doc => {
             const sale = doc.data() as Sale;
-            // Only count if not cancelled
             if (sale.status !== 'Cancelado') {
                 incomeTotal += sale.totalAmount;
                 if (sale.status === 'Cobrado') {
@@ -52,19 +66,9 @@ export const FinancialAnalyticsService = {
             }
         });
 
-        // Helper for currency conversion
-        const getSafeAmount = (item: any, type: string) => {
-            if (item.currency === 'USD') {
-                const rate = item.exchangeRate || 1200; // Fallback to 1200 if missing (should be historic)
-                if (!item.exchangeRate) console.warn(`[Financials] Missing exchange rate for ${type} ${item.id}. Using default 1200.`);
-                return item.amount * rate;
-            }
-            return item.amount || 0;
-        };
-
         // 2. Fetch Direct Expenses
-        const expensesRef = collection(db, 'expenses');
-        const expensesQ = query(expensesRef, where('projectId', '==', projectId));
+        const expensesRef = collection(db, 'projects', projectId, 'expenses');
+        const expensesQ = query(expensesRef, where('date', '>=', startStr), where('date', '<=', endStr));
         const expensesSnap = await getDocs(expensesQ);
 
         let materialsCost = 0;
@@ -74,61 +78,113 @@ export const FinancialAnalyticsService = {
             const expense = doc.data() as Expense;
             const amount = getSafeAmount(expense, 'Expense');
 
-            // Categorization
+            // User Clarification: Both Fund Requests and Caja Chica Expenses should be imputed.
             if (expense.supplierId) {
-                // We'd need to check supplier type, but for now allow generic bucket
                 materialsCost += amount;
             } else {
                 servicesCost += amount;
             }
         });
 
-        // 3. Fetch Contractor Certifications (Labor)
-        const certsRef = collection(db, 'contractor_certifications');
+        // 2b. Fetch Stock Movements (Project Consumption)
+        const movementsRef = collection(db, 'inventory_movements');
+        const movementsQ = query(
+            movementsRef,
+            where('projectId', '==', projectId),
+            where('type', '==', 'CHECK_OUT'), // Assuming CHECK_OUT is consumption
+            where('date', '>=', startStr),
+            where('date', '<=', endStr)
+        );
+        const movementsSnap = await getDocs(movementsQ);
+
+        let stockCost = 0;
+        movementsSnap.forEach(doc => {
+            const move = doc.data();
+            // We use the recorded cost at the time of movement
+            stockCost += move.totalCost || 0;
+        });
+
+        materialsCost += stockCost;
+
+        // 3a. Fetch Contractor Certifications (External Labor)
+        const certsRef = collection(db, 'contractorCertifications');
         const certsQ = query(
             certsRef,
             where('projectId', '==', projectId),
-            where('status', 'in', ['Aprobado', 'Pagado']) // Only Approved or Paid
+            where('status', 'in', ['Aprobado', 'Pagado']),
+            where('date', '>=', startStr),
+            where('date', '<=', endStr)
         );
         const certsSnap = await getDocs(certsQ);
 
         let laborCost = 0;
         certsSnap.forEach(doc => {
             const cert = doc.data() as ContractorCertification;
-            const amount = getSafeAmount(cert, 'Certification');
-            laborCost += amount;
+            laborCost += getSafeAmount(cert, 'Certification');
         });
 
-        // 4. Fetch Fund Requests (Petty Cash for Project)
-        const fundsRef = collection(db, 'fund_requests');
+        // 3b. Fetch Internal Labor (Employees based on Attendance)
+        // User Request: "hours charged to each work (value comes from salary cost divided by hours)"
+        // Implementation: We sum up daily wages for days present in this project.
+        const attendanceRef = collection(db, 'attendance');
+        const attendanceQ = query(
+            attendanceRef,
+            where('projectId', '==', projectId),
+            where('status', '==', 'presente'),
+            where('date', '>=', startStr),
+            where('date', '<=', endStr)
+        );
+        const attendanceSnap = await getDocs(attendanceQ);
+
+        // Optimisation: Fetch all employees once to get their dailyWage
+        // In a large system, we might want to cache this or fetch only relevant IDs.
+        const employeesRef = collection(db, 'employees');
+        const employeesSnap = await getDocs(employeesRef);
+        const employeeWages: Record<string, number> = {};
+        employeesSnap.forEach(doc => {
+            const emp = doc.data();
+            employeeWages[doc.id] = emp.dailyWage || 0;
+        });
+
+        let internalLaborCost = 0;
+        attendanceSnap.forEach(doc => {
+            const att = doc.data();
+            const wage = employeeWages[att.employeeId] || 0;
+            // Assumption: 1 Attendance Record = 1 Day = Daily Wage
+            // If we tracked hours, we would do: (wage / 8) * hours
+            internalLaborCost += wage;
+        });
+
+        laborCost += internalLaborCost;
+
+        // 4. Fetch Fund Requests
+        const fundsRef = collection(db, 'fundRequests');
         const fundsQ = query(
             fundsRef,
             where('projectId', '==', projectId),
-            where('status', 'in', ['Aprobado', 'Pagado']) // Include Approved too
+            where('status', 'in', ['Aprobado', 'Pagado']),
+            where('date', '>=', startStr),
+            where('date', '<=', endStr)
         );
         const fundsSnap = await getDocs(fundsQ);
 
         fundsSnap.forEach(doc => {
             const fund = doc.data() as FundRequest;
-            const amount = getSafeAmount(fund, 'FundRequest');
-            servicesCost += amount;
+            servicesCost += getSafeAmount(fund, 'FundRequest');
+            // Both Funds and Expenses are added as per user request.
         });
 
-
         const totalDirect = materialsCost + servicesCost + laborCost;
-        const totalIndirect = 0; // TODO: Implement indirect cost logic (prorated)
+        const totalIndirect = 0;
         const totalCost = totalDirect + totalIndirect;
 
         const netMargin = incomeTotal - totalCost;
         const marginPercentage = incomeTotal > 0 ? (netMargin / incomeTotal) * 100 : 0;
         const roi = totalCost > 0 ? (netMargin / totalCost) * 100 : 0;
 
-        // Get Project Name
-        // ... (We accept it as arg or fetch)
-
         return {
             projectId,
-            projectName: "Unknown", // Filler
+            projectName: "Project",
             income: {
                 total: incomeTotal,
                 paid: incomePaid,

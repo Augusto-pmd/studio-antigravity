@@ -197,137 +197,138 @@ export function ImportWizard() {
                                 </div>
                             ))}
                         </div>
+                    </div>
                 )}
 
-                        {/* STEP 1: UPLOAD */}
-                        {step === 1 && moduleId && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
-                                    <Badge variant="outline">{IMPORT_SCHEMAS[moduleId].label}</Badge>
-                                    <span>&rarr; Subir Archivo</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
-                                    onClick={() => document.getElementById('wizard-upload')?.click()}>
-                                    <Upload className="h-10 w-10 text-slate-400 mb-4" />
-                                    <p className="text-sm text-slate-600 font-medium mb-2">
-                                        Clic para seleccionar archivo
-                                    </p>
-                                    <input
-                                        id="wizard-upload"
-                                        type="file"
-                                        accept=".xlsx"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                    />
-                                </div>
-                                <Button variant="ghost" size="sm" onClick={() => setStep(0)}>Volver</Button>
-                            </div>
-                        )}
+                {/* STEP 1: UPLOAD */}
+                {step === 1 && moduleId && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+                            <Badge variant="outline">{IMPORT_SCHEMAS[moduleId].label}</Badge>
+                            <span>&rarr; Subir Archivo</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                            onClick={() => document.getElementById('wizard-upload')?.click()}>
+                            <Upload className="h-10 w-10 text-slate-400 mb-4" />
+                            <p className="text-sm text-slate-600 font-medium mb-2">
+                                Clic para seleccionar archivo
+                            </p>
+                            <input
+                                id="wizard-upload"
+                                type="file"
+                                accept=".xlsx"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setStep(0)}>Volver</Button>
+                    </div>
+                )}
 
-                        {/* STEP 2: LOADING */}
-                        {step === 2 && (
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <Loader2 className="h-12 w-12 animate-spin text-indigo-500 mb-4" />
-                                <h3 className="text-lg font-medium text-slate-700">Analizando Datos...</h3>
-                                <p className="text-slate-500 text-sm max-w-xs text-center mt-2">
-                                    Validando estructura y buscando entidades faltantes.
+                {/* STEP 2: LOADING */}
+                {step === 2 && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="h-12 w-12 animate-spin text-indigo-500 mb-4" />
+                        <h3 className="text-lg font-medium text-slate-700">Analizando Datos...</h3>
+                        <p className="text-slate-500 text-sm max-w-xs text-center mt-2">
+                            Validando estructura y buscando entidades faltantes.
+                        </p>
+                    </div>
+                )}
+
+                {/* STEP 3: PREVIEW & RESOLVE */}
+                {step === 3 && validation && (
+                    <div className="space-y-6">
+                        {/* Validation Summary */}
+                        <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-md border">
+                            <div className={`p-2 rounded-full ${pendingEntitiesCount() > 0 ? 'bg-amber-100' : 'bg-green-100'}`}>
+                                {pendingEntitiesCount() > 0 ? <AlertTriangle className="h-5 w-5 text-amber-600" /> : <CheckCircle className="h-5 w-5 text-green-600" />}
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-slate-900">Resultado del Análisis</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Se detectaron {validation.missingEntities?.projects?.length || 0} obras desconocidas.
                                 </p>
                             </div>
-                        )}
+                        </div>
 
-                        {/* STEP 3: PREVIEW & RESOLVE */}
-                        {step === 3 && validation && (
-                            <div className="space-y-6">
-                                {/* Validation Summary */}
-                                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-md border">
-                                    <div className={`p-2 rounded-full ${pendingEntitiesCount() > 0 ? 'bg-amber-100' : 'bg-green-100'}`}>
-                                        {pendingEntitiesCount() > 0 ? <AlertTriangle className="h-5 w-5 text-amber-600" /> : <CheckCircle className="h-5 w-5 text-green-600" />}
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-slate-900">Resultado del Análisis</h4>
-                                        <p className="text-sm text-slate-600 mt-1">
-                                            Se detectaron {validation.missingEntities?.projects?.length || 0} obras desconocidas.
-                                        </p>
-                                    </div>
+                        {/* Missing Entities Resolution */}
+                        {validation.missingEntities?.projects && validation.missingEntities.projects.length > 0 && (
+                            <div className="border rounded-md overflow-hidden">
+                                <div className="bg-amber-50 px-4 py-2 border-b border-amber-100 flex justify-between items-center">
+                                    <h5 className="text-sm font-semibold text-amber-800">Obras No Registradas</h5>
+                                    <Badge variant="outline" className="bg-white text-amber-800 border-amber-200">
+                                        Requiere Acción
+                                    </Badge>
                                 </div>
-
-                                {/* Missing Entities Resolution */}
-                                {validation.missingEntities?.projects && validation.missingEntities.projects.length > 0 && (
-                                    <div className="border rounded-md overflow-hidden">
-                                        <div className="bg-amber-50 px-4 py-2 border-b border-amber-100 flex justify-between items-center">
-                                            <h5 className="text-sm font-semibold text-amber-800">Obras No Registradas</h5>
-                                            <Badge variant="outline" className="bg-white text-amber-800 border-amber-200">
-                                                Requiere Acción
-                                            </Badge>
-                                        </div>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Nombre en Excel</TableHead>
-                                                    <TableHead>Acción</TableHead>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Nombre en Excel</TableHead>
+                                            <TableHead>Acción</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {validation.missingEntities.projects.map(name => {
+                                            const isResolved = !!resolvedEntities[name];
+                                            return (
+                                                <TableRow key={name} className={isResolved ? "bg-slate-50 opacity-60" : ""}>
+                                                    <TableCell className="font-medium">{name}</TableCell>
+                                                    <TableCell>
+                                                        {isResolved ? (
+                                                            <span className="flex items-center gap-1 text-green-600 text-sm">
+                                                                <CheckCircle className="h-3 w-3" /> Creado
+                                                            </span>
+                                                        ) : (
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-7 text-xs"
+                                                                    onClick={() => createEntity('project', name)}
+                                                                >
+                                                                    Crear "{name}"
+                                                                </Button>
+                                                                {/* Map Feature to be added */}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {validation.missingEntities.projects.map(name => {
-                                                    const isResolved = !!resolvedEntities[name];
-                                                    return (
-                                                        <TableRow key={name} className={isResolved ? "bg-slate-50 opacity-60" : ""}>
-                                                            <TableCell className="font-medium">{name}</TableCell>
-                                                            <TableCell>
-                                                                {isResolved ? (
-                                                                    <span className="flex items-center gap-1 text-green-600 text-sm">
-                                                                        <CheckCircle className="h-3 w-3" /> Creado
-                                                                    </span>
-                                                                ) : (
-                                                                    <div className="flex gap-2">
-                                                                        <Button
-                                                                            size="sm"
-                                                                            variant="outline"
-                                                                            className="h-7 text-xs"
-                                                                            onClick={() => createEntity('project', name)}
-                                                                        >
-                                                                            Crear "{name}"
-                                                                        </Button>
-                                                                        {/* Map Feature to be added */}
-                                                                    </div>
-                                                                )}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between pt-4">
-                                    <Button variant="outline" onClick={reset}>Cancelar</Button>
-                                    <Button
-                                        onClick={runImport}
-                                        disabled={isLoading || pendingEntitiesCount() > 0}
-                                        className={pendingEntitiesCount() > 0 ? "opacity-50 cursor-not-allowed" : ""}
-                                    >
-                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar e Importar"}
-                                    </Button>
-                                </div>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
                             </div>
                         )}
 
-                        {/* STEP 4: SUCCESS */}
-                        {step === 4 && importResult && (
-                            <div className="text-center py-8">
-                                <div className="flex justify-center mb-4">
-                                    <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                                        <CheckCircle className="h-8 w-8 text-green-600" />
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800">¡Importación Exitosa!</h3>
-                                <p className="text-slate-500 mt-2">Los datos se han cargado correctamente.</p>
-                                <Button className="mt-8" onClick={reset}>Volver al Inicio</Button>
-                            </div>
-                        )}
+                        <div className="flex justify-between pt-4">
+                            <Button variant="outline" onClick={reset}>Cancelar</Button>
+                            <Button
+                                onClick={runImport}
+                                disabled={isLoading || pendingEntitiesCount() > 0}
+                                className={pendingEntitiesCount() > 0 ? "opacity-50 cursor-not-allowed" : ""}
+                            >
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar e Importar"}
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
-                    </CardContent>
+                {/* STEP 4: SUCCESS */}
+                {step === 4 && importResult && (
+                    <div className="text-center py-8">
+                        <div className="flex justify-center mb-4">
+                            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800">¡Importación Exitosa!</h3>
+                        <p className="text-slate-500 mt-2">Los datos se han cargado correctamente.</p>
+                        <Button className="mt-8" onClick={reset}>Volver al Inicio</Button>
+                    </div>
+                )}
+
+            </CardContent>
         </Card>
     );
 }

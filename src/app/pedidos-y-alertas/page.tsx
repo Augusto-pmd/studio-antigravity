@@ -25,15 +25,16 @@ export default function PedidosAlertasPage() {
           </p>
         </div>
         <div className="flex gap-2">
-            {isDirector && <ClientFollowUpDialog />}
-            <NewRequestDialog />
+          {isDirector && <ClientFollowUpDialog />}
+          <NewRequestDialog />
         </div>
       </div>
-      
+
       <Tabs defaultValue="pendientes" className="w-full">
-        <TabsList className={cn("grid w-full", isDirector ? "md:grid-cols-3" : "md:grid-cols-2")}>
+        <TabsList className={cn("grid w-full", isDirector ? "md:grid-cols-4" : "md:grid-cols-2")}>
           <TabsTrigger value="pendientes">{permissions.canSupervise ? 'Tareas Pendientes (Todos)' : 'Mis Tareas Pendientes'}</TabsTrigger>
           <TabsTrigger value="creados">{permissions.canSupervise ? 'Historial (Todos)' : 'Pedidos Creados por Mí'}</TabsTrigger>
+          {isDirector && <TabsTrigger value="mis-pedidos">Mis Pedidos</TabsTrigger>}
           {isDirector && <TabsTrigger value="clientes">Seguimiento Clientes</TabsTrigger>}
         </TabsList>
         <TabsContent value="pendientes" className="mt-4">
@@ -43,9 +44,14 @@ export default function PedidosAlertasPage() {
           <CreatedTasksList />
         </TabsContent>
         {isDirector && (
-          <TabsContent value="clientes" className="mt-4">
-            <ClientFollowUpsTable />
-          </TabsContent>
+          <>
+            <TabsContent value="mis-pedidos" className="mt-4">
+              <CreatedTasksList filterByCurrentUser={true} />
+            </TabsContent>
+            <TabsContent value="clientes" className="mt-4">
+              <ClientFollowUpsTable />
+            </TabsContent>
+          </>
         )}
       </Tabs>
     </div>

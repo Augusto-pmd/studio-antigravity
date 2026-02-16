@@ -39,7 +39,8 @@ const stockItemConverter = {
 export function StockTable() {
   const firestore = useFirestore();
   const { permissions } = useUser();
-  const stockQuery = useMemo(() => firestore ? query(collection(firestore, 'stockItems').withConverter(stockItemConverter), orderBy('name', 'asc')) : null, [firestore]);
+  // Changed collection to 'inventory_consumables'
+  const stockQuery = useMemo(() => firestore ? query(collection(firestore, 'inventory_consumables').withConverter(stockItemConverter), orderBy('name', 'asc')) : null, [firestore]);
   const { data: stockItems, isLoading } = useCollection<StockItem>(stockQuery);
 
   const renderSkeleton = () => (
@@ -72,25 +73,31 @@ export function StockTable() {
               <TableRow><TableCell colSpan={permissions.canManageStock ? 5 : 4} className="h-24 text-center text-muted-foreground">No hay ítems en el stock.</TableCell></TableRow>
             )}
             {stockItems?.map((item: StockItem) => {
-              const isLowStock = item.reorderPoint !== undefined && item.quantity <= item.reorderPoint;
+              // Cast to any or check type to access specific fields if StockItem is Union
+              const consumable = item as any;
+              // minStock is in Consumable, reorderPoint was legacy
+              const isLowStock = consumable.minStock !== undefined && consumable.quantity <= consumable.minStock;
+
               return (
                 <TableRow key={item.id} className={cn("hover:bg-primary/5 transition-colors border-b border-white/10 last:border-0", isLowStock && 'bg-red-500/5 hover:bg-red-500/10')}>
                   <TableCell className="pl-6 py-4">
                     <div className="font-semibold text-base text-foreground">{item.name}</div>
-                    {item.description && <div className="text-sm text-muted-foreground">{item.description}</div>}
+                    {/* description missing in new types? Use generic if available */}
+                    {(item as any).description && <div className="text-sm text-muted-foreground">{(item as any).description}</div>}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="rounded-lg bg-secondary/50 border-white/20 text-foreground/80">{item.category}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className={cn("font-mono font-medium", isLowStock ? "text-destructive" : "text-foreground")}>
-                      {item.quantity} {item.unit}
+                      {/* quantity is only on Consumable, but we are querying consumables */}
+                      {consumable.quantity} {consumable.unit}
                     </div>
                     {isLowStock && <Badge variant="destructive" className="mt-1 text-[10px] h-5 px-1.5">Bajo stock</Badge>}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(parseISO(item.lastUpdated), { addSuffix: true, locale: es })}
+                      {item.lastUpdated ? formatDistanceToNow(parseISO(item.lastUpdated), { addSuffix: true, locale: es }) : '-'}
                     </div>
                   </TableCell>
                   {permissions.canManageStock && (
@@ -104,13 +111,13 @@ export function StockTable() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl bg-white/90 dark:bg-card/90 backdrop-blur-xl border-0 shadow-glass">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <StockMovementDialog item={item} movementType="Egreso">
+                          <StockMovementDialog item={consumable} movementType="Egreso">
                             <DropdownMenuItem onSelect={(e: any) => e.preventDefault()} className="rounded-lg focus:bg-primary/10 cursor-pointer">
                               <ArrowUpCircle className="mr-2 h-4 w-4 text-destructive" />
                               <span>Registrar Salida</span>
                             </DropdownMenuItem>
                           </StockMovementDialog>
-                          <StockMovementDialog item={item} movementType="Ingreso">
+                          <StockMovementDialog item={consumable} movementType="Ingreso">
                             <DropdownMenuItem onSelect={(e: any) => e.preventDefault()} className="rounded-lg focus:bg-primary/10 cursor-pointer">
                               <ArrowDownCircle className="mr-2 h-4 w-4 text-green-500" />
                               <span>Registrar Entrada</span>

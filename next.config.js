@@ -30,7 +30,7 @@ const nextConfig = {
     ],
   },
   env: {
-    GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || "AlzaSyAjWVuu25cJ6pqRZGVFayaAzo6UkJuJA_A",
+    GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || "AIzaSyAjWVuu25cJ6pqRZGVFayaAzo6UkJuJA_A",
   },
 };
 
