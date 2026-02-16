@@ -52,7 +52,7 @@ import {
   PieChart,
   BarChart,
   Database,
-  Settings,
+  TrendingUp,
 } from "lucide-react";
 import type { Role, TaskRequest } from "@/lib/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -63,6 +63,7 @@ import { collection, query, where, orderBy, type DocumentData, type QueryDocumen
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/analytics", label: "Análisis Financiero", icon: TrendingUp, adminOnly: true },
   { href: "/obras", label: "Obras", icon: Building2, pañoleroHidden: true },
   { href: "/proveedores", label: "Proveedores", icon: Users, pañoleroHidden: true },
   { href: "/empleados", label: "Empleados", icon: Contact, pañoleroHidden: true },
@@ -128,10 +129,9 @@ const menuItems = [
     icon: Database,
   },
   {
-    href: "/configuracion",
-    label: "Configuración",
-    icon: Settings,
-    adminOnly: true,
+    href: "/documentos",
+    label: "Documentos",
+    icon: FileText,
   },
 ];
 
@@ -193,6 +193,10 @@ export function AppSidebar() {
               }
 
               if (item.href === '/activos' && !permissions.canValidate && !permissions.canSupervise) {
+                return null;
+              }
+
+              if (item.href === '/dashboard/analytics' && role !== 'Dirección') {
                 return null;
               }
 

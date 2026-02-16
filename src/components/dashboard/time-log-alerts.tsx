@@ -10,32 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const techOfficeEmployeeConverter = {
-    toFirestore: (data: TechnicalOfficeEmployee): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TechnicalOfficeEmployee => ({ ...snapshot.data(options), id: snapshot.id } as TechnicalOfficeEmployee)
-};
-
-const timeLogConverter = {
-    toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
-        const data = snapshot.data(options)!;
-        let dateStr: string = '';
-        if (data.date) {
-            // Handle both Firestore Timestamps and string dates
-            if (data.date.toDate && typeof data.date.toDate === 'function') {
-                dateStr = format(data.date.toDate(), 'yyyy-MM-dd');
-            } else if (typeof data.date === 'string') {
-                // Take only the date part if it's a full ISO string
-                dateStr = data.date.split('T')[0];
-            }
-        }
-        return { 
-            ...data, 
-            id: snapshot.id,
-            date: dateStr,
-        } as TimeLog;
-    }
-};
+import { techOfficeEmployeeConverter, timeLogConverter } from '@/lib/converters';
 
 export function TimeLogAlerts() {
     const firestore = useFirestore();
@@ -43,12 +18,12 @@ export function TimeLogAlerts() {
     const [isLoading, setIsLoading] = useState(true);
 
     const activeEmployeesQuery = useMemo(() => (
-        firestore 
-        ? query(
-            collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter), 
-            where('status', '==', 'Activo')
-          ) 
-        : null
+        firestore
+            ? query(
+                collection(firestore, 'technicalOfficeEmployees').withConverter(techOfficeEmployeeConverter),
+                where('status', '==', 'Activo')
+            )
+            : null
     ), [firestore]);
 
     const { data: employees, isLoading: isLoadingEmployees } = useCollection<TechnicalOfficeEmployee>(activeEmployeesQuery);
@@ -72,7 +47,7 @@ export function TimeLogAlerts() {
             where('date', '<=', endDateStr)
         );
     }, [firestore, lastWeekStart, lastWeekEnd]);
-    
+
     const { data: lastWeekLogs, isLoading: isLoadingLogs } = useCollection<TimeLog>(timeLogsQuery);
 
     useEffect(() => {
@@ -104,56 +79,34 @@ export function TimeLogAlerts() {
     if (isLoading) {
         return <Skeleton className="h-48 w-full" />
     }
-    
-    if (defaulters.length === 0) {
-        return (
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                         <CheckCircle className="h-6 w-6 text-green-500" />
-                        <div>
-                            <CardTitle>Carga de Horas Completa</CardTitle>
-                            <CardDescription>
-                                Todo el personal de oficina técnica ha cargado sus horas de la semana anterior.
-                            </CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-            </Card>
-        );
-    }
+
+    if (defaulters.length === 0) return null;
 
     return (
-        <Card className="border-yellow-500/50 bg-yellow-500/5">
-            <CardHeader>
-                <div className="flex items-center gap-3">
-                    <AlertCircle className="h-6 w-6 text-yellow-500" />
-                    <div>
-                        <CardTitle className="text-yellow-600 dark:text-yellow-400">Alerta: Carga de Horas Incompleta</CardTitle>
-                        <CardDescription className="text-yellow-700/80 dark:text-yellow-500/80">
-                            Los siguientes empleados no han completado su planilla de horas de la semana pasada.
-                        </CardDescription>
+        <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-start justify-between">
+                <div className="flex gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 text-yellow-600" />
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-semibold text-yellow-800">
+                            Carga de Horas Incompleta ({defaulters.length})
+                        </h4>
+                        <p className="text-sm text-yellow-700">
+                            Los siguientes empleados no han completado su planilla de la semana pasada:
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {defaulters.map((emp) => (
+                                <div key={emp.id} className="flex items-center gap-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 border border-yellow-200">
+                                    <Avatar className="h-4 w-4">
+                                        <AvatarFallback className="text-[9px]">{emp.fullName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    {emp.fullName}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-3">
-                    {defaulters.map((employee: TechnicalOfficeEmployee) => (
-                        <div key={employee.id} className="flex items-center justify-between rounded-md border border-yellow-500/20 bg-background p-3">
-                            <div className="flex items-center gap-3">
-                                <Avatar>
-                                    {/* The UserProfile is not joined here, so no photo. We'll use a fallback. */}
-                                    <AvatarFallback>{employee.fullName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-medium">{employee.fullName}</p>
-                                    <p className="text-sm text-muted-foreground">{employee.position}</p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { DataImporter } from '@/components/migration/data-importer';
+// import { DataImporter } from '@/components/migration/data-importer';
 import { HistoricalRateBackfill } from '@/components/migration/historical-rate-backfill';
-import { WeeklyPaymentLegacyImporter } from '@/components/migration/weekly-payment-legacy-importer';
+import { ImportWizard } from '@/components/migration/import-wizard';
 
 export default function MigrationPage() {
     return (
@@ -18,19 +18,14 @@ export default function MigrationPage() {
                 <div className="space-y-8">
                     <section>
                         <h3 className="text-lg font-semibold mb-4">Importación Legacy (Excel)</h3>
-                        <WeeklyPaymentLegacyImporter />
-                    </section>
-
-                    <section>
-                        <h3 className="text-lg font-semibold mb-4">Herramientas Avanzadas</h3>
-                        <HistoricalRateBackfill />
+                        <ImportWizard />
                     </section>
                 </div>
 
                 <div className="space-y-8">
                     <section>
-                        <h3 className="text-lg font-semibold mb-4">Asistente de Importación (Copy/Paste)</h3>
-                        <DataImporter />
+                        <h3 className="text-lg font-semibold mb-4">Herramientas Avanzadas</h3>
+                        <HistoricalRateBackfill />
                     </section>
                 </div>
             </div>

@@ -7,3 +7,4 @@ export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore, u
 export { FirebaseClientProvider } from './client-provider';
 export { useCollection } from './firestore/use-collection';
 export { useDoc } from './firestore/use-doc';
+export { app, auth, db } from './client';

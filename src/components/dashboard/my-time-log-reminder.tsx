@@ -1,42 +1,16 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import type { TechnicalOfficeEmployee, TimeLog } from '@/lib/types';
-import { startOfWeek, endOfWeek, subWeeks, format, eachDayOfInterval, addDays, Day } from 'date-fns';
+import { startOfWeek, endOfWeek, subWeeks, format, eachDayOfInterval, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-import { doc, collection, query, where, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import Link from 'next/link';
-
-const techOfficeEmployeeConverter = {
-    toFirestore: (data: any) => data, fromFirestore: (snapshot: any): TechnicalOfficeEmployee => ({ ...snapshot.data(), id: snapshot.id })
-};
-
-const timeLogConverter = {
-    toFirestore: (data: TimeLog): DocumentData => data,
-    fromFirestore: (snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TimeLog => {
-        const data = snapshot.data(options)!;
-        let dateStr: string = '';
-        if (data.date) {
-            // Handle both Firestore Timestamps and string dates
-            if (data.date.toDate && typeof data.date.toDate === 'function') {
-                dateStr = format(data.date.toDate(), 'yyyy-MM-dd');
-            } else if (typeof data.date === 'string') {
-                // Take only the date part if it's a full ISO string
-                dateStr = data.date.split('T')[0];
-            }
-        }
-        return {
-            ...data,
-            id: snapshot.id,
-            date: dateStr,
-        } as TimeLog;
-    }
-};
-
+import { techOfficeEmployeeConverter, timeLogConverter } from '@/lib/converters';
 
 export function MyTimeLogReminder() {
     const { user, firestore } = useUser();
@@ -44,11 +18,11 @@ export function MyTimeLogReminder() {
     const [isClient, setIsClient] = useState(false);
 
     // Get the employee profile for the current user
-    const employeeDocRef = useMemo(() => 
-        user && firestore 
-        ? doc(firestore, 'technicalOfficeEmployees', user.uid).withConverter(techOfficeEmployeeConverter) 
-        : null, 
-    [user, firestore]);
+    const employeeDocRef = useMemo(() =>
+        user && firestore
+            ? doc(firestore, 'technicalOfficeEmployees', user.uid).withConverter(techOfficeEmployeeConverter)
+            : null,
+        [user, firestore]);
     const { data: employee, isLoading: isLoadingEmployee } = useDoc<TechnicalOfficeEmployee>(employeeDocRef);
 
     // Define the week to check (last week)
@@ -57,8 +31,8 @@ export function MyTimeLogReminder() {
         const start = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
         const end = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 });
         const days = eachDayOfInterval({ start, end }).filter((day: Date) => day.getDay() >= 1 && day.getDay() <= 5); // Mon-Fri
-        return { 
-            weekToCheckStart: start, 
+        return {
+            weekToCheckStart: start,
             workDays: days,
         };
     }, []);
@@ -121,26 +95,22 @@ export function MyTimeLogReminder() {
     }
 
     return (
-        <Card className="border-yellow-500/50 bg-yellow-500/5 mb-8">
-            <CardHeader>
-                <div className="flex items-center gap-3">
-                    <AlertCircle className="h-6 w-6 text-yellow-500" />
-                    <div>
-                        <CardTitle className="text-yellow-600 dark:text-yellow-400">Recordatorio: Carga de Horas</CardTitle>
-                        <CardDescription className="text-yellow-700/80 dark:text-yellow-500/80">
-                            Aún no has completado tu planilla de horas de la semana del {format(weekToCheckStart, 'dd/MM/yyyy', { locale: es })}.
-                        </CardDescription>
-                    </div>
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+                <div className="text-sm text-yellow-800">
+                    <span className="font-semibold">Recordatorio:</span> Aún no has completado tu planilla de horas ({format(weekToCheckStart, 'dd/MM', { locale: es })}).
                 </div>
-            </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row justify-end gap-2">
-                <Button asChild variant="ghost">
-                    <Link href="/mis-horas">Cargar ahora</Link>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button asChild variant="link" size="sm" className="h-auto p-0 text-yellow-700 font-semibold mx-2">
+                    <Link href="/mis-horas">Cargar</Link>
                 </Button>
-                <Button variant="outline" onClick={handleSnooze}>
-                    Recordarme en 3 días
+                <div className="h-4 w-px bg-yellow-300 mx-1" />
+                <Button variant="ghost" size="sm" onClick={handleSnooze} className="h-6 text-xs text-yellow-600 px-2 py-0 hover:bg-yellow-100 hover:text-yellow-800">
+                    Posponer
                 </Button>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

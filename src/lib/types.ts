@@ -410,3 +410,94 @@ export interface ClientFollowUp {
   assignedTo: string;
   assignedToName: string;
 }
+
+export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED';
+
+export interface ProjectPhase {
+  id: string; // UUID
+  projectId: string;
+  name: string; // e.g., "Anteproyecto", "Licitación", "Ejecución", "Finalización"
+  order: number;
+  startDate?: string; // ISO Date
+  endDate?: string; // ISO Date
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+}
+
+export interface ProjectUpdate {
+  id: string;
+  projectId: string;
+  phaseId?: string; // Optional link to a specific phase
+  date: string; // ISO Timestamp
+  author: string; // User Name
+  content: string; // Markdown or Text
+  type: 'NOTE' | 'MEETING' | 'DECISION' | 'ISSUE' | 'PROGRESS';
+  attachments?: string[]; // URLs to Drive/Storage
+}
+
+// --- STOCK & PAÑOL ---
+
+export type ItemCategory = 'Power Tools' | 'Hand Tools' | 'Safety' | 'Consumables' | 'Machinery' | 'Other';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: ItemCategory;
+  type: 'TOOL' | 'CONSUMABLE';
+  sku?: string; // Barcode / QR
+  minStock: number; // Alert threshold
+  location?: string; // Shelf/Bin
+  image?: string; // URL
+}
+
+export interface Tool extends InventoryItem {
+  type: 'TOOL';
+  status: 'AVAILABLE' | 'IN_USE' | 'BROKEN' | 'IN_REPAIR' | 'STOLEN' | 'LOST' | 'DISCARDED';
+  currentHolder?: {
+    type: 'EMPLOYEE' | 'PROJECT';
+    id: string;
+    name: string;
+  } | null;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  currency?: 'ARS' | 'USD';
+  lifespanMonths?: number;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+}
+
+export interface Consumable extends InventoryItem {
+  type: 'CONSUMABLE';
+  quantity: number;
+  unit: string; // "units", "meters", "boxes", "kg"
+  avgCost?: number; // Weighted Average Cost
+}
+
+export type MovementType = 'CHECK_OUT' | 'CHECK_IN' | 'PURCHASE' | 'ADJUSTMENT' | 'LOSS' | 'BROKEN' | 'REPAIR_START' | 'REPAIR_END';
+
+export interface StockMovement {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemType: 'TOOL' | 'CONSUMABLE';
+  date: string; // ISO
+  type: MovementType;
+  quantity: number; // 1 for tools usually
+
+  from?: {
+    type: 'WAREHOUSE' | 'PROJECT' | 'EMPLOYEE';
+    id: string;
+    name: string;
+  };
+
+  to?: {
+    type: 'WAREHOUSE' | 'PROJECT' | 'EMPLOYEE';
+    id: string;
+    name: string;
+  };
+
+  authorizedBy: string; // User ID
+  authorizedByName?: string;
+  notes?: string;
+  batchId?: string; // To group movements (e.g. multiple items in one checkout)
+}

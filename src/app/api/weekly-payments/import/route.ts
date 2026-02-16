@@ -60,49 +60,76 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'La primera hoja parece vacía. Por favor sube un archivo con datos.' }, { status: 400 });
         }
 
-        // AI Analysis using Google Generative AI directly (Bypassing Genkit for stability)
-        const { GoogleGenerativeAI } = require("@google/generative-ai");
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY || "");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
-
-        const prompt = `
-        You are an expert data analyst. I have a raw Excel sheet (array of arrays).
-        I need you to identify the structure to import weekly payments.
-
-        Here are the first 15 rows of the sheet:
-        ${JSON.stringify(firstSheetRows.slice(0, 15), null, 2)}
-
-        Tasks:
-        1. Identify which row is the HEADER row (contains 'Nombre', 'Categoria', Project Names, Dates).
-        2. Identify the index of the 'Name' column (Employee/Contractor).
-        3. Identify the index of the 'Category' column.
-        4. Identify columns that look like Projects (Obras) - usually allow monetary input.
-        5. Identify columns that represent DAYS/DATES (e.g. 'Lun 01', '01/01', etc). Convert the header text to ISO Date (YYYY-MM-DD). Assume the current year if missing (2026).
-        6. Identify where the data starts (usually header row + 1).
-
-        Return the result as a JSON object with this schema:
-        {
-            "headerRowIndex": number,
-            "dataStartRowIndex": number,
-            "nameColumnIndex": number,
-            "categoryColumnIndex": number (optional),
-            "projectColumnIndices": number[],
-            "dayColumnIndices": [ { "index": number, "date": "YYYY-MM-DD" } ]
+        // AI Analysis
+        // Move init inside try/catch to handle config errors gracefully
+        interface AnalysisResult {
+            headerRowIndex: number;
+            dataStartRowIndex: number;
+            nameColumnIndex: number;
+            categoryColumnIndex?: number;
+            projectColumnIndices: number[];
+            dayColumnIndices: { index: number; date: string }[];
         }
-        `;
 
-        let analysis;
-        try {
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
-            analysis = JSON.parse(responseText);
-        } catch (e: any) {
-            console.error("AI Analysis Failed:", e);
-            const msg = e.message || e.toString();
-            if (msg.includes("API key") || msg.includes("GOOGLE_GENAI_API_KEY") || msg.includes("FAILED_PRECONDITION")) {
-                return NextResponse.json({ error: 'Error de Configuración: Falta la API Key de Google (GOOGLE_GENAI_API_KEY). Por favor agréguela al archivo .env.local y reinicie el servidor.' }, { status: 500 });
+        let analysis: AnalysisResult;
+
+        const analysisOverride = formData.get('analysisOverride') as string;
+
+        if (analysisOverride) {
+            console.log("[Import] Using Analysis Override provided by client");
+            try {
+                analysis = JSON.parse(analysisOverride);
+            } catch (e) {
+                return NextResponse.json({ error: 'Invalid Analysis Override Format' }, { status: 400 });
             }
-            return NextResponse.json({ error: `Error analizando el Excel con IA: ${msg}` }, { status: 500 });
+        } else {
+            console.log(`[Import] Starting AI analysis. Rows: ${firstSheetRows.length}. API Key Present: ${!!process.env.GOOGLE_GENAI_API_KEY}`);
+            try {
+                if (!process.env.GOOGLE_GENAI_API_KEY) {
+                    throw new Error("GOOGLE_GENAI_API_KEY is missing in environment variables.");
+                }
+
+                const { GoogleGenerativeAI } = require("@google/generative-ai");
+                const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
+                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
+
+                const prompt = `
+                You are an expert data analyst. I have a raw Excel sheet (array of arrays).
+                I need you to identify the structure to import weekly payments.
+
+                Here are the first 15 rows of the sheet:
+                ${JSON.stringify(firstSheetRows.slice(0, 15), null, 2)}
+
+                Tasks:
+                1. Identify which row is the HEADER row (contains 'Nombre', 'Categoria', Project Names, Dates).
+                2. Identify the index of the 'Name' column (Employee/Contractor).
+                3. Identify the index of the 'Category' column.
+                4. Identify columns that look like Projects (Obras) - usually allow monetary input.
+                5. Identify columns that represent DAYS/DATES (e.g. 'Lun 01', '01/01', etc). Convert the header text to ISO Date (YYYY-MM-DD). Assume the current year if missing (2026).
+                6. Identify where the data starts (usually header row + 1).
+
+                Return the result as a JSON object with this schema:
+                {
+                    "headerRowIndex": number,
+                    "dataStartRowIndex": number,
+                    "nameColumnIndex": number,
+                    "categoryColumnIndex": number (optional),
+                    "projectColumnIndices": number[],
+                    "dayColumnIndices": [ { "index": number, "date": "YYYY-MM-DD" } ]
+                }
+                `;
+
+                const result = await model.generateContent(prompt);
+                const responseText = result.response.text();
+                analysis = JSON.parse(responseText) as AnalysisResult;
+            } catch (e: any) {
+                console.error("AI Analysis Failed:", e);
+                const msg = e.message || e.toString();
+                if (msg.includes("API key") || msg.includes("GOOGLE_GENAI_API_KEY") || msg.includes("FAILED_PRECONDITION")) {
+                    return NextResponse.json({ error: 'Configuration Error: Missing Google GenAI API Key. Please notify the administrator.' }, { status: 500 });
+                }
+                return NextResponse.json({ error: `AI Analysis Error: ${msg}` }, { status: 500 });
+            }
         }
 
         const {
@@ -136,7 +163,7 @@ export async function POST(req: NextRequest) {
         // Pre-compute Project IDs (from first sheet headers - assuming consistent structure)
         const projectColumnIdMap = new Map<number, { id: string, name: string }>();
         const headerRow = firstSheetRows[headerRowIndex];
-        projectColumnIndices.forEach(colIdx => {
+        projectColumnIndices.forEach((colIdx: number) => {
             const headerName = headerRow[colIdx]?.toString() || "";
             const pid = projectMap.get(normalize(headerName));
             if (pid) projectColumnIdMap.set(colIdx, { id: pid, name: headerName });
@@ -252,7 +279,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 // --- MONEY ---
-                projectColumnIndices.forEach(colIdx => {
+                projectColumnIndices.forEach((colIdx: number) => {
                     const cellValue = row[colIdx];
                     if (typeof cellValue === 'number' && cellValue > 0) {
                         const projectInfo = projectColumnIdMap.get(colIdx);

@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
+const { loadEnvConfig } = require('@next/env');
+
+const projectDir = process.cwd();
+loadEnvConfig(projectDir);
+
 const nextConfig = {
   output: 'standalone',
   images: {
@@ -23,6 +28,9 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  env: {
+    GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || "AlzaSyAjWVuu25cJ6pqRZGVFayaAzo6UkJuJA_A",
   },
 };
 

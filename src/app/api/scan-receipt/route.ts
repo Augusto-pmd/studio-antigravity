@@ -1,6 +1,5 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const ReceiptSchema = z.object({
@@ -31,14 +30,53 @@ export async function POST(req: NextRequest) {
         const base64Image = buffer.toString('base64');
         const dataUri = `data:${file.type};base64,${base64Image}`;
 
-        const { output } = await ai.generate({
-            model: 'googleai/gemini-1.5-flash',
-            prompt: [
-                { media: { url: dataUri } },
-                { text: 'Analyze this receipt/invoice and extract the following data: Date, Supplier Name, Supplier CUIT (if visible), Total Amount, Currency (ARS or USD), Invoice Number (Point of Sale + Number), and a likely Category. Return as JSON.' }
-            ],
-            output: { schema: ReceiptSchema }
-        });
+
+        const { GoogleGenerativeAI } = require("@google/generative-ai");
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY || "");
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+
+        const prompt = `
+        Analyze this receipt/invoice and extract the following data:
+        - Date (YYYY-MM-DD)
+        - Supplier Name
+        - Supplier CUIT (if visible)
+        - Total Amount (number)
+        - Currency (ARS or USD)
+        - Invoice Number (Point of Sale + Number)
+        - Category (e.g., Materiales, Mano de Obra, Combustible)
+        - Items (array of object with description and amount)
+
+        Return the result as a JSON object matching this schema:
+        {
+            "date": "YYYY-MM-DD",
+            "supplierName": "string",
+            "supplierCuit": "string",
+            "amount": number,
+            "currency": "ARS" | "USD",
+            "invoiceNumber": "string",
+            "category": "string",
+            "items": [ { "description": "string", "amount": number } ]
+        }
+        `;
+
+        const imageParts = [
+            {
+                inlineData: {
+                    data: base64Image,
+                    mimeType: file.type
+                }
+            }
+        ];
+
+        let output;
+        try {
+            const result = await model.generateContent([prompt, ...imageParts]);
+            const responseText = result.response.text();
+            output = JSON.parse(responseText);
+        } catch (e: any) {
+            console.error("AI Analysis Failed:", e);
+            return NextResponse.json({ error: `Error analysing receipt with AI: ${e.message}` }, { status: 500 });
+        }
 
         if (!output) {
             return NextResponse.json({ error: 'Failed to extract data' }, { status: 500 });

@@ -14,11 +14,11 @@ interface FirebaseInstances {
 }
 
 // The initialization function is now local to the provider
+import { app, auth, db } from './client';
+
+// The initialization function is now local to the provider
 function initializeFirebase(): FirebaseInstances {
-  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  const auth = getAuth(app);
-  const firestore = getFirestore(app);
-  return { firebaseApp: app, auth, firestore };
+  return { firebaseApp: app, auth, firestore: db };
 }
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
@@ -30,11 +30,15 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // While initializing, pass nulls. The hooks can handle this.
+  if (!instances) {
+    return null;
+  }
+
   return (
     <FirebaseProvider
-      firebaseApp={instances?.firebaseApp ?? null}
-      auth={instances?.auth ?? null}
-      firestore={instances?.firestore ?? null}
+      firebaseApp={instances.firebaseApp}
+      auth={instances.auth}
+      firestore={instances.firestore}
     >
       {children}
     </FirebaseProvider>

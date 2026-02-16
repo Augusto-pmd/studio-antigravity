@@ -16,11 +16,14 @@ import { ExpensesTable } from '@/components/expenses/expenses-table';
 import { AddExpenseDialog } from '@/components/expenses/add-expense-dialog';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, PlusCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, LayoutDashboard, Route, Receipt, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useProjectExpenses } from '@/hooks/use-project-expenses';
 import { ProjectExpenseSummary } from './project-expense-summary';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProjectRoadmap } from './project-roadmap';
+import { ProjectFeed } from './project-feed';
 
 const formatCurrency = (amount: number, currency: 'ARS' | 'USD') =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -110,7 +113,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     : project.budget - totalCostUSD;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <Button asChild variant="ghost" className="mb-2 -ml-4">
@@ -118,92 +121,151 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
               <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Obras
             </Link>
           </Button>
-          <h1 className="text-3xl font-headline">{project.name}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-headline">{project.name}</h1>
+            <Badge
+              variant="outline"
+              className={cn(
+                'capitalize',
+                project.status === 'En Curso' && 'bg-green-900/40 text-green-300 border-green-700',
+                project.status === 'Pausado' && 'bg-yellow-900/40 text-yellow-300 border-yellow-700',
+                project.status === 'Completado' && 'bg-blue-900/40 text-blue-300 border-blue-700',
+                project.status === 'Cancelado' && 'bg-red-900/40 text-red-300 border-red-700'
+              )}
+            >
+              {project.status}
+            </Badge>
+          </div>
           <p className="text-muted-foreground">
             {project.client} - {project.address}
           </p>
         </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            'w-fit capitalize',
-            project.status === 'En Curso' &&
-            'bg-green-900/40 text-green-300 border-green-700',
-            project.status === 'Pausado' &&
-            'bg-yellow-900/40 text-yellow-300 border-yellow-700',
-            project.status === 'Completado' &&
-            'bg-blue-900/40 text-blue-300 border-blue-700',
-            project.status === 'Cancelado' &&
-            'bg-red-900/40 text-red-300 border-red-700'
-          )}
-        >
-          {project.status}
-        </Badge>
+
+        <div className="hidden md:block">
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Presupuesto</p>
+            <p className="text-xl font-bold">{formatCurrency(project.budget, project.currency)}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Presupuesto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(project.budget, project.currency)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Gasto Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalCostARS, 'ARS')}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {formatCurrency(totalCostUSD, 'USD')}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Saldo Restante
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={cn("text-2xl font-bold", remainingBalance < 0 && "text-red-500")}>
-              {formatCurrency(remainingBalance, project.currency)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="tracking" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsTrigger value="general">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="tracking">
+            <Route className="mr-2 h-4 w-4" />
+            Seguimiento
+          </TabsTrigger>
+          <TabsTrigger value="expenses">
+            <Receipt className="mr-2 h-4 w-4" />
+            Gastos
+          </TabsTrigger>
+        </TabsList>
 
-      <ProjectExpenseSummary
-        expenses={expenses}
-        totalProjectCostARS={totalCostARS}
-        suppliersMap={suppliersMap}
-      />
+        {/* --- GENERAL TAB --- */}
+        <TabsContent value="general" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Presupuesto</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(project.budget, project.currency)}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Gasto Total
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalCostARS, 'ARS')}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {formatCurrency(totalCostUSD, 'USD')}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Saldo Restante
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={cn("text-2xl font-bold", remainingBalance < 0 && "text-red-500")}>
+                  {formatCurrency(remainingBalance, project.currency)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Listado de Gastos</h2>
-        <AddExpenseDialog projectId={projectId}>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Cargar Gasto
-          </Button>
-        </AddExpenseDialog>
-      </div>
+          <ProjectExpenseSummary
+            expenses={expenses}
+            totalProjectCostARS={totalCostARS}
+            suppliersMap={suppliersMap}
+          />
+        </TabsContent>
 
-      <ExpensesTable
-        expenses={expenses}
-        isLoading={isLoading}
-        projectsMap={projectsMap}
-        suppliersMap={suppliersMap}
-        hideProjectColumn={true}
-      />
+        {/* --- TRACKING TAB (Roadmap + Feed) --- */}
+        <TabsContent value="tracking" className="space-y-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+            {/* Left: Roadmap (1 col) */}
+            <Card className="lg:col-span-1 h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5" />
+                  Hoja de Ruta
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto">
+                <ProjectRoadmap projectId={projectId} />
+              </CardContent>
+            </Card>
+
+            {/* Right: Feed (2 cols) */}
+            <Card className="lg:col-span-2 h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5" />
+                  Bitácora
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden p-0">
+                <ProjectFeed projectId={projectId} />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* --- EXPENSES TAB --- */}
+        <TabsContent value="expenses" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Listado de Gastos</h2>
+            <AddExpenseDialog projectId={projectId}>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Cargar Gasto
+              </Button>
+            </AddExpenseDialog>
+          </div>
+
+          <ExpensesTable
+            expenses={expenses}
+            isLoading={isLoading}
+            projectsMap={projectsMap}
+            suppliersMap={suppliersMap}
+            hideProjectColumn={true}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
