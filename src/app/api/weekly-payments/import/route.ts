@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
                             if (pid) projectId = pid;
 
                             // If we have a project or a valid mark
-                            if (projectId) {
+                            if (projectId || (cellValue && cellValue.toString().trim().length > 0)) {
                                 const dateObj = addDays(sheetDate, dayOffset);
                                 const dateStr = format(dateObj, 'yyyy-MM-dd');
 
@@ -267,7 +267,7 @@ export async function POST(req: NextRequest) {
                                         employeeId: matchedEmployee.id,
                                         date: dateStr,
                                         status: 'presente',
-                                        projectId: projectId,
+                                        projectId: projectId || null, // Allow null project (Unassigned)
                                         payrollWeekId: weekId, // Link to correct week ID
                                         source: 'IMPORT'
                                     }
