@@ -86,22 +86,22 @@ export function IncidentsManager({ employeeId }: IncidentsManagerProps) {
                 // 1. Find or Create Payroll Week
                 let weekId = '';
 
+                // Create new week (Monday to Sunday)
+                const monday = startOfWeek(date, { weekStartsOn: 1 });
+                const sunday = endOfWeek(date, { weekStartsOn: 1 });
+                const mondayStr = format(monday, 'yyyy-MM-dd');
+
                 const weeksRef = collection(db, 'payrollWeeks');
                 // Check if week exists containing this date
-                const weekQ = query(weeksRef, where('startDate', '<=', dateStr), where('endDate', '>=', dateStr));
+                const weekQ = query(weeksRef, where('startDate', '==', mondayStr), limit(1));
                 const weekSnap = await getDocs(weekQ);
 
                 if (!weekSnap.empty) {
                     weekId = weekSnap.docs[0].id;
                 } else {
-                    // Create new week (Monday to Sunday)
-                    // date-fns startOfWeek defaults to Sunday. We want Monday.
-                    const monday = startOfWeek(date, { weekStartsOn: 1 });
-                    const sunday = endOfWeek(date, { weekStartsOn: 1 });
-
                     const newWeek: PayrollWeek = {
                         id: '', // firestore auto-id
-                        startDate: format(monday, 'yyyy-MM-dd'),
+                        startDate: mondayStr,
                         endDate: format(sunday, 'yyyy-MM-dd'),
                     };
 
@@ -121,7 +121,6 @@ export function IncidentsManager({ employeeId }: IncidentsManagerProps) {
                 if (type === 'LATE') {
                     attendanceData.status = 'presente';
                     attendanceData.lateHours = parseFloat(hours);
-                    attendanceData.reason = undefined;
                 } else {
                     attendanceData.status = 'ausente';
                     attendanceData.lateHours = 0;
