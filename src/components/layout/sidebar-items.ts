@@ -1,13 +1,13 @@
 import {
     LayoutDashboard,
-    Briefcase,
     Receipt,
     Users,
     HardHat,
     Wallet,
     Settings,
-    FileText,
-    Database
+    Database,
+    UserCog,
+    ClipboardList
 } from "lucide-react";
 
 export const SIDEBAR_ITEMS = [
@@ -39,6 +39,18 @@ export const SIDEBAR_ITEMS = [
         title: "Personal",
         href: "/personal",
         icon: Users,
+        variant: "ghost"
+    },
+    {
+        title: "Recursos Humanos",
+        href: "/recursos-humanos",
+        icon: ClipboardList,
+        variant: "ghost"
+    },
+    {
+        title: "Usuarios",
+        href: "/usuarios",
+        icon: UserCog,
         variant: "ghost"
     },
     {
