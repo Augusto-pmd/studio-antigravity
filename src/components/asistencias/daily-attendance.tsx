@@ -133,8 +133,8 @@ export function DailyAttendance({ currentWeek, isLoadingWeek }: { currentWeek?: 
 
   const formattedDate = useMemo(() => selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, [selectedDate]);
 
-  const startOfDay = selectedDate ? new Date(selectedDate.setHours(0, 0, 0, 0)) : null;
-  const endOfDay = selectedDate ? new Date(selectedDate.setHours(23, 59, 59, 999)) : null;
+  // Note: startOfDay/endOfDay were removed — they mutated selectedDate via .setHours()
+  // and were never actually used. The query uses formattedDate (string) instead.
   const attendanceForDayQuery = useMemo(
     () => (firestore && formattedDate ? query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('date', '==', formattedDate)) : null),
     [firestore, formattedDate]

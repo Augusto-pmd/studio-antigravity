@@ -163,7 +163,7 @@ export const ImportLegacyService = {
                                 continue;
                             }
 
-                            const attendanceRef = doc(collection(db, 'attendance'));
+                            const attendanceRef = doc(collection(db, 'attendances'));
                             const attendanceData: Attendance = {
                                 id: attendanceRef.id,
                                 employeeId: employee.id,
@@ -349,7 +349,7 @@ export const ImportLegacyService = {
 
     async clearPreviousImport(weekId: string) {
         // Attendance
-        const attQ = query(collection(db, 'attendance'), where('payrollWeekId', '==', weekId), where('source', '==', 'IMPORT_LEGACY'));
+        const attQ = query(collection(db, 'attendances'), where('payrollWeekId', '==', weekId), where('source', '==', 'IMPORT_LEGACY'));
         const attSnap = await getDocs(attQ);
         const batch = writeBatch(db);
         attSnap.docs.forEach(d => batch.delete(d.ref));

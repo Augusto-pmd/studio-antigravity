@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useUser, useFirestore } from '@/firebase';
@@ -9,6 +9,7 @@ import { Logo } from '@/components/icons/logo';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -59,6 +61,7 @@ export default function LoginPage() {
     }
 
     try {
+      setIsSigningIn(true);
       const result = await signInWithPopup(auth, provider);
       const authUser = result.user;
 
@@ -67,7 +70,6 @@ export default function LoginPage() {
       const isDirector = authUser.email === 'info@pmdarquitectura.com';
 
       if (!userDoc.exists()) {
-        // This is a new user, create their profile document
         const newUserProfile: UserProfile = {
           id: authUser.uid,
           email: authUser.email!,
@@ -81,7 +83,6 @@ export default function LoginPage() {
           description: `Se ha creado tu perfil como ${newUserProfile.role}.`,
         });
       } else {
-        // Existing user. Ensure profile info is up-to-date and enforce Director role.
         const updates: Partial<UserProfile> = {
           fullName: authUser.displayName!,
           photoURL: authUser.photoURL || undefined,
@@ -94,7 +95,6 @@ export default function LoginPage() {
 
         await setDoc(userDocRef, updates, { merge: true });
 
-        // Only show toast if the role was incorrect and has now been fixed.
         if (isDirector && userDoc.data()?.role !== 'Dirección') {
           toast({
             title: "Rol de Director Verificado",
@@ -111,70 +111,97 @@ export default function LoginPage() {
         title: "Error al iniciar sesión",
         description: error.message || "Ocurrió un error inesperado.",
       });
+      setIsSigningIn(false);
     }
   };
-
 
   if (isUserLoading || user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-black">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <Logo className="h-16 w-16 text-white opacity-50" />
-          <p className="text-muted-foreground text-sm">Cargando...</p>
+        <div className="flex flex-col items-center gap-4 animate-pulse">
+          <div className="relative">
+            <div className="absolute inset-0 blur-xl bg-blue-500/30 rounded-full"></div>
+            <Logo className="h-16 w-16 text-white relative z-10" />
+          </div>
+          <p className="text-blue-400/80 text-sm font-medium tracking-wider uppercase">Iniciando Sistema...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute -left-1/4 -top-1/4 h-1/2 w-1/2 rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute -right-1/4 -bottom-1/4 h-1/2 w-1/2 rounded-full bg-blue-600/20 blur-[120px]" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-white/5 blur-[100px]" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+    <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black text-white">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Deep Space Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-[#0a0f1e] to-slate-950" />
+
+        {/* Animated Orbs */}
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-600/20 blur-[120px] animate-pulse duration-[4000ms]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-600/10 blur-[120px] animate-pulse duration-[7000ms]" />
+
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] opacity-30" />
       </div>
 
-      <div className="z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-4">
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-8 py-10 shadow-2xl backdrop-blur-xl sm:px-10">
+      {/* Main Content Card */}
+      <div className="relative z-10 w-full max-w-md px-6 animate-in zoom-in-95 fade-in duration-700 slide-in-from-bottom-8">
+        <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-2xl transition-all hover:border-white/20 hover:bg-white/10">
 
-          {/* Decorative border gradient */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50" />
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50" />
+          {/* Shine Effect */}
+          <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent z-0 pointer-events-none" />
 
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-8 rounded-2xl bg-white/10 p-4 shadow-inner ring-1 ring-white/20">
-              <Logo className="h-12 w-12 text-white" />
+          {/* Header */}
+          <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="mb-8 relative">
+              <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500 to-cyan-500 rounded-full blur-xl opacity-40 animate-pulse" />
+              <div className="relative rounded-2xl bg-gradient-to-b from-white/10 to-white/5 p-4 ring-1 ring-white/20 shadow-lg">
+                <Logo className="h-14 w-14 text-white drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+              </div>
             </div>
 
-            <h1 className="mb-2 text-3xl font-bold tracking-tight text-white drop-shadow-sm">
-              PMD Manager
+            <h1 className="mb-2 text-4xl font-bold tracking-tight text-white drop-shadow-md">
+              PMD <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Manager</span>
             </h1>
-            <p className="mb-8 text-sm text-zinc-400">
-              Plataforma de Gestión de Obras
+            <p className="mb-10 text-sm text-slate-400 font-medium tracking-wide">
+              GESTIÓN DE OBRAS DE PRÓXIMA GENERACIÓN
             </p>
 
+            {/* Login Button */}
             <Button
               onClick={handleSignIn}
-              className="group relative w-full overflow-hidden rounded-xl bg-white text-black hover:bg-zinc-200 h-12 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-              size="lg"
+              disabled={isSigningIn}
+              className="group relative w-full overflow-hidden rounded-xl bg-white text-slate-900 hover:bg-blue-50 h-14 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-[1.02] active:scale-[0.98]"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-              <GoogleIcon className="mr-2 h-5 w-5" />
-              <span className="font-semibold">Continuar con Google</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-200/50 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+
+              {isSigningIn ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin text-blue-600" />
+              ) : (
+                <GoogleIcon className="mr-3 h-6 w-6 transition-transform group-hover:scale-110" />
+              )}
+
+              <span className="font-bold text-lg">
+                {isSigningIn ? 'Iniciando sesión...' : 'Continuar con Google'}
+              </span>
             </Button>
 
-            <div className="mt-8 flex items-center justify-center space-x-2 text-xs text-zinc-500">
-              <span>Seguro & Encriptado</span>
-              <span className="h-1 w-1 rounded-full bg-zinc-600" />
-              <span>Acceso Corporativo</span>
+            {/* Footer / Badges */}
+            <div className="mt-10 flex items-center justify-center gap-4 text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.8)] animate-pulse" />
+                Seguro
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.8)]" />
+                Corporativo
+              </div>
             </div>
           </div>
         </div>
 
-        <p className="mt-8 text-center text-xs text-zinc-600">
-          &copy; 2024 PMD Arquitectura. Todos los derechos reservados.
+        <p className="mt-8 text-center text-xs text-slate-600 font-medium">
+          &copy; 2026 PMD Arquitectura. Sistema Integral v2.0
         </p>
       </div>
     </main>

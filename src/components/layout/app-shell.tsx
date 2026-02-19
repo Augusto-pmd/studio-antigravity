@@ -4,7 +4,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
-import { SidebarInset } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { type ReactNode, useEffect } from 'react';
 import { useUser } from '@/firebase';
 
@@ -39,7 +39,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   // If we have a user, show the app shell
   return (
-    <>
+    <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <AppHeader />
@@ -47,6 +47,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </SidebarInset>
-    </>
+    </SidebarProvider>
   );
 }

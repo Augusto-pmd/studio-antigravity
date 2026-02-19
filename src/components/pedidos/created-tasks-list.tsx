@@ -7,7 +7,7 @@ import { collection, query, where, orderBy, type DocumentData, type QueryDocumen
 import type { TaskRequest } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { format, parseISO, formatDistanceToNow, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -61,6 +61,18 @@ export function CreatedTasksList({ filterByCurrentUser = false }: { filterByCurr
     ))
   );
 
+  const safeFormatDate = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    const d = parseISO(dateStr);
+    return isValid(d) ? format(d, 'dd/MM/yyyy') : 'N/A';
+  };
+
+  const safeDistanceToNow = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = parseISO(dateStr);
+    return isValid(d) ? formatDistanceToNow(d, { addSuffix: true, locale: es }) : '';
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -94,16 +106,16 @@ export function CreatedTasksList({ filterByCurrentUser = false }: { filterByCurr
                     <p><span className="font-medium text-foreground">De:</span> {task.requesterName}</p>
                     <p><span className="font-medium text-foreground">Para:</span> {task.assigneeName}</p>
                     <div className="text-xs pt-1 sm:hidden">
-                      {formatDistanceToNow(parseISO(task.createdAt), { addSuffix: true, locale: es })}
+                      {safeDistanceToNow(task.createdAt)}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{task.requesterName}</TableCell>
                 <TableCell className="hidden md:table-cell">{task.assigneeName}</TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <div className="text-sm">{format(parseISO(task.createdAt), 'dd/MM/yyyy')}</div>
+                  <div className="text-sm">{safeFormatDate(task.createdAt)}</div>
                   <div className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(parseISO(task.createdAt), { addSuffix: true, locale: es })}
+                    {safeDistanceToNow(task.createdAt)}
                   </div>
                 </TableCell>
                 <TableCell>

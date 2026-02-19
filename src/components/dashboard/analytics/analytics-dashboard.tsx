@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FinancialAnalyticsService, ProjectFinancials } from '@/services/financial-analytics';
@@ -14,64 +14,86 @@ import { useCollection } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Project } from '@/lib/types';
-
 import { projectConverter } from '@/lib/converters';
-
-// ... imports
 import { useYear } from '@/lib/contexts/year-context';
 
 export function AnalyticsDashboard() {
     const [financials, setFinancials] = useState<ProjectFinancials[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { selectedYear } = useYear(); // Get global year
+    const { selectedYear } = useYear();
 
-    // Fetch projects first
-    const { data: projects } = useCollection<Project>(
-        query(collection(db, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso'))
+    // Stable query — created once since db/converter never change
+    const projectsQuery = useMemo(
+        () => query(collection(db, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso')),
+        []
     );
 
-    // Verify if we already have data to prevent flickering
-    const [lastProjectCount, setLastProjectCount] = useState(0);
-    // Track last fetched year to force refresh on change
-    const [lastFetchedYear, setLastFetchedYear] = useState<number | null>(null);
+    const { data: projects } = useCollection<Project>(projectsQuery);
+
+    // Stable string key of project IDs — only changes when the list actually changes
+    const projectIdsKey = useMemo(
+        () => (projects ? projects.map(p => p.id).sort().join(',') : '__loading__'),
+        [projects]
+    );
+
+    // Track last fetched config via ref so mutations don't cause re-renders
+    const lastFetchedRef = useRef<{ year: number | null; projectIds: string }>({
+        year: null,
+        projectIds: '__loading__',
+    });
 
     useEffect(() => {
-        if (!projects || projects.length === 0) {
+        // Projects still being fetched from Firestore — wait
+        if (projectIdsKey === '__loading__') return;
+
+        // No projects found — nothing to show
+        if (projectIdsKey === '') {
+            setFinancials([]);
             setIsLoading(false);
             return;
         }
 
-        // Re-fetch if project count changes OR year changes
-        if (projects.length === lastProjectCount && financials.length === projects.length && lastFetchedYear === selectedYear) {
+        // Already fetched for this exact year + project list — skip
+        if (
+            lastFetchedRef.current.year === selectedYear &&
+            lastFetchedRef.current.projectIds === projectIdsKey
+        ) {
             return;
         }
 
         const fetchData = async () => {
             setIsLoading(true);
-
             try {
                 const results = await Promise.all(
-                    projects.map(async (project) => {
-                        // Pass selectedYear to service
+                    // projects is guaranteed non-null/non-empty here
+                    projects!.map(async (project) => {
                         const data = await FinancialAnalyticsService.getProjectFinancials(project.id, selectedYear);
                         return { ...data, projectName: project.name };
                     })
                 );
                 setFinancials(results);
-                setLastProjectCount(projects.length);
-                setLastFetchedYear(selectedYear);
+                // Save config to ref — does NOT trigger a re-render
+                lastFetchedRef.current = { year: selectedYear, projectIds: projectIdsKey };
             } catch (error) {
-                console.error("Failed to fetch financials:", error);
+                console.error('Failed to fetch financials:', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchData();
-    }, [projects, selectedYear]); // Add selectedYear dependency
+    }, [projectIdsKey, selectedYear, projects]);
 
     if (isLoading) {
         return <div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+
+    if (financials.length === 0) {
+        return (
+            <div className="flex h-96 items-center justify-center text-muted-foreground">
+                No se encontraron proyectos en curso con datos financieros.
+            </div>
+        );
     }
 
     const totalIncome = financials.reduce((acc, curr) => acc + curr.income.total, 0);

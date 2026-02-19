@@ -6,10 +6,12 @@ import { techOfficeEmployeeConverter } from '@/lib/converters';
 import { EmployeeProfileHeader } from '@/components/recursos-humanos/employee-profile-header';
 import { SalaryHistoryList } from '@/components/recursos-humanos/salary-history-list';
 import { AttendanceStats } from '@/components/recursos-humanos/attendance-stats';
+import { IncidentsManager } from '@/components/recursos-humanos/incidents-manager';
+import { PerformanceEvaluation } from '@/components/recursos-humanos/performance-evaluation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, BarChart2, BookOpen, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { TechnicalOfficeEmployee } from '@/lib/types';
@@ -48,14 +50,37 @@ export default function LegajoPage({ params }: { params: { id: string } }) {
             <EmployeeProfileHeader employee={employee} />
 
             <Tabs defaultValue="stats" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                    <TabsTrigger value="stats">Estadísticas</TabsTrigger>
-                    <TabsTrigger value="history">Historial</TabsTrigger>
-                    <TabsTrigger value="incidents">Incidencias</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 lg:w-[560px]">
+                    <TabsTrigger value="stats" className="flex items-center gap-1.5">
+                        <BarChart2 className="h-4 w-4" />
+                        Estadísticas
+                    </TabsTrigger>
+                    <TabsTrigger value="incidents" className="flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4" />
+                        Incidencias
+                    </TabsTrigger>
+                    <TabsTrigger value="evaluation" className="flex items-center gap-1.5">
+                        <TrendingUp className="h-4 w-4" />
+                        Evaluación
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="flex items-center gap-1.5">
+                        <BookOpen className="h-4 w-4" />
+                        Historial
+                    </TabsTrigger>
                 </TabsList>
+
                 <TabsContent value="stats" className="mt-6">
                     <AttendanceStats employeeId={employeeId} />
                 </TabsContent>
+
+                <TabsContent value="incidents" className="mt-6">
+                    <IncidentsManager employeeId={employeeId} />
+                </TabsContent>
+
+                <TabsContent value="evaluation" className="mt-6">
+                    <PerformanceEvaluation employeeId={employeeId} employeeName={employee.fullName} />
+                </TabsContent>
+
                 <TabsContent value="history" className="mt-6">
                     <Card>
                         <CardHeader>
@@ -63,16 +88,6 @@ export default function LegajoPage({ params }: { params: { id: string } }) {
                         </CardHeader>
                         <CardContent>
                             <SalaryHistoryList employeeId={employeeId} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="incidents" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Incidencias y Ausencias</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">Próximamente: Detalle de llegadas tarde y faltas.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>

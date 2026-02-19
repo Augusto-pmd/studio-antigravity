@@ -380,7 +380,7 @@ export const stockItemConverter = {
       quantity: parseNumber(data.quantity),
       unit: data.unit || 'u',
       minStock: parseNumber(data.reorderPoint || data.minStock),
-      cost: parseNumber(data.cost),
+      avgCost: parseNumber(data.avgCost || data.cost), // fix: campo correcto es avgCost
       lastUpdated: data.lastUpdated || new Date().toISOString(),
     } as Consumable;
   }

@@ -44,7 +44,7 @@ export default function ResumenSemanalPage() {
     const { firestore, permissions } = useUser();
     const isAdmin = permissions.canSupervise;
     const { toast } = useToast();
-    
+
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [currentWeek, setCurrentWeek] = useState<PayrollWeek | null>(null);
     const [isLoadingWeek, setIsLoadingWeek] = useState(true);
@@ -59,7 +59,7 @@ export default function ResumenSemanalPage() {
             setIsLoadingWeek(true);
             const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
             const weekStartDateString = format(weekStart, 'yyyy-MM-dd');
-            
+
             const q = query(collection(firestore, 'payrollWeeks'), where('startDate', '==', weekStartDateString), limit(1));
 
             try {
@@ -91,7 +91,7 @@ export default function ResumenSemanalPage() {
                 setIsLoadingWeek(false);
             }
         };
-        
+
         findOrCreateWeek();
     }, [selectedDate, firestore, isAdmin, toast]);
 
@@ -101,7 +101,7 @@ export default function ResumenSemanalPage() {
         return query(collection(firestore, 'attendances').withConverter(attendanceConverter), where('payrollWeekId', '==', currentWeek.id));
     }, [currentWeek, firestore]);
     const { data: attendances, isLoading: l1 } = useCollection(attendancesQuery);
-    
+
     const fundRequestsQuery = useMemo(() => firestore ? query(
         collection(firestore, 'fundRequests').withConverter(fundRequestConverter),
         where('status', 'in', ['Pendiente', 'Aprobado', 'Pagado'])
@@ -112,7 +112,7 @@ export default function ResumenSemanalPage() {
         if (!allFundRequests || !currentWeek) return [];
         const weekStart = parseISO(currentWeek.startDate);
         const weekEnd = parseISO(currentWeek.endDate);
-        weekEnd.setHours(23, 59, 59, 999); 
+        weekEnd.setHours(23, 59, 59, 999);
 
         return allFundRequests.filter((req: FundRequest) => {
             if (!req.date) return false;
@@ -137,7 +137,7 @@ export default function ResumenSemanalPage() {
 
     const projectsQuery = useMemo(() => firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null, [firestore]);
     const { data: projects, isLoading: l6 } = useCollection(projectsQuery);
-    
+
     const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
     const { data: wageHistories, isLoading: l7 } = useCollection(wageHistoriesQuery);
 
@@ -148,15 +148,15 @@ export default function ResumenSemanalPage() {
         if (!wageHistories) {
             return employee?.dailyWage || 0;
         }
-    
+
         const histories = wageHistories
             .filter(h => (h as any).employeeId === employeeId && new Date(h.effectiveDate) <= new Date(date))
             .sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
-    
+
         if (histories.length > 0) {
             return histories[0].amount;
         }
-        
+
         return employee?.dailyWage || 0;
     }, [wageHistories, employees]);
 
@@ -175,7 +175,7 @@ export default function ResumenSemanalPage() {
                 setIsCalculating(false);
                 return;
             }
-            
+
             const projectMap = new Map<string, { id: string, name: string, personal: number, contratistas: number, solicitudes: number }>();
             projects.forEach((p: Project) => {
                 if (p.id && p.name) projectMap.set(p.id, { id: p.id, name: p.name, personal: 0, contratistas: 0, solicitudes: 0 });
@@ -186,21 +186,27 @@ export default function ResumenSemanalPage() {
             const totalPersonal = (attendances || []).reduce((sum, att) => {
                 if (att.status === 'presente') {
                     const dailyGross = getWageForDate(att.employeeId, att.date);
-                    
+
                     if (att.projectId) {
                         const projectData = projectMap.get(att.projectId);
                         if (projectData) {
-                           projectData.personal += dailyGross;
+                            projectData.personal += dailyGross;
                         }
                     }
                     return sum + dailyGross;
                 }
                 return sum;
             }, 0);
-            
+
             // CONTRATISTAS
+            // Si la cert es USD, convertir usando el tipo de cambio de la semana.
+            // Si no hay tipo de cambio semanal, usar el exchangeRate propio del registro.
+            // Si tampoco hay, mostrar el valor en ARS directamente (mejor que mostrar 0).
             const totalContratistas = (certifications || []).reduce((sum, cert) => {
-                const amount = cert.currency === 'USD' ? cert.amount * (weeklyRate || 0) : cert.amount;
+                let amount = cert.amount;
+                if (cert.currency === 'USD') {
+                    amount = cert.amount * (weeklyRate || 1);
+                }
                 if (cert.projectId) {
                     const projectData = projectMap.get(cert.projectId);
                     if (projectData) {
@@ -209,10 +215,14 @@ export default function ResumenSemanalPage() {
                 }
                 return sum + amount;
             }, 0);
-            
+
             // SOLICITUDES
             const totalSolicitudes = (fundRequests || []).reduce((sum, req) => {
-                const amount = req.currency === 'USD' ? req.amount * (weeklyRate || 0) : req.amount;
+                let amount = req.amount;
+                if (req.currency === 'USD') {
+                    const rate = weeklyRate || req.exchangeRate || 1;
+                    amount = req.amount * rate;
+                }
                 if (req.projectId) {
                     const projectData = projectMap.get(req.projectId);
                     if (projectData) {
@@ -224,7 +234,7 @@ export default function ResumenSemanalPage() {
 
             const grandTotal = totalPersonal + totalContratistas + totalSolicitudes;
             const breakdown = Array.from(projectMap.values()).filter((p: any) => p.personal || p.contratistas || p.solicitudes);
-            
+
             const finalSummary = {
                 totalPersonal,
                 totalContratistas,
@@ -275,24 +285,24 @@ export default function ResumenSemanalPage() {
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
-                            variant={'outline'}
-                            className={cn('w-full justify-start text-left font-normal text-lg', !selectedDate && 'text-muted-foreground')}
+                                variant={'outline'}
+                                className={cn('w-full justify-start text-left font-normal text-lg', !selectedDate && 'text-muted-foreground')}
                             >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {currentWeek ? (
-                                <span>{format(parseISO(currentWeek.startDate), 'dd/MM/yy', {locale: es})} al {format(parseISO(currentWeek.endDate), 'dd/MM/yy', {locale: es})}</span>
-                            ) : (
-                                <span>Seleccione una fecha</span>
-                            )}
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {currentWeek ? (
+                                    <span>{format(parseISO(currentWeek.startDate), 'dd/MM/yy', { locale: es })} al {format(parseISO(currentWeek.endDate), 'dd/MM/yy', { locale: es })}</span>
+                                ) : (
+                                    <span>Seleccione una fecha</span>
+                                )}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
                             <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={(d: any) => d && setSelectedDate(d)}
-                            initialFocus
-                            locale={es}
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(d: any) => d && setSelectedDate(d)}
+                                initialFocus
+                                locale={es}
                             />
                         </PopoverContent>
                     </Popover>
@@ -300,7 +310,7 @@ export default function ResumenSemanalPage() {
             </Card>
 
             {isCalculating || isLoadingWeek ? (
-                 <div className="space-y-6">
+                <div className="space-y-6">
                     <Skeleton className="h-24 w-full" />
                     <div className="grid gap-4 md:grid-cols-3">
                         <Skeleton className="h-28 w-full" />
@@ -319,7 +329,7 @@ export default function ResumenSemanalPage() {
                             <p className="text-4xl font-bold">{formatCurrency(summary?.grandTotal ?? 0)}</p>
                         </CardContent>
                     </Card>
-                    
+
                     <div className="grid gap-4 md:grid-cols-3">
                         {summaryCards.map((card, index) => (
                             <Card key={index}>

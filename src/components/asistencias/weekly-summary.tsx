@@ -53,10 +53,10 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     //    So Net = Wages - 1000.
     //    The "Total Advances" in the summary usually refers to "Deductions for Advances".
     const advancesQuery = useMemo(
-        () => firestore ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter)) : null,
-        [firestore]
+        () => firestore && currentWeek ? query(collection(firestore, 'cashAdvances').withConverter(cashAdvanceConverter), where('payrollWeekId', '==', currentWeek.id)) : null,
+        [firestore, currentWeek]
     );
-    const { data: allAdvances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
+    const { data: weekAdvances, isLoading: isLoadingAdvances } = useCollection<CashAdvance>(advancesQuery);
 
     const wageHistoriesQuery = useMemo(() => (firestore && permissions.canSupervise ? collectionGroup(firestore, 'dailyWageHistory').withConverter(dailyWageHistoryConverter) : null), [firestore, permissions.canSupervise]);
     const { data: wageHistories, isLoading: isLoadingWageHistories } = useCollection(wageHistoriesQuery);
@@ -86,7 +86,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
     const weeklySummaryData = useMemo(() => {
         const defaultResult = { grossWages: 0, totalAdvances: 0, totalLateHoursDeduction: 0, netPay: 0 };
 
-        if (isLoadingSummaryData || !weekAttendances || !employees || !allAdvances) {
+        if (isLoadingSummaryData || !weekAttendances || !employees || !weekAdvances) {
             return defaultResult;
         }
 
@@ -107,69 +107,13 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
                 return sum;
             }, 0);
 
-            // Calculate total deductions from advances (installments)
-            const totalAdvances = allAdvances?.reduce((sum: number, advance: CashAdvance) => {
-                // We need to check if this advance has an active installment for THIS week.
-                // We can use the difference in weeks between Advance Date and Current Week Date.
-                if (!currentWeek) return sum;
-
-                const advanceDate = parseISO(advance.date);
-                const weekEndDate = parseISO(currentWeek.endDate);
-
-                // If advance was made AFTER this week, ignore it.
-                if (advanceDate > weekEndDate) return sum;
-
+            // Adelantos: suma la cuota correspondiente a esta semana.
+            // Cada adelanto trae `installments` (número de cuotas). La deducción
+            // de esta semana es amount / installments.
+            const totalAdvances = (weekAdvances || []).reduce((sum: number, advance: CashAdvance) => {
                 const installments = advance.installments || 1;
-                const installmentAmount = advance.amount / installments;
-
-                // Calculate weeks passed since advance.
-                // We assume 1 installment per week starting from the week of the advance.
-                const millisecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
-                // specific logic: Find the week of the advance?
-                // Simplification: valid if (WeekEndDate >= AdvanceDate) AND (WeekEndDate < AdvanceDate + Installments * Weeks)
-
-                const diffTime = Math.abs(weekEndDate.getTime() - advanceDate.getTime());
-                const diffWeeks = Math.ceil(diffTime / millisecondsPerWeek);
-
-                // Current week is the "nth" week after advance. 
-                // If advance date is roughly same as week start, it's week 1.
-                // Let's rely on week IDs or more robust date comparison if possible.
-                // For now: Check if current week is within [AdvanceDate, AdvanceDate + N weeks]
-
-                // Let's try matching weeks by ID first? No, advance has creation week ID.
-                // Using start dates.
-                const advanceWeekStart = advanceDate; // param check needed
-                // Heuristic: If week.endDate is >= advance.date, it COULD be a valid deduction week.
-                // We need to count how many valid payroll weeks have passed? No, just chronological weeks.
-
-                // Logic:
-                // 1. Advance Date (Start of tracking).
-                // 2. Installments count.
-                // 3. Current Week End Date.
-
-                // If (CurrentWeekEnd >= AdvanceDate)
-                //   WeeksPassed = floor((CurrentWeekEnd - AdvanceDate) / 7days)
-                //   If WeeksPassed < Installments:
-                //      Include InstallmentAmount.
-
-                // Refined:
-                // Advance Date: 2024-06-01. Installments: 2.
-                // Week 1 (Ends 2024-06-07). Diff = 6 days. WeeksPassed = 0? (It's the first week).
-                // We want to deduct in the first week too.
-
-                const _diffDays = (weekEndDate.getTime() - advanceDate.getTime()) / (1000 * 3600 * 24);
-
-                // If negative, advance is in future (relative to this week).
-                if (_diffDays < 0) return sum;
-
-                const installmentIndex = Math.floor(_diffDays / 7); // 0-based index. 0 = 1st installment.
-
-                if (installmentIndex < installments) {
-                    return sum + installmentAmount;
-                }
-
-                return sum;
-            }, 0) || 0;
+                return sum + (advance.amount / installments);
+            }, 0);
 
             const netPay = grossWages - totalAdvances - totalLateHoursDeduction;
 
@@ -184,7 +128,7 @@ export function WeeklySummary({ currentWeek, isLoadingCurrentWeek }: { currentWe
             return defaultResult;
         }
 
-    }, [weekAttendances, employees, allAdvances, currentWeek, isLoadingSummaryData, getWageForDate]);
+    }, [weekAttendances, employees, weekAdvances, currentWeek, isLoadingSummaryData, getWageForDate]);
 
     const formatDateRange = (startDate: string, endDate: string) => {
         const start = parseISO(startDate);

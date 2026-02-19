@@ -11,6 +11,7 @@ import { WeeklySummary } from '@/components/asistencias/weekly-summary';
 import { CashAdvances } from '@/components/asistencias/cash-advances';
 import { DailyAttendance } from '@/components/asistencias/daily-attendance';
 import { ContractorCertifications } from '@/components/pago-semanal/contractor-certifications';
+import { WeeklyTotalsSummary } from '@/components/pago-semanal/weekly-totals-summary';
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -274,6 +275,12 @@ export default function PagoSemanalPage() {
                 </CardContent>
             </Card>
 
+            <WeeklyTotalsSummary
+                currentWeek={currentWeek}
+                isLoadingWeek={isLoadingCurrentWeek}
+                weekFundRequests={requests}
+                isLoadingRequests={isLoadingRequests}
+            />
 
             <Tabs defaultValue="personal" className="w-full">
                 <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">

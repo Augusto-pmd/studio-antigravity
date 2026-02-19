@@ -26,6 +26,7 @@ import type { StockItem } from "@/lib/types";
 import { useFirestore } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { setDoc, collection, doc } from "firebase/firestore";
+import { BrandAutocomplete } from "@/components/stock/brand-autocomplete";
 
 const categories: { label: string; value: StockItem['category'] }[] = [
   { label: "Herramientas Eléctricas", value: "Power Tools" },
@@ -52,6 +53,7 @@ export function StockItemDialog({
   // Form State
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [brand, setBrand] = useState(''); // New Brand State
   const [category, setCategory] = useState<StockItem['category'] | undefined>();
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
@@ -60,12 +62,9 @@ export function StockItemDialog({
   const resetForm = () => {
     setName(item?.name || '');
     setDescription(item?.description || '');
+    setBrand((item as any)?.brand || ''); // Initialize Brand
     setCategory(item?.category);
-    // Handle Quantity: Tools might not have quantity property in the same way, but StockItem alias implies it. 
-    // Actually Tool extends InventoryItem but doesn't have quantity. Consumable does.
-    // For Tool, quantity is implicitly 1 per item if tracked individually, or we need to check type.
-    // If it's a Tool, we might hide quantity or set to 1.
-    // However, the dialog seems generic. Let's cast safely.
+    // Handle Quantity
     const qty = (item as any).quantity;
     setQuantity(qty !== undefined ? qty.toString() : (isEditMode ? '0' : ''));
 
@@ -90,17 +89,6 @@ export function StockItemDialog({
     }
 
     startTransition(() => {
-      // Decide collection based on type? Or unified?
-      // Previously stockItems. Now maybe inventory_tools or inventory_consumables?
-      // For now, let's Stick to 'inventory_consumables' for Consumables and 'inventory_tools' for Tools?
-      // Or just 'stockItems' if we are using a unified generic view?
-      // The instruction mentions "Update collection path to 'inventory_consumables'" in StockTable.
-      // So we should probably write to 'inventory_consumables' if it's a consumable.
-
-      // Heuristic: If category is 'Consumables', use inventory_consumables. Else inventory_tools?
-      // Or simply allow the user to select Type?
-      // For simplicity in this fix, seeing as StockTable reads from 'inventory_consumables', 
-      // AND the user is likely managing consumables here:
 
       const targetCollection = category === 'Consumables' ? 'inventory_consumables' : 'inventory_tools';
 
@@ -111,6 +99,7 @@ export function StockItemDialog({
         id: docRef.id,
         name,
         category,
+        brand, // Save Brand
         minStock: parseInt(minStock, 10) || 0,
         lastUpdated: new Date().toISOString(),
         description,
@@ -159,9 +148,15 @@ export function StockItemDialog({
             <Label htmlFor="name">Nombre del Ítem</Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Taladro percutor, Caja de tornillos" />
           </div>
+
+          <div className="space-y-2">
+            <Label>Marca</Label>
+            <BrandAutocomplete value={brand} onChange={setBrand} />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="description">Descripción (Opcional)</Label>
-            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Marca, modelo, tamaño, u otra información relevante." />
+            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Modelo, tamaño, u otra información relevante." />
           </div>
 
           <div className="space-y-2">

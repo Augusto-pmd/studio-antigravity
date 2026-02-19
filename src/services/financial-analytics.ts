@@ -39,10 +39,21 @@ export const FinancialAnalyticsService = {
         const endStr = `${targetYear}-12-31`;
 
         // Helper for currency conversion
+        // Fetch global exchange rate as fallback
+        let globalExchangeRate = 1;
+        try {
+            const settingsSnap = await getDocs(query(collection(db, 'settings')));
+            settingsSnap.forEach(d => {
+                if (d.id === 'general' && d.data().exchangeRate) {
+                    globalExchangeRate = d.data().exchangeRate;
+                }
+            });
+        } catch { /* ignore, use default */ }
+
         const getSafeAmount = (item: any, type: string) => {
             if (item.currency === 'USD') {
-                const rate = item.exchangeRate || 1200;
-                if (!item.exchangeRate) console.warn(`[Financials] Missing exchange rate for ${type} ${item.id}. Using default 1200.`);
+                const rate = item.exchangeRate || globalExchangeRate;
+                if (!item.exchangeRate) console.warn(`[Financials] Missing exchange rate for ${type} ${item.id}. Using global rate: ${rate}.`);
                 return item.amount * rate;
             }
             return item.amount || 0;
@@ -126,7 +137,7 @@ export const FinancialAnalyticsService = {
         // 3b. Fetch Internal Labor (Employees based on Attendance)
         // User Request: "hours charged to each work (value comes from salary cost divided by hours)"
         // Implementation: We sum up daily wages for days present in this project.
-        const attendanceRef = collection(db, 'attendance');
+        const attendanceRef = collection(db, 'attendances');
         const attendanceQ = query(
             attendanceRef,
             where('projectId', '==', projectId),
