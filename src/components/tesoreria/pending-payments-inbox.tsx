@@ -69,45 +69,60 @@ export function PendingPaymentsInbox() {
         const aggregated: PendingPayment[] = [];
 
         if (funds) {
-            funds.forEach(f => aggregated.push({
-                id: f.id,
-                sourceCollection: 'fundRequests',
-                title: f.description || f.category,
-                subtitle: `Solicitante: ${f.requesterName} | ${f.projectName || 'Sin Obra'}`,
-                type: 'Pedido de Fondos',
-                amount: f.amount,
-                currency: f.currency,
-                date: f.date,
-                originalDoc: f
-            }));
+            funds.forEach(f => {
+                // CLEAN SLATE RULE: Ignore old funds from before this week
+                if (f.date >= '2026-02-17') {
+                    aggregated.push({
+                        id: f.id,
+                        sourceCollection: 'fundRequests',
+                        title: f.description || f.category,
+                        subtitle: `Solicitante: ${f.requesterName} | ${f.projectName || 'Sin Obra'}`,
+                        type: 'Pedido de Fondos',
+                        amount: f.amount,
+                        currency: f.currency,
+                        date: f.date,
+                        originalDoc: f
+                    });
+                }
+            });
         }
 
         if (salaries) {
-            salaries.forEach(s => aggregated.push({
-                id: s.id,
-                sourceCollection: 'monthlySalaries',
-                title: `Sueldo ${s.period}`,
-                subtitle: `Oficina Técnica: ${s.employeeName}`,
-                type: 'Salario (Oficina)',
-                amount: s.netSalary,
-                currency: 'ARS', // Salaries are in ARS
-                date: s.period + '-01', // Approx date for sorting
-                originalDoc: s
-            }));
+            salaries.forEach(s => {
+                // CLEAN SLATE RULE: Ignore old salaries from before this period
+                if (s.period >= '2026-02') {
+                    aggregated.push({
+                        id: s.id,
+                        sourceCollection: 'monthlySalaries',
+                        title: `Sueldo ${s.period}`,
+                        subtitle: `Oficina Técnica: ${s.employeeName}`,
+                        type: 'Salario (Oficina)',
+                        amount: s.netSalary,
+                        currency: 'ARS', // Salaries are in ARS
+                        date: s.period + '-01', // Approx date for sorting
+                        originalDoc: s
+                    });
+                }
+            });
         }
 
         if (certs) {
-            certs.forEach(c => aggregated.push({
-                id: c.id,
-                sourceCollection: 'contractorCertifications',
-                title: `Certificación Semanal`,
-                subtitle: `Subcontratista: ${c.contractorName} | ${c.projectName}`,
-                type: 'Certificación Obra',
-                amount: c.amount,
-                currency: c.currency,
-                date: c.date,
-                originalDoc: c
-            }));
+            certs.forEach(c => {
+                // CLEAN SLATE RULE: Ignore old certs from before this week
+                if (c.date >= '2026-02-17') {
+                    aggregated.push({
+                        id: c.id,
+                        sourceCollection: 'contractorCertifications',
+                        title: `Certificación Semanal`,
+                        subtitle: `Subcontratista: ${c.contractorName} | ${c.projectName}`,
+                        type: 'Certificación Obra',
+                        amount: c.amount,
+                        currency: c.currency,
+                        date: c.date,
+                        originalDoc: c
+                    });
+                }
+            });
         }
 
         // Sort by date (oldest first, to pay them first)
