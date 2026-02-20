@@ -42,10 +42,11 @@ const ENTITY_CONFIGS: Record<string, EntityConfig> = {
     expenses: {
         label: 'Gastos e Ingresos',
         icon: DollarSign,
-        dbCollection: 'transactions',
-        description: 'Importar movimientos de dinero (Caja, Bancos, etc).',
+        dbCollection: 'expenses_split',
+        description: 'Importar movimientos de dinero hacia las obras.',
         fields: [
             { key: 'date', label: 'Fecha', description: '¿En qué columna están las fechas?', required: true },
+            { key: 'project', label: 'Obra', description: 'Obra asignada al gasto', required: true },
             { key: 'description', label: 'Descripción / Concepto', description: '¿Dónde está el detalle o concepto?', required: true },
             { key: 'amount', label: 'Monto (Único)', description: '¿Columna de monto (si es una sola)?', required: false },
             { key: 'income', label: 'Columna Ingresos (+)', description: '¿Tienes una columna separada para ENTRADAS?', required: false, isVirtual: true },
@@ -53,8 +54,8 @@ const ENTITY_CONFIGS: Record<string, EntityConfig> = {
             { key: 'category', label: 'Categoría', description: '¿Qué columna indica el rubro?', required: false },
             { key: 'supplierName', label: 'Proveedor', description: '¿Nombre del proveedor/persona?', required: false },
             { key: 'invoice', label: 'Factura', description: '¿Datos de facturación?', required: false },
-            { key: 'exchangeRate', label: 'Tipo de Cambio', description: '¿Cotización del dólar?', required: false },
-            { key: 'paymentMethod', label: 'Forma de Pago', description: '¿Medio de pago (Efectivo, etc.)?', required: false },
+            { key: 'exchangeRate', label: 'Tipo de Cambio (ARS/USD)', description: '¿Cotización del dólar?', required: false, defaultValue: '1' },
+            { key: 'paymentSource', label: 'Caja/Teso', description: 'Origen (Tesorería o Caja Chica)', required: false, defaultValue: 'Caja Chica' },
             { key: 'status', label: 'Estado', description: '¿Estado del pago?', required: false, defaultValue: 'Paid' },
         ]
     },
@@ -265,16 +266,23 @@ export function DataImporter() {
                         item._errors.push(`Falta: ${fieldConfig.label}`);
                     }
 
-                    if (entityType === 'expenses') {
-                        if (['income', 'expense', 'amount', 'exchangeRate'].includes(fieldKey)) {
-                            let cleanVal = val.replace(/[^0-9,.-]/g, '').replace(',', '.');
-                            if (val.includes(',')) cleanVal = val.replace(/\./g, '').replace(',', '.');
-                            item[fieldKey] = parseFloat(cleanVal) || 0;
-                        } else if (fieldKey === 'date') {
-                            item[fieldKey] = normalizeDate(val);
-                        } else {
-                            item[fieldKey] = val;
+                    const isAmountLike = ['amount', 'budget', 'price', 'cost', 'wage', 'income', 'expense'].some(k => fieldKey.toLowerCase().includes(k));
+                    const isDateLike = ['date', 'startdate', 'enddate'].some(k => fieldKey.toLowerCase().includes(k));
+
+                    if (isAmountLike) {
+                        let cleanVal = val.replace(/[^0-9,.-]/g, '');
+                        if (cleanVal.includes(',') && cleanVal.includes('.')) {
+                            if (cleanVal.lastIndexOf(',') > cleanVal.lastIndexOf('.')) {
+                                cleanVal = cleanVal.replace(/\./g, '').replace(',', '.');
+                            } else {
+                                cleanVal = cleanVal.replace(/,/g, '');
+                            }
+                        } else if (cleanVal.includes(',')) {
+                            cleanVal = cleanVal.replace(',', '.');
                         }
+                        item[fieldKey] = parseFloat(cleanVal) || 0;
+                    } else if (isDateLike) {
+                        item[fieldKey] = normalizeDate(val) || val;
                     } else {
                         item[fieldKey] = val;
                     }
@@ -479,6 +487,48 @@ export function DataImporter() {
 
                 toast({ title: 'Importación Completa', description: `Se procesaron: ${certifications.length} Certs, ${attendances.length} Asistencias, ${cashAdvances.length} Adelantos, ${fundRequests.length} Pedidos.` });
 
+            } else if (entityType === 'expenses') {
+                const projectsSnapshot = await getDocs(collection(firestore, 'projects'));
+                const projects = projectsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
+
+                let processedCount = 0;
+                const MAX_BATCH_SIZE = 450;
+                const total = rawData.length;
+
+                for (let i = 0; i < total; i += MAX_BATCH_SIZE) {
+                    const batch = writeBatch(firestore);
+                    const chunk = rawData.slice(i, i + MAX_BATCH_SIZE);
+
+                    chunk.forEach(item => {
+                        const projectNameStr = item.project?.toString().toLowerCase().trim() || '';
+                        let matchedProject = projects.find(p => p.name.toLowerCase().trim() === projectNameStr);
+
+                        if (!matchedProject && projectNameStr) {
+                            matchedProject = projects.find(p => p.name.toLowerCase().trim().includes(projectNameStr) || projectNameStr.includes(p.name.toLowerCase().trim()));
+                        }
+
+                        const projectId = matchedProject ? matchedProject.id : 'unknown_project';
+
+                        const docRef = doc(collection(firestore, 'projects', projectId, 'expenses'));
+                        const finalItem = {
+                            ...item,
+                            projectId,
+                            createdAt: new Date().toISOString(),
+                            _importedAt: new Date().toISOString(),
+                            _importSource: 'wizard_v3'
+                        };
+                        delete finalItem._row;
+                        delete finalItem._errors;
+                        delete finalItem.project;
+                        batch.set(docRef, finalItem);
+                    });
+
+                    await batch.commit();
+                    processedCount += chunk.length;
+                    setImportProgress({ current: processedCount, total });
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                toast({ title: 'Importación Completada', description: `Se guardaron ${processedCount} gastos en sus respectivas obras.` });
             } else {
                 // STANDARD LOGIC
                 const targetCollection = ENTITY_CONFIGS[entityType].dbCollection || 'temp_imports';

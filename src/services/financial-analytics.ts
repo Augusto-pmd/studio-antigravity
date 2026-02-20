@@ -29,6 +29,7 @@ export interface ProjectFinancials {
         percentage: number; // (Net / Income) * 100
     };
     roi: number; // (Net / Total Cost) * 100
+    expenses?: { categoryId?: string, amount: number }[];
 }
 
 export const FinancialAnalyticsService = {
@@ -61,6 +62,7 @@ export const FinancialAnalyticsService = {
 
         // 1. Fetch Sales (Income)
         const salesRef = collection(db, 'projects', projectId, 'sales');
+        // REPLACED COMPOUND QUERY TO AVOID INDEX ERRORS
         const salesQ = query(salesRef, where('date', '>=', startStr), where('date', '<=', endStr));
         const salesSnap = await getDocs(salesQ);
 
@@ -79,26 +81,33 @@ export const FinancialAnalyticsService = {
 
         // 2. Fetch Direct Expenses
         const expensesRef = collection(db, 'projects', projectId, 'expenses');
+        // REPLACED COMPOUND QUERY
         const expensesQ = query(expensesRef, where('date', '>=', startStr), where('date', '<=', endStr));
         const expensesSnap = await getDocs(expensesQ);
 
         let materialsCost = 0;
         let servicesCost = 0;
+        const projectExpenses: { categoryId?: string, amount: number }[] = [];
 
         expensesSnap.forEach(doc => {
             const expense = doc.data() as Expense;
-            const amount = getSafeAmount(expense, 'Expense');
+            // CLIENT SIDE FILTERING
+            if (expense.date >= startStr && expense.date <= endStr) {
+                const amount = getSafeAmount(expense, 'Expense');
+                projectExpenses.push({ categoryId: expense.categoryId, amount });
 
-            // User Clarification: Both Fund Requests and Caja Chica Expenses should be imputed.
-            if (expense.supplierId) {
-                materialsCost += amount;
-            } else {
-                servicesCost += amount;
+                // User Clarification: Both Fund Requests and Caja Chica Expenses should be imputed.
+                if (expense.supplierId) {
+                    materialsCost += amount;
+                } else {
+                    servicesCost += amount;
+                }
             }
         });
 
         // 2b. Fetch Stock Movements (Project Consumption)
         const movementsRef = collection(db, 'inventory_movements');
+        // REPLACED COMPOUND QUERY
         const movementsQ = query(
             movementsRef,
             where('projectId', '==', projectId),
@@ -119,6 +128,7 @@ export const FinancialAnalyticsService = {
 
         // 3a. Fetch Contractor Certifications (External Labor)
         const certsRef = collection(db, 'contractorCertifications');
+        // REPLACED COMPOUND QUERY
         const certsQ = query(
             certsRef,
             where('projectId', '==', projectId),
@@ -138,6 +148,7 @@ export const FinancialAnalyticsService = {
         // User Request: "hours charged to each work (value comes from salary cost divided by hours)"
         // Implementation: We sum up daily wages for days present in this project.
         const attendanceRef = collection(db, 'attendances');
+        // REPLACED COMPOUND QUERY
         const attendanceQ = query(
             attendanceRef,
             where('projectId', '==', projectId),
@@ -170,6 +181,7 @@ export const FinancialAnalyticsService = {
 
         // 4. Fetch Fund Requests
         const fundsRef = collection(db, 'fundRequests');
+        // REPLACED COMPOUND QUERY
         const fundsQ = query(
             fundsRef,
             where('projectId', '==', projectId),
@@ -217,7 +229,8 @@ export const FinancialAnalyticsService = {
                 net: netMargin,
                 percentage: marginPercentage
             },
-            roi
+            roi,
+            expenses: projectExpenses
         };
     }
 };

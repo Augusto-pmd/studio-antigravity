@@ -10,6 +10,7 @@ import { ProjectFinancialsTable } from './project-financials-table';
 import { FinancialStatsCards } from './financial-stats-cards';
 import { IncomeVsCostChart } from './income-vs-cost-chart';
 import { AIAnalysisPanel } from './ai-analysis-panel';
+import { ExpenseCategoriesBreakdown } from './expense-categories-breakdown';
 import { useCollection } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -68,11 +69,20 @@ export function AnalyticsDashboard() {
                 const results = await Promise.all(
                     // projects is guaranteed non-null/non-empty here
                     projects!.map(async (project) => {
-                        const data = await FinancialAnalyticsService.getProjectFinancials(project.id, selectedYear);
-                        return { ...data, projectName: project.name };
+                        try {
+                            const data = await FinancialAnalyticsService.getProjectFinancials(project.id, selectedYear);
+                            return { ...data, projectName: project.name };
+                        } catch (err) {
+                            console.error(`Failed to fetch financials for project ${project.name} (${project.id}):`, err);
+                            return null;
+                        }
                     })
                 );
-                setFinancials(results);
+
+                // Filter out any projects that failed to load
+                const validResults = results.filter((res): res is (ProjectFinancials & { projectName: string }) => res !== null);
+
+                setFinancials(validResults);
                 // Save config to ref — does NOT trigger a re-render
                 lastFetchedRef.current = { year: selectedYear, projectIds: projectIdsKey };
             } catch (error) {
@@ -138,7 +148,7 @@ export function AnalyticsDashboard() {
                     <ProjectFinancialsTable data={financials} />
                 </TabsContent>
                 <TabsContent value="categories">
-                    <div className="text-muted-foreground p-4">Próximamente: Desglose por categoría de gasto.</div>
+                    <ExpenseCategoriesBreakdown financials={financials} />
                 </TabsContent>
             </Tabs>
         </div>

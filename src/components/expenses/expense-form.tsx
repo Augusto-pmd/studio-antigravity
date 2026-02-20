@@ -19,6 +19,17 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { expenseCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Calendar as CalendarIcon, Loader2, Link as LinkIcon, Sparkles, TriangleAlert } from "lucide-react";
@@ -53,6 +64,37 @@ const parseOptionalFloat = (value: string): number | undefined => {
     return isNaN(num) ? undefined : num;
 };
 
+const expenseSchema = z.object({
+    projectId: z.string().min(1, "La obra es obligatoria"),
+    date: z.date({ required_error: "La fecha es obligatoria" }),
+    supplierId: z.string().min(1, "El proveedor es obligatorio"),
+    categoryId: z.string().min(1, "El rubro es obligatorio"),
+    paymentSource: z.enum(['Tesorería', 'Caja Chica']),
+    description: z.string().optional(),
+    documentType: z.enum(['Factura', 'Recibo Común', 'Nota de Crédito']),
+    invoiceNumber: z.string().optional(),
+    currency: z.enum(['ARS', 'USD']),
+    exchangeRate: z.coerce.number().min(0.01, "El tipo de cambio es obligatorio"),
+    amount: z.coerce.number().min(0.01, "El monto debe ser mayor a 0"),
+    iva: z.coerce.number().optional(),
+    iibb: z.coerce.number().optional(),
+    iibbJurisdiction: z.enum(['No Aplica', 'CABA', 'Provincia']).default('No Aplica'),
+    retencionGanancias: z.coerce.number().optional(),
+    retencionIVA: z.coerce.number().optional(),
+    retencionIIBB: z.coerce.number().optional(),
+    retencionSUSS: z.coerce.number().optional(),
+}).superRefine((data, ctx) => {
+    if ((data.documentType === 'Factura' || data.documentType === 'Nota de Crédito') && (!data.invoiceNumber || data.invoiceNumber.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "El número de comprobante es obligatorio para facturas y notas de crédito",
+            path: ["invoiceNumber"]
+        });
+    }
+});
+
+type ExpenseFormValues = z.infer<typeof expenseSchema>;
+
 interface ExpenseFormProps {
     expense?: Expense;
     projectId?: string;
@@ -68,40 +110,39 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
     const [isClient, setIsClient] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isExtracting, setIsExtracting] = useState(false);
+    const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Form State
-    const [selectedProject, setSelectedProject] = useState(defaultProjectId || '');
-    const [selectedSupplier, setSelectedSupplier] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [description, setDescription] = useState('');
-    const [date, setDate] = useState<Date | undefined>();
-    const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
-    const [paymentSource, setPaymentSource] = useState<'Tesorería' | 'Caja Chica'>('Tesorería');
-    const [documentType, setDocumentType] = useState<'Factura' | 'Recibo Común' | 'Nota de Crédito'>('Factura');
-    const [invoiceNumber, setInvoiceNumber] = useState('');
-    const [file, setFile] = useState<File | null>(null);
-    const [amount, setAmount] = useState('');
-    const [iva, setIva] = useState('');
-    const [iibb, setIibb] = useState('');
-    const [iibbJurisdiction, setIibbJurisdiction] = useState<'No Aplica' | 'CABA' | 'Provincia'>('No Aplica');
-    const [exchangeRate, setExchangeRate] = useState('');
+    const form = useForm<ExpenseFormValues>({
+        resolver: zodResolver(expenseSchema),
+        defaultValues: {
+            projectId: defaultProjectId || expense?.projectId || '',
+            supplierId: expense?.supplierId || '',
+            categoryId: expense?.categoryId || '',
+            description: expense?.description || '',
+            currency: expense?.currency || 'ARS',
+            paymentSource: expense?.paymentSource || 'Tesorería',
+            documentType: expense?.documentType || 'Factura',
+            invoiceNumber: expense?.invoiceNumber || '',
+            amount: expense?.amount || 0,
+            iva: expense?.iva || 0,
+            iibb: expense?.iibb || 0,
+            iibbJurisdiction: expense?.iibbJurisdiction || 'No Aplica',
+            exchangeRate: expense?.exchangeRate || 0,
+            retencionGanancias: expense?.retencionGanancias || 0,
+            retencionIVA: expense?.retencionIVA || 0,
+            retencionIIBB: expense?.retencionIIBB || 0,
+            retencionSUSS: expense?.retencionSUSS || 0,
+        }
+    });
 
-    // Retenciones
-    const [retencionGanancias, setRetencionGanancias] = useState('');
-    const [retencionIVA, setRetencionIVA] = useState('');
-    const [retencionIIBB, setRetencionIIBB] = useState('');
-    const [retencionSUSS, setRetencionSUSS] = useState('');
+    const watchedProjectId = form.watch("projectId");
+    const watchedSupplierId = form.watch("supplierId");
+    const watchedDate = form.watch("date");
+    const watchedDocumentType = form.watch("documentType");
 
-
-    // Data fetching
-    const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
-    const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
-    const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
-    const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
-
-    const project = useMemo(() => projects?.find((p: Project) => p.id === selectedProject), [selectedProject, projects]);
-    const supplier = useMemo(() => suppliers?.find((s: Supplier) => s.id === selectedSupplier), [selectedSupplier, suppliers]);
+    const project = useMemo(() => projects?.find((p: Project) => p.id === watchedProjectId), [watchedProjectId, projects]);
+    const supplier = useMemo(() => suppliers?.find((s: Supplier) => s.id === watchedSupplierId), [watchedSupplierId, suppliers]);
 
     const isContractBlocked = project?.balance === 0;
 
@@ -116,40 +157,114 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
     }, [supplier]);
 
     const resetForm = () => {
-        setSelectedProject(defaultProjectId || expense?.projectId || '');
-        setSelectedSupplier(expense?.supplierId || '');
-        setSelectedCategory(expense?.categoryId || '');
-        setDescription(expense?.description || '');
-        setDate(expense?.date ? parseISO(expense.date) : new Date());
-        setCurrency(expense?.currency || 'ARS');
-        setPaymentSource(expense?.paymentSource || 'Tesorería');
-        setDocumentType(expense?.documentType || 'Factura');
-        setInvoiceNumber(expense?.invoiceNumber || '');
+        form.reset({
+            projectId: defaultProjectId || expense?.projectId || '',
+            date: expense?.date ? parseISO(expense.date) : new Date(),
+            supplierId: expense?.supplierId || '',
+            categoryId: expense?.categoryId || '',
+            description: expense?.description || '',
+            currency: expense?.currency || 'ARS',
+            paymentSource: expense?.paymentSource || 'Tesorería',
+            documentType: expense?.documentType || 'Factura',
+            invoiceNumber: expense?.invoiceNumber || '',
+            amount: expense?.amount || 0,
+            iva: expense?.iva || 0,
+            iibb: expense?.iibb || 0,
+            iibbJurisdiction: expense?.iibbJurisdiction || 'No Aplica',
+            exchangeRate: expense?.exchangeRate || 0,
+            retencionGanancias: expense?.retencionGanancias || 0,
+            retencionIVA: expense?.retencionIVA || 0,
+            retencionIIBB: expense?.retencionIIBB || 0,
+            retencionSUSS: expense?.retencionSUSS || 0,
+        });
         setFile(null);
-        setAmount(expense?.amount?.toString() || '');
-        setIva(expense?.iva?.toString() || '');
-        setIibb(expense?.iibb?.toString() || '');
-        setIibbJurisdiction(expense?.iibbJurisdiction || 'No Aplica');
-        setExchangeRate(expense?.exchangeRate?.toString() || '');
-        setRetencionGanancias(expense?.retencionGanancias?.toString() || '');
-        setRetencionIVA(expense?.retencionIVA?.toString() || '');
-        setRetencionIIBB(expense?.retencionIIBB?.toString() || '');
-        setRetencionSUSS(expense?.retencionSUSS?.toString() || '');
+    };
+
+    const form = useForm<ExpenseFormValues>({
+        resolver: zodResolver(expenseSchema),
+        defaultValues: {
+            projectId: defaultProjectId || expense?.projectId || '',
+            supplierId: expense?.supplierId || '',
+            categoryId: expense?.categoryId || '',
+            description: expense?.description || '',
+            currency: expense?.currency || 'ARS',
+            paymentSource: expense?.paymentSource || 'Tesorería',
+            documentType: expense?.documentType || 'Factura',
+            invoiceNumber: expense?.invoiceNumber || '',
+            amount: expense?.amount || 0,
+            iva: expense?.iva || 0,
+            iibb: expense?.iibb || 0,
+            iibbJurisdiction: expense?.iibbJurisdiction || 'No Aplica',
+            exchangeRate: expense?.exchangeRate || 0,
+            retencionGanancias: expense?.retencionGanancias || 0,
+            retencionIVA: expense?.retencionIVA || 0,
+            retencionIIBB: expense?.retencionIIBB || 0,
+            retencionSUSS: expense?.retencionSUSS || 0,
+        }
+    });
+
+    const watchedProjectId = form.watch("projectId");
+    const watchedSupplierId = form.watch("supplierId");
+    const watchedDate = form.watch("date");
+    const watchedDocumentType = form.watch("documentType");
+
+    // Data fetching
+    const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
+    const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+    const suppliersQuery = useMemo(() => (firestore ? collection(firestore, 'suppliers').withConverter(supplierConverter) : null), [firestore]);
+    const { data: suppliers, isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersQuery);
+
+    const project = useMemo(() => projects?.find((p: Project) => p.id === watchedProjectId), [watchedProjectId, projects]);
+    const supplier = useMemo(() => suppliers?.find((s: Supplier) => s.id === watchedSupplierId), [watchedSupplierId, suppliers]);
+
+    const isContractBlocked = project?.balance === 0;
+
+    const isSupplierBlocked = useMemo(() => {
+        if (!supplier) return false;
+        const today = new Date().toISOString().split('T')[0];
+
+        if (supplier.insuranceExpiryDate && supplier.insuranceExpiryDate < today) return true;
+        if (supplier.artExpiryDate && supplier.artExpiryDate < today) return true;
+
+        return false;
+    }, [supplier]);
+
+    const resetForm = () => {
+        form.reset({
+            projectId: defaultProjectId || expense?.projectId || '',
+            date: expense?.date ? parseISO(expense.date) : new Date(),
+            supplierId: expense?.supplierId || '',
+            categoryId: expense?.categoryId || '',
+            description: expense?.description || '',
+            currency: expense?.currency || 'ARS',
+            paymentSource: expense?.paymentSource || 'Tesorería',
+            documentType: expense?.documentType || 'Factura',
+            invoiceNumber: expense?.invoiceNumber || '',
+            amount: expense?.amount || 0,
+            iva: expense?.iva || 0,
+            iibb: expense?.iibb || 0,
+            iibbJurisdiction: expense?.iibbJurisdiction || 'No Aplica',
+            exchangeRate: expense?.exchangeRate || 0,
+            retencionGanancias: expense?.retencionGanancias || 0,
+            retencionIVA: expense?.retencionIVA || 0,
+            retencionIIBB: expense?.retencionIIBB || 0,
+            retencionSUSS: expense?.retencionSUSS || 0,
+        });
+        setFile(null);
     };
 
     // Auto-fetch historical exchange rate when date changes
     useEffect(() => {
-        if (date) {
+        if (watchedDate) {
             const fetchRate = async () => {
-                // Show some loading state if needed, or just let it pop in
-                const rate = await getHistoricalRate(date);
+                const rate = await getHistoricalRate(watchedDate);
                 if (rate > 0) {
-                    setExchangeRate(rate.toString());
+                    form.setValue("exchangeRate", rate);
                 }
             };
             fetchRate();
         }
-    }, [date]);
+    }, [watchedDate, form]);
 
     useEffect(() => {
         resetForm();
@@ -158,9 +273,9 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
     useEffect(() => {
         setIsClient(true);
         if (!expense) {
-            setDate(new Date());
+            form.setValue("date", new Date());
         }
-    }, [expense]);
+    }, [expense, form]);
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -195,21 +310,19 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
             dismiss();
             toast({ title: 'Datos Extraídos', description: 'Revisa la información precargada en el formulario.' });
 
-            if (extractedData.amount) setAmount(extractedData.amount.toString());
-            // Note: API returns total amount, we can try to guess IVA if needed, but for now just set Amount.
-            // if (extractedData.iva) setIva(extractedData.iva.toString()); 
+            if (extractedData.amount) form.setValue("amount", Number(extractedData.amount));
 
-            if (extractedData.invoiceNumber) setInvoiceNumber(extractedData.invoiceNumber);
+            if (extractedData.invoiceNumber) form.setValue("invoiceNumber", extractedData.invoiceNumber);
 
             if (extractedData.date) {
                 // API returns YYYY-MM-DD
                 const [year, month, day] = extractedData.date.split('-').map(Number);
                 const utcDate = new Date(year, month - 1, day);
-                setDate(utcDate);
+                form.setValue("date", utcDate);
             }
 
             if (extractedData.currency) {
-                setCurrency(extractedData.currency as 'ARS' | 'USD');
+                form.setValue("currency", extractedData.currency as 'ARS' | 'USD');
             }
 
             let matchedSupplier: Supplier | undefined;
@@ -217,7 +330,7 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
             if (extractedData.supplierCuit && suppliers) {
                 matchedSupplier = suppliers.find((s: Supplier) => s.cuit?.replace(/-/g, '') === extractedData.supplierCuit!.replace(/-/g, ''));
                 if (matchedSupplier) {
-                    setSelectedSupplier(matchedSupplier.id);
+                    form.setValue("supplierId", matchedSupplier.id);
                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}" por CUIT.` });
                 }
             }
@@ -229,7 +342,7 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
                     extractedData.supplierName!.toLowerCase().includes(s.name.toLowerCase())
                 );
                 if (matchedSupplier) {
-                    setSelectedSupplier(matchedSupplier.id);
+                    form.setValue("supplierId", matchedSupplier.id);
                     toast({ title: 'Proveedor Encontrado', description: `Se ha seleccionado a "${matchedSupplier.name}" por Nombre.` });
                 }
             }
@@ -239,19 +352,19 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
                 const categoryName = extractedData.category.toLowerCase();
                 const matchedCategory = expenseCategories.find(c => c.name.toLowerCase().includes(categoryName));
                 if (matchedCategory) {
-                    setSelectedCategory(matchedCategory.id);
+                    form.setValue("categoryId", matchedCategory.id);
                 }
             } else if (matchedSupplier) {
                 // Auto-fill category based on Supplier Type
-                if (matchedSupplier.type === 'Materiales') setSelectedCategory('CAT-01'); // Materiales de Construcción
-                else if (matchedSupplier.type === 'Servicios') setSelectedCategory('CAT-15'); // Servicios
-                else if (matchedSupplier.type === 'Mixto') setSelectedCategory('CAT-12'); // Otros
+                if (matchedSupplier.type === 'Materiales') form.setValue("categoryId", 'CAT-01'); // Materiales de Construcción
+                else if (matchedSupplier.type === 'Servicios') form.setValue("categoryId", 'CAT-15'); // Servicios
+                else if (matchedSupplier.type === 'Mixto') form.setValue("categoryId", 'CAT-12'); // Otros
             }
 
             // Auto-fill Document Type based on fiscal condition if not detected
             if (matchedSupplier) {
                 if (matchedSupplier.fiscalCondition === 'Responsable Inscripto' || matchedSupplier.fiscalCondition === 'Monotributo') {
-                    setDocumentType('Factura');
+                    form.setValue("documentType", 'Factura');
                 }
             }
 
@@ -266,16 +379,7 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
         }
     };
 
-    const handleSaveExpense = () => {
-        if (!selectedProject || !date || !selectedSupplier || !amount || !selectedCategory || !exchangeRate) {
-            toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Por favor, complete todos los campos obligatorios, incluyendo el tipo de cambio.' });
-            return;
-        }
-        if ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber) {
-            toast({ variant: 'destructive', title: 'Nº de Comprobante requerido', description: 'El número de factura o nota de crédito es obligatorio.' });
-            return;
-        }
-
+    const handleSaveExpense = form.handleSubmit((data) => {
         if (!firestore || !user || !firebaseApp) {
             toast({ variant: 'destructive', title: 'Error', description: "Firebase no está disponible." });
             return;
@@ -284,7 +388,7 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
         startTransition(() => {
             setIsSaving(true);
             const saveData = async () => {
-                const projectId = isEditMode && expense ? expense.projectId : selectedProject;
+                const projectId = isEditMode && expense ? expense.projectId : data.projectId;
                 const expenseRef = isEditMode
                     ? doc(firestore, 'projects', projectId, 'expenses', expense.id)
                     : doc(collection(firestore, 'projects', projectId, 'expenses'));
@@ -302,39 +406,33 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
                 const expenseData: Partial<Expense> = {
                     id: expenseRef.id,
                     projectId: projectId,
-                    date: date.toISOString(),
-                    supplierId: selectedSupplier,
-                    categoryId: selectedCategory,
-                    documentType,
-                    amount: parseFloat(amount) || 0,
-                    currency,
-                    paymentSource,
-                    exchangeRate: parseFloat(exchangeRate) || 0,
+                    date: data.date.toISOString(),
+                    supplierId: data.supplierId,
+                    categoryId: data.categoryId,
+                    documentType: data.documentType,
+                    amount: data.amount,
+                    currency: data.currency,
+                    paymentSource: data.paymentSource,
+                    exchangeRate: data.exchangeRate,
                     status: isEditMode ? expense.status : 'Pendiente de Pago',
                 };
 
-                if (description) expenseData.description = description;
+                if (data.description) expenseData.description = data.description;
                 if (receiptUrl) expenseData.receiptUrl = receiptUrl;
 
-                if (documentType === 'Factura' || documentType === 'Nota de Crédito') {
-                    expenseData.invoiceNumber = invoiceNumber;
-                    expenseData.iibbJurisdiction = iibbJurisdiction;
-                    const parsedIva = parseOptionalFloat(iva);
-                    if (parsedIva !== undefined) expenseData.iva = parsedIva;
-                    const parsedIibb = parseOptionalFloat(iibb);
-                    if (parsedIibb !== undefined) expenseData.iibb = parsedIibb;
+                if (data.documentType === 'Factura' || data.documentType === 'Nota de Crédito') {
+                    expenseData.invoiceNumber = data.invoiceNumber;
+                    expenseData.iibbJurisdiction = data.iibbJurisdiction;
+                    if (data.iva !== undefined) expenseData.iva = data.iva;
+                    if (data.iibb !== undefined) expenseData.iibb = data.iibb;
                 } else {
                     expenseData.iibbJurisdiction = 'No Aplica';
                 }
 
-                const parsedRetG = parseOptionalFloat(retencionGanancias);
-                if (parsedRetG !== undefined) expenseData.retencionGanancias = parsedRetG;
-                const parsedRetIva = parseOptionalFloat(retencionIVA);
-                if (parsedRetIva !== undefined) expenseData.retencionIVA = parsedRetIva;
-                const parsedRetIibb = parseOptionalFloat(retencionIIBB);
-                if (parsedRetIibb !== undefined) expenseData.retencionIIBB = parsedRetIibb;
-                const parsedRetSuss = parseOptionalFloat(retencionSUSS);
-                if (parsedRetSuss !== undefined) expenseData.retencionSUSS = parsedRetSuss;
+                if (data.retencionGanancias !== undefined) expenseData.retencionGanancias = data.retencionGanancias;
+                if (data.retencionIVA !== undefined) expenseData.retencionIVA = data.retencionIVA;
+                if (data.retencionIIBB !== undefined) expenseData.retencionIIBB = data.retencionIIBB;
+                if (data.retencionSUSS !== undefined) expenseData.retencionSUSS = data.retencionSUSS;
 
                 if (isEditMode && expense) {
                     if (expense.paymentMethod) expenseData.paymentMethod = expense.paymentMethod;
@@ -359,9 +457,9 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
                     setIsSaving(false);
                 });
         });
-    };
+    });
 
-    const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked || !selectedProject || !selectedSupplier || !selectedCategory || !amount || !exchangeRate || ((documentType === 'Factura' || documentType === 'Nota de Crédito') && !invoiceNumber);
+    const isSubmitDisabled = isPending || isSaving || isContractBlocked || isSupplierBlocked;
 
     return (
         <div className="grid gap-4 py-4 pr-1">
@@ -415,263 +513,417 @@ export function ExpenseForm({ expense, projectId: defaultProjectId, onSuccess }:
                 </Alert>
             )}
 
-            <div className="space-y-2">
-                <Label htmlFor="project">Obra</Label>
-                <Select onValueChange={setSelectedProject} value={selectedProject} disabled={!!defaultProjectId || isEditMode || isLoadingProjects}>
-                    <SelectTrigger id="project">
-                        <SelectValue placeholder="Seleccione una obra" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {projects?.map((p: Project) => (
-                            <SelectItem key={p.id} value={p.id}>
-                                {p.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="date">Fecha</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            id="date"
-                            variant={"outline"}
-                            className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !date && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date && isClient ? format(date, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
+            <Form {...form}>
+                <form onSubmit={handleSaveExpense} className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="projectId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Obra</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!defaultProjectId || isEditMode || isLoadingProjects}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione una obra" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {projects?.map((p: Project) => (
+                                            <SelectItem key={p.id} value={p.id}>
+                                                {p.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="date"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col pt-2">
+                                <FormLabel>Fecha</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-full pl-3 text-left font-normal",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value && isClient ? (
+                                                    format(field.value, "PPP", { locale: es })
+                                                ) : (
+                                                    <span>Seleccione una fecha</span>
+                                                )}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) =>
+                                                date > new Date() || date < new Date("1900-01-01")
+                                            }
+                                            initialFocus
+                                            locale={es}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="supplierId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Proveedor</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingSuppliers}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione un proveedor" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {suppliers?.map((s: Supplier) => (
+                                            <SelectItem key={s.id} value={s.id}>
+                                                {s.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="categoryId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Rubro</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione un rubro" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {expenseCategories.map((c: { id: string; name: string }) => (
+                                            <SelectItem key={c.id} value={c.id}>
+                                                {c.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="paymentSource"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel>Vía Contable / Origen del Pago</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex items-center gap-6 pt-1"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="Tesorería" id="tesoreria" />
+                                            <Label htmlFor="tesoreria">Tesorería (Formal)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="Caja Chica" id="caja-chica" />
+                                            <Label htmlFor="caja-chica">Caja Chica (Informal)</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel>Descripción (Opcional)</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                        {...field}
+                                        placeholder="Añada un detalle sobre el gasto"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="documentType"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel>Tipo Comprobante</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex items-center flex-wrap gap-x-6 gap-y-2 pt-1"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="Factura" id="factura" />
+                                            <Label htmlFor="factura">Factura</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="Recibo Común" id="recibo" />
+                                            <Label htmlFor="recibo">Recibo Común</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="Nota de Crédito" id="nota-credito" />
+                                            <Label htmlFor="nota-credito">Nota de Crédito</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {(watchedDocumentType === 'Factura' || watchedDocumentType === 'Nota de Crédito') && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="receipt">Comprobante (Archivo)</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic" />
+                                    {isEditMode && expense?.receiptUrl && (
+                                        <Button asChild variant="outline" size="icon">
+                                            <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"><LinkIcon className="h-4 w-4" /></a>
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                            <FormField
+                                control={form.control}
+                                name="invoiceNumber"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                        <FormLabel>Nº Comprobante</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Nº de la factura o nota de crédito" {...field} value={field.value || ''} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </>
+                    )}
+
+                    <FormField
+                        control={form.control}
+                        name="currency"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel>Moneda</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex items-center gap-6 pt-1"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="ARS" id="ars" />
+                                            <Label htmlFor="ars">ARS</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="USD" id="usd" />
+                                            <Label htmlFor="usd">USD</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="exchangeRate"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel>Tipo de Cambio *</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="number"
+                                        placeholder="Dólar BNA compra"
+                                        {...field}
+                                        value={field.value === 0 ? '' : field.value}
+                                        onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                                        readOnly={!permissions.canSupervise}
+                                        className={cn("bg-muted", permissions.canSupervise && "bg-background")}
+                                    />
+                                </FormControl>
+                                <p className="text-xs text-muted-foreground">
+                                    {permissions.canSupervise
+                                        ? "Calculado automáticamente. Puede editarlo manualmente."
+                                        : "Calculado automáticamente segun fecha. Solo Dirección puede modificarlo."}
+                                </p>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    {(watchedDocumentType === 'Factura' || watchedDocumentType === 'Nota de Crédito') && (
+                        <>
+                            <Separator />
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium text-muted-foreground">Impuestos y Percepciones</h4>
+                                <FormField
+                                    control={form.control}
+                                    name="iva"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>IVA</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="IVA del gasto" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="iibb"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Percepción IIBB</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="Percepción IIBB" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="iibbJurisdiction"
+                                    render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel>Jurisdicción IIBB</FormLabel>
+                                            <FormControl>
+                                                <RadioGroup
+                                                    onValueChange={field.onChange}
+                                                    defaultValue={field.value}
+                                                    className="flex items-center gap-6 pt-2"
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="No Aplica" id="iibb-na" />
+                                                        <Label htmlFor="iibb-na">No Aplica</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="CABA" id="iibb-caba" />
+                                                        <Label htmlFor="iibb-caba">CABA</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="Provincia" id="iibb-pba" />
+                                                        <Label htmlFor="iibb-pba">Provincia</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <Separator />
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium text-muted-foreground">Retenciones Aplicadas al Pago</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="retencionGanancias"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Ret. Ganancias</FormLabel>
+                                                <FormControl><Input type="number" placeholder="0.00" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="retencionIVA"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Ret. IVA</FormLabel>
+                                                <FormControl><Input type="number" placeholder="0.00" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="retencionIIBB"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Ret. IIBB</FormLabel>
+                                                <FormControl><Input type="number" placeholder="0.00" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="retencionSUSS"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-2">
+                                                <FormLabel>Ret. SUSS</FormLabel>
+                                                <FormControl><Input type="number" placeholder="0.00" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <Separator />
+
+                    <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <FormLabel className="text-lg">Monto Total</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="0.00" className="text-lg h-12" {...field} value={field.value === 0 ? '' : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <div className="mt-4">
+                        <Button type="submit" disabled={isSubmitDisabled} className="w-full">
+                            {(isPending || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isEditMode ? 'Guardar Cambios' : 'Guardar Documento'}
                         </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                        <Calendar
-                            mode="single"
-                            selected={date}
-                            onSelect={setDate}
-                            locale={es}
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="supplier">Proveedor</Label>
-                <Select onValueChange={setSelectedSupplier} value={selectedSupplier} disabled={isLoadingSuppliers}>
-                    <SelectTrigger id="supplier">
-                        <SelectValue placeholder="Seleccione un proveedor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {suppliers?.map((s: Supplier) => (
-                            <SelectItem key={s.id} value={s.id}>
-                                {s.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="category">Rubro</Label>
-                <Select onValueChange={setSelectedCategory} value={selectedCategory}>
-                    <SelectTrigger id="category">
-                        <SelectValue placeholder="Seleccione un rubro" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {expenseCategories.map((c: { id: string; name: string }) => (
-                            <SelectItem key={c.id} value={c.id}>
-                                {c.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label>Vía Contable / Origen del Pago</Label>
-                <RadioGroup
-                    value={paymentSource}
-                    onValueChange={(v: 'Tesorería' | 'Caja Chica') => setPaymentSource(v)}
-                    className="flex items-center gap-6 pt-1"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Tesorería" id="tesoreria" />
-                        <Label htmlFor="tesoreria">Tesorería (Formal)</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Caja Chica" id="caja-chica" />
-                        <Label htmlFor="caja-chica">Caja Chica (Informal)</Label>
-                    </div>
-                </RadioGroup>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="description">Descripción (Opcional)</Label>
-                <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Añada un detalle sobre el gasto"
-                />
-            </div>
-            <div className="space-y-2">
-                <Label>Tipo Comprobante</Label>
-                <RadioGroup
-                    value={documentType}
-                    onValueChange={(value: 'Factura' | 'Recibo Común' | 'Nota de Crédito') => setDocumentType(value)}
-                    className="flex items-center flex-wrap gap-x-6 gap-y-2 pt-1"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Factura" id="factura" />
-                        <Label htmlFor="factura">Factura</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Recibo Común" id="recibo" />
-                        <Label htmlFor="recibo">Recibo Común</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Nota de Crédito" id="nota-credito" />
-                        <Label htmlFor="nota-credito">Nota de Crédito</Label>
-                    </div>
-                </RadioGroup>
-            </div>
 
-            {(documentType === 'Factura' || documentType === 'Nota de Crédito') && (
-                <>
-                    <div className="space-y-2">
-                        <Label htmlFor="receipt">Comprobante</Label>
-                        <div className="flex items-center gap-2">
-                            <Input id="receipt" type="file" onChange={handleFileChange} className="flex-1" accept=".pdf,.jpg,.jpeg,.png,.heic" />
-                            {isEditMode && expense?.receiptUrl && (
-                                <Button asChild variant="outline" size="icon">
-                                    <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer"><LinkIcon className="h-4 w-4" /></a>
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="invoiceNumber">Nº Comprobante</Label>
-                        <div className="relative">
-                            <Input id="invoiceNumber" type="text" placeholder="Nº de la factura o nota de crédito" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
-                        </div>
-                    </div>
-                </>
-            )}
-
-            <div className="space-y-2">
-                <Label>Moneda</Label>
-                <RadioGroup
-                    value={currency}
-                    onValueChange={(value: 'ARS' | 'USD') => setCurrency(value)}
-                    className="flex items-center gap-6 pt-1"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="ARS" id="ars" />
-                        <Label htmlFor="ars">ARS</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="USD" id="usd" />
-                        <Label htmlFor="usd">USD</Label>
-                    </div>
-                </RadioGroup>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="exchangeRate">Tipo de Cambio *</Label>
-                <Input
-                    id="exchangeRate"
-                    type="number"
-                    placeholder="Dólar BNA compra"
-                    value={exchangeRate}
-                    onChange={(e) => setExchangeRate(e.target.value)}
-                    readOnly={!permissions.canSupervise}
-                    className={cn("bg-muted", permissions.canSupervise && "bg-background")}
-                />
-                <p className="text-xs text-muted-foreground">
-                    {permissions.canSupervise
-                        ? "Calculado automáticamente. Puede editarlo manualmente."
-                        : "Calculado automáticamente segun fecha. Solo Dirección puede modificarlo."}
-                </p>
-            </div>
-
-            {(documentType === 'Factura' || documentType === 'Nota de Crédito') && (
-                <>
-                    <Separator />
-                    <div className="space-y-4">
-                        <h4 className="text-sm font-medium text-muted-foreground">Impuestos y Percepciones</h4>
-                        <div className="space-y-2">
-                            <Label htmlFor="iva">IVA</Label>
-                            <div className="relative">
-                                <Input id="iva" type="number" placeholder="IVA del gasto" value={iva} onChange={(e) => setIva(e.target.value)} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="iibb">Percepción IIBB</Label>
-                            <div className="relative">
-                                <Input id="iibb" type="number" placeholder="Percepción IIBB" value={iibb} onChange={(e) => setIibb(e.target.value)} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Jurisdicción IIBB</Label>
-                            <RadioGroup
-                                value={iibbJurisdiction}
-                                onValueChange={(v) => setIibbJurisdiction(v as any)}
-                                className="flex items-center gap-6 pt-2"
-                            >
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="No Aplica" id="iibb-na" />
-                                    <Label htmlFor="iibb-na">No Aplica</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="CABA" id="iibb-caba" />
-                                    <Label htmlFor="iibb-caba">CABA</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="Provincia" id="iibb-pba" />
-                                    <Label htmlFor="iibb-pba">Provincia</Label>
-                                </div>
-                            </RadioGroup>
-                        </div>
-                    </div>
-                    <Separator />
-                    <div className="space-y-4">
-                        <h4 className="text-sm font-medium text-muted-foreground">Retenciones Aplicadas al Pago</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="retencionGanancias">Ret. Ganancias</Label>
-                                <Input id="retencionGanancias" type="number" placeholder="0.00" value={retencionGanancias} onChange={e => setRetencionGanancias(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="retencionIVA">Ret. IVA</Label>
-                                <Input id="retencionIVA" type="number" placeholder="0.00" value={retencionIVA} onChange={e => setRetencionIVA(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="retencionIIBB">Ret. IIBB</Label>
-                                <Input id="retencionIIBB" type="number" placeholder="0.00" value={retencionIIBB} onChange={e => setRetencionIIBB(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="retencionSUSS">Ret. SUSS</Label>
-                                <Input id="retencionSUSS" type="number" placeholder="0.00" value={retencionSUSS} onChange={e => setRetencionSUSS(e.target.value)} />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            <Separator />
-
-            <div className="space-y-2">
-                <Label htmlFor="amount" className="text-lg">Monto Total</Label>
-                <div className="relative">
-                    <Input id="amount" type="number" placeholder="0.00" className="text-lg h-12" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                </div>
-            </div>
-
-            <div className="mt-4">
-                <Button type="button" onClick={handleSaveExpense} disabled={isSubmitDisabled} className="w-full">
-                    {(isPending || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditMode ? 'Guardar Cambios' : 'Guardar Documento'}
-                </Button>
-            </div>
-
+                </form>
+            </Form>
         </div>
     );
 }

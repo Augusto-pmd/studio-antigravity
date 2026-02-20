@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, collectionGroup, query, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import { useCollection, usePaginatedCollection, useFirestore } from '@/firebase';
+import { collection, collectionGroup, query, orderBy, getDocs, startAfter, limit, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
 import type { TreasuryAccount, TreasuryTransaction, Project, CashAccount, CashTransaction } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,11 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, X, ArrowUpCircle, ArrowDownCircle, Sparkles } from 'lucide-react';
+import { Calendar as CalendarIcon, X, ArrowUpCircle, ArrowDownCircle, Sparkles, Loader2 } from 'lucide-react';
 import { type DateRange } from 'react-day-picker';
-import { SmartTreasuryAssistant } from './smart-treasury-assistant';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PendingPaymentsInbox } from './pending-payments-inbox';
+import { SmartTreasuryAssistant } from './smart-treasury-assistant';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
@@ -55,10 +56,10 @@ export function TreasuryDashboard() {
 
   // Data fetching
   const treasuryTxsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions').withConverter(treasuryTransactionConverter), orderBy('date', 'desc')) : null, [firestore]);
-  const { data: treasuryTransactions, isLoading: loadingTreasuryTxs, error: errorTreasuryTxs } = useCollection(treasuryTxsQuery);
+  const { data: treasuryTransactions, isLoading: loadingTreasuryTxs, error: errorTreasuryTxs, hasMore: hasMoreTreasury, loadMore: loadMoreTreasury, isLoadingMore: loadingMoreTreasury } = usePaginatedCollection(treasuryTxsQuery, { pageSize: 50 });
 
   const cashTxsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions').withConverter(cashTransactionConverter), orderBy('date', 'desc')) : null, [firestore]);
-  const { data: cashTransactions, isLoading: loadingCashTxs, error: errorCashTxs } = useCollection(cashTxsQuery);
+  const { data: cashTransactions, isLoading: loadingCashTxs, error: errorCashTxs, hasMore: hasMoreCash, loadMore: loadMoreCash, isLoadingMore: loadingMoreCash } = usePaginatedCollection(cashTxsQuery, { pageSize: 50 });
 
   const treasuryAccountsQuery = useMemo(() => firestore ? collection(firestore, 'treasuryAccounts').withConverter(treasuryAccountConverter) : null, [firestore]);
   const { data: treasuryAccounts, isLoading: loadingTreasuryAccs } = useCollection(treasuryAccountsQuery);
@@ -176,6 +177,8 @@ export function TreasuryDashboard() {
         </Button>
       </div>
 
+      <PendingPaymentsInbox />
+
       <div className="flex flex-col lg:flex-row gap-6">
         <div className={cn("flex-1 transition-all", showAiAssistant ? "lg:w-2/3" : "w-full")}>
           <Card className="w-full">
@@ -291,6 +294,22 @@ export function TreasuryDashboard() {
                     ))}
                   </TableBody>
                 </Table>
+
+                {(hasMoreTreasury || hasMoreCash) && (
+                  <div className="p-4 flex justify-center border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (hasMoreTreasury) loadMoreTreasury();
+                        if (hasMoreCash) loadMoreCash();
+                      }}
+                      disabled={loadingMoreTreasury || loadingMoreCash}
+                    >
+                      {(loadingMoreTreasury || loadingMoreCash) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Cargar movimientos anteriores
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

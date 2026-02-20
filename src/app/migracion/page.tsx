@@ -1,8 +1,7 @@
 'use client';
 
-// import { DataImporter } from '@/components/migration/data-importer';
+import { DataImporter } from '@/components/migration/data-importer';
 import { HistoricalRateBackfill } from '@/components/migration/historical-rate-backfill';
-import { ImportWizard } from '@/components/migration/import-wizard';
 
 export default function MigrationPage() {
     return (
@@ -17,8 +16,8 @@ export default function MigrationPage() {
             <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
                 <div className="space-y-8">
                     <section>
-                        <h3 className="text-lg font-semibold mb-4">Importación Legacy (Excel)</h3>
-                        <ImportWizard />
+                        <h3 className="text-lg font-semibold mb-4">Importador Inteligente v3</h3>
+                        <DataImporter />
                     </section>
                 </div>
 

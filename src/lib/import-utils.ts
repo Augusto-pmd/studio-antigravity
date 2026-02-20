@@ -76,13 +76,35 @@ export async function parseExcelFile(file: File, options: { headerRowIndex?: num
 
 export function normalizeDate(value: any): string | null {
     if (!value) return null;
+
     // Excel date handling (if number)
     if (typeof value === 'number') {
         // Excel base date
         const date = new Date(Math.round((value - 25569) * 86400 * 1000));
         return date.toISOString();
     }
-    // String parsing logic could be added here
+
+    if (typeof value === 'string') {
+        const parts = value.split(/[-/]/);
+        if (parts.length === 3) {
+            if (parts[2].length === 4) {
+                // DD/MM/YYYY
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const year = parseInt(parts[2], 10);
+                const date = new Date(Date.UTC(year, month, day, 12, 0, 0));
+                if (!isNaN(date.getTime())) return date.toISOString();
+            } else if (parts[0].length === 4) {
+                // YYYY-MM-DD
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                const date = new Date(Date.UTC(year, month, day, 12, 0, 0));
+                if (!isNaN(date.getTime())) return date.toISOString();
+            }
+        }
+    }
+
     try {
         const date = new Date(value);
         if (!isNaN(date.getTime())) return date.toISOString();

@@ -1,8 +1,85 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    
+    // --- Helper Functions ---
+    function isAuthenticated() {
+      return request.auth != null;
     }
+    
+    function getUserRole() {
+      // Fetch the role from the users collection. This requires a read unit every time an access is evaluated.
+      // If performance/cost is a concern in the future, migrate to Firebase Auth Custom Claims.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isDirector() {
+      return isAuthenticated() && getUserRole() == 'Dirección';
+    }
+    
+    function isSupervisor() {
+      return isAuthenticated() && (getUserRole() == 'Supervisor' || getUserRole() == 'Dirección');
+    }
+    
+    function isAdministracion() {
+      return isAuthenticated() && (getUserRole() == 'Administración' || getUserRole() == 'Dirección');
+    }
+
+    // --- General Rules ---
+    // Deny all by default unless explicitly allowed below
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Collections ---
+    
+    // Users Profile Collection
+    match /users/{userId} {
+      // Anyone can read user nodes (needed for naming, chat, etc)
+      allow read: if isAuthenticated();
+      // Only Director can modify users, except a user modifying their own non-role fields
+      allow create: if isDirector();
+      allow update: if isDirector() || (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+      allow delete: if isDirector();
+    }
+    
+    // Projects Collection
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      // Only certain roles can create/update logic (e.g. Dirección, Supervisor)
+      allow write: if isDirector() || isSupervisor();
+      
+      // Subcollection: Expenses
+      match /expenses/{expenseId} {
+        // Everyone can read expenses related to projects
+        allow read: if isAuthenticated();
+        // Operators, Admins, Supervisors and Directors can load expenses
+        // Validation: ensures documentType exists if creating
+        allow create: if isAuthenticated() && request.resource.data.keys().hasAll(['amount', 'date', 'projectId']);
+        allow update: if isAuthenticated();
+        allow delete: if isDirector() || isAdministracion();
+      }
+    }
+    
+    // Suppliers Collection
+    match /suppliers/{supplierId} {
+      allow read: if isAuthenticated();
+      allow write: if isDirector() || isAdministracion() || isSupervisor();
+    }
+    
+    // Treasury / Global Financial Data
+    match /treasury/{document=**} {
+      // Only Administration and Directors can see sensitive treasury movements
+      allow read, write: if isDirector() || isAdministracion();
+    }
+    
+    // Inventory / Items
+    match /inventory/{itemId} {
+      // Everyone can see items
+      allow read: if isAuthenticated();
+      // Pañolero, Supervisors, Directors can modify stock
+      allow write: if isDirector() || isSupervisor() || getUserRole() == 'Pañolero';
+    }
+
   }
 }

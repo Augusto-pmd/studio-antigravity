@@ -6,5 +6,6 @@
 export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore, useUser } from './provider';
 export { FirebaseClientProvider } from './client-provider';
 export { useCollection } from './firestore/use-collection';
+export { usePaginatedCollection } from './firestore/use-paginated-collection';
 export { useDoc } from './firestore/use-doc';
 export { app, auth, db } from './client';

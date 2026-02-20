@@ -32,8 +32,8 @@ import { Calendar as CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useUser, useCollection } from '@/firebase';
-import { collection, doc, setDoc, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
-import type { Employee, Project, CashAdvance, PayrollWeek } from '@/lib/types';
+import { collection, doc, writeBatch, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
+import type { Employee, Project, CashAdvance, PayrollWeek, CashAccount, CashTransaction, TreasuryAccount, TreasuryTransaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const parseArgentinianNumber = (value: string): number => {
@@ -100,9 +100,23 @@ const projectConverter = {
     }
 };
 
+const cashAccountConverter = {
+    toFirestore(account: CashAccount): DocumentData { return account; },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): CashAccount {
+        return { ...snapshot.data(options), id: snapshot.id } as CashAccount;
+    }
+};
+
+const treasuryAccountConverter = {
+    toFirestore(account: TreasuryAccount): DocumentData { return account; },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): TreasuryAccount {
+        return { ...snapshot.data(options), id: snapshot.id } as TreasuryAccount;
+    }
+};
+
 export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWeek }) {
     const [open, setOpen] = useState(false);
-    const { firestore } = useUser();
+    const { firestore, user } = useUser();
     const { toast } = useToast();
     const [isPending, setIsPending] = useState(false);
 
@@ -110,6 +124,7 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
     const [date, setDate] = useState<Date | undefined>();
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>();
     const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+    const [selectedCashAccountId, setSelectedCashAccountId] = useState<string | undefined>();
     const [amount, setAmount] = useState('');
     const [reason, setReason] = useState('');
     const [installments, setInstallments] = useState('1');
@@ -122,10 +137,56 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
     const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
     const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
+    // CASH ACCOUNTS
+    const cashAccountsQuery = useMemo(() => (firestore ? collection(firestore, 'cashAccounts').withConverter(cashAccountConverter) : null), [firestore]);
+    const { data: rawCashAccounts, isLoading: isLoadingCashAccounts } = useCollection<CashAccount>(cashAccountsQuery);
+
+    // TREASURY ACCOUNTS
+    const treasuryAccountsQuery = useMemo(() => (firestore ? collection(firestore, 'treasuryAccounts').withConverter(treasuryAccountConverter) : null), [firestore]);
+    const { data: rawTreasuryAccounts, isLoading: isLoadingTreasuryAccounts } = useCollection<TreasuryAccount>(treasuryAccountsQuery);
+
+    const currentUserCashAccount = useMemo(() => {
+        if (!rawCashAccounts || !user) return undefined;
+        return rawCashAccounts.find((account: CashAccount) => account.userId === user.uid);
+    }, [rawCashAccounts, user]);
+
+    useEffect(() => {
+        if (currentUserCashAccount && !selectedCashAccountId) {
+            setSelectedCashAccountId(`cash_${currentUserCashAccount.id}`);
+        }
+    }, [currentUserCashAccount, selectedCashAccountId]);
+
+    // Unified Accounts List
+    const unifiedAccounts = useMemo(() => {
+        const accounts: { id: string, name: string, balance: number, type: 'Caja' | 'Tesorería', rawId: string }[] = [];
+        if (rawTreasuryAccounts) {
+            rawTreasuryAccounts.forEach((acc: TreasuryAccount) => {
+                accounts.push({ id: `treasury_${acc.id}`, rawId: acc.id, name: acc.name, balance: acc.balance, type: 'Tesorería' });
+            });
+        }
+        if (rawCashAccounts) {
+            rawCashAccounts.forEach((acc: CashAccount) => {
+                accounts.push({ id: `cash_${acc.id}`, rawId: acc.id, name: acc.name, balance: acc.balance, type: 'Caja' });
+            });
+        }
+        // Sort by type, then name
+        return accounts.sort((a, b) => {
+            if (a.type !== b.type) return a.type.localeCompare(b.type);
+            return a.name.localeCompare(b.name);
+        });
+    }, [rawCashAccounts, rawTreasuryAccounts]);
+
+    useEffect(() => {
+        if (currentUserCashAccount && !selectedCashAccountId) {
+            setSelectedCashAccountId(currentUserCashAccount.id);
+        }
+    }, [currentUserCashAccount, selectedCashAccountId]);
+
     const resetForm = () => {
         setDate(new Date());
         setSelectedEmployeeId(undefined);
         setSelectedProjectId(undefined);
+        // CashAccount maintains default
         setAmount('');
         setReason('');
         setInstallments('1');
@@ -143,8 +204,8 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
             toast({ variant: 'destructive', title: 'Error', description: 'No hay una semana de pagos activa.' });
             return;
         }
-        if (!selectedEmployeeId || !date || !amount) {
-            toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Fecha y Monto son obligatorios.' });
+        if (!selectedEmployeeId || !date || !amount || !selectedCashAccountId) {
+            toast({ variant: 'destructive', title: 'Campos incompletos', description: 'Empleado, Caja, Fecha y Monto son obligatorios.' });
             return;
         }
 
@@ -154,10 +215,29 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
             return;
         }
 
+        const advanceAmount = parseArgentinianNumber(amount);
+        if (advanceAmount <= 0) {
+            toast({ variant: 'destructive', title: 'Monto inválido', description: 'El monto debe ser mayor a 0.' });
+            return;
+        }
+
+        const selectedUnifiedAccount = unifiedAccounts.find(a => a.id === selectedCashAccountId);
+        if (!selectedUnifiedAccount) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Cuenta de origen no válida.' });
+            return;
+        }
+
+        if (selectedUnifiedAccount.balance < advanceAmount) {
+            toast({ variant: 'destructive', title: 'Saldo Insuficiente', description: 'La cuenta seleccionada no tiene fondos suficientes para este adelanto.' });
+            return;
+        }
+
         setIsPending(true);
         try {
+            const batch = writeBatch(firestore);
             const selectedProject = projects?.find((p: Project) => p.id === selectedProjectId);
 
+            // 1. Create the CashAdvance
             const advancesCollection = collection(firestore, 'cashAdvances');
             const advanceRef = doc(advancesCollection);
             const advanceId = advanceRef.id;
@@ -170,13 +250,60 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                 projectId: selectedProject?.id,
                 projectName: selectedProject?.name,
                 date: date.toISOString(),
-                amount: parseArgentinianNumber(amount),
+                amount: advanceAmount,
                 reason: reason || undefined,
                 installments: parseInt(installments) || 1,
                 createdAt: new Date().toISOString(),
             };
+            batch.set(advanceRef, newAdvance);
 
-            await setDoc(advanceRef, newAdvance);
+            // 2 & 3. Create Transaction and Update Balance based on Account Type
+            const isCashAcc = selectedUnifiedAccount.type === 'Caja';
+            const accountRawId = selectedUnifiedAccount.rawId;
+
+            if (isCashAcc) {
+                const transactionsCollection = collection(firestore, 'cashTransactions');
+                const transactionRef = doc(transactionsCollection);
+                const newTransaction: Omit<CashTransaction, 'id'> = {
+                    userId: accountRawId, // En cajas el userId y accountId a veces se solapan, pero usamos el standard
+                    date: new Date().toISOString(),
+                    type: 'Egreso',
+                    amount: advanceAmount,
+                    currency: 'ARS',
+                    description: `Adelanto de sueldo a ${selectedEmployee.name} - ${reason || ''}`,
+                    relatedProjectId: selectedProject?.id,
+                    relatedProjectName: selectedProject?.name,
+                };
+
+                // Si la lógica de tu bd guardaba el UserId verdadero en la caja:
+                const realCashAccount = rawCashAccounts?.find((c: CashAccount) => c.id === accountRawId);
+                if (realCashAccount) newTransaction.userId = realCashAccount.userId;
+                else newTransaction.userId = user!.uid;
+
+                batch.set(transactionRef, { ...newTransaction, id: transactionRef.id });
+
+                const accountRef = doc(firestore, 'cashAccounts', accountRawId);
+                batch.update(accountRef, { balance: selectedUnifiedAccount.balance - advanceAmount });
+            } else {
+                // Treasury Account
+                const transactionsCollection = collection(firestore, `treasuryAccounts/${accountRawId}/transactions`);
+                const transactionRef = doc(transactionsCollection);
+                const newTransaction: Omit<TreasuryTransaction, 'id'> = {
+                    treasuryAccountId: accountRawId,
+                    type: 'Egreso',
+                    date: new Date().toISOString(),
+                    amount: advanceAmount,
+                    description: `Adelanto de sueldo a ${selectedEmployee.name} - ${reason || ''}`,
+                    currency: 'ARS',
+                    category: 'Sueldos y Adelantos',
+                };
+                batch.set(transactionRef, { ...newTransaction, id: transactionRef.id });
+
+                const accountRef = doc(firestore, 'treasuryAccounts', accountRawId);
+                batch.update(accountRef, { balance: selectedUnifiedAccount.balance - advanceAmount });
+            }
+
+            await batch.commit();
 
             toast({
                 title: 'Adelanto Registrado',
@@ -227,7 +354,22 @@ export function AddCashAdvanceDialog({ currentWeek }: { currentWeek?: PayrollWee
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="project">Obra</Label>
+                        <Label htmlFor="cashAccount">Caja de Origen</Label>
+                        <Select onValueChange={setSelectedCashAccountId} value={selectedCashAccountId} disabled={isLoadingCashAccounts || isLoadingTreasuryAccounts}>
+                            <SelectTrigger id="cashAccount">
+                                <SelectValue placeholder="Seleccione de dónde sale el dinero" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {unifiedAccounts.map((account) => (
+                                    <SelectItem key={account.id} value={account.id}>
+                                        {account.name} ({account.type}) - Saldo: ${account.balance.toLocaleString('es-AR')}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="project">Obra (Opcional)</Label>
                         <Select onValueChange={setSelectedProjectId} value={selectedProjectId} disabled={isLoadingProjects}>
                             <SelectTrigger id="project">
                                 <SelectValue placeholder="Imputar a una obra (opcional)" />
