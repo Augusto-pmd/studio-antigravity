@@ -71,6 +71,12 @@ service cloud.firestore {
     match /employees/{employeeId} {
       allow read: if isAuthenticated();
       allow write: if isDirector() || isAdministracion() || isSupervisor();
+      
+      // Subcollection: Wage History
+      match /dailyWageHistory/{historyId} {
+        allow read: if isAuthenticated();
+        allow write: if isDirector() || isAdministracion() || isSupervisor();
+      }
     }
     
     // Contractors Collection
@@ -145,6 +151,7 @@ service cloud.firestore {
     }
     match /{path=**}/dailyWageHistory/{historyId} {
       allow read: if isAuthenticated();
+      allow write: if isDirector() || isAdministracion() || isSupervisor();
     }
     match /{path=**}/transactions/{transactionId} {
       allow read: if isAuthenticated();
