@@ -58,6 +58,9 @@
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
+  "engines": {
+    "node": "20"
+  },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "18.3.3",
