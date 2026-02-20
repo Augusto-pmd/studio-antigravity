@@ -18,7 +18,7 @@ if (admin.apps.length === 0) {
 // Set global options for functions.
 setGlobalOptions({ maxInstances: 10 });
 
-import { onDocumentUpdated, onDocumentWritten } from "firebase-functions/v2/firestore";
+import { onDocumentUpdated, onDocumentWritten, onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
 // Helper function to update denormalized names across common collections
@@ -413,7 +413,7 @@ export const processToolDepreciation = onSchedule({
     // the system should store original lifespan. We'll fallback safely.
     // For now, if we divide current price by current lifespan it's practically the same
     // if we haven't mutated purchasePrice.
-    const monthlyDepreciation = tool.purchasePrice / (tool.originalLifespanMonths ? tool.originalLifespanMonths : tool.lifespanMonths);
+    const monthlyDepreciation = tool.purchasePrice / originalLifespan;
 
     // Determine who pays for this month
     let targetProjectId = 'general-overhead';
@@ -462,6 +462,54 @@ export const processToolDepreciation = onSchedule({
     console.log(`[Tool Depreciation] Successfully processed ${processedCount} tools.`);
   } else {
     console.log(`[Tool Depreciation] No tools were eligible for depreciation this month.`);
+  }
+});
+
+/**
+ * Triggered when a new TaskRequest (Pedido) is created.
+ * Looks up the assignee's FCM token and sends a push notification.
+ */
+export const onTaskRequestCreated = onDocumentCreated("taskRequests/{taskId}", async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+
+  const assigneeId = data.assigneeId;
+  const requesterName = data.requesterName || "Alguien";
+  const title = data.title || "Nuevo Pedido";
+
+  if (!assigneeId) return;
+
+  try {
+    const userDoc = await admin.firestore().collection("users").doc(assigneeId).get();
+    if (!userDoc.exists) {
+      console.log(`[FCM] User ${assigneeId} not found, skipping notification.`);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const fcmToken = userData?.fcmToken;
+
+    if (!fcmToken) {
+      console.log(`[FCM] User ${assigneeId} does not have an fcmToken registered.`);
+      return;
+    }
+
+    const payload = {
+      token: fcmToken,
+      notification: {
+        title: "Nuevo pedido asignado",
+        body: `${requesterName} te ha asignado: ${title}`,
+      },
+      data: {
+        taskId: event.params.taskId,
+        type: "NEW_TASK_REQUEST"
+      }
+    };
+
+    const response = await admin.messaging().send(payload);
+    console.log(`[FCM] Successfully sent notification to ${assigneeId}:`, response);
+  } catch (error) {
+    console.error(`[FCM] Error sending notification to ${assigneeId}:`, error);
   }
 });
 
