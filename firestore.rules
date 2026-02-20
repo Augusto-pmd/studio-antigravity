@@ -98,6 +98,42 @@ service cloud.firestore {
       // Pañolero, Supervisors, Directors can modify stock
       allow write: if isDirector() || isSupervisor() || getUserRole() == 'Pañolero';
     }
+    // --- Additional App Collections ---
+    
+    // Employee & User Activity
+    match /taskRequests/{document=**} { allow read, write: if isAuthenticated(); }
+    match /action_logs/{document=**} { allow read, write: if isAuthenticated(); }
+    match /attendance/{document=**} { allow read, write: if isAuthenticated(); }
+    match /attendances/{document=**} { allow read, write: if isAuthenticated(); }
+    match /timeLogs/{document=**} { allow read, write: if isAuthenticated(); }
+    match /clientFollowUps/{document=**} { allow read, write: if isAuthenticated(); }
+    match /performanceEvaluations/{document=**} { allow read, write: if isAuthenticated(); }
+    match /technicalOfficeEmployees/{document=**} { allow read, write: if isAuthenticated(); }
+    
+    // Project & Work Execution
+    match /contractor_certifications/{document=**} { allow read, write: if isAuthenticated(); }
+    match /contractorCertifications/{document=**} { allow read, write: if isAuthenticated(); }
+    match /inventory_consumables/{document=**} { allow read, write: if isAuthenticated(); }
+    match /inventory_movements/{document=**} { allow read, write: if isAuthenticated(); }
+    match /inventory_tools/{document=**} { allow read, write: if isAuthenticated(); }
+    match /assets/{document=**} { 
+      allow read: if isAuthenticated(); 
+      allow write: if isDirector() || isSupervisor() || isAdministracion(); 
+    }
+    
+    // Financial & Administration
+    match /fund_requests/{document=**} { allow read, write: if isAuthenticated(); }
+    match /fundRequests/{document=**} { allow read, write: if isAuthenticated(); }
+    match /cashAdvances/{document=**} { allow read, write: if isAuthenticated(); }
+    match /payrollWeeks/{document=**} { allow read, write: if isAuthenticated(); }
+    match /monthlySalaries/{document=**} { allow read, write: if isDirector() || isAdministracion() || isSupervisor(); }
+    match /recurringExpenses/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
+    match /moratorias/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
+    match /treasuryAccounts/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
+    match /treasuryTransactions/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
+    match /cashAccounts/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
+    match /cashTransactions/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
+    match /settings/{document=**} { allow read: if isAuthenticated(); allow write: if isDirector() || isAdministracion(); }
 
   }
 }

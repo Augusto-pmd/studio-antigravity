@@ -7,11 +7,15 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { type ReactNode, useEffect } from 'react';
 import { useUser } from '@/firebase';
+import { useFCMToken } from '@/hooks/use-fcm';
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+
+  // Initialize FCM Token for the user
+  useFCMToken();
 
   // Don't show the main layout on the login or print pages
   if (pathname === '/login' || pathname.startsWith('/imprimir-recibos') || pathname.startsWith('/imprimir-resumen') || pathname.startsWith('/imprimir-pago-semanal')) {

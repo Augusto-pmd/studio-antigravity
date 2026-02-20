@@ -1,0 +1,16 @@
+{
+    "name": "PMD System",
+    "short_name": "PMD System",
+    "description": "Sistema Integral de Gestión de Obras",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "16x16 32x32 48x48",
+            "type": "image/x-icon"
+        }
+    ]
+}

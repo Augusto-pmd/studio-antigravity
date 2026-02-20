@@ -16,6 +16,7 @@ export type UserProfile = {
   fullName: string;
   email: string;
   photoURL?: string;
+  fcmToken?: string;
 };
 
 export interface Project {
