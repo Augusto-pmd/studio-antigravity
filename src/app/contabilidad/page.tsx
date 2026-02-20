@@ -3,6 +3,7 @@
 import { AccountingDashboard } from "@/components/contabilidad/accounting-dashboard";
 import { useUser } from "@/firebase";
 import { Card, CardContent } from "@/components/ui/card";
+import { YearNavigator } from "@/components/ui/year-navigator";
 
 export default function ContabilidadPage() {
   const { permissions } = useUser();
@@ -10,10 +11,10 @@ export default function ContabilidadPage() {
   if (!permissions.canValidate) {
     return (
       <Card>
-          <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
-              <p className="text-lg font-medium text-muted-foreground">Acceso Denegado</p>
-              <p className="text-sm text-muted-foreground">No tienes permisos para acceder a esta sección.</p>
-          </CardContent>
+        <CardContent className="flex h-64 flex-col items-center justify-center gap-4 text-center">
+          <p className="text-lg font-medium text-muted-foreground">Acceso Denegado</p>
+          <p className="text-sm text-muted-foreground">No tienes permisos para acceder a esta sección.</p>
+        </CardContent>
       </Card>
     )
   }
@@ -22,8 +23,9 @@ export default function ContabilidadPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-headline">Módulo de Contabilidad</h1>
+        <div className="w-56 mt-[-1rem]"><YearNavigator /></div>
       </div>
-       <p className="text-muted-foreground">
+      <p className="text-muted-foreground">
         Gestione las cuentas, impuestos, reportes y explore el flujo de dinero de la empresa.
       </p>
       <AccountingDashboard />

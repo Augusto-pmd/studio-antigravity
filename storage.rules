@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    match /{allPaths=**} {
+      // By default, authenticated users can read and write files.
+      // E.g., employee-documents, contractor-documents, supplier-documents
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

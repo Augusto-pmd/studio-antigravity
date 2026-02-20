@@ -28,7 +28,13 @@ export function SalaryPayables() {
     firestore ? query(collection(firestore, 'monthlySalaries').withConverter(salaryConverter), where('status', '==', 'Pendiente de Pago')) : null
   ), [firestore]);
 
-  const { data: salaries, isLoading } = useCollection<MonthlySalary>(pendingSalariesQuery);
+  const { data: allPendingSalaries, isLoading } = useCollection<MonthlySalary>(pendingSalariesQuery);
+
+  const salaries = useMemo(() => {
+    if (!allPendingSalaries) return [];
+    // CLEAN SLATE RULE: Only show salaries from 2026-02 onwards
+    return allPendingSalaries.filter(s => s.period >= '2026-02');
+  }, [allPendingSalaries]);
 
   const renderSkeleton = () => Array.from({ length: 2 }).map((_, i) => (
     <TableRow key={`skel-sp-${i}`}>

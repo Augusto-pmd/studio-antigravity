@@ -67,6 +67,24 @@ service cloud.firestore {
       allow write: if isDirector() || isAdministracion() || isSupervisor();
     }
     
+    // Employees Collection
+    match /employees/{employeeId} {
+      allow read: if isAuthenticated();
+      allow write: if isDirector() || isAdministracion() || isSupervisor();
+    }
+    
+    // Contractors Collection
+    match /contractors/{contractorId} {
+      allow read: if isAuthenticated();
+      allow write: if isDirector() || isAdministracion() || isSupervisor();
+      
+      // Subcollection: Personnel
+      match /personnel/{personnelId} {
+        allow read: if isAuthenticated();
+        allow write: if isDirector() || isAdministracion() || isSupervisor();
+      }
+    }
+    
     // Treasury / Global Financial Data
     match /treasury/{document=**} {
       // Only Administration and Directors can see sensitive treasury movements

@@ -54,12 +54,6 @@ export const SIDEBAR_ITEMS = [
         variant: "ghost"
     },
     {
-        title: "Migración",
-        href: "/migracion",
-        icon: Database,
-        variant: "ghost"
-    },
-    {
         title: "Configuración",
         href: "/configuracion",
         icon: Settings,

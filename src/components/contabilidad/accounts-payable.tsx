@@ -44,11 +44,11 @@ export function AccountsPayable() {
   const expenses = useMemo(() => {
     if (!allPendingExpenses) return [];
     // Only show formal expenses (not from Caja Chica) and that are not credit notes
-    // CLEAN SLATE RULE: Only show expenses from 2026-01-01 onwards
+    // CLEAN SLATE RULE: Only show expenses from 2026-02-17 onwards
     return allPendingExpenses.filter(e =>
       e.paymentSource !== 'Caja Chica' &&
       e.documentType !== 'Nota de Crédito' &&
-      e.date >= '2026-01-01'
+      e.date >= '2026-02-17'
     );
   }, [allPendingExpenses]);
 

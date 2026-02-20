@@ -124,16 +124,6 @@ const menuItems = [
     adminOnly: true,
     pañoleroHidden: true,
   },
-  {
-    href: "/migracion",
-    label: "Migración",
-    icon: Database,
-  },
-  {
-    href: "/documentos",
-    label: "Documentos",
-    icon: FileText,
-  },
 ];
 
 const taskRequestConverter = {

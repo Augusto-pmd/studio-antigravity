@@ -10,9 +10,9 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Expense } from '@/lib/types';
-import { parseISO, format as formatDateFns, getYear } from 'date-fns';
+import { parseISO, format as formatDateFns } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase';
 import { collection, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { expenseCategories } from '@/lib/data';
 import { projectConverter, supplierConverter } from '@/lib/converters';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useYear } from '@/lib/contexts/year-context';
 
 const formatCurrency = (amount: number | undefined, currency: string = 'ARS') => {
   if (typeof amount !== 'number') return '';
@@ -39,8 +39,8 @@ const formatDate = (dateString?: string) => {
 
 export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; isLoading: boolean }) {
   const firestore = useFirestore();
-  
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+
+  const { selectedYear } = useYear();
 
   const projectsQuery = useMemo(() => (firestore ? collection(firestore, 'projects').withConverter(projectConverter) : null), [firestore]);
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
@@ -55,19 +55,10 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
   const suppliersMap = useMemo(() => {
     return suppliers?.reduce((acc: Record<string, string>, s: Supplier) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {};
   }, [suppliers]);
-  
-  const availableYears = useMemo(() => {
-    if (!expenses || expenses.length === 0) return [new Date().getFullYear().toString()];
-    const years = new Set(expenses.map(e => getYear(parseISO(e.date)).toString()));
-    return Array.from(years).sort((a,b) => parseInt(b) - parseInt(a));
-  }, [expenses]);
-  
-  const filteredExpenses = useMemo(() => {
-    if (!selectedYear) return expenses;
-    return expenses.filter(e => getYear(parseISO(e.date)).toString() === selectedYear);
-  }, [expenses, selectedYear]);
-  
-  
+
+  const filteredExpenses = expenses;
+
+
   const handleExportCSV = () => {
     if (!filteredExpenses || filteredExpenses.length === 0) {
       return;
@@ -144,18 +135,10 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
           </CardDescription>
         </div>
         <div className="flex gap-2">
-           <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Año" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !filteredExpenses || filteredExpenses.length === 0}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-            </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || !filteredExpenses || filteredExpenses.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV ({selectedYear})
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -187,10 +170,10 @@ export function ExpenseReport({ expenses, isLoading }: { expenses: Expense[]; is
                   <TableCell>
                     <div className="font-medium">{formatDate(expense.date)}</div>
                     <div className="space-y-1 text-sm text-muted-foreground sm:hidden mt-2">
-                        <p className="font-semibold text-foreground">{expense.documentType}</p>
-                        <p><span className='font-medium'>Obra:</span> {projectsMap[expense.projectId] || expense.projectId}</p>
-                        <p><span className='font-medium'>Prov:</span> {suppliersMap[expense.supplierId] || expense.supplierId}</p>
-                        <div className='font-mono pt-1 font-semibold text-foreground'>{formatCurrency(expense.amount, expense.currency)}</div>
+                      <p className="font-semibold text-foreground">{expense.documentType}</p>
+                      <p><span className='font-medium'>Obra:</span> {projectsMap[expense.projectId] || expense.projectId}</p>
+                      <p><span className='font-medium'>Prov:</span> {suppliersMap[expense.supplierId] || expense.supplierId}</p>
+                      <div className='font-mono pt-1 font-semibold text-foreground'>{formatCurrency(expense.amount, expense.currency)}</div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{expense.documentType}</TableCell>
