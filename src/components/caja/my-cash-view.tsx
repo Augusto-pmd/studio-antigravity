@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton';
 import { QuickExpenseDialog } from '@/components/caja/quick-expense-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ArrowDownCircle, ArrowUpCircle, Landmark, Pencil, PlusCircle, Wallet, Trash2, ArrowRightLeft, LockKeyhole } from 'lucide-react';
@@ -28,8 +28,11 @@ const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
 };
 
-const formatDate = (dateString: string) => {
-    return format(parseISO(dateString), 'dd/MM/yyyy HH:mm');
+const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    const parsed = parseISO(dateString);
+    if (!isValid(parsed)) return '-';
+    return format(parsed, 'dd/MM/yyyy HH:mm');
 }
 
 const cashTransactionConverter = {

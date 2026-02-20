@@ -2,9 +2,10 @@
 
 import { AddProjectDialog } from "@/components/obras/add-project-dialog";
 import { ProjectsTable } from "@/components/obras/projects-table";
-import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
 import { PlusCircle } from "lucide-react";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { Button } from "@/components/ui/button";
 
 export default function ObrasPage() {
   const { permissions } = useUser();
@@ -27,7 +28,9 @@ export default function ObrasPage() {
           </AddProjectDialog>
         )}
       </div>
-      <ProjectsTable />
+      <ErrorBoundary>
+        <ProjectsTable />
+      </ErrorBoundary>
     </div>
   );
 }

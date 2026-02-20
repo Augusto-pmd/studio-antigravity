@@ -71,7 +71,7 @@ export function AnalyticsDashboard() {
                     projects!.map(async (project) => {
                         try {
                             const data = await FinancialAnalyticsService.getProjectFinancials(project.id, selectedYear);
-                            return { ...data, projectName: project.name };
+                            return { ...data, projectName: project.name, status: project.status };
                         } catch (err) {
                             console.error(`Failed to fetch financials for project ${project.name} (${project.id}):`, err);
                             return null;
@@ -80,7 +80,13 @@ export function AnalyticsDashboard() {
                 );
 
                 // Filter out any projects that failed to load
-                const validResults = results.filter((res): res is (ProjectFinancials & { projectName: string }) => res !== null);
+                let validResults = results.filter((res): res is (ProjectFinancials & { projectName: string, status: 'En Curso' | 'Completado' | 'Pausado' | 'Cancelado' }) => res !== null);
+
+                // Filter out projects that are completed and have no financial activity in the selected year
+                validResults = validResults.filter(res => {
+                    const hasActivity = res.income.total > 0 || res.costs.total > 0;
+                    return res.status === 'En Curso' || hasActivity;
+                });
 
                 setFinancials(validResults);
                 // Save config to ref — does NOT trigger a re-render

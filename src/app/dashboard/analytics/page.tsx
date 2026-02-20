@@ -4,6 +4,7 @@
 import { Suspense } from 'react';
 import { AnalyticsDashboard } from '@/components/dashboard/analytics/analytics-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 export default function AnalyticsPage() {
     return (
@@ -11,9 +12,11 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Análisis Financiero</h2>
             </div>
-            <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
-                <AnalyticsDashboard />
-            </Suspense>
+            <ErrorBoundary>
+                <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
+                    <AnalyticsDashboard />
+                </Suspense>
+            </ErrorBoundary>
         </div>
     );
 }
