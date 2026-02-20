@@ -22,9 +22,10 @@ export function AnalyticsDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const { selectedYear } = useYear();
 
-    // Stable query — created once since db/converter never change
+    // We want to see financials for all relevant projects, not just active ones, 
+    // especially for past years (like 2025/2026 where projects might be completed).
     const projectsQuery = useMemo(
-        () => query(collection(db, 'projects').withConverter(projectConverter), where('status', '==', 'En Curso')),
+        () => query(collection(db, 'projects').withConverter(projectConverter), where('status', 'in', ['En Curso', 'Completado'])),
         []
     );
 
@@ -90,8 +91,9 @@ export function AnalyticsDashboard() {
 
     if (financials.length === 0) {
         return (
-            <div className="flex h-96 items-center justify-center text-muted-foreground">
-                No se encontraron proyectos en curso con datos financieros.
+            <div className="flex h-96 flex-col items-center justify-center text-muted-foreground gap-2">
+                <p>No se encontraron proyectos con datos financieros para el año {selectedYear}.</p>
+                <p className="text-sm">Asegúrese de que existan proyectos "En Curso" o "Completados".</p>
             </div>
         );
     }
