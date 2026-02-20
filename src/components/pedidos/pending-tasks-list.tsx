@@ -10,9 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO, formatDistanceToNow, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, MoreHorizontal } from 'lucide-react';
+import { CheckCircle, Loader2, MoreHorizontal, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { DeleteTaskRequestDialog } from './delete-task-request-dialog';
 
 const taskRequestConverter = {
@@ -122,10 +123,13 @@ export function PendingTasksList() {
           {tasks?.map((task: TaskRequest) => {
             const canDelete = permissions.canSupervise || user?.uid === task.requesterId;
             return (
-              <TableRow key={task.id}>
+              <TableRow key={task.id} className={cn(task.isUrgent && "bg-destructive/10 hover:bg-destructive/20 transition-colors")}>
                 <TableCell>
-                  <div className="font-medium">{task.title}</div>
-                  {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
+                  <div className="flex items-center gap-2">
+                    {task.isUrgent && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
+                    <div className="font-medium">{task.title}</div>
+                  </div>
+                  {task.description && <p className="text-sm text-muted-foreground mt-1">{task.description}</p>}
                   <div className="mt-2 space-y-1 text-sm text-muted-foreground md:hidden">
                     <p><span className="font-medium text-foreground">De:</span> {task.requesterName}</p>
                     <div className="text-xs pt-1 sm:hidden">

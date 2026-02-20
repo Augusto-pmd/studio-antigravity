@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useUser } from '@/firebase';
 import { useCollection } from '@/firebase';
 import { collection, query, where, orderBy, type DocumentData, type QueryDocumentSnapshot, type SnapshotOptions } from 'firebase/firestore';
@@ -12,9 +12,11 @@ import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, AlertCircle, Loader2 } from 'lucide-react';
 import { DeleteTaskRequestDialog } from './delete-task-request-dialog';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 
 const taskRequestConverter = {
@@ -24,6 +26,8 @@ const taskRequestConverter = {
 
 export function CreatedTasksList({ filterByCurrentUser = false }: { filterByCurrentUser?: boolean }) {
   const { user, firestore, permissions } = useUser();
+  const { toast } = useToast();
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   const tasksQuery = useMemo(
     () => {
@@ -47,6 +51,24 @@ export function CreatedTasksList({ filterByCurrentUser = false }: { filterByCurr
   );
 
   const { data: tasks, isLoading } = useCollection<TaskRequest>(tasksQuery);
+
+  const handleReiterate = async (task: TaskRequest) => {
+    if (!firestore) return;
+    setUpdatingTaskId(task.id);
+    try {
+      const taskRef = doc(firestore, 'taskRequests', task.id);
+      await updateDoc(taskRef, {
+        isUrgent: true,
+        urgentAt: new Date().toISOString()
+      });
+      toast({ title: "Pedido reiterado", description: "Se ha marcado el pedido como urgente." });
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo reiterar el pedido." });
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
 
   const renderSkeleton = () => (
     Array.from({ length: 3 }).map((_, i) => (
@@ -98,7 +120,7 @@ export function CreatedTasksList({ filterByCurrentUser = false }: { filterByCurr
           {tasks?.map((task: TaskRequest) => {
             const canDelete = permissions.canSupervise || user?.uid === task.requesterId;
             return (
-              <TableRow key={task.id}>
+              <TableRow key={task.id} className={cn(task.isUrgent && task.status === 'Pendiente' && "bg-destructive/10 hover:bg-destructive/20 transition-colors")}>
                 <TableCell>
                   <div className="font-medium">{task.title}</div>
                   {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
@@ -131,6 +153,18 @@ export function CreatedTasksList({ filterByCurrentUser = false }: { filterByCurr
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
+                  {task.status === 'Pendiente' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReiterate(task)}
+                      disabled={updatingTaskId === task.id || task.isUrgent}
+                      className={cn("mr-2", task.isUrgent && "text-destructive border-destructive")}
+                    >
+                      {updatingTaskId === task.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertCircle className="mr-2 h-4 w-4" />}
+                      Reiterar
+                    </Button>
+                  )}
                   {canDelete && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

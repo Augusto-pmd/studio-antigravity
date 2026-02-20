@@ -253,6 +253,8 @@ export interface TaskRequest {
   createdAt: string;
   completedAt?: string;
   projectId?: string;
+  isUrgent?: boolean;
+  urgentAt?: string;
 }
 
 export interface TechnicalOfficeEmployee {
