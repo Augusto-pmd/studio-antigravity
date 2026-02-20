@@ -8,9 +8,9 @@ service cloud.firestore {
     }
     
     function getUserRole() {
-      // Fetch the role from the users collection. This requires a read unit every time an access is evaluated.
-      // If performance/cost is a concern in the future, migrate to Firebase Auth Custom Claims.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      // Safely fetch the role from the users collection without throwing errors for missing docs/fields
+      let userRef = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userRef) ? get(userRef).data.get('role', 'none') : 'none';
     }
     
     function isDirector() {
@@ -134,6 +134,24 @@ service cloud.firestore {
     match /cashAccounts/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
     match /cashTransactions/{document=**} { allow read, write: if isDirector() || isAdministracion(); }
     match /settings/{document=**} { allow read: if isAuthenticated(); allow write: if isDirector() || isAdministracion(); }
+
+    // Collection Group Queries for Dashboard and Reports
+    match /{path=**}/sales/{saleId} {
+      allow read: if isAuthenticated();
+      allow write: if isDirector() || isAdministracion();
+    }
+    match /{path=**}/expenses/{expenseId} {
+      allow read: if isAuthenticated();
+    }
+    match /{path=**}/dailyWageHistory/{historyId} {
+      allow read: if isAuthenticated();
+    }
+    match /{path=**}/transactions/{transactionId} {
+      allow read: if isAuthenticated();
+    }
+    match /{path=**}/cashAccounts/{accountId} {
+      allow read: if isAuthenticated();
+    }
 
   }
 }
