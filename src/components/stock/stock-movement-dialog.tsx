@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Receipt } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {

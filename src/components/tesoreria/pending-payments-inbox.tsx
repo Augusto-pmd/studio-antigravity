@@ -120,7 +120,7 @@ export function PendingPaymentsInbox() {
             case 'Salario (Oficina)': return <UserCircle className="h-5 w-5 text-blue-500" />;
             case 'Pedido de Fondos': return <Boxes className="h-5 w-5 text-orange-500" />;
             case 'Certificación Obra': return <FileText className="h-5 w-5 text-green-500" />;
-            default: return <CreditCardIcon className="h-5 w-5 text-gray-500" />;
+            default: return <CreditCard className="h-5 w-5 text-gray-500" />;
         }
     }
 
